@@ -535,9 +535,6 @@ const FRIENDLY_DOMAINS = {
 function friendlyDomain(hostname) {
   if (!hostname) return '';
 
-  // localhost:PORT — show as "localhost:PORT"
-  if (hostname.startsWith('localhost:')) return hostname;
-
   // Direct lookup
   if (FRIENDLY_DOMAINS[hostname]) return FRIENDLY_DOMAINS[hostname];
 
@@ -885,7 +882,14 @@ function renderDomainCard(group, groupIndex) {
   const visibleTabs = uniqueTabs.slice(0, 8);
   const extraCount  = uniqueTabs.length - visibleTabs.length;
   const pageChips = visibleTabs.map(tab => {
-    const label   = cleanTitle(smartTitle(stripTitleNoise(tab.title || ''), tab.url), group.domain);
+    let label = cleanTitle(smartTitle(stripTitleNoise(tab.title || ''), tab.url), group.domain);
+    // For localhost tabs, prepend the port number so you can tell projects apart
+    try {
+      const parsed = new URL(tab.url);
+      if (parsed.hostname === 'localhost' && parsed.port) {
+        label = `:${parsed.port} ${label}`;
+      }
+    } catch {}
     const count   = urlCounts[tab.url];
     const dupeTag = count > 1
       ? ` <span class="chip-dupe-badge">(${count}x)</span>`
@@ -1145,16 +1149,11 @@ async function renderStaticDashboard() {
       }
 
       // file:// URLs have no hostname — group them under "Local Files"
-      // localhost tabs are grouped by port (each port = different project)
       let hostname;
       if (tab.url && tab.url.startsWith('file://')) {
         hostname = 'local-files';
       } else {
-        const parsed = new URL(tab.url);
-        hostname = parsed.hostname;
-        if (hostname === 'localhost' && parsed.port) {
-          hostname = 'localhost:' + parsed.port;
-        }
+        hostname = new URL(tab.url).hostname;
       }
       if (!hostname) continue; // skip if still empty
       if (!groupMap[hostname]) {
@@ -1433,8 +1432,7 @@ document.addEventListener('click', async (e) => {
 
     const urls = group.tabs.map(t => t.url);
     // Use exact URL matching for landing pages (share domains with content tabs)
-    // and localhost (share hostname across different ports)
-    const useExact = group.domain === '__landing-pages__' || group.domain.startsWith('localhost:');
+    const useExact = group.domain === '__landing-pages__';
     await sendToExtension('closeTabs', { urls, exact: useExact });
     await fetchOpenTabs();
 
