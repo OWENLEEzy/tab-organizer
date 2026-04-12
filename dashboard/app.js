@@ -535,6 +535,9 @@ const FRIENDLY_DOMAINS = {
 function friendlyDomain(hostname) {
   if (!hostname) return '';
 
+  // localhost:PORT — show as "localhost:PORT"
+  if (hostname.startsWith('localhost:')) return hostname;
+
   // Direct lookup
   if (FRIENDLY_DOMAINS[hostname]) return FRIENDLY_DOMAINS[hostname];
 
@@ -1142,11 +1145,16 @@ async function renderStaticDashboard() {
       }
 
       // file:// URLs have no hostname — group them under "Local Files"
+      // localhost tabs are grouped by port (each port = different project)
       let hostname;
       if (tab.url && tab.url.startsWith('file://')) {
         hostname = 'local-files';
       } else {
-        hostname = new URL(tab.url).hostname;
+        const parsed = new URL(tab.url);
+        hostname = parsed.hostname;
+        if (hostname === 'localhost' && parsed.port) {
+          hostname = 'localhost:' + parsed.port;
+        }
       }
       if (!hostname) continue; // skip if still empty
       if (!groupMap[hostname]) {
@@ -1424,9 +1432,9 @@ document.addEventListener('click', async (e) => {
     if (!group) return;
 
     const urls = group.tabs.map(t => t.url);
-    // Landing pages share domains with other tabs (e.g. Gmail inbox vs specific emails).
-    // Use exact URL matching so closing the inbox doesn't also close email threads.
-    const useExact = group.domain === '__landing-pages__';
+    // Use exact URL matching for landing pages (share domains with content tabs)
+    // and localhost (share hostname across different ports)
+    const useExact = group.domain === '__landing-pages__' || group.domain.startsWith('localhost:');
     await sendToExtension('closeTabs', { urls, exact: useExact });
     await fetchOpenTabs();
 
