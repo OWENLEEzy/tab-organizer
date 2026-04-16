@@ -20,8 +20,8 @@
 - Maintain a `focusedIndex` state in App.tsx
 - `↑` / `↓` — move focus between TabChips across all visible groups
 - `Enter` — call `handleFocusTab` on focused chip
-- `D` — close focused tab via `handleCloseTab`
-- `S` — save focused tab via `handleSaveTab`
+- `d` — close focused tab via `handleCloseTab` (single key, not Cmd+D)
+- `s` — save focused tab via `handleSaveTab` (single key, not Cmd+S — that already exists for "save all")
 - `/` — focus search input (already implemented)
 - `Esc` — clear focus + search (already partially implemented)
 
@@ -30,8 +30,9 @@
 - Build a flat list of focusable chips from `filteredGroups`
 - Use `refs` array to call `.focus()` on target TabChip
 - Each TabChip already has `tabIndex={0}` and keyboard handler — wire up visual focus ring via CSS
+- **Important:** `useKeyboard.ts` currently only registers `d`/`s` as `Cmd/Ctrl` combos. Need to add standalone `d` and `s` handlers that only fire when NOT in an input field (same guard as `/` key). Add `onCloseFocused` and `onSaveFocused` to `KeyboardActions` interface, or repurpose the existing empty callbacks.
 
-**Files:** `App.tsx` (state + logic), `useKeyboard.ts` (already exists)
+**Files:** `App.tsx` (state + logic), `useKeyboard.ts` (add standalone D/S handlers)
 
 ### 1.2 Action Buttons Always Visible (Semi-transparent)
 
@@ -114,33 +115,35 @@
 
 **Files:** `Header.tsx` — add pill row, requires `totalTabs`, `totalDupes`, `totalDomains` props
 
-### 2.5 Auto-Sort by Tab Count
+### 2.5 Sort Reset Button
 
-**Current state:** Groups are sorted by persisted `groupOrder` from storage. New domains append at the end.
+**Current state:** `tab-grouper.ts` already sorts by tab count descending by default (line 85). When user drags to reorder, a custom `groupOrder` is saved and takes priority. Once saved, it persists forever — no way to revert to count-based sorting without clearing storage.
 
 **Change:**
-- Default sort: groups ordered by `tabs.length` descending (most tabs first)
-- When user drags to reorder, save custom order to storage (already works)
-- On next load: if no custom order exists, use tab-count sort
-- New domains (not in saved order) sort by count among other unordered groups
+- Add a "Reset sort order" option to SettingsPanel
+- When clicked: clear `groupOrder` from storage, re-fetch tabs (triggers default count sort)
+- This is a UX gap, not a missing algorithm — the sorting logic is already correct
 
-**Files:** `tab-store.ts` — modify `groupTabsByDomain` call or add sort after grouping
+**Files:** `SettingsPanel.tsx` (add button), `settings-store.ts` or `storage.ts` (clear groupOrder), `App.tsx` (wire handler)
 
 ---
 
 ## Phase 3: Visual Polish
 
-### 3.1 Skeleton Loading Screen
+### 3.1 Skeleton Loading Screen Enhancement
 
-**Current state:** `LoadingState` component shows three bouncing dots.
+**Current state:** `LoadingState` already uses skeleton placeholders with `animate-pulse` (3 cards with header + chip bars). Good foundation but could better match the real DomainCard layout (especially after 2.1 adds favicons).
 
 **Change:**
-- Replace with 2-3 skeleton cards matching DomainCard layout
-- Each skeleton: status bar (gray) + header row (favicon circle + name bar) + 3 chip bars
-- Use `animate-pulse` (Tailwind) or shimmer gradient animation
-- Cards should have the same dimensions as real DomainCards
+- Enhance existing skeleton to mirror optimized DomainCard structure:
+  - Add favicon circle (20x20 rounded) before name bar
+  - Add tab count badge skeleton after name
+  - Add 3px status bar at top (gray) matching card accent bar
+  - Add "Close all" button skeleton at bottom
+- Consider using `columns-[300px]` to match the masonry layout of real cards
+- Optional: shimmer gradient (`background: linear-gradient(...)`) instead of `animate-pulse` for premium feel
 
-**Files:** `LoadingState.tsx` — complete rewrite of content
+**Files:** `LoadingState.tsx` — enhance existing skeleton structure
 
 ### 3.2 TabChip Exit Animation
 
@@ -210,8 +213,8 @@
 |---|------|-------|-------------|
 | 2.2 | Dupe chip styling | TabChip.tsx, DomainCard.tsx | Small — CSS changes |
 | 2.4 | Header summary pills | Header.tsx | Small — add elements |
-| 2.5 | Tab count sort | tab-store.ts | Small — sort logic |
-| 3.1 | Skeleton loading | LoadingState.tsx | Medium — rewrite |
+| 2.5 | Sort reset button | SettingsPanel.tsx, storage.ts | Small — add button |
+| 3.1 | Skeleton enhancement | LoadingState.tsx | Small — enhance existing |
 | 3.3 | Footer count pop | Footer.tsx | Small — animation |
 
 ### P2 — Design Required (1-2 days)
@@ -240,13 +243,14 @@
 ## Files Touched
 
 ```
-src/newtab/App.tsx                  — keyboard nav state, batch selection state
-src/newtab/hooks/useKeyboard.ts     — wire up key handlers
-src/newtab/components/TabChip.tsx   — button visibility, active dot, dupe styling, exit anim
-src/newtab/components/DomainCard.tsx — favicon, dupe badge, hover lift
-src/newtab/components/Header.tsx    — summary pills
-src/newtab/components/Footer.tsx    — count pop animation
-src/newtab/components/LoadingState.tsx — skeleton screen
+src/newtab/App.tsx                     — keyboard nav state, batch selection state, tab summary data
+src/newtab/hooks/useKeyboard.ts        — add standalone D/S key handlers
+src/newtab/components/TabChip.tsx      — button visibility, active dot, dupe styling, exit anim
+src/newtab/components/DomainCard.tsx   — favicon, dupe badge, hover lift, pass active prop
+src/newtab/components/Header.tsx       — summary pills (new props: totalTabs, totalDupes, totalDomains)
+src/newtab/components/Footer.tsx       — count pop animation
+src/newtab/components/LoadingState.tsx — enhance existing skeleton
+src/newtab/components/SettingsPanel.tsx — sort reset button
 src/newtab/components/SelectionBar.tsx — NEW: batch action bar
-src/stores/tab-store.ts             — auto-sort by tab count
+src/utils/storage.ts                   — clearGroupOrder helper for sort reset
 ```
