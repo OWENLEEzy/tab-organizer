@@ -53,7 +53,7 @@ export function DeferredColumn({
   return (
     <aside className="w-72 shrink-0">
       {/* ── Section header ─────────────────────────────────── */}
-      <div className="flex items-center gap-3 mb-3">
+      <div className="mb-3 flex items-center gap-3">
         <h2 className="font-heading text-text-primary-light dark:text-text-primary-dark text-base font-semibold whitespace-nowrap">
           Saved for later
         </h2>
@@ -88,7 +88,7 @@ export function DeferredColumn({
         <div className="mt-4">
           <button
             type="button"
-            className="text-text-secondary hover:text-text-primary-light dark:hover:text-text-primary-dark flex w-full items-center gap-1.5 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none rounded-chip cursor-pointer"
+            className="text-text-secondary hover:text-text-primary-light dark:hover:text-text-primary-dark focus-visible:ring-accent-blue/40 rounded-chip flex min-h-11 w-full cursor-pointer items-center gap-1.5 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
             onClick={toggleArchive}
             aria-expanded={archiveOpen}
           >
@@ -117,10 +117,11 @@ export function DeferredColumn({
             <div className="mt-2">
               <input
                 type="text"
-                className="border-border-light dark:border-border-dark bg-bg-light dark:bg-bg-dark text-text-primary-light dark:text-text-primary-dark w-full rounded-chip border px-2.5 py-1.5 text-sm placeholder:text-text-secondary outline-none focus:border-accent-sage focus-visible:ring-2 focus-visible:ring-accent-blue/40 transition-colors"
+                className="border-border-light dark:border-border-dark bg-bg-light dark:bg-bg-dark text-text-primary-light dark:text-text-primary-dark rounded-chip placeholder:text-text-secondary focus:border-accent-sage focus-visible:ring-accent-blue/40 min-h-11 w-full border px-3 py-1.5 text-sm transition-colors outline-none focus-visible:ring-2"
                 placeholder="Search archived tabs..."
                 value={archiveSearch}
                 onChange={handleSearchInput}
+                aria-label="Search archived tabs"
               />
               <div className="mt-1.5 flex max-h-60 flex-col gap-0.5 overflow-y-auto">
                 {filteredArchived.map((item) => (

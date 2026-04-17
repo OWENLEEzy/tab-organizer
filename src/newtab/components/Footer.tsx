@@ -29,11 +29,11 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
   const AUTHOR_URL = 'https://x.com/zarazhangrui';
 
   return (
-    <footer className="mt-12 border-t border-border-light pt-5 dark:border-border-dark">
-      <div className="flex items-center justify-between text-xs text-text-secondary">
+    <footer className="border-border-light dark:border-border-dark mt-12 border-t pt-5">
+      <div className="text-text-secondary flex items-center justify-between text-xs">
         <div className="stat">
           <span
-            className={`font-heading text-lg font-light text-text-primary-light dark:text-text-primary-dark inline-block${popping ? ' animate-[countPop_0.3s_ease]' : ''}`}
+            className={`font-heading text-text-primary-light dark:text-text-primary-dark inline-block text-lg font-light${popping ? ' animate-[countPop_0.3s_ease]' : ''}`}
           >
             {tabCount}
           </span>
@@ -43,7 +43,7 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
           <a
             href={GITHUB_URL}
             target="_top"
-            className="text-text-secondary underline underline-offset-2 transition-colors hover:text-text-primary-light dark:hover:text-text-primary-dark"
+            className="text-text-secondary hover:text-text-primary-light dark:hover:text-text-primary-dark underline underline-offset-2 transition-colors"
           >
             Tab Out
           </a>
@@ -51,7 +51,7 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
           <a
             href={AUTHOR_URL}
             target="_top"
-            className="text-text-secondary underline underline-offset-2 transition-colors hover:text-text-primary-light dark:hover:text-text-primary-dark"
+            className="text-text-secondary hover:text-text-primary-light dark:hover:text-text-primary-dark underline underline-offset-2 transition-colors"
           >
             Zara
           </a>

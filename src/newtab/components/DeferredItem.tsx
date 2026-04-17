@@ -52,11 +52,11 @@ export function DeferredItem({
   };
 
   return (
-    <div className="group flex items-start gap-2 rounded-chip px-2 py-1.5 hover:bg-bg-light dark:hover:bg-bg-dark transition-colors">
+    <div className="group rounded-chip hover:bg-bg-light dark:hover:bg-bg-dark flex items-start gap-2 px-2 py-1.5 transition-colors">
       {/* Checkbox */}
       <input
         type="checkbox"
-        className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-accent-sage"
+        className="accent-accent-sage mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
         onChange={handleCheckboxChange}
         aria-label={`Check off ${item.title || item.url}`}
       />
@@ -67,7 +67,7 @@ export function DeferredItem({
           href={item.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-text-primary-light dark:text-text-primary-dark text-sm font-medium leading-snug hover:text-accent-blue transition-colors truncate block"
+          className="text-text-primary-light dark:text-text-primary-dark hover:text-accent-blue block truncate text-sm leading-snug font-medium transition-colors"
           title={item.title || item.url}
         >
           {faviconUrl && (
@@ -93,7 +93,7 @@ export function DeferredItem({
       {/* Dismiss button */}
       <button
         type="button"
-        className="text-text-secondary mt-0.5 shrink-0 rounded p-0.5 opacity-40 transition-opacity hover:text-accent-red group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none cursor-pointer"
+        className="text-text-secondary hover:text-accent-red focus-visible:ring-accent-blue/40 mt-0.5 flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded opacity-40 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:outline-none"
         onClick={handleDismiss}
         title="Dismiss"
         aria-label={`Dismiss ${item.title || item.url}`}
@@ -129,12 +129,12 @@ export function ArchiveItem({ item }: ArchiveItemProps): React.ReactElement {
     : timeAgo(item.savedAt);
 
   return (
-    <div className="flex items-center gap-2 rounded-chip px-2 py-1 text-sm">
+    <div className="rounded-chip flex items-center gap-2 px-2 py-1 text-sm">
       <a
         href={item.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-text-secondary line-through decoration-border-light dark:decoration-border-dark hover:text-accent-blue truncate transition-colors"
+        className="text-text-secondary decoration-border-light dark:decoration-border-dark hover:text-accent-blue truncate line-through transition-colors"
         title={item.title || item.url}
       >
         {item.title || item.url}
