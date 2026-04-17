@@ -437,7 +437,7 @@ export function App(): React.ReactElement {
       {/* Skip to main content — keyboard accessibility */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:rounded-chip focus:bg-accent-blue focus:px-4 focus:py-2 focus:text-sm focus:text-white focus:outline-none"
+        className="focus:rounded-chip focus:bg-accent-blue sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:text-sm focus:text-white focus:outline-none"
       >
         Skip to main content
       </a>
@@ -474,20 +474,20 @@ export function App(): React.ReactElement {
         ) : (
           <div className={`dashboard-columns ${hasDeferredContent ? 'has-sidebar' : ''}`}>
             {/* Left column: open tabs */}
-            <div id="main-content" className="active-section">
+            <main id="main-content" tabIndex={-1} className="active-section">
               {filteredGroups.length > 0 && (
                 <div className="section-header">
-                  <h2 className="font-heading text-base font-semibold text-text-primary-light dark:text-text-primary-dark">
+                  <h2 className="font-heading text-text-primary-light dark:text-text-primary-dark text-base font-semibold">
                     Right now
                   </h2>
                   <div className="border-border-light dark:border-border-dark mx-3 h-px flex-1" />
-                  <span className="text-xs text-text-secondary whitespace-nowrap">
+                  <span className="text-text-secondary text-xs whitespace-nowrap">
                     {filteredTabCount} tab{filteredTabCount !== 1 ? 's' : ''}
                   </span>
                   {/* Close all button */}
                   <button
                     type="button"
-                    className="ml-2 cursor-pointer rounded-chip px-2.5 py-1 text-xs text-text-secondary transition-colors hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none"
+                    className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-blue/40 ml-2 min-h-11 cursor-pointer px-3 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
                     onClick={handleCloseAll}
                   >
                     Close all
@@ -540,7 +540,7 @@ export function App(): React.ReactElement {
                   </SortableContext>
                 </DndContext>
               )}
-            </div>
+            </main>
 
             {/* Right column: Saved for Later */}
             <DeferredColumn
@@ -560,7 +560,7 @@ export function App(): React.ReactElement {
         {/* Settings gear (bottom-right) */}
         <button
           type="button"
-          className="fixed bottom-5 right-5 flex h-9 w-9 items-center justify-center rounded-full border border-border-light bg-bg-light text-text-secondary shadow-card transition-all hover:shadow-card-hover hover:text-text-primary-light dark:border-border-dark dark:bg-bg-dark dark:hover:text-text-primary-dark focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none cursor-pointer z-40"
+          className="border-border-light bg-bg-light text-text-secondary shadow-card hover:shadow-card-hover hover:text-text-primary-light focus-visible:ring-accent-blue/40 dark:border-border-dark dark:bg-bg-dark dark:hover:text-text-primary-dark fixed right-5 bottom-5 z-40 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border transition-all focus-visible:ring-2 focus-visible:outline-none"
           onClick={() => setSettingsOpen(true)}
           aria-label="Settings"
         >

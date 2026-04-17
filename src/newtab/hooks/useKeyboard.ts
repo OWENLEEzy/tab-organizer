@@ -41,10 +41,18 @@ export function useKeyboard(actions: KeyboardActions): void {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isMod = e.metaKey || e.ctrlKey;
       const target = e.target as HTMLElement | null;
+      const activeElement = document.activeElement as HTMLElement | null;
       const isInputField =
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
         target?.isContentEditable === true;
+      const isInsideDialog = Boolean(
+        activeElement?.closest('[role="dialog"][aria-modal="true"]'),
+      );
+
+      if (isInsideDialog) {
+        return;
+      }
 
       // Cmd/Ctrl + K -> onSearch
       if (isMod && e.key === 'k') {

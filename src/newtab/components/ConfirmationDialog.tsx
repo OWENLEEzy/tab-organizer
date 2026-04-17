@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { ConfirmDialogProps } from '../../types';
 
 // ─── Component ────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ export function ConfirmationDialog({
     const focusableSelector =
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
-    const previouslyFocused = document.activeElement as HTMLElement;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
 
     const focusableElements = dialog.querySelectorAll<HTMLElement>(focusableSelector);
     if (focusableElements.length > 0) {
@@ -70,55 +70,56 @@ export function ConfirmationDialog({
     dialog.addEventListener('keydown', handleTabKey);
     return () => {
       dialog.removeEventListener('keydown', handleTabKey);
-      if (previouslyFocused) {
+      if (previouslyFocused?.isConnected) {
         previouslyFocused.focus();
       }
     };
   }, [open]);
-
-  const handleBackdropClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>): void => {
-      if (e.target === e.currentTarget) {
-        onCancel();
-      }
-    },
-    [onCancel],
-  );
 
   if (!open) {
     return null;
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
-      onClick={handleBackdropClick}
-      onKeyDown={handleBackdropClick as unknown as React.KeyboardEventHandler<HTMLDivElement>}
-      aria-modal="true"
-      role="dialog"
-      aria-label={title}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Dismiss backdrop"
+        className="absolute inset-0 bg-black/30"
+        onClick={onCancel}
+      />
       <div
         ref={dialogRef}
-        className="w-full max-w-sm rounded-card bg-bg-light p-6 shadow-card-hover dark:bg-bg-dark animate-[fadeUp_0.3s_ease_both]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
+        aria-describedby="confirm-dialog-description"
+        className="rounded-card bg-bg-light shadow-card-hover dark:bg-bg-dark relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] p-6"
       >
-        <h3 className="font-heading text-lg font-semibold text-text-primary-light dark:text-text-primary-dark">
+        <h3
+          id="confirm-dialog-title"
+          className="font-heading text-text-primary-light dark:text-text-primary-dark text-lg font-semibold"
+        >
           {title}
         </h3>
-        <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+        <p
+          id="confirm-dialog-description"
+          className="text-text-secondary mt-2 text-sm leading-relaxed"
+        >
           {message}
         </p>
         <div className="mt-5 flex items-center justify-end gap-3">
           <button
             type="button"
-            className="rounded-chip px-4 py-2 text-sm font-body text-text-secondary transition-colors hover:bg-surface-light dark:hover:bg-surface-dark focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none cursor-pointer"
+            className="rounded-chip font-body text-text-secondary hover:bg-surface-light focus-visible:ring-accent-blue/40 dark:hover:bg-surface-dark min-h-11 cursor-pointer px-4 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
             onClick={onCancel}
           >
             Cancel
           </button>
           <button
             type="button"
-            className="rounded-chip bg-accent-red px-4 py-2 text-sm font-body font-semibold text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent-red/50 focus-visible:outline-none cursor-pointer"
+            className="rounded-chip bg-accent-red font-body focus-visible:ring-accent-red/50 min-h-11 cursor-pointer px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
             onClick={onConfirm}
           >
             {confirmLabel}

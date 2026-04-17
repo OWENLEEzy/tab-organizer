@@ -109,7 +109,7 @@ export function TabChip({
   const displayLabel = buildLabel(title, url);
   const safeUrl = sanitizeUrl(url);
 
-  const chipRef = useRef<HTMLDivElement>(null);
+  const chipRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (isFocused && chipRef.current) {
@@ -152,7 +152,7 @@ export function TabChip({
   );
 
   const chipClasses = [
-    'group flex items-center gap-2 rounded-chip px-2.5 py-1.5',
+    'flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-chip px-2.5 py-1.5',
     'cursor-pointer transition-colors duration-150',
     isSelected ? '' : 'hover:bg-surface-light dark:hover:bg-surface-dark',
     'focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none',
@@ -166,58 +166,54 @@ export function TabChip({
     .join(' ');
 
   return (
-    <div
-      ref={chipRef}
-      className={chipClasses}
-      data-tab-url={safeUrl}
-      title={displayLabel}
-      onClick={handleClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onFocus(url);
-        }
-      }}
-    >
-      {/* Active indicator dot */}
-      {active && (
-        <span
-          className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-sage"
-          style={{ boxShadow: '0 0 0 2px rgba(77,171,154,0.2)' }}
-          aria-hidden="true"
-        />
-      )}
+    <div className={`group flex items-center gap-1${isClosing ? ' chip-closing' : ''}`}>
+      <button
+        ref={chipRef}
+        type="button"
+        className={chipClasses}
+        data-tab-url={safeUrl}
+        title={displayLabel}
+        onClick={handleClick}
+        aria-current={active ? 'page' : undefined}
+      >
+        {/* Active indicator dot */}
+        {active && (
+          <span
+            className="bg-accent-sage h-1.5 w-1.5 shrink-0 rounded-full"
+            style={{ boxShadow: '0 0 0 2px rgba(77,171,154,0.2)' }}
+            aria-hidden="true"
+          />
+        )}
 
-      {/* Favicon */}
-      {faviconUrl && (
-        <img
-          className="h-4 w-4 shrink-0"
-          src={faviconUrl}
-          alt=""
-          onError={handleImageError}
-        />
-      )}
+        {/* Favicon */}
+        {faviconUrl && (
+          <img
+            className="h-4 w-4 shrink-0"
+            src={faviconUrl}
+            alt=""
+            onError={handleImageError}
+          />
+        )}
 
-      {/* Title */}
-      <span className={`truncate text-sm text-text-primary-light dark:text-text-primary-dark font-body${active ? ' font-semibold' : ''}`}>
-        {displayLabel}
-      </span>
-
-      {/* Duplicate badge */}
-      {duplicateCount > 1 && (
-        <span className="shrink-0 text-xs text-accent-amber font-body font-medium">
-          ×{duplicateCount}
+        {/* Title */}
+        <span className={`font-body text-text-primary-light dark:text-text-primary-dark min-w-0 flex-1 truncate text-sm${active ? ' font-semibold' : ''}`}>
+          {displayLabel}
         </span>
-      )}
+
+        {/* Duplicate badge */}
+        {duplicateCount > 1 && (
+          <span className="font-body text-accent-amber shrink-0 text-xs font-medium">
+            ×{duplicateCount}
+          </span>
+        )}
+      </button>
 
       {/* Action buttons — visible on hover, hidden in selection mode */}
       {!isSelected && (
         <div className="ml-auto flex shrink-0 items-center gap-1 opacity-40 transition-opacity duration-150 group-hover:opacity-100">
           <button
             type="button"
-            className="rounded-chip p-1 text-text-secondary transition-colors duration-150 hover:text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none cursor-pointer"
+            className="rounded-chip text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue focus-visible:ring-accent-blue/40 flex h-11 w-11 cursor-pointer items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
             onClick={handleSave}
             title="Save for later"
             aria-label={`Save ${displayLabel} for later`}
@@ -226,7 +222,7 @@ export function TabChip({
           </button>
           <button
             type="button"
-            className="rounded-chip p-1 text-text-secondary transition-colors duration-150 hover:text-accent-red hover:bg-accent-red/10 focus-visible:ring-2 focus-visible:ring-accent-red/40 focus-visible:outline-none cursor-pointer"
+            className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-red/40 flex h-11 w-11 cursor-pointer items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
             onClick={handleClose}
             title="Close this tab"
             aria-label={`Close ${displayLabel}`}

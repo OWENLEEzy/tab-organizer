@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -28,6 +28,7 @@ export function SettingsPanel({
   onResetSortOrder,
 }: SettingsPanelProps): React.ReactElement | null {
   const panelRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Close on Escape key
   useEffect(() => {
@@ -43,41 +44,83 @@ export function SettingsPanel({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [open, onClose]);
 
-  const handleBackdropClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>): void => {
-      if (e.target === e.currentTarget) {
-        onClose();
+  useEffect(() => {
+    if (!open) return;
+
+    const activePanel = panelRef.current;
+    if (!activePanel) return;
+
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+
+    const focusableSelector =
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const focusables = activePanel.querySelectorAll<HTMLElement>(focusableSelector);
+    focusables[0]?.focus();
+
+    function handleTabKey(e: KeyboardEvent): void {
+      if (e.key !== 'Tab') return;
+
+      const currentFocusables = activePanel!.querySelectorAll<HTMLElement>(focusableSelector);
+      if (currentFocusables.length === 0) return;
+
+      const firstFocusable = currentFocusables[0];
+      const lastFocusable = currentFocusables[currentFocusables.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstFocusable) {
+          e.preventDefault();
+          lastFocusable.focus();
+        }
+        return;
       }
-    },
-    [onClose],
-  );
+
+      if (document.activeElement === lastFocusable) {
+        e.preventDefault();
+        firstFocusable.focus();
+      }
+    }
+
+    activePanel.addEventListener('keydown', handleTabKey);
+    return () => {
+      activePanel.removeEventListener('keydown', handleTabKey);
+      if (previousFocusRef.current?.isConnected) {
+        previousFocusRef.current.focus();
+      }
+    };
+  }, [open]);
 
   if (!open) {
     return null;
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
-      onClick={handleBackdropClick}
-      onKeyDown={handleBackdropClick as unknown as React.KeyboardEventHandler<HTMLDivElement>}
-      aria-modal="true"
-      role="dialog"
-      aria-label="Settings"
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Dismiss backdrop"
+        className="absolute inset-0 bg-black/30"
+        onClick={onClose}
+      />
       <div
         ref={panelRef}
-        className="w-full max-w-sm rounded-card bg-bg-light p-6 shadow-card-hover dark:bg-bg-dark animate-[fadeUp_0.3s_ease_both]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-title"
+        className="rounded-card bg-bg-light shadow-card-hover dark:bg-bg-dark relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] p-6"
       >
         {/* Title + Close */}
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="font-heading text-lg font-semibold text-text-primary-light dark:text-text-primary-dark">
+        <div className="mb-6 flex items-center justify-between">
+          <h3
+            id="settings-title"
+            className="font-heading text-text-primary-light dark:text-text-primary-dark text-lg font-semibold"
+          >
             Settings
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-chip text-text-secondary transition-colors hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none cursor-pointer"
+            className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light focus-visible:ring-accent-blue/40 dark:hover:bg-surface-dark dark:hover:text-text-primary-dark flex h-11 w-11 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
             aria-label="Close settings"
           >
             <svg
@@ -115,13 +158,13 @@ export function SettingsPanel({
           />
           {/* Sort order reset */}
           <div className="flex items-center justify-between">
-            <span className="text-sm font-body text-text-primary-light dark:text-text-primary-dark">
+            <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm">
               Sort order
             </span>
             <button
               type="button"
               onClick={onResetSortOrder}
-              className="rounded-chip px-3 py-1 text-xs font-body text-accent-blue transition-colors hover:bg-accent-blue/10 focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none cursor-pointer"
+              className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 min-h-11 cursor-pointer px-3 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
             >
               Reset to default
             </button>
@@ -148,16 +191,23 @@ const THEME_OPTIONS: { value: 'light' | 'dark' | 'system'; label: string }[] = [
 function ThemeRow({ value, onChange }: ThemeRowProps): React.ReactElement {
   return (
     <div className="flex items-center justify-between">
-      <label className="text-sm font-body text-text-primary-light dark:text-text-primary-dark">
+      <span
+        id="theme-label"
+        className="font-body text-text-primary-light dark:text-text-primary-dark text-sm"
+      >
         Theme
-      </label>
-      <div className="inline-flex rounded-chip border border-border-light dark:border-border-dark overflow-hidden">
+      </span>
+      <div
+        role="group"
+        aria-labelledby="theme-label"
+        className="rounded-chip border-border-light dark:border-border-dark inline-flex overflow-hidden border"
+      >
         {THEME_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             type="button"
             onClick={() => onChange(opt.value)}
-            className={`px-3 py-1 text-xs font-body transition-colors cursor-pointer ${
+            className={`font-body min-h-11 min-w-11 cursor-pointer px-4 text-xs transition-colors ${
               value === opt.value
                 ? 'bg-accent-sage text-white'
                 : 'text-text-secondary hover:bg-surface-light dark:hover:bg-surface-dark'
@@ -185,7 +235,7 @@ function ToggleRow({ id, label, checked, onChange }: ToggleRowProps): React.Reac
     <div className="flex items-center justify-between">
       <label
         htmlFor={id}
-        className="text-sm font-body text-text-primary-light dark:text-text-primary-dark"
+        className="font-body text-text-primary-light dark:text-text-primary-dark text-sm"
       >
         {label}
       </label>
@@ -195,15 +245,15 @@ function ToggleRow({ id, label, checked, onChange }: ToggleRowProps): React.Reac
         role="switch"
         aria-checked={checked}
         onClick={onChange}
-        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:ring-offset-2 ${
+        className={`focus-visible:ring-accent-blue/40 relative inline-flex h-11 w-14 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
           checked
             ? 'bg-accent-sage'
             : 'bg-border-light dark:bg-border-dark'
         }`}
       >
         <span
-          className={`pointer-events-none inline-block h-5 w-5 translate-y-0.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-            checked ? 'translate-x-[22px]' : 'translate-x-0.5'
+          className={`pointer-events-none inline-block h-6 w-6 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+            checked ? 'translate-x-7' : 'translate-x-1.5'
           }`}
           aria-hidden="true"
         />
