@@ -1,10 +1,22 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { getFaviconUrl, getHostname, sanitizeUrl } from '../../utils/url';
 import {
   cleanTitle,
   smartTitle,
   stripTitleNoise,
 } from '../../lib/title-cleaner';
+
+// ─── Touch device detection ────────────────────────────────────────
+
+function isTouchDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    'ontouchstart' in window ||
+    navigator.maxTouchPoints > 0 ||
+    // @ts-expect-error - vendor prefix
+    navigator.msMaxTouchPoints > 0
+  );
+}
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -16,6 +28,7 @@ interface TabChipProps {
   isFocused?: boolean;
   isClosing?: boolean;
   isSelected?: boolean;
+  selectionMode?: boolean;
   onFocus: (url: string) => void;
   onClose: (url: string, title: string) => void;
   onSave: (url: string, title: string) => void;
@@ -99,6 +112,7 @@ export function TabChip({
   isFocused = false,
   isClosing = false,
   isSelected = false,
+  selectionMode = false,
   onFocus,
   onClose,
   onSave,
@@ -110,6 +124,8 @@ export function TabChip({
   const safeUrl = sanitizeUrl(url);
 
   const chipRef = useRef<HTMLButtonElement>(null);
+  // Detect touch device once per component lifecycle
+  const [isTouch] = useState(() => isTouchDevice());
 
   useEffect(() => {
     if (isFocused && chipRef.current) {
@@ -119,13 +135,13 @@ export function TabChip({
   }, [isFocused]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
-    if (onChipClick && (e.shiftKey || e.metaKey || e.ctrlKey)) {
+    if (onChipClick && (selectionMode || e.shiftKey || e.metaKey || e.ctrlKey)) {
       e.stopPropagation();
       onChipClick(url, e);
       return;
     }
     onFocus(url);
-  }, [onFocus, onChipClick, url]);
+  }, [onFocus, onChipClick, selectionMode, url]);
 
   const handleClose = useCallback(
     (e: React.MouseEvent) => {
@@ -208,9 +224,9 @@ export function TabChip({
         )}
       </button>
 
-      {/* Action buttons — visible on hover, hidden in selection mode */}
+      {/* Action buttons — always visible on touch, visible on hover for desktop */}
       {!isSelected && (
-        <div className="ml-auto flex shrink-0 items-center gap-1 opacity-40 transition-opacity duration-150 group-hover:opacity-100">
+        <div className={`ml-auto flex shrink-0 items-center gap-1 transition-opacity duration-150 ${isTouch ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`}>
           <button
             type="button"
             className="rounded-chip text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue focus-visible:ring-accent-blue/40 flex h-11 w-11 cursor-pointer items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"

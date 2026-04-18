@@ -13,7 +13,7 @@ interface SelectionBarProps {
 
 export function SelectionBar({ count, onClose, onSave, onClear }: SelectionBarProps): React.ReactElement {
   return (
-    <div className="rounded-card border-border-light bg-card-light shadow-card-hover dark:border-border-dark dark:bg-card-dark fixed bottom-5 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-3 border px-5 py-3">
+    <div className="rounded-card border-border-light bg-card-light shadow-card-hover dark:border-border-dark dark:bg-card-dark fixed bottom-5 left-1/2 z-[60] flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-3 border px-5 py-3">
       <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm">
         {count} selected
       </span>

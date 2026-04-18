@@ -23,6 +23,8 @@ import { useSettingsStore } from '../stores/settings-store';
 import { clearGroupOrder } from '../utils/storage';
 import { useChromeStorage } from './hooks/useChromeStorage';
 import { useKeyboard } from './hooks/useKeyboard';
+import { flattenVisibleTabs } from './lib/visible-tabs';
+import { getChipCloseDelay, userPrefersReducedMotion } from './lib/motion';
 import { playCloseEffects } from '../lib/close-effects';
 import { isTabOutPage } from '../utils/url';
 import { LANDING_PAGES_KEY } from '../lib/tab-grouper';
@@ -51,6 +53,7 @@ export function App(): React.ReactElement {
   const [closingUrls, setClosingUrls] = useState<Set<string>>(new Set());
   const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
   const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
+  const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── Stores ────────────────────────────────────────────────────────
@@ -139,12 +142,14 @@ export function App(): React.ReactElement {
     },
     onArrowUp: () => {
       setFocusedIndex((prev) => {
+        if (flatChips.length === 0) return null;
         if (prev === null) return flatChips.length - 1;
         return prev > 0 ? prev - 1 : flatChips.length - 1;
       });
     },
     onArrowDown: () => {
       setFocusedIndex((prev) => {
+        if (flatChips.length === 0) return null;
         if (prev === null) return 0;
         return prev < flatChips.length - 1 ? prev + 1 : 0;
       });
@@ -193,12 +198,11 @@ export function App(): React.ReactElement {
     [filteredGroups],
   );
 
-  // React Compiler handles this memoization automatically.
-  // Removing manual useMemo to avoid compiler conflict.
-  const flatChips =
-    filteredGroups.flatMap((group) =>
-      group.tabs.map((tab) => ({ url: tab.url, title: tab.title })),
-    );
+  const flatChips = flattenVisibleTabs(
+    filteredGroups,
+    settings.maxChipsVisible,
+    expandedDomains,
+  );
 
   const focusedUrl = focusedIndex !== null ? flatChips[focusedIndex]?.url ?? null : null;
 
@@ -251,8 +255,18 @@ export function App(): React.ReactElement {
 
   const handleCloseTabAnimated = useCallback(
     (url: string) => {
-      setClosingUrls((prev) => new Set([...prev, url]));
+      const closeDelay = getChipCloseDelay(userPrefersReducedMotion());
+
       playCloseEffects(settings);
+
+      if (closeDelay === 0) {
+        tabStore.closeTabByUrl(url).then(() => {
+          showToast('Tab closed');
+        });
+        return;
+      }
+
+      setClosingUrls((prev) => new Set([...prev, url]));
       setTimeout(() => {
         tabStore.closeTabByUrl(url).then(() => {
           showToast('Tab closed');
@@ -262,7 +276,7 @@ export function App(): React.ReactElement {
             return next;
           });
         });
-      }, 350);
+      }, closeDelay);
     },
     [settings, tabStore, showToast],
   );
@@ -307,13 +321,16 @@ export function App(): React.ReactElement {
   const handleChipClick = useCallback(
     (url: string, event: React.MouseEvent) => {
       const chipIndex = flatChips.findIndex((c) => c.url === url);
+      if (chipIndex === -1) {
+        return;
+      }
 
       if (event.shiftKey && lastClickedIndex !== null) {
         const start = Math.min(lastClickedIndex, chipIndex);
         const end = Math.max(lastClickedIndex, chipIndex);
         const rangeUrls = flatChips.slice(start, end + 1).map((c) => c.url);
         setSelectedUrls((prev) => new Set([...prev, ...rangeUrls]));
-      } else if (event.metaKey || event.ctrlKey) {
+      } else if (event.metaKey || event.ctrlKey || selectedUrls.size > 0) {
         setSelectedUrls((prev) => {
           const next = new Set(prev);
           if (next.has(url)) {
@@ -326,7 +343,7 @@ export function App(): React.ReactElement {
       }
       setLastClickedIndex(chipIndex);
     },
-    [flatChips, lastClickedIndex],
+    [flatChips, lastClickedIndex, selectedUrls],
   );
 
   const handleClearSelection = useCallback(() => {
@@ -334,10 +351,24 @@ export function App(): React.ReactElement {
     setLastClickedIndex(null);
   }, []);
 
+  const handleToggleExpanded = useCallback((domain: string) => {
+    setExpandedDomains((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(domain)) {
+        next.delete(domain);
+      } else {
+        next.add(domain);
+      }
+
+      return next;
+    });
+  }, []);
+
   const handleCloseSelected = useCallback(() => {
     const urls = [...selectedUrls];
     playCloseEffects(settings);
-    tabStore.closeTabsExact(urls).then(() => {
+    tabStore.closeOneTabPerUrl(urls).then(() => {
       showToast(`Closed ${urls.length} tab${urls.length !== 1 ? 's' : ''}`);
       setSelectedUrls(new Set());
     });
@@ -438,6 +469,7 @@ export function App(): React.ReactElement {
       <a
         href="#main-content"
         className="focus:rounded-chip focus:bg-accent-blue sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:text-sm focus:text-white focus:outline-none"
+        style={{ zIndex: 60 }}
       >
         Skip to main content
       </a>
@@ -500,11 +532,13 @@ export function App(): React.ReactElement {
                     <DomainCard
                       key={group.domain}
                       group={group}
+                      expanded={expandedDomains.has(group.domain)}
                       maxChipsVisible={settings.maxChipsVisible}
                       focusedUrl={focusedUrl}
                       closingUrls={closingUrls}
                       selectedUrls={selectedUrls}
                       onChipClick={handleChipClick}
+                      onToggleExpanded={handleToggleExpanded}
                       onCloseDomain={handleCloseDomain}
                       onCloseDuplicates={handleCloseDuplicates}
                       onCloseTab={handleCloseTabAnimated}
@@ -524,6 +558,7 @@ export function App(): React.ReactElement {
                         <SortableDomainCard
                           key={group.domain}
                           group={group}
+                          expanded={expandedDomains.has(group.domain)}
                           maxChipsVisible={settings.maxChipsVisible}
                           onCloseDomain={handleCloseDomain}
                           onCloseDuplicates={handleCloseDuplicates}
@@ -534,6 +569,7 @@ export function App(): React.ReactElement {
                           closingUrls={closingUrls}
                           selectedUrls={selectedUrls}
                           onChipClick={handleChipClick}
+                          onToggleExpanded={handleToggleExpanded}
                         />
                       ))}
                     </div>

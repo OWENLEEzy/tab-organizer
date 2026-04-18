@@ -12,6 +12,8 @@ interface TabActions {
   fetchTabs: () => Promise<void>;
   /** Close a single tab matching the exact URL. */
   closeTabByUrl: (url: string) => Promise<void>;
+  /** Close one exact-match tab for each given URL. */
+  closeOneTabPerUrl: (urls: string[]) => Promise<void>;
   /** Close tabs whose hostname matches any of the given URLs (file:// matched exactly). */
   closeTabsByUrls: (urls: string[]) => Promise<void>;
   /** Close tabs matching exact URLs (used for landing pages). */
@@ -119,6 +121,22 @@ export const useTabStore = create<TabStore>((set) => ({
     if (match?.id != null) {
       await chrome.tabs.remove(match.id);
     }
+    await useTabStore.getState().fetchTabs();
+  },
+
+  closeOneTabPerUrl: async (urls: string[]) => {
+    if (!urls || urls.length === 0) return;
+
+    const uniqueUrls = [...new Set(urls)];
+    const allTabs = await chrome.tabs.query({});
+    const toClose = uniqueUrls
+      .map((url) => allTabs.find((tab) => tab.url === url)?.id)
+      .filter((id): id is number => id != null);
+
+    if (toClose.length > 0) {
+      await chrome.tabs.remove(toClose);
+    }
+
     await useTabStore.getState().fetchTabs();
   },
 

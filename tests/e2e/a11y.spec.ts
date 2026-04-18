@@ -25,9 +25,7 @@ test.describe('a11y harness', () => {
   test('has no serious axe violations', async ({ page }) => {
     await page.goto('/a11y-harness.html');
 
-    const results = await new AxeBuilder({ page })
-      .disableRules(['color-contrast'])
-      .analyze();
+    const results = await new AxeBuilder({ page }).analyze();
 
     expect(results.violations).toEqual([]);
   });

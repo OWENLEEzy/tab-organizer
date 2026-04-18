@@ -1,13 +1,15 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import type { TabGroup } from '../../types';
 import { TabChip } from './TabChip';
 import { getFaviconUrl } from '../../utils/url';
+import { getVisibleTabs } from '../lib/visible-tabs';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
 interface DomainCardProps {
   group: TabGroup;
   dragHandleProps?: Record<string, unknown>;
+  expanded?: boolean;
   maxChipsVisible?: number;
   onCloseDomain: (group: TabGroup) => void;
   onCloseDuplicates: (urls: string[]) => void;
@@ -18,6 +20,7 @@ interface DomainCardProps {
   closingUrls?: Set<string>;
   selectedUrls?: Set<string>;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
+  onToggleExpanded?: (domain: string) => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -91,6 +94,7 @@ function DedupIcon(): React.ReactElement {
 export function DomainCard({
   group,
   dragHandleProps,
+  expanded = false,
   maxChipsVisible = DEFAULT_MAX_CHIPS,
   onCloseDomain,
   onCloseDuplicates,
@@ -101,12 +105,12 @@ export function DomainCard({
   closingUrls,
   selectedUrls,
   onChipClick,
+  onToggleExpanded,
 }: DomainCardProps): React.ReactElement {
-  const [expanded, setExpanded] = useState(false);
-
   const tabs = useMemo(() => group.tabs || [], [group.tabs]);
   const tabCount = tabs.length;
   const displayName = group.friendlyName || group.domain;
+  const selectionMode = (selectedUrls?.size ?? 0) > 0;
 
   // Count URL occurrences to detect duplicates
   const { urlCounts, dupeUrls, totalExtras } = useMemo(() => {
@@ -121,18 +125,10 @@ export function DomainCard({
 
   const hasDupes = dupeUrls.length > 0;
 
-  // Deduplicate for display: show each URL once, with (Nx) badge if duplicated
-  const uniqueTabs = useMemo(() => {
-    const seen = new Set<string>();
-    return tabs.filter((tab) => {
-      if (seen.has(tab.url)) return false;
-      seen.add(tab.url);
-      return true;
-    });
-  }, [tabs]);
-
-  const visibleTabs = uniqueTabs.slice(0, maxChipsVisible);
-  const hiddenTabs = uniqueTabs.slice(maxChipsVisible);
+  const { visibleTabs, hiddenTabs } = useMemo(
+    () => getVisibleTabs(tabs, maxChipsVisible, expanded),
+    [tabs, maxChipsVisible, expanded],
+  );
   const extraCount = hiddenTabs.length;
 
   // ─── Handlers ────────────────────────────────────────────────────────
@@ -147,8 +143,8 @@ export function DomainCard({
   }, [onCloseDuplicates, dupeUrls]);
 
   const handleExpand = useCallback(() => {
-    setExpanded((prev) => !prev);
-  }, []);
+    onToggleExpanded?.(group.domain);
+  }, [group.domain, onToggleExpanded]);
 
   const handleCloseTab = useCallback(
     (url: string) => {
@@ -241,34 +237,13 @@ export function DomainCard({
               isFocused={tab.url === focusedUrl}
               isClosing={closingUrls?.has(tab.url)}
               isSelected={selectedUrls?.has(tab.url)}
+              selectionMode={selectionMode}
               onFocus={handleFocusTab}
               onClose={handleCloseTab}
               onSave={handleSaveTab}
               onChipClick={onChipClick}
             />
           ))}
-
-          {/* Overflow hidden chips */}
-          {extraCount > 0 && expanded && (
-            <div className="flex flex-col gap-0.5">
-              {hiddenTabs.map((tab) => (
-                <TabChip
-                  key={tab.url}
-                  url={tab.url}
-                  title={tab.title}
-                  duplicateCount={urlCounts[tab.url] ?? 1}
-                  active={tab.active}
-                  isFocused={tab.url === focusedUrl}
-                  isClosing={closingUrls?.has(tab.url)}
-                  isSelected={selectedUrls?.has(tab.url)}
-                  onFocus={handleFocusTab}
-                  onClose={handleCloseTab}
-                  onSave={handleSaveTab}
-                  onChipClick={onChipClick}
-                />
-              ))}
-            </div>
-          )}
         </div>
 
         {/* "+N more" expand button */}

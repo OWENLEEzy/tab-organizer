@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tab Out — More is Less 完整优化方案</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'DM Sans', system-ui, sans-serif; background: #F7F6F3; color: #37352F; padding: 32px; max-width: 1100px; margin: 0 auto; }
+
+  h1 { font-family: 'Georgia', serif; font-size: 28px; font-weight: 300; margin-bottom: 4px; }
+  .subtitle { color: #6B6966; font-size: 14px; margin-bottom: 40px; }
+
+  /* ─── Section ─── */
+  .section { margin-bottom: 48px; }
+  .section-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #4DAB9A; color: #fff; font-size: 14px; font-weight: 600;
+    margin-right: 8px; vertical-align: middle;
+  }
+  .section h2 {
+    font-family: 'Georgia', serif; font-size: 20px; font-weight: 600;
+    display: inline; vertical-align: middle;
+  }
+  .section-meta {
+    display: flex; gap: 8px; margin: 8px 0 16px 36px; flex-wrap: wrap;
+  }
+  .tag {
+    padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 500;
+  }
+  .tag-easy { background: rgba(77,171,154,0.1); color: #4DAB9A; }
+  .tag-medium { background: rgba(223,171,1,0.1); color: #DFAB01; }
+  .tag-hard { background: rgba(235,87,87,0.1); color: #EB5757; }
+  .tag-impact { background: rgba(35,131,226,0.1); color: #2383E2; }
+
+  .spec-list { margin-left: 36px; }
+  .spec-item {
+    background: #FFFDF9; border-radius: 6px; padding: 16px; margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    border-left: 3px solid #4DAB9A;
+  }
+  .spec-item.amber { border-left-color: #DFAB01; }
+  .spec-item h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .spec-item p { font-size: 13px; color: #6B6966; line-height: 1.5; }
+  .spec-item code {
+    background: #F7F6F3; padding: 1px 6px; border-radius: 3px;
+    font-size: 12px; color: #37352F; font-family: 'SF Mono', Menlo, monospace;
+  }
+  .spec-item .detail { margin-top: 8px; padding-top: 8px; border-top: 1px solid #F0EFEC; }
+
+  /* ─── Visual demos ─── */
+  .demo-box {
+    background: #FFFDF9; border-radius: 8px; padding: 24px; margin: 16px 0 16px 36px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #E8E7E4;
+  }
+
+  /* Skeleton */
+  .skeleton {
+    background: linear-gradient(90deg, #E8E7E4 25%, #F0EFEC 50%, #E8E7E4 75%);
+    background-size: 200% 100%; border-radius: 4px;
+    animation: shimmer 1.5s infinite;
+  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  /* Card hover lift */
+  .demo-card {
+    background: #FFFDF9; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease;
+    max-width: 320px;
+  }
+  .demo-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,22,19,0.08); }
+  .demo-card .bar { height: 3px; background: #4DAB9A; }
+  .demo-card .inner { padding: 14px; }
+  .demo-card .hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .demo-card .hdr .fav { width: 20px; height: 20px; border-radius: 3px; background: #E8E7E4; }
+  .demo-card .hdr .name { font-family: 'Georgia', serif; font-size: 15px; font-weight: 600; }
+  .demo-card .hdr .count { font-size: 12px; color: #6B6966; background: #F7F6F3; padding: 2px 8px; border-radius: 4px; }
+
+  /* Chip */
+  .demo-chip {
+    display: flex; align-items: center; gap: 8px; padding: 5px 10px;
+    border-radius: 4px; font-size: 13px; transition: background 0.15s;
+  }
+  .demo-chip:hover { background: #F7F6F3; }
+  .demo-chip .ci { width: 14px; height: 14px; border-radius: 2px; background: #E8E7E4; flex-shrink: 0; }
+  .demo-chip .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #4DAB9A; flex-shrink: 0;
+    box-shadow: 0 0 0 2px rgba(77,171,154,0.2);
+  }
+  .demo-chip.dupe { background: rgba(223,171,1,0.04); border-left: 2px solid #DFAB01; }
+  .demo-chip .actions { display: flex; gap: 2px; margin-left: auto; }
+  .demo-chip .act {
+    width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+    border-radius: 3px; background: rgba(0,0,0,0.04); border: none; cursor: pointer;
+  }
+  .demo-chip .act svg { width: 12px; height: 12px; stroke: #999; stroke-width: 2; fill: none; }
+  .demo-chip .act:hover svg { stroke: #EB5757; }
+  .demo-chip .act:hover { background: rgba(235,87,87,0.1); }
+
+  /* Closing animation demo */
+  @keyframes chipExit {
+    0% { opacity: 1; transform: translateX(0); max-height: 32px; margin-bottom: 2px; }
+    60% { opacity: 0; transform: translateX(60px) scale(0.95); }
+    100% { opacity: 0; transform: translateX(60px) scale(0.9); max-height: 0; margin-bottom: 0; padding: 0; overflow: hidden; }
+  }
+  .demo-chip.closing-loop { animation: chipExit 3s ease infinite; }
+
+  /* Count pop */
+  @keyframes countPop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.3); color: #EB5757; }
+    100% { transform: scale(1); }
+  }
+  .count-pop { animation: countPop 2.5s ease infinite; }
+  .count-num { font-family: 'Georgia', serif; font-size: 22px; font-weight: 300; display: inline-block; }
+
+  /* Header pills */
+  .header-pills { display: flex; gap: 8px; margin-top: 10px; }
+  .h-pill { padding: 4px 12px; border-radius: 4px; font-size: 13px; }
+  .h-pill.blue { background: rgba(35,131,226,0.08); color: #2383E2; }
+  .h-pill.amber { background: rgba(223,171,1,0.08); color: #DFAB01; }
+  .h-pill.sage { background: rgba(77,171,154,0.08); color: #4DAB9A; }
+
+  /* Keyboard shortcuts */
+  .kbd-bar {
+    display: flex; gap: 20px; padding: 12px 16px; margin-top: 16px;
+    background: #FFFDF9; border-radius: 6px; border: 1px solid #E8E7E4;
+    font-size: 12px; color: #6B6966; flex-wrap: wrap;
+  }
+  .kbd-item { display: flex; align-items: center; gap: 5px; }
+  .kbd {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; height: 20px; padding: 0 5px; border-radius: 3px;
+    font-size: 11px; font-weight: 500; background: #F7F6F3;
+    border: 1px solid #E8E7E4; color: #6B6966; font-family: 'SF Mono', Menlo, monospace;
+  }
+
+  /* Divider */
+  .divider {
+    text-align: center; color: #6B6966; font-size: 12px; margin: 48px 0 24px;
+    position: relative;
+  }
+  .divider::before, .divider::after {
+    content: ''; position: absolute; top: 50%;
+    width: calc(50% - 60px); height: 1px; background: #E8E7E4;
+  }
+  .divider::before { left: 0; }
+  .divider::after { right: 0; }
+
+  /* Priority matrix */
+  .priority-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0 16px 36px;
+  }
+  .priority-card {
+    background: #FFFDF9; border-radius: 6px; padding: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .priority-card h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .priority-card .items { font-size: 12px; color: #6B6966; line-height: 1.6; }
+  .priority-card .items span { display: block; }
+  .pc-green { border-top: 3px solid #4DAB9A; }
+  .pc-amber { border-top: 3px solid #DFAB01; }
+  .pc-blue { border-top: 3px solid #2383E2; }
+</style>
+</head>
+<body>
+
+<h1>Tab Out — More is Less 优化方案</h1>
+<p class="subtitle">UI/UX Pro Max + 代码审计驱动。三大方向，18 个微优化，0 个大功能。</p>
+
+<!-- ═══ PHASE 1 ═══ -->
+<div class="section">
+  <span class="section-num">1</span>
+  <h2>交互提速</h2>
+  <div class="section-meta">
+    <span class="tag tag-easy">改动小</span>
+    <span class="tag tag-impact">体验飞跃</span>
+  </div>
+
+  <div class="spec-list">
+    <div class="spec-item">
+      <h4>1.1 键盘全导航 — 空函数变真实功能</h4>
+      <p><code>useKeyboard</code> 的 ↑↓Enter 已注册但全是空函数。填上它。</p>
+      <div class="detail">
+        <strong>行为：</strong>↑↓ 在 TabChip 之间移动焦点环 · <code>Enter</code> 跳转到选中的 tab · <code>D</code> 关闭选中 · <code>S</code> 保存选中 · <code>/</code> 聚焦搜索 · <code>Esc</code> 取消选中<br>
+        <strong>实现：</strong>维护一个 <code>focusedIndex</code> state，用 <code>ref</code> 数组给每个 TabChip 设 focus。不需要 roving tabindex — 直接 <code>el.focus()</code><br>
+        <strong>时长：</strong>200ms 动画，<code>ease-out</code> 缓动（UX Pro Max 建议：exit 用 ease-in，enter 用 ease-out）
+      </div>
+    </div>
+
+    <div class="spec-item">
+      <h4>1.2 操作按钮半透明常驻</h4>
+      <p>现在 TabChip 的关闭/保存按钮要 hover 才出现。改为常驻显示（opacity 0.4），hover 时 opacity 1。</p>
+      <div class="detail">
+        <strong>原因：</strong>UX Pro Max — "不要仅靠 hover 展示重要操作"，touch 设备无法 hover<br>
+        <strong>实现：</strong><code>opacity-40 group-hover:opacity-100</code> 替代 <code>opacity-0 group-hover:opacity-100</code>
+      </div>
+    </div>
+
+    <div class="spec-item amber">
+      <h4>1.3 批量选择模式</h4>
+      <p>按住 <code>Shift</code> + 点击可多选 TabChip，选中后底部浮出"关闭 N 个"操作条。</p>
+      <div class="detail">
+        <strong>交互：</strong>Shift+点击 = 范围选中 · Ctrl/Cmd+点击 = 追加选中 · Esc = 取消全部<br>
+        <strong>UI：</strong>选中的 chip 加 <code>ring-2 ring-accent-blue</code>，底部固定条显示"已选 N 个 · 关闭 · 保存"
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-box">
+    <p style="font-size:12px;color:#6B6966;margin-bottom:10px;">键盘快捷键一览：</p>
+    <div class="kbd-bar">
+      <div class="kbd-item"><span class="kbd">↑</span><span class="kbd">↓</span> 导航</div>
+      <div class="kbd-item"><span class="kbd">Enter</span> 跳转</div>
+      <div class="kbd-item"><span class="kbd">D</span> 关闭</div>
+      <div class="kbd-item"><span class="kbd">S</span> 保存</div>
+      <div class="kbd-item"><span class="kbd">/</span> 搜索</div>
+      <div class="kbd-item"><span class="kbd">Esc</span> 取消</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PHASE 2 ═══ -->
+<div class="section">
+  <span class="section-num">2</span>
+  <h2>信息密度</h2>
+  <div class="section-meta">
+    <span class="tag tag-easy">改动小</span>
+    <span class="tag tag-impact">一眼扫完</span>
+  </div>
+
+  <div class="spec-list">
+    <div class="spec-item">
+      <h4>2.1 域名卡片加 Favicon + friendlyName</h4>
+      <p>DomainCard header 加 favicon 图标。已有 <code>friendly-domains.ts</code> 映射 + <code>getFaviconUrl()</code>，直接用。</p>
+    </div>
+
+    <div class="spec-item">
+      <h4>2.2 重复 TabChip 视觉强化</h4>
+      <p>重复的 chip 加左边框 <code>border-l-2 border-accent-amber</code> + 浅底色 <code>bg-accent-amber/[0.04]</code>。</p>
+      <div class="detail">卡片头 badge 从 "2 duplicates" 改为 SVG 警示图标 + "2 dupes" 更紧凑。</div>
+    </div>
+
+    <div class="spec-item">
+      <h4>2.3 活跃 Tab 绿点标记</h4>
+      <p>当前 Chrome 活跃 tab 在 TabChip 左侧显示小绿点 + 微底色。</p>
+      <div class="detail"><code>tab.active</code> 已在 Tab 类型里，只需在 TabChip 渲染时判断并加样式。</div>
+    </div>
+
+    <div class="spec-item">
+      <h4>2.4 Header 速览条</h4>
+      <p>问候语下方加一行 pill：total tabs · duplicates · domains。一眼掌握全局。</p>
+    </div>
+
+    <div class="spec-item">
+      <h4>2.5 按 Tab 数量自动排序</h4>
+      <p>默认排序 = tab 数量降序。拖拽后尊重用户自定义顺序，新增域名按数量插入。</p>
+    </div>
+  </div>
+
+  <div class="demo-box">
+    <div style="display:flex;gap:24px;align-items:flex-start;">
+      <!-- Before -->
+      <div style="flex:1;">
+        <p style="font-size:11px;color:#6B6966;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Before</p>
+        <div class="demo-card">
+          <div class="bar"></div>
+          <div class="inner">
+            <div class="hdr">
+              <span class="name">github.com</span>
+              <span class="count">4 tabs</span>
+            </div>
+            <div class="demo-chip"><div class="ci"></div><span>pull/42 — CI fix</span></div>
+            <div class="demo-chip"><div class="ci"></div><span>src/App.tsx</span></div>
+            <div class="demo-chip"><div class="ci"></div><span>(2x) react docs</span></div>
+          </div>
+        </div>
+      </div>
+      <!-- After -->
+      <div style="flex:1;">
+        <p style="font-size:11px;color:#4DAB9A;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600;">After</p>
+        <div class="demo-card" style="border:1px solid rgba(77,171,154,0.15);">
+          <div class="bar"></div>
+          <div class="inner">
+            <div class="hdr">
+              <div class="fav"></div>
+              <span class="name">GitHub</span>
+              <span class="count">4 tabs</span>
+              <span style="font-size:11px;color:#DFAB01;background:rgba(223,171,1,0.1);padding:2px 8px;border-radius:4px;margin-left:auto;">1 dupe</span>
+            </div>
+            <div class="demo-chip" style="background:rgba(77,171,154,0.06);border-radius:4px;">
+              <div class="dot"></div>
+              <div class="ci"></div>
+              <span style="font-weight:500;">pull/42 — CI fix</span>
+              <div class="actions">
+                <button class="act"><svg viewBox="0 0 24 24"><path d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
+                <button class="act"><svg viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
+              </div>
+            </div>
+            <div class="demo-chip">
+              <div class="ci"></div><span>src/App.tsx</span>
+              <div class="actions">
+                <button class="act"><svg viewBox="0 0 24 24"><path d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
+                <button class="act"><svg viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
+              </div>
+            </div>
+            <div class="demo-chip dupe">
+              <div class="ci"></div><span>react docs</span>
+              <span style="font-size:11px;color:#DFAB01;font-weight:500;margin-left:auto;">×2</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Header pills -->
+    <div style="margin-top:24px;border-top:1px solid #E8E7E4;padding-top:16px;">
+      <p style="font-family:'Georgia',serif;font-size:22px;font-weight:300;">Good afternoon</p>
+      <p style="color:#6B6966;font-size:13px;margin-top:2px;">Wednesday, April 16, 2026</p>
+      <div class="header-pills">
+        <span class="h-pill blue">23 tabs</span>
+        <span class="h-pill amber">4 dupes</span>
+        <span class="h-pill sage">8 domains</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PHASE 3 ═══ -->
+<div class="section">
+  <span class="section-num">3</span>
+  <h2>视觉打磨</h2>
+  <div class="section-meta">
+    <span class="tag tag-medium">改动中</span>
+    <span class="tag tag-impact">精致感</span>
+  </div>
+
+  <div class="spec-list">
+    <div class="spec-item">
+      <h4>3.1 骨架屏替代 Loading 圆点</h4>
+      <p>加载时显示卡片形状的 shimmer 骨架，而非三个跳动圆点。</p>
+      <div class="detail">
+        <strong>实现：</strong>用 Tailwind <code>animate-pulse</code> + 灰色矩形模拟卡片结构。2-3 个骨架卡片即可。<br>
+        <strong>UX 原则：</strong>骨架屏让用户预知内容结构，感知等待时间缩短 30%+
+      </div>
+    </div>
+
+    <div class="spec-item">
+      <h4>3.2 TabChip 关闭动画 — 右滑消失</h4>
+      <p>关闭 tab 时 chip 向右滑出 + 缩小，下方 chip 平滑上移填补空位。</p>
+      <div class="detail">
+        <strong>时长：</strong>250ms · <strong>缓动：</strong><code>cubic-bezier(0.4, 0, 0.2, 1)</code>（exit 用 ease-in）<br>
+        <strong>尊重：</strong><code>prefers-reduced-motion</code> — 关闭动画下直接消失
+      </div>
+    </div>
+
+    <div class="spec-item">
+      <h4>3.3 Footer 数字弹跳递减</h4>
+      <p>每次关闭 tab，Footer 的 tab count 数字弹跳一下（scale 1 → 1.2 → 1），颜色瞬间变红再恢复。</p>
+      <div class="detail"><strong>时长：</strong>200ms · 用 <code>transform: scale()</code> + <code>color</code> transition（不触发布局重排）</div>
+    </div>
+
+    <div class="spec-item">
+      <h4>3.4 卡片 hover 微抬起</h4>
+      <p>鼠标悬停卡片时上浮 2px + 阴影扩散。现在只有 shadow 变化，加一个 <code>translateY(-2px)</code>。</p>
+      <div class="detail"><strong>时长：</strong>200ms ease · 只用 transform + box-shadow（GPU 加速，无重排）</div>
+    </div>
+  </div>
+
+  <div class="demo-box">
+    <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;">
+      <!-- Skeleton -->
+      <div style="flex:1;min-width:200px;">
+        <p style="font-size:11px;color:#6B6966;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">骨架屏加载</p>
+        <div style="background:#FFFDF9;border-radius:6px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+          <div style="height:3px;background:#E8E7E4;"></div>
+          <div style="padding:14px;">
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+              <div class="skeleton" style="width:20px;height:20px;border-radius:3px;"></div>
+              <div class="skeleton" style="width:80px;height:14px;"></div>
+              <div class="skeleton" style="width:50px;height:14px;"></div>
+            </div>
+            <div class="skeleton" style="width:100%;height:24px;margin-bottom:6px;"></div>
+            <div class="skeleton" style="width:85%;height:24px;margin-bottom:6px;"></div>
+            <div class="skeleton" style="width:70%;height:24px;"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Closing animation -->
+      <div style="flex:1;min-width:200px;">
+        <p style="font-size:11px;color:#6B6966;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">关闭动画（循环演示）</p>
+        <div style="background:#FFFDF9;border-radius:6px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+          <div style="height:3px;background:#4DAB9A;"></div>
+          <div style="padding:14px;">
+            <div class="demo-chip" style="font-size:13px;"><div class="ci"></div><span>Meeting Notes</span></div>
+            <div class="demo-chip closing-loop" style="font-size:13px;color:#999;"><div class="ci"></div><span>← closing...</span></div>
+            <div class="demo-chip" style="font-size:13px;"><div class="ci"></div><span>Receipt #1234</span></div>
+          </div>
+        </div>
+      </div>
+      <!-- Count pop -->
+      <div style="flex:1;min-width:200px;">
+        <p style="font-size:11px;color:#6B6966;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">数字弹跳</p>
+        <div style="border-top:1px solid #E8E7E4;padding-top:12px;">
+          <span class="count-num count-pop">22</span>
+          <span style="margin-left:6px;font-size:12px;color:#6B6966;">open tabs</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-box" style="text-align:center;">
+    <p style="font-size:11px;color:#6B6966;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">卡片 hover 抬起 — 鼠标放上去试试</p>
+    <div style="display:inline-block;">
+      <div class="demo-card" style="max-width:260px;cursor:pointer;">
+        <div class="bar"></div>
+        <div class="inner">
+          <div class="hdr"><div class="fav"></div><span class="name">GitHub</span><span class="count">3 tabs</span></div>
+          <div class="demo-chip" style="font-size:13px;"><div class="dot"></div><div class="ci"></div><span style="font-weight:500;">pull/42</span></div>
+          <div class="demo-chip" style="font-size:13px;"><div class="ci"></div><span>src/App.tsx</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Priority ═══ -->
+<div class="divider">实施优先级</div>
+
+<div class="priority-grid">
+  <div class="priority-card pc-green">
+    <h4>P0 — 立竿见影</h4>
+    <div class="items">
+      <span>1.1 键盘导航（填空函数）</span>
+      <span>1.2 按钮常驻（opacity 改一下）</span>
+      <span>2.1 Favicon 上卡片</span>
+      <span>2.3 活跃绿点</span>
+      <span>3.4 卡片 hover 抬起</span>
+    </div>
+  </div>
+  <div class="priority-card pc-amber">
+    <h4>P1 — 一天搞定</h4>
+    <div class="items">
+      <span>2.2 重复标签染色</span>
+      <span>2.4 Header 速览条</span>
+      <span>2.5 Tab 数量排序</span>
+      <span>3.1 骨架屏</span>
+      <span>3.3 数字弹跳</span>
+    </div>
+  </div>
+  <div class="priority-card pc-blue">
+    <h4>P2 — 需要设计</h4>
+    <div class="items">
+      <span>1.3 批量选择模式</span>
+      <span>3.2 关闭动画</span>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;color:#6B6966;font-size:13px;margin-top:32px;">
+  觉得方案 OK？在终端说 <strong>"通过"</strong> 我就写设计文档。<br>
+  要调整？告诉我哪里要改。
+</p>
+
+</body>
+</html>
