@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Tab Out",
+  "name": "Tab Organizer",
   "version": "2.0.0",
   "description": "Keep tabs on your tabs. Open a dashboard that groups your tabs by domain and lets you close them with style.",
   "permissions": ["tabs", "storage", "favicon"],
@@ -10,7 +10,7 @@
     "type": "module"
   },
   "action": {
-    "default_title": "Tab Out",
+    "default_title": "Tab Organizer",
     "default_icon": {
       "16": "public/icons/icon16.png",
       "48": "public/icons/icon48.png",

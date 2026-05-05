@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Drag & Drop', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/e2e-harness.html');
+    await page.goto('/tests/harness/e2e-harness.html');
   });
 
 

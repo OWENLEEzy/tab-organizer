@@ -43,7 +43,7 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
           target="_top"
           className="text-text-secondary hover:text-accent-blue transition-colors underline underline-offset-4"
         >
-          Tab Out — Open Source
+          Tab Organizer — Open Source
         </a>
       </div>
     </footer>

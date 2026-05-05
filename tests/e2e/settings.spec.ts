@@ -4,7 +4,7 @@ test.describe('Settings & Theme', () => {
   test.beforeEach(async ({ page }) => {
     // Set viewport size to ensure the settings gear is visible
     await page.setViewportSize({ width: 1280, height: 720 });
-    await page.goto('/e2e-harness.html');
+    await page.goto('/tests/harness/e2e-harness.html');
   });
 
   test('settings gear button exists in DOM', async ({ page }) => {
@@ -49,7 +49,7 @@ test.describe('Settings & Theme', () => {
   });
 
   test('settings stays available when the dashboard has no tabs', async ({ page }) => {
-    await page.goto('/e2e-harness.html?scenario=empty');
+    await page.goto('/tests/harness/e2e-harness.html?scenario=empty');
 
     await expect(page.getByText('No tabs to organize')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Organize', exact: true })).toHaveCount(0);

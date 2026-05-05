@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Search & Filter', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/e2e-harness.html');
+    await page.goto('/tests/harness/e2e-harness.html');
   });
 
   test('search input is visible', async ({ page }) => {

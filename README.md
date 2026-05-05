@@ -1,8 +1,8 @@
-# Tab Out
+# Tab Organizer
 
 **Keep tabs on your tabs.**
 
-Tab Out is a Chrome extension that opens a dashboard of everything you have open when you click its toolbar icon. Tabs are grouped by domain, with homepages (Gmail, X, LinkedIn, etc.) pulled into their own group. Close tabs with a satisfying swoosh + confetti.
+Tab Organizer is a Chrome extension that opens a dashboard of everything you have open when you click its toolbar icon. Tabs are grouped by domain, with homepages (Gmail, X, LinkedIn, etc.) pulled into their own group. Close tabs with a satisfying swoosh + confetti.
 
 No server. No account. No external API calls. Just a Chrome extension.
 
@@ -13,7 +13,7 @@ No server. No account. No external API calls. Just a Chrome extension.
 Send your coding agent (Claude Code, Codex, etc.) this repo and say **"install this"**:
 
 ```
-https://github.com/OWENLEEzy/tab-out
+https://github.com/OWENLEEzy/tab-organizer
 ```
 
 The agent will walk you through it. Takes about 1 minute.
@@ -42,8 +42,8 @@ The agent will walk you through it. Takes about 1 minute.
 1. Build one-click package:
 
 ```bash
-git clone https://github.com/OWENLEEzy/tab-out.git
-cd tab-out
+git clone https://github.com/OWENLEEzy/tab-organizer.git
+cd tab-organizer
 npm install
 npm run build
 ```
@@ -52,9 +52,9 @@ npm run build
 
 Open `chrome://extensions` -> 开启 Developer mode -> 点击 **Load unpacked** -> 选 `dist/` 文件夹.
 
-3. Open Tab Out:
+3. Open Tab Organizer:
 
-点击浏览器工具栏里的 Tab Out 图标。
+点击浏览器工具栏里的 Tab Organizer 图标。
 
 If you changed source code and want to rebuild the loadable package:
 
@@ -102,4 +102,4 @@ MIT
 
 ---
 
-Built by Tab Out contributors
+Built by Tab Organizer contributors

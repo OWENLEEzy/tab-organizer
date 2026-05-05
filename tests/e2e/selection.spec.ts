@@ -7,7 +7,7 @@ type SelectionTestWindow = Window & {
 
 test.describe('Selection Mode', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/e2e-harness.html');
+    await page.goto('/tests/harness/e2e-harness.html');
   });
 
   test('debug: verify metaKey is set on click event', async ({ page }) => {
