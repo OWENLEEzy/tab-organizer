@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import type { CustomGroup } from '../../types';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -8,10 +9,13 @@ interface SettingsPanelProps {
   theme: 'light' | 'dark' | 'system';
   soundEnabled: boolean;
   confettiEnabled: boolean;
+  customGroups: CustomGroup[];
   onSetTheme: (theme: 'light' | 'dark' | 'system') => void;
   onToggleSound: () => void;
   onToggleConfetti: () => void;
   onResetSortOrder: () => void;
+  onAddCustomGroup: (group: CustomGroup) => void;
+  onRemoveCustomGroup: (groupKey: string) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────
@@ -22,10 +26,13 @@ export function SettingsPanel({
   theme,
   soundEnabled,
   confettiEnabled,
+  customGroups,
   onSetTheme,
   onToggleSound,
   onToggleConfetti,
   onResetSortOrder,
+  onAddCustomGroup,
+  onRemoveCustomGroup,
 }: SettingsPanelProps): React.ReactElement | null {
   const panelRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -107,7 +114,7 @@ export function SettingsPanel({
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
-        className="border-2 border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] p-6"
+        className="border-2 border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] overflow-y-auto max-h-[90vh] p-6"
       >
         {/* Title + Close */}
         <div className="mb-6 flex items-center justify-between">
@@ -169,6 +176,16 @@ export function SettingsPanel({
               Reset to default
             </button>
           </div>
+
+          {/* Divider */}
+          <hr className="border-border-light dark:border-border-dark" />
+
+          {/* Custom Groups */}
+          <CustomGroupsSection
+            groups={customGroups}
+            onAdd={onAddCustomGroup}
+            onRemove={onRemoveCustomGroup}
+          />
         </div>
       </div>
     </div>
@@ -258,6 +275,113 @@ function ToggleRow({ id, label, checked, onChange }: ToggleRowProps): React.Reac
           aria-hidden="true"
         />
       </button>
+    </div>
+  );
+}
+
+// ─── Custom Groups sub-component ──────────────────────────────────────
+
+interface CustomGroupsSectionProps {
+  groups: CustomGroup[];
+  onAdd: (group: CustomGroup) => void;
+  onRemove: (groupKey: string) => void;
+}
+
+function CustomGroupsSection({
+  groups,
+  onAdd,
+  onRemove,
+}: CustomGroupsSectionProps): React.ReactElement {
+  const [hostname, setHostname] = useState('');
+  const [label, setLabel] = useState('');
+  const [error, setError] = useState('');
+
+  const handleAdd = () => {
+    const h = hostname.trim().toLowerCase();
+    const l = label.trim();
+    if (!h) { setError('Hostname is required'); return; }
+    if (!l) { setError('Label is required'); return; }
+    const key = h.replace(/[^a-z0-9]/g, '-');
+    if (groups.some((g) => g.groupKey === key || g.hostname === h)) {
+      setError('A rule for this hostname already exists');
+      return;
+    }
+    onAdd({ hostname: h, groupKey: key, groupLabel: l });
+    setHostname('');
+    setLabel('');
+    setError('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleAdd();
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm font-medium">
+        Custom groups
+      </span>
+
+      {/* Existing rules */}
+      {groups.length > 0 && (
+        <ul className="flex flex-col gap-1">
+          {groups.map((g) => (
+            <li
+              key={g.groupKey}
+              className="flex items-center justify-between rounded-chip bg-surface-light dark:bg-surface-dark px-3 py-1.5"
+            >
+              <div className="flex flex-col min-w-0">
+                <span className="font-body text-text-primary-light dark:text-text-primary-dark text-xs font-medium truncate">
+                  {g.groupLabel}
+                </span>
+                <span className="font-body text-text-secondary text-xs truncate">
+                  {g.hostname ?? g.hostnameEndsWith}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onRemove(g.groupKey)}
+                aria-label={`Remove ${g.groupLabel} group`}
+                className="ml-2 shrink-0 text-accent-red hover:bg-accent-red/10 focus-visible:ring-accent-red/40 rounded-chip flex h-7 w-7 items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Add form */}
+      <div className="flex flex-col gap-2">
+        <input
+          type="text"
+          placeholder="Hostname (e.g. notion.so)"
+          value={hostname}
+          onChange={(e) => { setHostname(e.target.value); setError(''); }}
+          onKeyDown={handleKeyDown}
+          className="font-body text-text-primary-light dark:text-text-primary-dark placeholder:text-text-secondary bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-chip px-3 py-2 text-xs focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none w-full"
+        />
+        <input
+          type="text"
+          placeholder="Label (e.g. Notion)"
+          value={label}
+          onChange={(e) => { setLabel(e.target.value); setError(''); }}
+          onKeyDown={handleKeyDown}
+          className="font-body text-text-primary-light dark:text-text-primary-dark placeholder:text-text-secondary bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-chip px-3 py-2 text-xs focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none w-full"
+        />
+        {error && (
+          <span className="text-accent-red text-xs font-body">{error}</span>
+        )}
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 rounded-chip px-3 py-1.5 self-end transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-11"
+        >
+          Add rule
+        </button>
+      </div>
     </div>
   );
 }

@@ -96,6 +96,13 @@ describe('Chrome favicon rendering', () => {
         onCloseDomain={() => {}}
         onCloseDuplicates={() => {}}
         onFocusTab={() => {}}
+        expandedDomains={new Set()}
+        onToggleExpanded={() => {}}
+        onCloseTab={() => {}}
+        onChipClick={() => {}}
+        selectedUrls={new Set()}
+        closingUrls={new Set()}
+        focusedUrl={null}
       />,
     );
 

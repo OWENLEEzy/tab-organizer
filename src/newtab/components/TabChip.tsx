@@ -5,6 +5,7 @@ import {
   smartTitle,
   stripTitleNoise,
 } from '../../lib/title-cleaner';
+import { getFaviconUrl } from '../../utils/favicon';
 
 // ─── Touch device detection ────────────────────────────────────────
 
@@ -96,7 +97,7 @@ export function TabChip({
   onClose,
   onChipClick,
 }: TabChipProps): React.ReactElement {
-  const faviconUrl = favIconUrl.trim();
+  const faviconUrl = favIconUrl.trim() || getFaviconUrl(url);
   const displayLabel = buildLabel(title, url);
   const safeUrl = sanitizeUrl(url);
   const initial = displayLabel.trim().charAt(0).toUpperCase() || '?';
@@ -136,7 +137,7 @@ export function TabChip({
   }, [faviconUrl]);
 
   const chipClasses = [
-    'flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-chip border-2 border-transparent px-2.5 py-1.5',
+    'flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-chip border-2 border-transparent px-2.5 py-1.5 text-left',
     'cursor-pointer bg-transparent transition-colors duration-150',
     isSelected ? '' : 'hover:border-border-light hover:bg-surface-light dark:hover:border-border-dark dark:hover:bg-surface-dark',
     'focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none',
@@ -172,7 +173,7 @@ export function TabChip({
         {/* Favicon */}
         {faviconUrl && !faviconFailed ? (
           <img
-            className="h-4 w-4 shrink-0"
+            className="favicon h-4 w-4 shrink-0"
             src={faviconUrl}
             alt=""
             onError={handleImageError}

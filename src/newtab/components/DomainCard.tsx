@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import type { TabGroup } from '../../types';
 import { TabChip } from './TabChip';
 import { getVisibleTabs } from '../lib/visible-tabs';
+import { getFaviconUrl } from '../../utils/favicon';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -27,25 +28,6 @@ const DEFAULT_MAX_CHIPS = 8;
 
 // ─── SVG Icons ────────────────────────────────────────────────────────
 
-function TabsIcon(): React.ReactElement {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      className="h-3.5 w-3.5"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"
-      />
-    </svg>
-  );
-}
 
 function CloseAllIcon(): React.ReactElement {
   return (
@@ -151,7 +133,7 @@ export function DomainCard({
   const selectionMode = (selectedUrls?.size ?? 0) > 0;
   const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
   const groupFaviconUrl = useMemo(
-    () => tabs.find((tab) => tab.favIconUrl.trim() !== '')?.favIconUrl.trim() ?? '',
+    () => tabs.find((tab) => tab.favIconUrl.trim() !== '')?.favIconUrl.trim() ?? getFaviconUrl(tabs[0]?.url || ''),
     [tabs],
   );
   const iconFailed = groupFaviconUrl !== '' && failedFaviconUrl === groupFaviconUrl;
@@ -213,10 +195,10 @@ export function DomainCard({
     <div className="overflow-hidden rounded-card border-2 border-border-light bg-card-light shadow-none transition-colors duration-150 dark:border-border-dark dark:bg-card-dark">
       <div className={`h-2 border-b-2 border-border-light dark:border-border-dark ${statusBarColor}`} />
 
-      <div className="p-4">
+      <div className="border-b-2 border-border-light p-4 dark:border-border-dark">
         {/* Header: domain name + badges — drag handle when DnD is active */}
         <div
-          className={`mb-3 flex flex-wrap items-center gap-2${dragHandleProps ? ' cursor-grab active:cursor-grabbing' : ''}`}
+          className={`flex flex-wrap items-center gap-2${dragHandleProps ? ' cursor-grab active:cursor-grabbing' : ''}`}
           {...dragHandleProps}
         >
           {dragHandleProps && (
@@ -245,29 +227,40 @@ export function DomainCard({
               alt=""
               width={20}
               height={20}
-              className="h-5 w-5 shrink-0 rounded-[3px]"
+              className="favicon h-5 w-5 shrink-0 rounded-[3px]"
               onError={() => setFailedFaviconUrl(groupFaviconUrl)}
             />
           )}
-          <h3 className="font-body text-base font-semibold text-text-primary-light dark:text-text-primary-dark">
+          <h3 className="min-w-0 flex-1 truncate font-heading text-base font-normal tracking-tight text-text-primary-light dark:text-text-primary-dark">
             {displayName}
           </h3>
 
-          {/* Tab count badge */}
-          <span className="inline-flex items-center gap-1 rounded-chip border-2 border-border-light bg-surface-light px-2 py-0.5 font-body text-xs text-text-secondary dark:border-border-dark dark:bg-surface-dark">
-            <TabsIcon />
-            {tabCount} tab{tabCount !== 1 ? 's' : ''} open
-          </span>
-
-          {hasDupes && (
-          <span className="inline-flex items-center gap-1 rounded-chip border-2 border-border-light bg-accent-amber/10 px-2 py-0.5 font-body text-xs font-medium text-accent-amber dark:border-border-dark">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-3 w-3" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-            </svg>
-            {totalExtras} dupe{totalExtras !== 1 ? 's' : ''}
-          </span>
-        )}
+          <div className="flex items-center gap-1">
+            {hasDupes && (
+              <button
+                type="button"
+                className="flex h-7 items-center gap-1 rounded-sm bg-accent-amber px-2 text-[10px] font-bold uppercase tracking-widest text-white transition-opacity hover:opacity-90"
+                onClick={handleCloseDuplicates}
+                title="Close duplicate tabs"
+              >
+                <DedupIcon />
+                <span>{totalExtras}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              className="flex h-7 w-7 items-center justify-center rounded-sm text-text-secondary transition-colors hover:bg-surface-light hover:text-accent-red dark:hover:bg-surface-dark"
+              onClick={handleCloseDomain}
+              title={`Close all ${tabs.length} tabs`}
+              aria-label={`Close all ${tabs.length} ${displayName} tabs`}
+            >
+              <CloseAllIcon />
+            </button>
+          </div>
         </div>
+      </div>
+
+      <div className="p-4">
 
         {/* Tab chips */}
         <div className="flex flex-col gap-0.5">
