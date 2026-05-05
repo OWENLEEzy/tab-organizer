@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import type { Tab, TabGroup } from '../types';
+import type { OrganizerSection, SectionAssignment, Tab, TabGroup, ViewMode } from '../types';
 import { groupTabsByDomain } from '../lib/tab-grouper';
-import { readGroupOrder, writeGroupOrder } from '../utils/storage';
+import { readStorage, updateStorage, writeGroupOrder } from '../utils/storage';
 import { getHostname, isRealTab, isTabOutPage } from '../utils/url';
 import { getErrorMessage } from '../utils/error';
 
@@ -26,6 +26,20 @@ interface TabActions {
   startListeners: () => () => void;
   /** Reorder groups after drag-and-drop and persist the new order. */
   reorderGroups: (newGroups: TabGroup[]) => void;
+  /** Create a user-owned organization section. */
+  createSection: (name: string) => Promise<void>;
+  /** Rename a user-owned organization section. */
+  renameSection: (sectionId: string, name: string) => Promise<void>;
+  /** Delete a section and return its items to the main area. */
+  deleteSection: (sectionId: string) => Promise<void>;
+  /** Reorder sections and persist the new order. */
+  reorderSections: (sections: OrganizerSection[]) => Promise<void>;
+  /** Assign a product group or independent URL item to a section. */
+  moveItemToSection: (itemType: 'product' | 'tabUrl', itemKey: string, sectionId: string) => Promise<void>;
+  /** Remove a product group or independent URL item assignment. */
+  moveItemToMain: (itemType: 'product' | 'tabUrl', itemKey: string) => Promise<void>;
+  /** Persist the visible organizer layout mode. */
+  setViewMode: (viewMode: ViewMode) => Promise<void>;
   /** Clear the current error state. */
   clearError: () => void;
 }
@@ -33,6 +47,9 @@ interface TabActions {
 export type TabStore = {
   tabs: Tab[];
   groups: TabGroup[];
+  sections: OrganizerSection[];
+  sectionAssignments: SectionAssignment[];
+  viewMode: ViewMode;
   loading: boolean;
   error: string | null;
 } & TabActions;
@@ -75,11 +92,126 @@ function isRealWebTab(tab: Tab): boolean {
   return isRealTab(tab.url);
 }
 
+function countDuplicates(tabs: readonly Tab[]): {
+  duplicateCount: number;
+  hasDuplicates: boolean;
+} {
+  const counts = new Map<string, number>();
+  for (const tab of tabs) {
+    counts.set(tab.url, (counts.get(tab.url) ?? 0) + 1);
+  }
+
+  let duplicateCount = 0;
+  for (const count of counts.values()) {
+    if (count > 1) duplicateCount += count - 1;
+  }
+
+  return {
+    duplicateCount,
+    hasDuplicates: duplicateCount > 0,
+  };
+}
+
+function buildTabUrlItem(url: string, tabs: Tab[], order: number): TabGroup {
+  const first = tabs[0];
+  const { duplicateCount, hasDuplicates } = countDuplicates(tabs);
+  const hostname = deriveDomain(url);
+  return {
+    id: `tabUrl:${encodeURIComponent(url)}`,
+    domain: `tabUrl:${encodeURIComponent(url)}`,
+    friendlyName: first?.title || hostname || 'Tab',
+    label: first?.title || url,
+    itemType: 'tabUrl',
+    itemKey: url,
+    iconDomain: hostname,
+    tabs,
+    collapsed: false,
+    order,
+    color: hasDuplicates ? '#DFAB01' : '#4DAB9A',
+    hasDuplicates,
+    duplicateCount,
+  };
+}
+
+function projectAssignments(
+  productGroups: TabGroup[],
+  assignments: SectionAssignment[],
+): TabGroup[] {
+  const assignedUrls = new Set(
+    assignments
+      .filter((assignment) => assignment.itemType === 'tabUrl')
+      .map((assignment) => assignment.itemKey),
+  );
+
+  const projectedProducts = productGroups
+    .map((group) => {
+      const tabs = group.tabs.filter((tab) => !assignedUrls.has(tab.url));
+      const { duplicateCount, hasDuplicates } = countDuplicates(tabs);
+      return {
+        ...group,
+        tabs,
+        hasDuplicates,
+        duplicateCount,
+        color: hasDuplicates ? '#DFAB01' : '#4DAB9A',
+      };
+    })
+    .filter((group) => group.tabs.length > 0);
+
+  const tabsByUrl = new Map<string, Tab[]>();
+  for (const group of productGroups) {
+    for (const tab of group.tabs) {
+      if (!assignedUrls.has(tab.url)) continue;
+      const existing = tabsByUrl.get(tab.url);
+      if (existing) {
+        existing.push(tab);
+      } else {
+        tabsByUrl.set(tab.url, [tab]);
+      }
+    }
+  }
+
+  const tabUrlItems = [...tabsByUrl.entries()].map(([url, tabs], index) =>
+    buildTabUrlItem(url, tabs, projectedProducts.length + index),
+  );
+
+  return [...projectedProducts, ...tabUrlItems];
+}
+
+function pruneAssignments(
+  assignments: SectionAssignment[],
+  sections: OrganizerSection[],
+  productGroups: TabGroup[],
+  tabs: Tab[],
+): SectionAssignment[] {
+  const sectionIds = new Set(sections.map((section) => section.id));
+  const productKeys = new Set(productGroups.map((group) => group.domain));
+  const urls = new Set(tabs.map((tab) => tab.url));
+  const seen = new Set<string>();
+
+  return assignments.filter((assignment) => {
+    if (!sectionIds.has(assignment.sectionId)) return false;
+    if (assignment.itemType === 'product' && !productKeys.has(assignment.itemKey)) return false;
+    if (assignment.itemType === 'tabUrl' && !urls.has(assignment.itemKey)) return false;
+
+    const key = `${assignment.itemType}:${assignment.itemKey}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function orderedSections(sections: OrganizerSection[]): OrganizerSection[] {
+  return [...sections].sort((a, b) => a.order - b.order);
+}
+
 // ─── Store ──────────────────────────────────────────────────────────
 
 export const useTabStore = create<TabStore>((set) => ({
   tabs: [],
   groups: [],
+  sections: [],
+  sectionAssignments: [],
+  viewMode: 'cards',
   loading: false,
   error: null,
 
@@ -90,25 +222,45 @@ export const useTabStore = create<TabStore>((set) => ({
     try {
       const rawTabs = await chrome.tabs.query({});
       const mapped = rawTabs.map(toAppTab).filter(isRealWebTab);
-      const groupOrder = await readGroupOrder();
-      const groups = groupTabsByDomain(mapped, groupOrder);
+      const storage = await readStorage();
+      const groupOrder = storage.groupOrder;
+      const productGroups = groupTabsByDomain(mapped, groupOrder);
+      const sections = orderedSections(storage.sections);
+      const sectionAssignments = pruneAssignments(
+        storage.sectionAssignments,
+        sections,
+        productGroups,
+        mapped,
+      );
+      const groups = projectAssignments(productGroups, sectionAssignments);
 
       // Prune stale groupOrder entries for domains no longer present
-      const currentDomains = new Set(groups.map((g) => g.domain));
+      const currentDomains = new Set(productGroups.map((g) => g.domain));
       const staleKeys = Object.keys(groupOrder).filter((d) => !currentDomains.has(d));
-      if (staleKeys.length > 0) {
+      if (staleKeys.length > 0 || sectionAssignments.length !== storage.sectionAssignments.length) {
         const cleaned: Record<string, number> = {};
         for (const [domain, order] of Object.entries(groupOrder)) {
           if (currentDomains.has(domain)) {
             cleaned[domain] = order;
           }
         }
-        writeGroupOrder(cleaned).catch((err: unknown) => {
-          console.warn('[Tab Out] Failed to prune stale group order entries:', err);
+        await updateStorage((current) => ({
+          ...current,
+          groupOrder: cleaned,
+          sectionAssignments,
+        })).catch((err: unknown) => {
+          console.warn('[Tab Out] Failed to prune stale organizer storage:', err);
         });
       }
 
-      set({ tabs: mapped, groups, loading: false });
+      set({
+        tabs: mapped,
+        groups,
+        sections,
+        sectionAssignments,
+        viewMode: storage.viewMode,
+        loading: false,
+      });
     } catch (err: unknown) {
       set({ tabs: [], groups: [], loading: false, error: getErrorMessage(err, 'Failed to fetch tabs') });
     }
@@ -293,12 +445,107 @@ export const useTabStore = create<TabStore>((set) => ({
 
   reorderGroups: (newGroups: TabGroup[]) => {
     const groupOrder: Record<string, number> = {};
+    for (const group of useTabStore.getState().groups) {
+      if (group.itemType === 'product') {
+        groupOrder[group.itemKey ?? group.domain] = group.order;
+      }
+    }
     for (let i = 0; i < newGroups.length; i++) {
-      groupOrder[newGroups[i].domain] = i;
+      const group = newGroups[i];
+      if (group.itemType === 'product') {
+        groupOrder[group.itemKey ?? group.domain] = i;
+      }
     }
     set({ groups: newGroups });
     writeGroupOrder(groupOrder).catch((err: unknown) => {
       console.warn('[Tab Out] Failed to persist group order:', err);
     });
+  },
+
+  createSection: async (name: string) => {
+    const trimmed = name.trim() || 'Untitled';
+    const current = useTabStore.getState().sections;
+    const section: OrganizerSection = {
+      id: crypto.randomUUID(),
+      name: trimmed,
+      order: current.length,
+    };
+    const nextSections = [...current, section];
+    set({ sections: nextSections });
+    await updateStorage((storage) => ({ ...storage, sections: nextSections }));
+  },
+
+  renameSection: async (sectionId: string, name: string) => {
+    const trimmed = name.trim() || 'Untitled';
+    const nextSections = useTabStore
+      .getState()
+      .sections
+      .map((section) => section.id === sectionId ? { ...section, name: trimmed } : section);
+    set({ sections: nextSections });
+    await updateStorage((storage) => ({ ...storage, sections: nextSections }));
+  },
+
+  deleteSection: async (sectionId: string) => {
+    const nextSections = useTabStore
+      .getState()
+      .sections
+      .filter((section) => section.id !== sectionId)
+      .map((section, index) => ({ ...section, order: index }));
+    const nextAssignments = useTabStore
+      .getState()
+      .sectionAssignments
+      .filter((assignment) => assignment.sectionId !== sectionId);
+
+    set({ sections: nextSections, sectionAssignments: nextAssignments });
+    await updateStorage((storage) => ({
+      ...storage,
+      sections: nextSections,
+      sectionAssignments: nextAssignments,
+    }));
+    await useTabStore.getState().fetchTabs();
+  },
+
+  reorderSections: async (sections: OrganizerSection[]) => {
+    const nextSections = sections.map((section, index) => ({ ...section, order: index }));
+    set({ sections: nextSections });
+    await updateStorage((storage) => ({ ...storage, sections: nextSections }));
+  },
+
+  moveItemToSection: async (itemType: 'product' | 'tabUrl', itemKey: string, sectionId: string) => {
+    const current = useTabStore.getState();
+    const existingInSection = current.sectionAssignments.filter(
+      (assignment) => assignment.sectionId === sectionId,
+    );
+    const nextAssignment: SectionAssignment = {
+      itemType,
+      itemKey,
+      sectionId,
+      order: existingInSection.length,
+    };
+    const nextAssignments = [
+      ...current.sectionAssignments.filter(
+        (assignment) => !(assignment.itemType === itemType && assignment.itemKey === itemKey),
+      ),
+      nextAssignment,
+    ];
+
+    set({ sectionAssignments: nextAssignments });
+    await updateStorage((storage) => ({ ...storage, sectionAssignments: nextAssignments }));
+    await useTabStore.getState().fetchTabs();
+  },
+
+  moveItemToMain: async (itemType: 'product' | 'tabUrl', itemKey: string) => {
+    const nextAssignments = useTabStore
+      .getState()
+      .sectionAssignments
+      .filter((assignment) => !(assignment.itemType === itemType && assignment.itemKey === itemKey));
+    set({ sectionAssignments: nextAssignments });
+    await updateStorage((storage) => ({ ...storage, sectionAssignments: nextAssignments }));
+    await useTabStore.getState().fetchTabs();
+  },
+
+  setViewMode: async (viewMode: ViewMode) => {
+    set({ viewMode });
+    await updateStorage((storage) => ({ ...storage, viewMode }));
   },
 }));

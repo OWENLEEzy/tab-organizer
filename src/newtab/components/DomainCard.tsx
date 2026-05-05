@@ -1,4 +1,6 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import type { TabGroup } from '../../types';
 import { TabChip } from './TabChip';
 import { getFaviconUrl } from '../../utils/url';
@@ -21,6 +23,7 @@ interface DomainCardProps {
   selectedUrls?: Set<string>;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   onToggleExpanded?: (domain: string) => void;
+  draggableTabs?: boolean;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -89,6 +92,84 @@ function DedupIcon(): React.ReactElement {
   );
 }
 
+function dndIdForTabUrl(url: string): string {
+  return `tabUrl:${encodeURIComponent(url)}`;
+}
+
+function DraggableTabChip({
+  enabled,
+  tab,
+  duplicateCount,
+  focusedUrl,
+  closingUrls,
+  selectedUrls,
+  selectionMode,
+  onFocus,
+  onClose,
+  onSave,
+  onChipClick,
+}: {
+  enabled: boolean;
+  tab: TabGroup['tabs'][number];
+  duplicateCount: number;
+  focusedUrl?: string | null;
+  closingUrls?: Set<string>;
+  selectedUrls?: Set<string>;
+  selectionMode: boolean;
+  onFocus: (url: string) => void;
+  onClose: (url: string) => void;
+  onSave: (url: string, title: string) => void;
+  onChipClick?: (url: string, event: React.MouseEvent) => void;
+}): React.ReactElement {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id: dndIdForTabUrl(tab.url),
+    disabled: !enabled,
+  });
+  const { role: _role, tabIndex: _tabIndex, ...dragAttributes } = attributes;
+
+  const style: React.CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.45 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="draggable-tab-row">
+      {enabled && (
+        <span
+          className="tab-drag-handle"
+          aria-label={`Drag ${tab.title || tab.url}`}
+          role="button"
+          tabIndex={0}
+          {...dragAttributes}
+          {...listeners}
+        >
+          ⋮
+        </span>
+      )}
+      <TabChip
+        url={tab.url}
+        title={tab.title}
+        duplicateCount={duplicateCount}
+        active={tab.active}
+        isFocused={tab.url === focusedUrl}
+        isClosing={closingUrls?.has(tab.url)}
+        isSelected={selectedUrls?.has(tab.url)}
+        selectionMode={selectionMode}
+        onFocus={onFocus}
+        onClose={onClose}
+        onSave={onSave}
+        onChipClick={onChipClick}
+      />
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────
 
 export function DomainCard({
@@ -106,11 +187,15 @@ export function DomainCard({
   selectedUrls,
   onChipClick,
   onToggleExpanded,
+  draggableTabs = false,
 }: DomainCardProps): React.ReactElement {
   const tabs = useMemo(() => group.tabs || [], [group.tabs]);
   const tabCount = tabs.length;
   const displayName = group.friendlyName || group.domain;
   const selectionMode = (selectedUrls?.size ?? 0) > 0;
+  const [iconFailed, setIconFailed] = useState(false);
+  const iconDomain = group.iconDomain ?? group.domain;
+  const initial = displayName.trim().charAt(0).toUpperCase() || '?';
 
   // Count URL occurrences to detect duplicates
   const { urlCounts, dupeUrls, totalExtras } = useMemo(() => {
@@ -195,16 +280,20 @@ export function DomainCard({
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
           )}
-          <img
-            src={getFaviconUrl(group.domain)}
-            alt=""
-            width={20}
-            height={20}
-            className="h-5 w-5 shrink-0 rounded-[3px]"
-            onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
-          />
+          {iconFailed || iconDomain === 'local-files' ? (
+            <span className="bg-surface-light dark:bg-surface-dark text-text-secondary flex h-5 w-5 shrink-0 items-center justify-center rounded-[3px] text-xs font-semibold">
+              {initial}
+            </span>
+          ) : (
+            <img
+              src={getFaviconUrl(iconDomain)}
+              alt=""
+              width={20}
+              height={20}
+              className="h-5 w-5 shrink-0 rounded-[3px]"
+              onError={() => setIconFailed(true)}
+            />
+          )}
           <h3 className="font-heading text-text-primary-light dark:text-text-primary-dark text-base font-semibold">
             {displayName}
           </h3>
@@ -228,15 +317,14 @@ export function DomainCard({
         {/* Tab chips */}
         <div className="flex flex-col gap-0.5">
           {visibleTabs.map((tab) => (
-            <TabChip
+            <DraggableTabChip
               key={tab.url}
-              url={tab.url}
-              title={tab.title}
+              enabled={draggableTabs && !selectionMode && group.itemType !== 'tabUrl'}
+              tab={tab}
               duplicateCount={urlCounts[tab.url] ?? 1}
-              active={tab.active}
-              isFocused={tab.url === focusedUrl}
-              isClosing={closingUrls?.has(tab.url)}
-              isSelected={selectedUrls?.has(tab.url)}
+              focusedUrl={focusedUrl}
+              closingUrls={closingUrls}
+              selectedUrls={selectedUrls}
               selectionMode={selectionMode}
               onFocus={handleFocusTab}
               onClose={handleCloseTab}

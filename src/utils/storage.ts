@@ -1,12 +1,23 @@
-import type { StorageSchema, SavedTab, Workspace, AppSettings } from '../types';
+import type {
+  StorageSchema,
+  SavedTab,
+  Workspace,
+  AppSettings,
+  OrganizerSection,
+  SectionAssignment,
+  ViewMode,
+} from '../types';
 
-const CURRENT_SCHEMA_VERSION = 2;
+const CURRENT_SCHEMA_VERSION = 3;
 const STORAGE_KEYS = [
   'schemaVersion',
   'deferred',
   'workspaces',
   'settings',
   'groupOrder',
+  'sections',
+  'sectionAssignments',
+  'viewMode',
 ] as const;
 
 /**
@@ -37,7 +48,50 @@ const EMPTY_SCHEMA: StorageSchema = {
   workspaces: [],
   settings: DEFAULT_SETTINGS,
   groupOrder: {},
+  sections: [],
+  sectionAssignments: [],
+  viewMode: 'cards',
 };
+
+function isViewMode(value: unknown): value is ViewMode {
+  return value === 'cards' || value === 'table';
+}
+
+function normalizeSections(value: unknown): OrganizerSection[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((section): section is OrganizerSection => {
+      if (!section || typeof section !== 'object') return false;
+      const candidate = section as Partial<OrganizerSection>;
+      return typeof candidate.id === 'string' && candidate.id.trim() !== '' && typeof candidate.name === 'string';
+    })
+    .map((section, index) => ({
+      id: section.id,
+      name: section.name.trim() || 'Untitled',
+      order: Number.isFinite(section.order) ? section.order : index,
+    }))
+    .sort((a, b) => a.order - b.order);
+}
+
+function normalizeAssignments(value: unknown): SectionAssignment[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((assignment): assignment is SectionAssignment => {
+      if (!assignment || typeof assignment !== 'object') return false;
+      const candidate = assignment as Partial<SectionAssignment>;
+      return (
+        (candidate.itemType === 'product' || candidate.itemType === 'tabUrl') &&
+        typeof candidate.itemKey === 'string' &&
+        typeof candidate.sectionId === 'string'
+      );
+    })
+    .map((assignment, index) => ({
+      itemType: assignment.itemType,
+      itemKey: assignment.itemKey,
+      sectionId: assignment.sectionId,
+      order: Number.isFinite(assignment.order) ? assignment.order : index,
+    }));
+}
 
 /**
  * Migrate storage data from older schema versions.
@@ -57,12 +111,20 @@ function migrate(data: Partial<StorageSchema>): StorageSchema {
     // v1 → v2: add groupOrder for drag-and-drop persistence
   }
 
+  if (version < 3) {
+    // v2 → v3: add user-owned sections, section assignments, and view mode.
+    // Do not create a Homepages section during migration.
+  }
+
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     deferred: Array.isArray(data.deferred) ? data.deferred : [],
     workspaces: Array.isArray(data.workspaces) ? data.workspaces : [],
     settings: { ...DEFAULT_SETTINGS, ...data.settings },
     groupOrder: data.groupOrder ?? {},
+    sections: normalizeSections(data.sections),
+    sectionAssignments: normalizeAssignments(data.sectionAssignments),
+    viewMode: isViewMode(data.viewMode) ? data.viewMode : 'cards',
   };
 }
 
@@ -75,6 +137,9 @@ async function readStorageSnapshot(): Promise<Partial<StorageSchema>> {
     workspaces: result.workspaces as Workspace[] | undefined,
     settings: result.settings as AppSettings | undefined,
     groupOrder: result.groupOrder as Record<string, number> | undefined,
+    sections: result.sections as OrganizerSection[] | undefined,
+    sectionAssignments: result.sectionAssignments as SectionAssignment[] | undefined,
+    viewMode: result.viewMode as ViewMode | undefined,
   };
 }
 
@@ -85,6 +150,9 @@ async function persistStorage(data: StorageSchema): Promise<void> {
     workspaces: data.workspaces,
     settings: data.settings,
     groupOrder: data.groupOrder,
+    sections: data.sections,
+    sectionAssignments: data.sectionAssignments,
+    viewMode: data.viewMode,
   });
 }
 
@@ -238,6 +306,32 @@ export async function writeGroupOrder(order: Record<string, number>): Promise<vo
  */
 export async function clearGroupOrder(): Promise<void> {
   await writeGroupOrder({});
+}
+
+export async function readOrganizerState(): Promise<{
+  sections: OrganizerSection[];
+  sectionAssignments: SectionAssignment[];
+  viewMode: ViewMode;
+}> {
+  const storage = await readStorage();
+  return {
+    sections: storage.sections,
+    sectionAssignments: storage.sectionAssignments,
+    viewMode: storage.viewMode,
+  };
+}
+
+export async function writeOrganizerState(state: {
+  sections?: OrganizerSection[];
+  sectionAssignments?: SectionAssignment[];
+  viewMode?: ViewMode;
+}): Promise<void> {
+  await updateStorage((storage) => ({
+    ...storage,
+    sections: state.sections ?? storage.sections,
+    sectionAssignments: state.sectionAssignments ?? storage.sectionAssignments,
+    viewMode: state.viewMode ?? storage.viewMode,
+  }));
 }
 
 /**

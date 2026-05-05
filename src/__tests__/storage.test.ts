@@ -59,32 +59,40 @@ vi.stubGlobal('chrome', {
 describe('readStorage', () => {
   it('returns default schema when storage is empty', async () => {
     const result = await readStorage();
-    expect(result.schemaVersion).toBe(2);
+    expect(result.schemaVersion).toBe(3);
     expect(result.deferred).toEqual([]);
     expect(result.workspaces).toEqual([]);
     expect(result.settings.theme).toBe('system');
     expect(result.groupOrder).toEqual({});
+    expect(result.sections).toEqual([]);
+    expect(result.sectionAssignments).toEqual([]);
+    expect(result.viewMode).toBe('cards');
   });
 
-  it('migrates from v0 (no schemaVersion) to v2', async () => {
+  it('migrates from v0 (no schemaVersion) to v3', async () => {
     storage['deferred'] = [{ id: '1', url: 'https://example.com', title: 'Test', domain: 'example.com', savedAt: '2026-01-01T00:00:00.000Z', completed: false, dismissed: false }];
     const result = await readStorage();
-    expect(result.schemaVersion).toBe(2);
+    expect(result.schemaVersion).toBe(3);
     expect(result.deferred).toHaveLength(1);
     expect(result.groupOrder).toEqual({});
+    expect(result.sections).toEqual([]);
+    expect(result.sectionAssignments).toEqual([]);
+    expect(result.viewMode).toBe('cards');
   });
 
-  it('migrates from v1 (no groupOrder) to v2', async () => {
+  it('migrates from v1 (no groupOrder) to v3', async () => {
     storage['schemaVersion'] = 1;
     storage['deferred'] = [];
     storage['workspaces'] = [];
     storage['settings'] = { ...DEFAULT_SETTINGS, theme: 'dark' };
     const result = await readStorage();
-    expect(result.schemaVersion).toBe(2);
+    expect(result.schemaVersion).toBe(3);
     expect(result.groupOrder).toEqual({});
+    expect(result.sections).toEqual([]);
+    expect(result.sectionAssignments).toEqual([]);
   });
 
-  it('preserves existing groupOrder from v2', async () => {
+  it('preserves existing groupOrder from v2 without creating Homepages', async () => {
     storage['schemaVersion'] = 2;
     storage['deferred'] = [];
     storage['workspaces'] = [];
@@ -92,6 +100,36 @@ describe('readStorage', () => {
     storage['groupOrder'] = { 'github.com': 0, 'google.com': 1 };
     const result = await readStorage();
     expect(result.groupOrder).toEqual({ 'github.com': 0, 'google.com': 1 });
+    expect(result.sections).toEqual([]);
+    expect(result.sectionAssignments).toEqual([]);
+    expect(result.viewMode).toBe('cards');
+  });
+
+  it('normalizes v3 organizer state', async () => {
+    storage['schemaVersion'] = 3;
+    storage['deferred'] = [];
+    storage['workspaces'] = [];
+    storage['settings'] = DEFAULT_SETTINGS;
+    storage['groupOrder'] = {};
+    storage['sections'] = [
+      { id: 'later', name: 'Later', order: 2 },
+      { id: 'homepages', name: 'Homepages', order: 1 },
+      { id: '', name: 'bad' },
+      { id: 'untitled', name: '   ', order: 3 },
+    ];
+    storage['sectionAssignments'] = [
+      { itemType: 'product', itemKey: 'youtube', sectionId: 'later', order: 0 },
+      { itemType: 'tabUrl', itemKey: 'https://example.com', sectionId: 'later' },
+      { itemType: 'bad', itemKey: 'x', sectionId: 'later' },
+    ];
+    storage['viewMode'] = 'table';
+
+    const result = await readStorage();
+
+    expect(result.sections.map((section) => section.id)).toEqual(['homepages', 'later', 'untitled']);
+    expect(result.sections.find((section) => section.id === 'untitled')?.name).toBe('Untitled');
+    expect(result.sectionAssignments).toHaveLength(2);
+    expect(result.viewMode).toBe('table');
   });
 });
 

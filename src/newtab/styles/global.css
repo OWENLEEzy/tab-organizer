@@ -17,8 +17,8 @@
   --color-text-secondary: #6B6966;
 
   /* Accent colors */
-  --color-accent-blue: #2383E2;
-  --color-accent-amber: #DFAB01;
+  --color-accent-blue: #0969DA;
+  --color-accent-amber: #8A5A00;
   --color-accent-red: #EB5757;
   --color-accent-sage: #4DAB9A;
 
@@ -46,15 +46,6 @@
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
   --shadow-card-hover: 0 4px 20px rgba(26, 22, 19, 0.06);
 
-  /* Z-index scale */
-  --z-base: 1;
-  --z-dropdown: 10;
-  --z-sticky: 20;
-  --z-overlay: 30;
-  --z-modal-backdrop: 40;
-  --z-modal: 50;
-  --z-toast: 60;
-  --z-max: 9999;
 }
 
 /* ─── Dark mode via class toggle ────────────────────────────────── */
@@ -119,9 +110,195 @@ body {
 .section-header {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 20px;
   margin-top: 8px;
+}
+
+.organizer-section {
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  margin-bottom: 24px;
+  min-height: 96px;
+  padding: 2px;
+}
+
+.organizer-section.is-over {
+  border-color: rgba(35, 131, 226, 0.35);
+  background: rgba(35, 131, 226, 0.04);
+}
+
+.section-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.draggable-tab-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.draggable-tab-row > .group {
+  flex: 1;
+  min-width: 0;
+}
+
+.tab-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  min-height: 36px;
+  flex-shrink: 0;
+  cursor: grab;
+  color: var(--color-text-secondary);
+}
+
+.tab-drag-handle:active {
+  cursor: grabbing;
+}
+
+.section-actions button,
+.view-toggle button,
+.product-table select,
+.table-actions button {
+  border-radius: var(--radius-chip);
+  min-height: 36px;
+}
+
+.section-actions button,
+.view-toggle button,
+.table-actions button {
+  cursor: pointer;
+  padding: 6px 10px;
+  color: var(--color-text-secondary);
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.section-actions button:hover,
+.view-toggle button:hover,
+.table-actions button:hover {
+  background: var(--color-surface-light);
+  color: var(--color-text-primary-light);
+}
+
+.dark .section-actions button:hover,
+.dark .view-toggle button:hover,
+.dark .table-actions button:hover {
+  background: var(--color-surface-dark);
+  color: var(--color-text-primary-dark);
+}
+
+.view-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-chip);
+}
+
+.dark .view-toggle {
+  border-color: var(--color-border-dark);
+}
+
+.view-toggle button.is-active {
+  background: var(--color-accent-blue);
+  color: rgb(255 255 255);
+}
+
+.product-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-card);
+  background: var(--color-card-light);
+}
+
+.dark .product-table-wrap {
+  border-color: var(--color-border-dark);
+  background: var(--color-card-dark);
+}
+
+.product-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+.product-table th,
+.product-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border-light);
+  color: var(--color-text-primary-light);
+  font-size: 14px;
+  text-align: left;
+}
+
+.product-table th {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dark .product-table th,
+.dark .product-table td {
+  border-color: var(--color-border-dark);
+  color: var(--color-text-primary-dark);
+}
+
+.product-table-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 320px;
+  min-height: 36px;
+  cursor: pointer;
+}
+
+.product-table-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-icon,
+.table-icon-fallback {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 3px;
+}
+
+.table-icon-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-light);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dark .table-icon-fallback {
+  background: var(--color-surface-dark);
+}
+
+.product-table select {
+  max-width: 180px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border-light);
+  background: transparent;
+  color: inherit;
+}
+
+.dark .product-table select {
+  border-color: var(--color-border-dark);
+}
+
+.table-actions {
+  display: inline-flex;
+  gap: 6px;
 }
 
 /* Masonry-like card grid */

@@ -8,6 +8,7 @@ import type { TabGroup } from '../../types';
 
 interface SortableDomainCardProps {
   group: TabGroup;
+  sortableId?: string;
   expanded?: boolean;
   maxChipsVisible?: number;
   onCloseDomain: (group: TabGroup) => void;
@@ -20,12 +21,14 @@ interface SortableDomainCardProps {
   selectedUrls?: Set<string>;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   onToggleExpanded?: (domain: string) => void;
+  draggableTabs?: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────
 
 export function SortableDomainCard({
   group,
+  sortableId,
   expanded,
   maxChipsVisible,
   onCloseDomain,
@@ -38,6 +41,7 @@ export function SortableDomainCard({
   selectedUrls,
   onChipClick,
   onToggleExpanded,
+  draggableTabs,
 }: SortableDomainCardProps): React.ReactElement {
   const {
     attributes,
@@ -46,7 +50,7 @@ export function SortableDomainCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: group.domain });
+  } = useSortable({ id: sortableId ?? group.domain });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -55,10 +59,10 @@ export function SortableDomainCard({
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
+    <div ref={setNodeRef} style={style}>
       <DomainCard
         group={group}
-        dragHandleProps={listeners}
+        dragHandleProps={{ ...attributes, ...listeners }}
         expanded={expanded}
         maxChipsVisible={maxChipsVisible}
         onCloseDomain={onCloseDomain}
@@ -71,6 +75,7 @@ export function SortableDomainCard({
         selectedUrls={selectedUrls}
         onChipClick={onChipClick}
         onToggleExpanded={onToggleExpanded}
+        draggableTabs={draggableTabs}
       />
     </div>
   );

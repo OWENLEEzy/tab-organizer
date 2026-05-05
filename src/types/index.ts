@@ -21,12 +21,22 @@ export interface TabGroup {
   domain: string;
   friendlyName: string;
   label?: string;
+  itemType?: 'product' | 'tabUrl';
+  itemKey?: string;
+  productKey?: string;
+  iconDomain?: string;
   tabs: Tab[];
   collapsed: boolean;
   order: number;
   color: string;
   hasDuplicates: boolean;
   duplicateCount: number;
+}
+
+export interface ProductInfo {
+  key: string;
+  label: string;
+  iconDomain: string;
 }
 
 // ─── Saved for Later ─────────────────────────────────────────────
@@ -74,6 +84,23 @@ export interface LandingPagePattern {
   test?: (path: string, url: string) => boolean;
 }
 
+// ─── Hybrid Organizer ──────────────────────────────────────────────
+
+export type ViewMode = 'cards' | 'table';
+
+export interface OrganizerSection {
+  id: string;
+  name: string;
+  order: number;
+}
+
+export interface SectionAssignment {
+  itemType: 'product' | 'tabUrl';
+  itemKey: string;
+  sectionId: string;
+  order: number;
+}
+
 // ─── App Settings ────────────────────────────────────────────────
 
 export interface AppSettings {
@@ -93,6 +120,9 @@ export interface StorageSchema {
   workspaces: Workspace[];
   settings: AppSettings;
   groupOrder: Record<string, number>;
+  sections: OrganizerSection[];
+  sectionAssignments: SectionAssignment[];
+  viewMode: ViewMode;
 }
 
 // ─── Store Types ─────────────────────────────────────────────────
@@ -100,6 +130,9 @@ export interface StorageSchema {
 export interface TabState {
   tabs: Tab[];
   groups: TabGroup[];
+  sections: OrganizerSection[];
+  sectionAssignments: SectionAssignment[];
+  viewMode: ViewMode;
   loading: boolean;
   showAllWindows: boolean;
 }
