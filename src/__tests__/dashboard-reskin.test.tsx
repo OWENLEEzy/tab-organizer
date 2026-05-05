@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { CommandHeader } from '../newtab/components/layout/CommandHeader';
+import { DashboardHeader } from '../newtab/components/layout/DashboardHeader';
 import { DashboardShell } from '../newtab/components/layout/DashboardShell';
 import { StatusStrip } from '../newtab/components/layout/StatusStrip';
 import { UtilityPanel } from '../newtab/components/layout/UtilityPanel';
@@ -47,15 +47,22 @@ describe('MotherDuck-inspired layout components', () => {
     expect(screen.getByRole('button', { name: 'Close extras' })).toBeInTheDocument();
   });
 
-  it('renders command header without marketing copy', () => {
+  it('renders dashboard header without marketing copy', () => {
     render(
-      <CommandHeader
+      <DashboardHeader
         title="OPEN TABS BY PRODUCT"
-        context="Tuesday, May 5, 2026"
-        metrics={[
-          { label: 'saved', value: 5 },
-          { label: 'sessions', value: 2 },
-        ]}
+        hasGroups
+        searchQuery=""
+        onSearchChange={() => {}}
+        resultCount={5}
+        totalCount={8}
+        viewMode="cards"
+        onViewModeChange={() => {}}
+        organizeActive={false}
+        canOrganize
+        onToggleOrganize={() => {}}
+        onCreateSection={() => {}}
+        onCloseAll={() => {}}
         onOpenSettings={() => {}}
       />,
     );
@@ -68,8 +75,25 @@ describe('MotherDuck-inspired layout components', () => {
     render(
       <DashboardShell
         top={<StatusStrip totalTabs={1} totalDupes={0} totalProducts={1} alerts={[]} />}
-        header={<CommandHeader title="OPEN TABS BY PRODUCT" context="Today" metrics={[]} onOpenSettings={() => {}} />}
-        toolbar={<div>Toolbar</div>}
+        header={
+          <DashboardHeader
+            title="OPEN TABS BY PRODUCT"
+            hasGroups
+            searchQuery=""
+            onSearchChange={() => {}}
+            resultCount={1}
+            totalCount={1}
+            viewMode="cards"
+            onViewModeChange={() => {}}
+            organizeActive={false}
+            canOrganize
+            onToggleOrganize={() => {}}
+            onCreateSection={() => {}}
+            onCloseAll={() => {}}
+            onOpenSettings={() => {}}
+          />
+        }
+        toolbar={null}
         utilities={<UtilityPanel title="Saved">Saved item</UtilityPanel>}
       >
         <main>Product grid</main>
@@ -90,8 +114,7 @@ describe('dashboard reskin composition contract', () => {
 
     expect(appSource).toContain('DashboardShell');
     expect(appSource).toContain('StatusStrip');
-    expect(appSource).toContain('CommandHeader');
-    expect(appSource).toContain('DashboardToolbar');
+    expect(appSource).toContain('DashboardHeader');
     expect(appSource).toContain('SectionBoard');
     expect(appSource).toContain('ProductTable');
   });

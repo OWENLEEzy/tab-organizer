@@ -154,6 +154,40 @@ function seedDashboard(): void {
   }, true);
 }
 
+function seedEmptyDashboard(): void {
+  chromeStorage.data = {
+    schemaVersion: 3,
+    deferred: [],
+    workspaces: [],
+    settings: DEFAULT_SETTINGS,
+    groupOrder: {},
+    sections: [],
+    sectionAssignments: [],
+    viewMode: 'cards',
+    recoveryCandidate: null,
+    recoveryHistory: [],
+  };
+  chromeTabs.query.mockResolvedValue([]);
+  chromeTabs.getCurrent.mockResolvedValue({ id: 99 });
+
+  useTabStore.setState({
+    ...useTabStore.getInitialState(),
+    tabs: [],
+    groups: [],
+    sections: [],
+    sectionAssignments: [],
+    viewMode: 'cards',
+    loading: false,
+    fetchTabs: vi.fn().mockResolvedValue(undefined),
+    startListeners: vi.fn(() => () => {}),
+  }, true);
+  useSettingsStore.setState({
+    ...useSettingsStore.getInitialState(),
+    settings: DEFAULT_SETTINGS,
+    fetchSettings: vi.fn().mockResolvedValue(undefined),
+  }, true);
+}
+
 describe('App organize mode', () => {
   beforeEach(() => {
     cleanup();
@@ -181,5 +215,20 @@ describe('App organize mode', () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/drag github group/i)).toBeInTheDocument();
     });
+  });
+
+  it('keeps settings available when there are no tab groups', async () => {
+    const user = userEvent.setup();
+    seedEmptyDashboard();
+
+    render(<App />);
+
+    expect(await screen.findByText('No tabs to organize')).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox', { name: 'Search tabs' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Organize' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Settings' }));
+
+    expect(await screen.findByRole('dialog', { name: 'Settings' })).toBeInTheDocument();
   });
 });

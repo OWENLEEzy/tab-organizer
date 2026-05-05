@@ -5,7 +5,7 @@ test.describe('Tab Management', () => {
     await page.goto('/e2e-harness.html');
   });
 
-  test('displays dashboard command header', async ({ page }) => {
+  test('displays dashboard header', async ({ page }) => {
     await expect(
       page.getByRole('heading', { name: 'OPEN TABS BY PRODUCT' }),
     ).toBeVisible();

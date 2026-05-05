@@ -3,7 +3,9 @@
  * This file is loaded via addInitScript in Playwright tests
  */
 
-export const mockChromeApi = () => {
+export type E2EScenario = 'default' | 'duplicates' | 'empty' | 'many-tabs';
+
+export const mockChromeApi = (scenario: E2EScenario = 'default') => {
   const storageKey = '__tab_out_e2e_storage__';
   const readStorageData = (): Record<string, unknown> => {
     try {
@@ -36,13 +38,15 @@ export const mockChromeApi = () => {
     { id: 10, url: 'https://stackoverflow.com/questions/123', title: 'Test Question - Stack Overflow', favIconUrl: 'https://stackoverflow.com/favicon.ico', windowId: 1, active: false, index: 9, pinned: false, highlighted: false, incognito: false, selected: false, status: 'complete', frozen: false, discarded: false, autoDiscardable: true, groupId: -1 },
   ];
 
+  const scenarioTabs = scenario === 'empty' ? [] : mockTabs;
+
   const chromeMock = {
     tabs: {
-      query: () => Promise.resolve(mockTabs),
+      query: () => Promise.resolve(scenarioTabs),
       remove: () => Promise.resolve(),
       update: () => Promise.resolve(),
       create: () => Promise.resolve(),
-      get: () => Promise.resolve(mockTabs[0]),
+      get: () => Promise.resolve(scenarioTabs[0]),
       getCurrent: () => Promise.resolve({ id: 1, url: 'chrome://newtab', windowId: 1, active: true }),
       onActivated: createEvent(),
       onAttached: createEvent(),

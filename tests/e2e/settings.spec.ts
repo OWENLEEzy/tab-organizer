@@ -34,7 +34,7 @@ test.describe('Settings & Theme', () => {
     await expect(settingsGear).toBeVisible();
   });
 
-  test('settings action is part of the command header', async ({ page }) => {
+  test('settings action is part of the dashboard header', async ({ page }) => {
     const header = page.getByRole('banner');
     const settingsGear = header.getByRole('button', { name: 'Settings', exact: true });
     await expect(settingsGear).toBeVisible();
@@ -46,6 +46,18 @@ test.describe('Settings & Theme', () => {
 
     const dialog = page.locator('[role="dialog"]');
     await expect(dialog).toBeVisible();
+  });
+
+  test('settings stays available when the dashboard has no tabs', async ({ page }) => {
+    await page.goto('/e2e-harness.html?scenario=empty');
+
+    await expect(page.getByText('No tabs to organize')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Organize', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+
+    await expect(page.locator('[role="dialog"]')).toBeVisible();
   });
 
   test('dialog has backdrop', async ({ page }) => {

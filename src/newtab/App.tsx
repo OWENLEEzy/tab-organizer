@@ -11,8 +11,7 @@ import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { DashboardShell } from './components/layout/DashboardShell';
 import { StatusStrip } from './components/layout/StatusStrip';
 import type { StatusStripAlert } from './components/layout/StatusStrip';
-import { CommandHeader } from './components/layout/CommandHeader';
-import { DashboardToolbar } from './components/layout/DashboardToolbar';
+import { DashboardHeader } from './components/layout/DashboardHeader';
 import { useTabStore } from '../stores/tab-store';
 import { useSettingsStore } from '../stores/settings-store';
 import { clearGroupOrder } from '../utils/storage';
@@ -36,15 +35,6 @@ const SettingsPanel = React.lazy(() =>
 
 function productKeyForGroup(group: TabGroup): string {
   return group.productKey ?? group.itemKey ?? group.domain;
-}
-
-function getDashboardDateDisplay(): string {
-  return new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
 }
 
 function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void {
@@ -580,33 +570,24 @@ export function App(): React.ReactElement {
           />
         }
         header={
-          <CommandHeader
+          <DashboardHeader
             title="OPEN TABS BY PRODUCT"
-            context={getDashboardDateDisplay()}
-            metrics={[
-              { label: 'sections', value: orderedSections.length },
-              { label: 'view', value: viewMode },
-            ]}
+            hasGroups={!showEmptyState}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            resultCount={filteredTabCount}
+            totalCount={totalTabs}
+            viewMode={viewMode}
+            onViewModeChange={handleSetViewMode}
+            organizeActive={organizeActive}
+            canOrganize={canOrganize}
+            onToggleOrganize={handleToggleOrganizeMode}
+            onCreateSection={handleCreateSection}
+            onCloseAll={handleCloseAll}
             onOpenSettings={() => setSettingsOpen(true)}
           />
         }
-        toolbar={
-          groups.length > 0 ? (
-            <DashboardToolbar
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              resultCount={filteredTabCount}
-              totalCount={totalTabs}
-              viewMode={viewMode}
-              onViewModeChange={handleSetViewMode}
-              organizeActive={organizeActive}
-              canOrganize={canOrganize}
-              onToggleOrganize={handleToggleOrganizeMode}
-              onCreateSection={handleCreateSection}
-              onCloseAll={handleCloseAll}
-            />
-          ) : null
-        }
+        toolbar={null}
       >
         {showEmptyState ? (
           <EmptyState />
@@ -623,32 +604,34 @@ export function App(): React.ReactElement {
                   onFocusTab={handleFocusTab}
                 />
               ) : organizeActive ? (
-                <React.Suspense fallback={null}>
-                  <DndOrganizer
-                    filteredGroups={filteredGroups}
-                    unsectionedGroups={unsectionedGroups}
-                    orderedSections={orderedSections}
-                    groupsBySection={groupsBySection}
-                    assignmentByItemId={assignmentByItemId}
-                    itemIdForGroup={itemIdForGroup}
-                    expandedDomains={expandedDomains}
-                    maxChipsVisible={settings.maxChipsVisible}
-                    focusedUrl={focusedUrl}
-                    closingUrls={closingUrls}
-                    selectedUrls={selectedUrls}
-                    onMoveProductToMain={handleMoveProductToMain}
-                    onMoveProductToSection={handleMoveProductToSection}
-                    onReorderGroups={handleReorderGroups}
-                    onRenameSection={handleRenameSection}
-                    onDeleteSection={handleDeleteSection}
-                    onCloseDomain={handleCloseDomain}
-                    onCloseDuplicates={handleCloseDuplicates}
-                    onCloseTab={handleCloseTabAnimated}
-                    onFocusTab={handleFocusTab}
-                    onChipClick={handleChipClick}
-                    onToggleExpanded={handleToggleExpanded}
-                  />
-                </React.Suspense>
+                <ErrorBoundary>
+                  <React.Suspense fallback={null}>
+                    <DndOrganizer
+                      filteredGroups={filteredGroups}
+                      unsectionedGroups={unsectionedGroups}
+                      orderedSections={orderedSections}
+                      groupsBySection={groupsBySection}
+                      assignmentByItemId={assignmentByItemId}
+                      itemIdForGroup={itemIdForGroup}
+                      expandedDomains={expandedDomains}
+                      maxChipsVisible={settings.maxChipsVisible}
+                      focusedUrl={focusedUrl}
+                      closingUrls={closingUrls}
+                      selectedUrls={selectedUrls}
+                      onMoveProductToMain={handleMoveProductToMain}
+                      onMoveProductToSection={handleMoveProductToSection}
+                      onReorderGroups={handleReorderGroups}
+                      onRenameSection={handleRenameSection}
+                      onDeleteSection={handleDeleteSection}
+                      onCloseDomain={handleCloseDomain}
+                      onCloseDuplicates={handleCloseDuplicates}
+                      onCloseTab={handleCloseTabAnimated}
+                      onFocusTab={handleFocusTab}
+                      onChipClick={handleChipClick}
+                      onToggleExpanded={handleToggleExpanded}
+                    />
+                  </React.Suspense>
+                </ErrorBoundary>
               ) : (
                 <>
                   <SectionBoard
