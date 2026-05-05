@@ -4,72 +4,103 @@
 /* ─── Warm flat dashboard tokens ────────────────────────────────── */
 /* stylelint-disable custom-property-pattern, custom-property-empty-line-before */
 @theme {
-  --to-bg-page: #f4efea;
-  --to-bg-surface: #ffffff;
-  --to-bg-muted: #f8f8f7;
-  --to-bg-stone: #e4ded7;
-  --to-bg-yellow: #ffde00;
-  --to-bg-blue: #6fc2ff;
-  --to-bg-teal: #16aa98;
-  --to-bg-coral: #ff7169;
-  --to-bg-dark: #383838;
+  --color-to-bg-page: #f4efea;
+  --color-to-bg-surface: #ffffff;
+  --color-to-bg-muted: #f8f8f7;
+  --color-to-bg-stone: #e4ded7;
+  --color-to-bg-yellow: #ffde00;
+  --color-to-bg-blue: #6fc2ff;
+  --color-to-bg-teal: #16aa98;
+  --color-to-bg-coral: #ff7169;
+  --color-to-bg-dark: #121212;
 
-  --to-text-primary: #383838;
-  --to-text-secondary: #5b5b5b;
-  --to-text-muted: #818181;
-  --to-text-inverse: #ffffff;
+  --color-to-text-primary: #383838;
+  --color-to-text-secondary: #5b5b5b;
+  --color-to-text-muted: #818181;
+  --color-to-text-inverse: #ffffff;
 
-  --to-border-strong: #383838;
-  --to-border-muted: rgba(56, 56, 56, 0.24);
-  --to-border-inverse: #ffffff;
+  --color-to-text-primary-dark: #ffffff;
+  --color-to-text-secondary-dark: #cccccc;
+  --color-to-text-muted-dark: #999999;
 
-  --to-radius-card: 2px;
-  --to-radius-button: 2px;
-  --to-border-width: 1px;
-  --to-border-width-strong: 2px;
-  --to-shadow-none: none;
+  --color-to-border-strong: #383838;
+  --color-to-border-muted: rgba(56, 56, 56, 0.24);
+  --color-to-border-inverse: #ffffff;
+  --color-to-border-dark: #444444;
 
-  --to-font-display: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
-  --to-font-ui: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
-  --to-font-reading: 'DM Sans', system-ui, sans-serif;
+  --radius-to-card: 2px;
+  --radius-to-button: 2px;
+  --color-to-border-width: 1px;
+  --color-to-border-width-strong: 2px;
+  --shadow-to-none: none;
 
-  --color-surface-light: var(--to-bg-muted);
-  --color-surface-dark: #2f2f2f;
-  --color-border-light: var(--to-border-strong);
-  --color-border-dark: #f4efea;
-  --color-text-primary-light: var(--to-text-primary);
-  --color-text-primary-dark: #f4efea;
-  --color-text-secondary: var(--to-text-secondary);
-  --color-accent-blue: var(--to-bg-blue);
+  --font-family-to-display: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
+  --font-family-to-ui: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
+  --font-family-to-reading: 'DM Sans', system-ui, sans-serif;
+
+  --color-surface-light: var(--color-to-bg-muted);
+  --color-surface-dark: #1e1e1e;
+  --color-border-light: var(--color-to-border-strong);
+  --color-border-dark: var(--color-to-border-dark);
+  --color-text-primary-light: var(--color-to-text-primary);
+  --color-text-primary-dark: var(--color-to-text-primary-dark);
+  --color-text-secondary: var(--color-to-text-secondary);
+  --color-text-muted: var(--color-to-text-muted);
+  --color-accent-blue: var(--color-to-bg-blue);
   --color-accent-amber: #8a5a00;
-  --color-accent-red: var(--to-bg-coral);
-  --color-accent-sage: var(--to-bg-teal);
-  --color-bg-light: var(--to-bg-page);
-  --color-bg-dark: var(--to-bg-dark);
-  --color-card-light: var(--to-bg-surface);
-  --color-card-dark: #3f3f3f;
-  --color-toast-bg-light: var(--to-text-primary);
-  --color-toast-bg-dark: var(--to-bg-surface);
-  --font-family-heading: var(--to-font-display);
-  --font-family-body: var(--to-font-ui);
-  --radius-card: var(--to-radius-card);
-  --radius-chip: var(--to-radius-button);
-  --shadow-card: var(--to-shadow-none);
-  --shadow-card-hover: var(--to-shadow-none);
+  --color-accent-red: var(--color-to-bg-coral);
+  --color-accent-sage: var(--color-to-bg-teal);
+  --color-bg-light: var(--color-to-bg-page);
+  --color-bg-dark: var(--color-to-bg-dark);
+  --color-card-light: var(--color-to-bg-surface);
+  --color-card-dark: #2a2a2a;
+  --color-toast-bg-light: var(--color-to-text-primary);
+  --color-toast-bg-dark: var(--color-to-bg-surface);
+  --font-family-heading: var(--font-family-to-display);
+  --font-family-body: var(--font-family-to-ui);
+  --radius-card: var(--radius-to-card);
+  --radius-chip: var(--radius-to-button);
+  --shadow-card: var(--shadow-to-none);
+  --shadow-card-hover: var(--shadow-to-none);
 }
 /* stylelint-enable custom-property-pattern, custom-property-empty-line-before */
 
 /* ─── Dark mode via class toggle ────────────────────────────────── */
 @variant dark (&:where(.dark, .dark *));
 
-/* ─── Custom properties for non-Tailwind usage (confetti, canvas) ── */
+/* stylelint-disable custom-property-pattern, custom-property-empty-line-before */
+.dark {
+  --color-to-bg-dark: #0a0a0a;
+  --color-to-bg-surface: #141414;
+  --color-to-bg-muted: #1a1a1a;
+  
+  --color-bg-light: var(--color-to-bg-dark);
+  --color-text-primary-light: #ffffff;
+  --color-text-secondary: #a3a3a3;
+  --color-text-muted: #737373;
+  --color-border-light: #262626;
+  --color-card-light: #171717;
+  --color-surface-light: #262626;
 
-/* No decorative page overlay in the warm flat system. */
-body::before {
-  content: none;
+  --color-accent-blue: #60a5fa;
+  --color-accent-amber: #f59e0b;
+  --color-accent-red: #f87171;
+  --color-accent-sage: #34d399;
 }
 
-/* Base body styles */
+/* Ensure text classes work in dark mode */
+.dark .text-text-secondary {
+  color: var(--color-text-secondary) !important;
+}
+
+.dark .text-text-muted {
+  color: var(--color-text-muted) !important;
+}
+
+.dark .favicon {
+  filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.7));
+}
+
 body {
   background: var(--color-bg-light);
   color: var(--color-text-primary-light);
@@ -77,11 +108,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
-.dark body {
-  background: var(--color-bg-dark);
-  color: var(--color-text-primary-dark);
-}
+/* stylelint-enable custom-property-pattern, custom-property-empty-line-before */
 
 /* ─── Global focus ring ─────────────────────────────────────────── */
 :focus-visible {
@@ -94,33 +121,58 @@ body {
   outline: none;
 }
 
-/* Container for the app */
-.tab-out-container {
-  position: relative;
-  z-index: 1;
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 48px 32px 80px;
+/* ─── Global Layout ────────────────────────────────────────────── */
+body, html {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
-/* Expand container when sidebar is visible */
-.tab-out-container:has(.dashboard-columns) {
-  max-width: 1300px;
+#root {
+  width: 100%;
 }
 
 .dashboard-shell {
   position: relative;
   z-index: 1;
-  width: min(1280px, calc(100vw - 32px));
+  width: 100%;
+  min-width: 100vw;
+  min-height: 100vh;
+  background: var(--color-bg-light);
+}
+
+.dashboard-full-width {
+  width: 100% !important;
+  min-width: 100vw;
+  display: block;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+}
+
+/* Base grid layout for all sections */
+.dashboard-grid-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: min(1280px, calc(100vw - 48px));
   margin: 0 auto;
-  padding: 0 0 72px;
+}
+
+.dashboard-grid-layout.has-sidebar {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: 32px;
 }
 
 .dashboard-workspace {
-  display: grid;
+  padding: 32px 0 80px;
+}
+
+.dashboard-workspace.has-utilities {
   grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
-  gap: 24px;
-  align-items: start;
 }
 
 .dashboard-primary {
@@ -361,19 +413,11 @@ body {
 }
 
 .product-table-wrap {
-  overflow-x: auto;
-  border: 2px solid var(--color-border-light);
-  border-radius: var(--radius-card);
-  background: var(--color-card-light);
-}
-
-.dark .product-table-wrap {
-  border-color: var(--color-border-dark);
-  background: var(--color-card-dark);
+  width: 100%;
 }
 
 .product-table {
-  width: 100%;
+  width: auto;
   min-width: 720px;
   border-collapse: collapse;
 }
@@ -395,10 +439,60 @@ body {
   text-transform: uppercase;
 }
 
+.product-table-expand-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-chip);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.product-table-expand-toggle:hover {
+  background: var(--color-surface-light);
+  color: var(--color-text-primary-light);
+}
+
+
+.product-table-detail-row td {
+  padding: 0 !important;
+  border-bottom: 2px solid var(--color-border-light);
+}
+
+.product-table-tabs-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 12px 16px 48px;
+  background: var(--color-surface-light);
+}
+
+.product-table-tabs-list > div {
+  max-width: 600px;
+  width: 100%;
+}
+
 .dark .product-table th,
 .dark .product-table td {
   border-color: var(--color-border-dark);
   color: var(--color-text-primary-dark);
+}
+
+.dark .product-table-detail-row td {
+  border-color: var(--color-border-dark);
+}
+
+.dark .product-table-expand-toggle:hover {
+  background: var(--color-surface-dark);
+  color: var(--color-text-primary-dark);
+}
+
+.dark .product-table-tabs-list {
+  background: var(--color-bg-dark);
 }
 
 .product-table-name {
@@ -455,6 +549,7 @@ body {
   display: inline-flex;
   gap: 6px;
 }
+
 
 /* Masonry-like card grid */
 .missions {

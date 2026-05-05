@@ -28,25 +28,23 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
   const GITHUB_URL = 'https://github.com/OWENLEEzy/tab-out';
 
   return (
-    <footer className="border-border-light dark:border-border-dark mt-12 border-t pt-5">
-      <div className="text-text-secondary flex items-center justify-between text-xs">
-        <div className="stat">
+    <footer className="pt-8 pb-12" aria-label="Dashboard footer">
+      <div className="text-text-secondary flex items-center justify-between text-xs font-semibold tracking-wider uppercase">
+        <div className="flex items-center gap-2">
           <span
-            className={`font-heading text-text-primary-light dark:text-text-primary-dark inline-block text-lg font-light${popping ? ' animate-[countPop_0.3s_ease]' : ''}`}
+            className={`font-heading text-text-primary-light dark:text-text-primary-dark inline-block text-2xl font-light${popping ? ' animate-[countPop_0.3s_ease]' : ''}`}
           >
             {tabCount}
           </span>
-          <span className="ml-1.5">open tab{tabCount !== 1 ? 's' : ''}</span>
+          <span className="opacity-70">open tabs</span>
         </div>
-        <span>
-          <a
-            href={GITHUB_URL}
-            target="_top"
-            className="text-text-secondary hover:text-text-primary-light dark:hover:text-text-primary-dark underline underline-offset-2 transition-colors"
-          >
-            Tab Out
-          </a>
-        </span>
+        <a
+          href={GITHUB_URL}
+          target="_top"
+          className="text-text-secondary hover:text-accent-blue transition-colors underline underline-offset-4"
+        >
+          Tab Out — Open Source
+        </a>
       </div>
     </footer>
   );

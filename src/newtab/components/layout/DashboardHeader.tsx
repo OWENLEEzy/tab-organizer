@@ -14,12 +14,18 @@ interface DashboardHeaderProps {
   totalCount: number;
   viewMode: 'cards' | 'table';
   onViewModeChange: (mode: 'cards' | 'table') => void;
-  organizeActive: boolean;
-  canOrganize: boolean;
-  onToggleOrganize: () => void;
+  onRefresh: () => void;
   onCreateSection: () => void;
   onCloseAll: () => void;
   onOpenSettings: () => void;
+}
+
+function RefreshIcon(): React.ReactElement {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-4 w-4">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+    </svg>
+  );
 }
 
 function SettingsIcon(): React.ReactElement {
@@ -51,9 +57,7 @@ export function DashboardHeader({
   totalCount,
   viewMode,
   onViewModeChange,
-  organizeActive,
-  canOrganize,
-  onToggleOrganize,
+  onRefresh,
   onCreateSection,
   onCloseAll,
   onOpenSettings,
@@ -61,26 +65,27 @@ export function DashboardHeader({
   const sectionLabel = `${sectionCount} Section${sectionCount === 1 ? '' : 's'}`;
 
   return (
-    <header className="mb-5 border-2 border-border-light bg-card-light p-3 dark:border-border-dark dark:bg-card-dark sm:p-4" aria-label="Dashboard controls">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-3 border-b-2 border-border-light pb-3 dark:border-border-dark lg:flex-row lg:items-center lg:justify-between">
+    <header className="pb-6 pt-8" aria-label="Dashboard controls">
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4 border-b-2 border-border-light pb-5 dark:border-border-dark lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <p className="font-body text-xs font-semibold tracking-normal text-text-secondary">
+            <p className="font-body text-xs font-semibold tracking-normal text-text-secondary uppercase">
               {dateLabel}
             </p>
-            <h1 className="mt-1 font-heading text-xl font-normal tracking-normal text-text-primary-light dark:text-text-primary-dark">
+            <h1 className="mt-1 font-heading text-3xl font-normal tracking-tight text-text-primary-light dark:text-text-primary-dark">
               {title}
             </h1>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             {hasGroups ? (
               <>
-                <span className="inline-flex min-h-11 items-center border-2 border-border-light px-3 py-2 font-body text-xs font-medium text-text-secondary dark:border-border-dark">
+                <span className="inline-flex items-center rounded-sm bg-surface-light px-3 py-1.5 font-body text-xs font-semibold text-text-secondary dark:bg-surface-dark">
                   {sectionLabel}
                 </span>
                 <ViewToggle value={viewMode} onChange={onViewModeChange} />
               </>
             ) : null}
+            <div className="h-6 w-px bg-border-light dark:bg-border-dark mx-2" />
             <ActionButton variant="quiet" icon={<SettingsIcon />} onClick={onOpenSettings} aria-label="Settings">
               Settings
             </ActionButton>
@@ -88,8 +93,8 @@ export function DashboardHeader({
         </div>
 
         {hasGroups ? (
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <div className="min-w-0 flex-1 md:min-w-[18rem]">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <div className="min-w-0 flex-1 md:min-w-[24rem]">
               <SearchBar
                 value={searchQuery}
                 onChange={onSearchChange}
@@ -98,13 +103,8 @@ export function DashboardHeader({
               />
             </div>
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
-              <ActionButton
-                variant={organizeActive ? 'primary' : 'default'}
-                onClick={onToggleOrganize}
-                aria-pressed={organizeActive}
-                disabled={!canOrganize}
-              >
-                Organize
+              <ActionButton variant="quiet" icon={<RefreshIcon />} onClick={onRefresh} aria-label="Refresh tabs">
+                Refresh
               </ActionButton>
               <ActionButton onClick={onCreateSection}>New Section</ActionButton>
               <ActionButton variant="danger" onClick={onCloseAll}>Close All</ActionButton>
