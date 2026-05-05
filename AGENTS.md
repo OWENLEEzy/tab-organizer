@@ -8,7 +8,7 @@ You're installing **Tab Out** for the user. Your job is not just to set it up --
 
 Before doing anything technical, tell the user what they're about to get:
 
-> **Tab Out** replaces your new tab page with a clean dashboard of everything you have open, grouped by domain.
+> **Tab Out** opens a clean dashboard of everything you have open, grouped by domain, when you click its toolbar icon.
 >
 > Here's what makes it great:
 > - **See all your open tabs at a glance** grouped by domain on a grid
@@ -23,37 +23,41 @@ Before doing anything technical, tell the user what they're about to get:
 
 ---
 
-## Step 1 -- Clone the repo
+## Step 1 -- Clone and build
 
 ```bash
-git clone https://github.com/zarazhangrui/tab-out.git
+git clone https://github.com/OWENLEEzy/tab-out.git
 cd tab-out
+npm install
+npm run build
 ```
 
 ---
 
 ## Step 2 -- Install the Chrome extension
 
-This is the one step that requires manual action from the user. Make it as easy as possible.
+Run these exact steps in Chrome.
 
-**First**, print the full path to the `extension/` folder:
 ```bash
-echo "Extension folder: $(cd extension && pwd)"
+open "chrome://extensions"
 ```
 
-**Then**, copy the `extension/` folder path to their clipboard:
-- macOS: `cd extension && pwd | pbcopy && echo "Path copied to clipboard"`
-- Linux: `cd extension && pwd | xclip -selection clipboard 2>/dev/null || echo "Path: $(pwd)"`
-- Windows: `cd extension && echo %CD% | clip`
+1. Enable **Developer mode** (top-right)
+2. Click **Load unpacked**
+3. Select the `dist/` folder
+4. Click the Tab Out toolbar icon to open the dashboard
 
-**Then**, open the extensions page:
+### Optional
+- macOS: `cd dist && pwd | pbcopy && echo "Path copied to clipboard"`
+- Linux: `cd dist && pwd | xclip -selection clipboard 2>/dev/null || echo "Path: $(pwd)"`
+- Windows: `cd dist && echo %CD% | clip`
 ```bash
 open "chrome://extensions"
 ```
 
 **Then**, walk the user through it step by step:
 
-> I've copied the extension folder path to your clipboard. Now:
+> I've copied the dist folder path to your clipboard. Now:
 >
 > 1. You should see Chrome's extensions page. In the **top-right corner**, toggle on **Developer mode** (it's a switch).
 > 2. Once Developer mode is on, you'll see a button called **"Load unpacked"** appear in the top-left. Click it.
@@ -62,10 +66,10 @@ open "chrome://extensions"
 >
 > You should see "Tab Out" appear in your extensions list.
 
-**Also**, open the file browser directly to the extension folder as a fallback:
-- macOS: `open extension/`
-- Linux: `xdg-open extension/`
-- Windows: `explorer extension\\`
+**Also**, open the file browser directly to the dist folder as a fallback:
+- macOS: `open dist/`
+- Linux: `xdg-open dist/`
+- Windows: `explorer dist\\`
 
 ---
 
@@ -73,7 +77,7 @@ open "chrome://extensions"
 
 Once the extension is loaded:
 
-> You're all set! Open a **new tab** and you'll see Tab Out.
+> You're all set! Click the Tab Out toolbar icon to open the dashboard tab.
 >
 > Here's how it works:
 > 1. **Your open tabs are grouped by domain** in a grid layout.

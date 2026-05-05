@@ -19,7 +19,7 @@ describe('touch target regressions', () => {
   it('keeps the search field and clear button at accessible sizes', () => {
     render(<SearchBar value="docs" onChange={() => {}} resultCount={1} totalCount={4} />);
 
-    expectTouchHeight(screen.getByRole('textbox', { name: 'Search tabs' }));
+    expectTouchHeight(screen.getByRole('searchbox', { name: 'Search tabs' }));
 
     const clearButton = screen.getByRole('button', { name: 'Clear search' });
     expectTouchHeight(clearButton);
@@ -47,7 +47,7 @@ describe('touch target regressions', () => {
       <DeferredItem
         item={{
           id: 'saved-1',
-          url: 'https://github.com/zarazhangrui/tab-out',
+          url: 'https://github.com/OWENLEEzy/tab-out',
           title: 'Tab Out repo',
           domain: 'github.com',
           savedAt,
@@ -75,7 +75,7 @@ describe('touch target regressions', () => {
 
     rerender(
       <TabChip
-        url="https://github.com/zarazhangrui/tab-out"
+        url="https://github.com/OWENLEEzy/tab-out"
         title="Tab Out repo"
         duplicateCount={2}
         active

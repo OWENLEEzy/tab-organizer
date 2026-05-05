@@ -56,14 +56,14 @@ describe('useTabStore', () => {
 
   it('closes only one underlying tab per selected chip URL', async () => {
     chromeTabs.query.mockResolvedValue([
-      { id: 11, url: 'https://github.com/zarazhangrui/tab-out' },
-      { id: 12, url: 'https://github.com/zarazhangrui/tab-out' },
+      { id: 11, url: 'https://github.com/OWENLEEzy/tab-out' },
+      { id: 12, url: 'https://github.com/OWENLEEzy/tab-out' },
       { id: 13, url: 'https://vercel.com' },
     ]);
     chromeTabs.remove.mockResolvedValue(undefined);
 
     await useTabStore.getState().closeOneTabPerUrl([
-      'https://github.com/zarazhangrui/tab-out',
+      'https://github.com/OWENLEEzy/tab-out',
     ]);
 
     expect(chromeTabs.remove).toHaveBeenCalledWith([11]);

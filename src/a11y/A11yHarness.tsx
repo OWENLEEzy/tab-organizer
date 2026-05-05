@@ -25,7 +25,7 @@ export function A11yHarness(): React.ReactElement {
 
       <section aria-label="Tab chip examples" className="space-y-2">
         <TabChip
-          url="https://github.com/zarazhangrui/tab-out"
+          url="https://github.com/OWENLEEzy/tab-out"
           title="Tab Out repo"
           duplicateCount={2}
           active

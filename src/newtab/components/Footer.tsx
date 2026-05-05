@@ -25,8 +25,7 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
     return undefined;
   }, [tabCount]);
 
-  const GITHUB_URL = 'https://github.com/zarazhangrui/tab-out';
-  const AUTHOR_URL = 'https://x.com/zarazhangrui';
+  const GITHUB_URL = 'https://github.com/OWENLEEzy/tab-out';
 
   return (
     <footer className="border-border-light dark:border-border-dark mt-12 border-t pt-5">
@@ -46,14 +45,6 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
             className="text-text-secondary hover:text-text-primary-light dark:hover:text-text-primary-dark underline underline-offset-2 transition-colors"
           >
             Tab Out
-          </a>
-          {' '}by{' '}
-          <a
-            href={AUTHOR_URL}
-            target="_top"
-            className="text-text-secondary hover:text-text-primary-light dark:hover:text-text-primary-dark underline underline-offset-2 transition-colors"
-          >
-            Zara
           </a>
         </span>
       </div>

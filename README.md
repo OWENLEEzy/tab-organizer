@@ -2,7 +2,7 @@
 
 **Keep tabs on your tabs.**
 
-Tab Out is a Chrome extension that replaces your new tab page with a dashboard of everything you have open. Tabs are grouped by domain, with homepages (Gmail, X, LinkedIn, etc.) pulled into their own group. Close tabs with a satisfying swoosh + confetti.
+Tab Out is a Chrome extension that opens a dashboard of everything you have open when you click its toolbar icon. Tabs are grouped by domain, with homepages (Gmail, X, LinkedIn, etc.) pulled into their own group. Close tabs with a satisfying swoosh + confetti.
 
 No server. No account. No external API calls. Just a Chrome extension.
 
@@ -13,7 +13,7 @@ No server. No account. No external API calls. Just a Chrome extension.
 Send your coding agent (Claude Code, Codex, etc.) this repo and say **"install this"**:
 
 ```
-https://github.com/zarazhangrui/tab-out
+https://github.com/OWENLEEzy/tab-out
 ```
 
 The agent will walk you through it. Takes about 1 minute.
@@ -37,30 +37,44 @@ The agent will walk you through it. Takes about 1 minute.
 
 ## Manual Setup
 
-**1. Clone the repo**
+**推荐：按这三步做**
+
+1. Build one-click package:
 
 ```bash
-git clone https://github.com/zarazhangrui/tab-out.git
+git clone https://github.com/OWENLEEzy/tab-out.git
+cd tab-out
+npm install
+npm run build
 ```
 
-**2. Load the Chrome extension**
+2. Load unpacked in Chrome:
 
-1. Open Chrome and go to `chrome://extensions`
-2. Enable **Developer mode** (top-right toggle)
-3. Click **Load unpacked**
-4. Navigate to the `extension/` folder inside the cloned repo and select it
+Open `chrome://extensions` -> 开启 Developer mode -> 点击 **Load unpacked** -> 选 `dist/` 文件夹.
 
-**3. Open a new tab**
+3. Open Tab Out:
 
-You'll see Tab Out.
+点击浏览器工具栏里的 Tab Out 图标。
+
+If you changed source code and want to rebuild the loadable package:
+
+```bash
+npm run build
+# Quick sync only (icons/paths):
+npm run sync:dist
+```
+
+This writes a Chrome-ready `dist/` bundle directly.
+
+Legacy `extension/` output has been removed. `dist/` is the only loadable and publishable extension bundle.
 
 ---
 
 ## How it works
 
 ```
-You open a new tab
-  -> Tab Out shows your open tabs grouped by domain
+You click the Tab Out toolbar icon
+  -> Tab Out opens a dashboard with your open tabs grouped by domain
   -> Homepages (Gmail, X, etc.) get their own group at the top
   -> Click any tab title to jump to it
   -> Close groups you're done with (swoosh + confetti)
@@ -88,4 +102,4 @@ MIT
 
 ---
 
-Built by [Zara](https://x.com/zarazhangrui)
+Built by Tab Out contributors

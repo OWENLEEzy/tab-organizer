@@ -734,19 +734,11 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
         </div>
         <span>
           <a
-            href="https://github.com/zarazhangrui/tab-out"
+            href="https://github.com/OWENLEEzy/tab-out"
             target="_top"
             className="text-text-secondary underline underline-offset-2 transition-colors hover:text-text-primary-light dark:hover:text-text-primary-dark"
           >
             Tab Out
-          </a>
-          {' '}by{' '}
-          <a
-            href="https://x.com/zarazhangrui"
-            target="_top"
-            className="text-text-secondary underline underline-offset-2 transition-colors hover:text-text-primary-light dark:hover:text-text-primary-dark"
-          >
-            Zara
           </a>
         </span>
       </div>
