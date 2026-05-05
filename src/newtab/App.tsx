@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingState } from './components/LoadingState';
-import { SectionBoard } from './components/SectionBoard';
+import { DndOrganizer } from './components/DndOrganizer';
 import { ProductTable } from './components/ProductTable';
 import { SelectionBar } from './components/SelectionBar';
 import { EmptyState } from './components/EmptyState';
@@ -25,10 +25,8 @@ import type { TabGroup } from '../types';
 // ─── Constants ────────────────────────────────────────────────────────
 
 const TOAST_DURATION = 2500;
-const MAIN_SECTION_ID = 'section:main';
-const DndOrganizer = React.lazy(() =>
-  import('./components/DndOrganizer').then((module) => ({ default: module.DndOrganizer })),
-);
+
+
 const SettingsPanel = React.lazy(() =>
   import('./components/SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
 );
@@ -72,7 +70,9 @@ export function App(): React.ReactElement {
   const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
   const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
-  const [organizeMode, setOrganizeMode] = useState(false);
+
+
+
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── Stores ────────────────────────────────────────────────────────
@@ -274,8 +274,7 @@ export function App(): React.ReactElement {
   );
 
   const focusedUrl = focusedIndex !== null ? flatChips[focusedIndex]?.url ?? null : null;
-  const canOrganize = viewMode === 'cards' && selectedUrls.size === 0;
-  const organizeActive = organizeMode && canOrganize;
+
 
   // ─── Tab Out dupe count ────────────────────────────────────────────
 
@@ -345,6 +344,8 @@ export function App(): React.ReactElement {
     },
     [tabStore],
   );
+
+
 
   const handleResetSortOrder = useCallback(async () => {
     await clearGroupOrder();
@@ -465,17 +466,18 @@ export function App(): React.ReactElement {
   }, [tabStore, showToast]);
 
   const handleSetViewMode = useCallback((mode: 'cards' | 'table') => {
-    if (mode !== 'cards') {
-      setOrganizeMode(false);
-    }
     tabStore.setViewMode(mode).then(() => {
       showToast(mode === 'cards' ? 'Cards view' : 'Table view');
     });
   }, [tabStore, showToast]);
 
-  const handleToggleOrganizeMode = useCallback(() => {
-    setOrganizeMode((prev) => !prev);
-  }, []);
+
+
+
+  const handleRefresh = useCallback(async () => {
+    await tabStore.fetchTabs();
+    showToast('Refreshed');
+  }, [tabStore, showToast]);
 
   const handleMoveTableItem = useCallback((group: TabGroup, sectionId: string) => {
     const productKey = productKeyForGroup(group);
@@ -500,9 +502,6 @@ export function App(): React.ReactElement {
     });
   }, [tabStore, showToast]);
 
-  const handleReorderGroups = useCallback((reordered: TabGroup[]) => {
-    tabStore.reorderGroups(reordered);
-  }, [tabStore]);
 
   // ─── Derived state (must be before early return to satisfy rules-of-hooks) ──
 
@@ -581,15 +580,14 @@ export function App(): React.ReactElement {
             totalCount={totalTabs}
             viewMode={viewMode}
             onViewModeChange={handleSetViewMode}
-            organizeActive={organizeActive}
-            canOrganize={canOrganize}
-            onToggleOrganize={handleToggleOrganizeMode}
+            onRefresh={handleRefresh}
             onCreateSection={handleCreateSection}
             onCloseAll={handleCloseAll}
             onOpenSettings={() => setSettingsOpen(true)}
           />
         }
         toolbar={null}
+        footer={<Footer tabCount={totalTabs} />}
       >
         {showEmptyState ? (
           <EmptyState />
@@ -604,48 +602,32 @@ export function App(): React.ReactElement {
                   onCloseDomain={handleCloseDomain}
                   onCloseDuplicates={handleCloseDuplicates}
                   onFocusTab={handleFocusTab}
+                  expandedDomains={expandedDomains}
+                  onToggleExpanded={handleToggleExpanded}
+                  onCloseTab={handleCloseTabAnimated}
+                  onChipClick={handleChipClick}
+                  selectedUrls={selectedUrls}
+                  closingUrls={closingUrls}
+                  focusedUrl={focusedUrl}
                 />
-              ) : organizeActive ? (
-                <ErrorBoundary>
-                  <React.Suspense fallback={null}>
-                    <DndOrganizer
-                      filteredGroups={filteredGroups}
-                      unsectionedGroups={unsectionedGroups}
-                      orderedSections={orderedSections}
-                      groupsBySection={groupsBySection}
-                      assignmentByItemId={assignmentByItemId}
-                      itemIdForGroup={itemIdForGroup}
-                      expandedDomains={expandedDomains}
-                      maxChipsVisible={settings.maxChipsVisible}
-                      focusedUrl={focusedUrl}
-                      closingUrls={closingUrls}
-                      selectedUrls={selectedUrls}
-                      onMoveProductToMain={handleMoveProductToMain}
-                      onMoveProductToSection={handleMoveProductToSection}
-                      onReorderGroups={handleReorderGroups}
-                      onRenameSection={handleRenameSection}
-                      onDeleteSection={handleDeleteSection}
-                      onCloseDomain={handleCloseDomain}
-                      onCloseDuplicates={handleCloseDuplicates}
-                      onCloseTab={handleCloseTabAnimated}
-                      onFocusTab={handleFocusTab}
-                      onChipClick={handleChipClick}
-                      onToggleExpanded={handleToggleExpanded}
-                    />
-                  </React.Suspense>
-                </ErrorBoundary>
               ) : (
-                <>
-                  <SectionBoard
-                    id={MAIN_SECTION_ID}
-                    title="Unsorted"
-                    items={unsectionedGroups}
-                    tabCount={unsectionedGroups.reduce((sum, group) => sum + group.tabs.length, 0)}
+                <ErrorBoundary>
+                  <DndOrganizer
+                    filteredGroups={filteredGroups}
+                    unsectionedGroups={unsectionedGroups}
+                    orderedSections={orderedSections}
+                    groupsBySection={groupsBySection}
+                    assignmentByItemId={assignmentByItemId}
+                    itemIdForGroup={itemIdForGroup}
                     expandedDomains={expandedDomains}
                     maxChipsVisible={settings.maxChipsVisible}
                     focusedUrl={focusedUrl}
                     closingUrls={closingUrls}
                     selectedUrls={selectedUrls}
+                    onMoveProductToMain={handleMoveProductToMain}
+                    onMoveProductToSection={handleMoveProductToSection}
+                    onRenameSection={handleRenameSection}
+                    onDeleteSection={handleDeleteSection}
                     onCloseDomain={handleCloseDomain}
                     onCloseDuplicates={handleCloseDuplicates}
                     onCloseTab={handleCloseTabAnimated}
@@ -653,37 +635,10 @@ export function App(): React.ReactElement {
                     onChipClick={handleChipClick}
                     onToggleExpanded={handleToggleExpanded}
                   />
-                  {orderedSections.map((section) => {
-                    const items = groupsBySection.get(section.id) ?? [];
-                    return (
-                      <SectionBoard
-                        key={section.id}
-                        id={`section:${section.id}`}
-                        title={section.name}
-                        section={section}
-                        items={items}
-                        tabCount={items.reduce((sum, group) => sum + group.tabs.length, 0)}
-                        expandedDomains={expandedDomains}
-                        maxChipsVisible={settings.maxChipsVisible}
-                        focusedUrl={focusedUrl}
-                        closingUrls={closingUrls}
-                        selectedUrls={selectedUrls}
-                        onRenameSection={handleRenameSection}
-                        onDeleteSection={handleDeleteSection}
-                        onCloseDomain={handleCloseDomain}
-                        onCloseDuplicates={handleCloseDuplicates}
-                        onCloseTab={handleCloseTabAnimated}
-                        onFocusTab={handleFocusTab}
-                        onChipClick={handleChipClick}
-                        onToggleExpanded={handleToggleExpanded}
-                      />
-                    );
-                  })}
-                </>
+                </ErrorBoundary>
               )}
           </main>
         )}
-        <Footer tabCount={totalTabs} />
       </DashboardShell>
 
       {/* Confirmation dialog */}
@@ -705,10 +660,13 @@ export function App(): React.ReactElement {
             theme={settings.theme}
             soundEnabled={settings.soundEnabled}
             confettiEnabled={settings.confettiEnabled}
+            customGroups={settings.customGroups}
             onSetTheme={settingsStore.setTheme}
             onToggleSound={settingsStore.toggleSound}
             onToggleConfetti={settingsStore.toggleConfetti}
             onResetSortOrder={handleResetSortOrder}
+            onAddCustomGroup={settingsStore.addCustomGroup}
+            onRemoveCustomGroup={settingsStore.removeCustomGroup}
           />
         </React.Suspense>
       )}

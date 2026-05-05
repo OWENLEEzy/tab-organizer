@@ -129,7 +129,7 @@ export const useTabStore = create<TabStore>((set) => ({
   clearError: () => set({ error: null }),
 
   fetchTabs: async () => {
-    set({ loading: true, error: null });
+    set({ error: null });
     try {
       const rawTabs = await chrome.tabs.query({});
       const mapped = rawTabs.map(toAppTab).filter(isRealWebTab);
