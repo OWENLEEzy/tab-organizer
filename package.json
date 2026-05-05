@@ -4,9 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite src/newtab/index.html",
+    "dev:newtab": "vite src/newtab/index.html",
     "dev:a11y": "vite --config vite.a11y.config.ts",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run sync:dist",
+    "sync:dist": "node ./scripts/sync-dist.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:a11y": "vitest run src/__tests__/*.a11y.test.tsx",

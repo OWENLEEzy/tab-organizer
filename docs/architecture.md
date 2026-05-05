@@ -2,14 +2,14 @@
 
 ## System Overview
 
-Tab Out is a Chrome Extension built on Manifest V3. The build toolchain is Vite 8 with the CRXJS plugin (`@crxjs/vite-plugin@^2.4.0`), which reads `manifest.json` at the project root and auto-resolves entry points. There is no manual `rollupOptions.input` configuration.
+Tab Out is a Chrome Extension built on Manifest V3. The build toolchain is Vite 8 with the CRXJS plugin (`@crxjs/vite-plugin@^2.4.0`), which reads `manifest.json` at the project root. Vite also keeps the dashboard HTML as an explicit build input so the toolbar action can open it as an extension page.
 
-Two entry points are declared in the manifest:
+Two runtime entry points are used by the extension:
 
 | Entry Point | Manifest Key | Runtime | Purpose |
 |---|---|---|---|
-| `src/newtab/index.html` | `chrome_url_overrides.newtab` | React app | Overrides `chrome://newtab`. Renders grouped tabs, saved items, settings. |
-| `src/background/index.ts` | `background.service_worker` | Service worker | Badge refresh on tab lifecycle events. Stateless. |
+| `src/newtab/index.html` | Vite build input; opened by toolbar action | React app | Renders grouped tabs, saved items, settings without replacing Chrome's default new tab page. |
+| `src/background/index.ts` | `background.service_worker` | Service worker | Badge refresh on tab lifecycle events and toolbar-button dashboard launch. Stateless. |
 
 Permissions declared: `tabs`, `storage`. Content Security Policy enforces `script-src 'self'` -- no inline scripts, no CDN loads. Fonts are bundled as local woff2 in `public/fonts/`.
 
@@ -21,9 +21,9 @@ Tech stack: React 19, Zustand 5, TypeScript 6, Vite 8, Tailwind v4 (CSS-based `@
 
 Three first-class runtime slices own all state and side effects:
 
-### 1. Newtab Runtime (`src/newtab/**`)
+### 1. Dashboard Runtime (`src/newtab/**`)
 
-The React application that renders when the user opens a new tab. Owns all user-triggered flows:
+The React application that renders when the user clicks the Tab Out toolbar icon. Owns all dashboard flows:
 
 - Fetching and rendering open tabs grouped by domain
 - Closing and focusing tabs
@@ -34,10 +34,11 @@ The React application that renders when the user opens a new tab. Owns all user-
 
 ### 2. Background Runtime (`src/background/index.ts`)
 
-The MV3 service worker. Owns passive, extension-level side effects only:
+The MV3 service worker. Owns passive, extension-level side effects and dashboard launch only:
 
 - Badge count refresh on `onInstalled`, `onStartup`, `onCreated`, `onRemoved`, `onUpdated`
 - Debounced badge updates (300ms) to avoid thrashing on rapid tab changes
+- Toolbar action click handling: focus an existing dashboard tab in the current window when possible, otherwise open one.
 
 The background script does not import stores, storage utilities, or any newtab code. It is stateless.
 
@@ -324,7 +325,7 @@ src/
   newtab/
     App.tsx                       # Page orchestrator (the only store consumer)
     main.tsx                      # React root mount
-    index.html                    # HTML shell for newtab override
+    index.html                    # HTML shell for the toolbar-opened dashboard
     components/                   # 17 presentational UI components
     hooks/
       useChromeStorage.ts         # Storage change listener hook
@@ -362,7 +363,7 @@ This split preserves all existing import boundaries and ESLint rules. No immedia
 
 ## Key Technical Decisions
 
-**CRXJS over manual entry points.** CRXJS reads `manifest.json` and auto-resolves `src/newtab/index.html` and `src/background/index.ts`. There is no `rollupOptions.input` in `vite.config.ts`. This eliminates a common source of misconfiguration.
+**CRXJS plus explicit dashboard input.** CRXJS reads `manifest.json` and resolves the background service worker. `vite.config.ts` keeps `src/newtab/index.html` as an explicit input so the dashboard remains bundled even though it no longer uses `chrome_url_overrides.newtab`.
 
 **Tailwind v4 via CSS.** Configuration lives in `global.css` through `@theme` directives, not a separate `tailwind.config.ts`. The `@tailwindcss/vite` plugin handles processing. `lightningcss` warnings during build are expected and harmless.
 

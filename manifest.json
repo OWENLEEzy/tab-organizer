@@ -2,12 +2,9 @@
   "manifest_version": 3,
   "name": "Tab Out",
   "version": "2.0.0",
-  "description": "Keep tabs on your tabs. New tab page that groups your open tabs by domain and lets you close them with style.",
+  "description": "Keep tabs on your tabs. Open a dashboard that groups your tabs by domain and lets you close them with style.",
   "permissions": ["tabs", "storage"],
   "incognito": "not_allowed",
-  "chrome_url_overrides": {
-    "newtab": "src/newtab/index.html"
-  },
   "background": {
     "service_worker": "src/background/index.ts",
     "type": "module"
@@ -16,7 +13,8 @@
     "default_title": "Tab Out",
     "default_icon": {
       "16": "public/icons/icon16.png",
-      "48": "public/icons/icon48.png"
+      "48": "public/icons/icon48.png",
+      "128": "public/icons/icon128.png"
     }
   },
   "icons": {
@@ -25,6 +23,6 @@
     "128": "public/icons/icon128.png"
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://www.google.com"
+    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.google.com"
   }
 }

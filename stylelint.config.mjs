@@ -1,7 +1,7 @@
 export default {
   extends: ['stylelint-config-standard'],
   plugins: ['stylelint-declaration-strict-value'],
-  ignoreFiles: ['dist/**/*.css', 'extension/**/*.css'],
+  ignoreFiles: ['dist/**/*.css'],
   overrides: [
     {
       files: ['src/newtab/styles/fonts.css'],
