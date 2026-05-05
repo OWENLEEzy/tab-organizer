@@ -10,7 +10,6 @@ afterEach(() => {
 
 function KeyboardHarness(): React.ReactElement {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [saveCount, setSaveCount] = useState(0);
   const [closeCount, setCloseCount] = useState(0);
   const [enterCount, setEnterCount] = useState(0);
   const [arrowUpCount, setArrowUpCount] = useState(0);
@@ -18,13 +17,11 @@ function KeyboardHarness(): React.ReactElement {
 
   useKeyboard({
     onSearch: () => {},
-    onSave: () => {},
     onEscape: () => {},
     onArrowUp: () => setArrowUpCount((count) => count + 1),
     onArrowDown: () => setArrowDownCount((count) => count + 1),
     onEnter: () => setEnterCount((count) => count + 1),
     onDClose: () => setCloseCount((count) => count + 1),
-    onDSave: () => setSaveCount((count) => count + 1),
   });
 
   return (
@@ -33,7 +30,6 @@ function KeyboardHarness(): React.ReactElement {
         Toggle dialog
       </button>
       <button type="button">Regular action</button>
-      <output data-testid="save-count">{saveCount}</output>
       <output data-testid="close-count">{closeCount}</output>
       <output data-testid="enter-count">{enterCount}</output>
       <output data-testid="arrow-up-count">{arrowUpCount}</output>
@@ -61,7 +57,6 @@ describe('useKeyboard', () => {
     await user.keyboard('s');
     await user.keyboard('d');
 
-    expect(screen.getByTestId('save-count')).toHaveTextContent('0');
     expect(screen.getByTestId('close-count')).toHaveTextContent('0');
   });
 
@@ -78,7 +73,6 @@ describe('useKeyboard', () => {
     expect(screen.getByTestId('enter-count')).toHaveTextContent('0');
     expect(screen.getByTestId('arrow-up-count')).toHaveTextContent('0');
     expect(screen.getByTestId('arrow-down-count')).toHaveTextContent('0');
-    expect(screen.getByTestId('save-count')).toHaveTextContent('0');
     expect(screen.getByTestId('close-count')).toHaveTextContent('0');
   });
 

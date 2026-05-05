@@ -72,7 +72,7 @@ describe('groupTabsByDomain', () => {
     expect(groups.find((g) => g.domain === 'google-docs')?.friendlyName).toBe('Google Docs');
   });
 
-  it('keeps YouTube and YouTube Music separated', () => {
+  it('merges YouTube and YouTube Music into one product', () => {
     const tabs = [
       makeTab({ id: 1, url: 'https://www.youtube.com/watch?v=1' }),
       makeTab({ id: 2, url: 'https://music.youtube.com/watch?v=2' }),
@@ -81,8 +81,23 @@ describe('groupTabsByDomain', () => {
     const groups = groupTabsByDomain(tabs);
     const keys = groups.map((g) => g.domain).sort();
 
-    expect(keys).toEqual(['youtube', 'youtube-music']);
-    expect(groups.find((g) => g.domain === 'youtube-music')?.iconDomain).toBe('music.youtube.com');
+    expect(keys).toEqual(['youtube']);
+    expect(groups.find((g) => g.domain === 'youtube')?.tabs).toHaveLength(2);
+    expect(groups.find((g) => g.domain === 'youtube')?.iconDomain).toBe('youtube.com');
+  });
+
+  it('merges Vercel dashboard and vercel.app deployments into one product', () => {
+    const tabs = [
+      makeTab({ id: 1, url: 'https://vercel.com/dashboard' }),
+      makeTab({ id: 2, url: 'https://my-product.vercel.app/' }),
+      makeTab({ id: 3, url: 'https://preview-abc.my-product.vercel.app/path' }),
+    ];
+
+    const groups = groupTabsByDomain(tabs);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].domain).toBe('vercel');
+    expect(groups[0].tabs).toHaveLength(3);
   });
 
   it('handles file:// URLs as local-files group', () => {

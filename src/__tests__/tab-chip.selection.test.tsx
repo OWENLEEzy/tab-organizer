@@ -21,7 +21,6 @@ describe('TabChip selection mode', () => {
         selectionMode
         onFocus={onFocus}
         onClose={() => {}}
-        onSave={() => {}}
         onChipClick={onChipClick}
       />,
     );

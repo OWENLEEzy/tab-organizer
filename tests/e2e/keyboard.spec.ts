@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Keyboard Navigation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/e2e-harness.html');
+    await expect(page.locator('[data-tab-url]').first()).toBeVisible();
   });
 
   test('arrow down navigates to first tab chip', async ({ page }) => {

@@ -5,12 +5,10 @@ test.describe('Tab Management', () => {
     await page.goto('/e2e-harness.html');
   });
 
-  test('displays greeting header with date', async ({ page }) => {
-    const greeting = page.locator('h1');
-    await expect(greeting).toBeVisible();
-
-    const text = await greeting.textContent();
-    expect(text).toMatch(/Good (morning|afternoon|evening)/);
+  test('displays dashboard command header', async ({ page }) => {
+    await expect(
+      page.getByRole('heading', { name: 'OPEN TABS BY PRODUCT' }),
+    ).toBeVisible();
   });
 
   test('displays tab count badge', async ({ page }) => {

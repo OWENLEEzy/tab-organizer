@@ -34,15 +34,10 @@ test.describe('Settings & Theme', () => {
     await expect(settingsGear).toBeVisible();
   });
 
-  test('settings gear has correct z-index', async ({ page }) => {
-    const settingsGear = page.getByRole('button', { name: 'Settings', exact: true });
+  test('settings action is part of the command header', async ({ page }) => {
+    const header = page.getByRole('banner');
+    const settingsGear = header.getByRole('button', { name: 'Settings', exact: true });
     await expect(settingsGear).toBeVisible();
-
-    const zIndex = await settingsGear.evaluate((el) => {
-      return window.getComputedStyle(el).zIndex;
-    });
-
-    expect(parseInt(zIndex)).toBe(40);
   });
 
   test('clicking settings gear opens panel', async ({ page }) => {

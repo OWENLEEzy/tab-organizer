@@ -6,7 +6,12 @@ import {
   dismissSavedTab,
   writeGroupOrder,
   writeSettings,
+  updateRecoveryCandidate,
+  promoteRecoveryCandidate,
+  deleteRecoverySnapshot,
+  clearRecoverySnapshots,
 } from '../utils/storage';
+import type { RecoverySnapshot } from '../types';
 
 // Mock chrome.storage.local
 const storage: Record<string, unknown> = {};
@@ -67,6 +72,8 @@ describe('readStorage', () => {
     expect(result.sections).toEqual([]);
     expect(result.sectionAssignments).toEqual([]);
     expect(result.viewMode).toBe('cards');
+    expect(result.recoveryCandidate).toBeNull();
+    expect(result.recoveryHistory).toEqual([]);
   });
 
   it('migrates from v0 (no schemaVersion) to v3', async () => {
@@ -105,7 +112,8 @@ describe('readStorage', () => {
     expect(result.viewMode).toBe('cards');
   });
 
-  it('normalizes v3 organizer state', async () => {
+  it('normalizes v3 product-section organizer state and rejects tabUrl assignments', async () => {
+    const rejectedUrlAssignmentType = 'tab' + 'Url';
     storage['schemaVersion'] = 3;
     storage['deferred'] = [];
     storage['workspaces'] = [];
@@ -118,8 +126,9 @@ describe('readStorage', () => {
       { id: 'untitled', name: '   ', order: 3 },
     ];
     storage['sectionAssignments'] = [
-      { itemType: 'product', itemKey: 'youtube', sectionId: 'later', order: 0 },
-      { itemType: 'tabUrl', itemKey: 'https://example.com', sectionId: 'later' },
+      { productKey: 'youtube', sectionId: 'later', order: 0 },
+      { itemType: 'product', itemKey: 'github', sectionId: 'later', order: 1 },
+      { itemType: rejectedUrlAssignmentType, itemKey: 'https://example.com', sectionId: 'later' },
       { itemType: 'bad', itemKey: 'x', sectionId: 'later' },
     ];
     storage['viewMode'] = 'table';
@@ -128,8 +137,93 @@ describe('readStorage', () => {
 
     expect(result.sections.map((section) => section.id)).toEqual(['homepages', 'later', 'untitled']);
     expect(result.sections.find((section) => section.id === 'untitled')?.name).toBe('Untitled');
-    expect(result.sectionAssignments).toHaveLength(2);
+    expect(result.sectionAssignments).toEqual([
+      { productKey: 'youtube', sectionId: 'later', order: 0 },
+      { productKey: 'github', sectionId: 'later', order: 1 },
+    ]);
     expect(result.viewMode).toBe('table');
+  });
+});
+
+function makeSnapshot(id: string, urls: string[]): RecoverySnapshot {
+  return {
+    id,
+    capturedAt: `2026-05-05T00:00:0${id}.000Z`,
+    tabCount: urls.length,
+    products: [
+      {
+        productKey: 'example.com',
+        label: 'Example',
+        iconDomain: 'example.com',
+        tabCount: urls.length,
+      },
+    ],
+    tabs: urls.map((url, index) => ({
+      url,
+      title: `Tab ${index}`,
+      domain: 'example.com',
+      productKey: 'example.com',
+      productLabel: 'Example',
+      iconDomain: 'example.com',
+      favIconUrl: '',
+      capturedAt: `2026-05-05T00:00:0${id}.000Z`,
+      windowId: 1,
+      active: index === 0,
+    })),
+  };
+}
+
+describe('recovery storage', () => {
+  it('stores a bounded latest candidate and promotes it to history on startup', async () => {
+    const tooManyTabs = Array.from({ length: 85 }, (_, index) => `https://example.com/${index}`);
+    const candidate = makeSnapshot('1', tooManyTabs);
+
+    await updateRecoveryCandidate(candidate);
+    let result = await readStorage();
+
+    expect(result.recoveryCandidate?.tabs).toHaveLength(80);
+    expect(result.recoveryCandidate?.tabCount).toBe(80);
+    expect(result.recoveryHistory).toHaveLength(0);
+
+    const promoted = await promoteRecoveryCandidate();
+    result = await readStorage();
+
+    expect(promoted).toBe(true);
+    expect(result.recoveryHistory).toHaveLength(1);
+    expect(result.recoveryHistory[0].tabs).toHaveLength(80);
+  });
+
+  it('keeps only five recovery history snapshots and skips duplicate URL sets', async () => {
+    for (let index = 0; index < 7; index += 1) {
+      await updateRecoveryCandidate(makeSnapshot(String(index), [`https://example.com/${index}`]));
+      await promoteRecoveryCandidate();
+    }
+
+    let result = await readStorage();
+    expect(result.recoveryHistory.map((snapshot) => snapshot.id)).toEqual(['6', '5', '4', '3', '2']);
+
+    await updateRecoveryCandidate(makeSnapshot('duplicate', ['https://example.com/6']));
+    const promoted = await promoteRecoveryCandidate();
+    result = await readStorage();
+
+    expect(promoted).toBe(false);
+    expect(result.recoveryHistory.map((snapshot) => snapshot.id)).toEqual(['6', '5', '4', '3', '2']);
+  });
+
+  it('deletes one recovery snapshot and clears recovery history', async () => {
+    await updateRecoveryCandidate(makeSnapshot('1', ['https://example.com/1']));
+    await promoteRecoveryCandidate();
+    await updateRecoveryCandidate(makeSnapshot('2', ['https://example.com/2']));
+    await promoteRecoveryCandidate();
+
+    await deleteRecoverySnapshot('1');
+    let result = await readStorage();
+    expect(result.recoveryHistory.map((snapshot) => snapshot.id)).toEqual(['2']);
+
+    await clearRecoverySnapshots();
+    result = await readStorage();
+    expect(result.recoveryHistory).toEqual([]);
+    expect(result.recoveryCandidate).toBeNull();
   });
 });
 

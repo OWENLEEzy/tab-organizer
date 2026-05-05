@@ -5,6 +5,10 @@ test.describe('Drag & Drop', () => {
     await page.goto('/e2e-harness.html');
   });
 
+  async function enableOrganizeMode(page: import('@playwright/test').Page): Promise<void> {
+    await page.getByRole('button', { name: 'Organize' }).click();
+  }
+
   test('domain cards are visible', async ({ page }) => {
     await page.waitForSelector('[class*="rounded-card"]');
 
@@ -16,14 +20,15 @@ test.describe('Drag & Drop', () => {
 
   test('domain card shows drag handle when sortable', async ({ page }) => {
     await page.waitForSelector('[class*="rounded-card"]');
+    await enableOrganizeMode(page);
 
-    // Check that cursor-grab class is present on card header (indicates DnD is active)
     const cardHeader = page.locator('.cursor-grab').first();
     await expect(cardHeader).toBeVisible();
   });
 
   test('cursor changes to grab on hover', async ({ page }) => {
     await page.waitForSelector('[class*="rounded-card"]');
+    await enableOrganizeMode(page);
 
     const cardHeader = page.locator('[class*="cursor-grab"]').first();
 
@@ -37,6 +42,7 @@ test.describe('Drag & Drop', () => {
 
   test('domain cards have grab cursor', async ({ page }) => {
     await page.waitForSelector('[class*="rounded-card"]');
+    await enableOrganizeMode(page);
 
     const grabbableElements = page.locator('.cursor-grab');
     await expect(grabbableElements.first()).toBeVisible();

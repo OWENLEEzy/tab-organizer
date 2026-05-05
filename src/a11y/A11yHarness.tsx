@@ -8,14 +8,14 @@ export function A11yHarness(): React.ReactElement {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
-    <main className="tab-out-container" style={{ minHeight: '100vh' }}>
+    <main className="dashboard-shell" style={{ minHeight: '100vh' }}>
       <header className="mb-8 space-y-4">
-        <h1 className="font-heading text-text-primary-light dark:text-text-primary-dark text-3xl">
+        <h1 className="font-heading text-3xl text-text-primary-light dark:text-text-primary-dark">
           Accessibility Harness
         </h1>
         <button
           type="button"
-          className="rounded-chip bg-accent-blue px-4 py-3 text-sm font-medium text-white"
+          className="rounded-chip bg-accent-blue px-4 py-3 text-sm font-medium text-text-primary-light"
           onClick={() => setSettingsOpen(true)}
         >
           Open settings
@@ -31,7 +31,6 @@ export function A11yHarness(): React.ReactElement {
           active
           onFocus={() => {}}
           onClose={() => {}}
-          onSave={() => {}}
         />
       </section>
 

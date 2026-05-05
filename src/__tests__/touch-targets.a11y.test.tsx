@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { SearchBar } from '../newtab/components/SearchBar';
-import { DeferredItem } from '../newtab/components/DeferredItem';
 import { NudgeBanner } from '../newtab/components/NudgeBanner';
 import { UpdateBanner } from '../newtab/components/UpdateBanner';
 import { SelectionBar } from '../newtab/components/SelectionBar';
 import { TabChip } from '../newtab/components/TabChip';
+import { ActionButton } from '../newtab/components/ui/ActionButton';
 
 function expectTouchHeight(element: HTMLElement): void {
   expect(element.className).toMatch(/\b(?:h-11|min-h-11)\b/);
@@ -26,9 +26,7 @@ describe('touch target regressions', () => {
     expectTouchWidth(clearButton);
   });
 
-  it('keeps dismiss buttons large enough in banners and saved items', () => {
-    const savedAt = new Date().toISOString();
-
+  it('keeps dismiss buttons large enough in banners', () => {
     const { rerender } = render(
       <NudgeBanner tabCount={20} onDismiss={() => {}} />,
     );
@@ -42,35 +40,14 @@ describe('touch target regressions', () => {
     const updateDismiss = screen.getByRole('button', { name: 'Dismiss update notice' });
     expectTouchHeight(updateDismiss);
     expectTouchWidth(updateDismiss);
-
-    rerender(
-      <DeferredItem
-        item={{
-          id: 'saved-1',
-          url: 'https://github.com/OWENLEEzy/tab-out',
-          title: 'Tab Out repo',
-          domain: 'github.com',
-          savedAt,
-          completed: false,
-          dismissed: false,
-        }}
-        onCheckOff={() => {}}
-        onDismiss={() => {}}
-      />,
-    );
-
-    const dismissSaved = screen.getByRole('button', { name: 'Dismiss Tab Out repo' });
-    expectTouchHeight(dismissSaved);
-    expectTouchWidth(dismissSaved);
   });
 
   it('keeps floating action controls at accessible sizes', () => {
     const { rerender } = render(
-      <SelectionBar count={2} onClose={() => {}} onSave={() => {}} onClear={() => {}} />,
+      <SelectionBar count={2} onClose={() => {}} onClear={() => {}} />,
     );
 
     expectTouchHeight(screen.getByRole('button', { name: 'Close' }));
-    expectTouchHeight(screen.getByRole('button', { name: 'Save' }));
     expectTouchHeight(screen.getByRole('button', { name: 'Cancel' }));
 
     rerender(
@@ -81,7 +58,6 @@ describe('touch target regressions', () => {
         active
         onFocus={() => {}}
         onClose={() => {}}
-        onSave={() => {}}
       />,
     );
 
@@ -89,12 +65,15 @@ describe('touch target regressions', () => {
     expect(primaryButton).not.toBeNull();
     expectTouchHeight(primaryButton!);
 
-    const saveButton = screen.getByRole('button', { name: /Save Tab Out repo for later/i });
-    expectTouchHeight(saveButton);
-    expectTouchWidth(saveButton);
-
     const closeButton = screen.getByRole('button', { name: /Close Tab Out repo/i });
     expectTouchHeight(closeButton);
     expectTouchWidth(closeButton);
+  });
+
+  it('keeps shared dashboard action buttons at accessible sizes', () => {
+    render(<ActionButton onClick={() => {}}>Close all</ActionButton>);
+
+    const button = screen.getByRole('button', { name: 'Close all' });
+    expectTouchHeight(button);
   });
 });
