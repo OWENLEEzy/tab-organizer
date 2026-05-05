@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { getFaviconUrl } from '../../utils/url';
 import type { OrganizerSection, TabGroup } from '../../types';
 
 interface ProductTableProps {
@@ -27,14 +26,18 @@ function duplicateUrls(group: TabGroup): string[] {
 }
 
 function RowIcon({ group }: { group: TabGroup }): React.ReactElement {
-  const [failed, setFailed] = useState(false);
+  const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
   const label = group.friendlyName || group.domain;
   const initial = label.trim().charAt(0).toUpperCase() || '?';
-  const iconDomain = group.iconDomain ?? group.domain;
+  const faviconUrl = useMemo(
+    () => group.tabs.find((tab) => tab.favIconUrl.trim() !== '')?.favIconUrl.trim() ?? '',
+    [group.tabs],
+  );
+  const failed = faviconUrl !== '' && failedFaviconUrl === faviconUrl;
 
-  if (failed || iconDomain === 'local-files') {
+  if (failed || !faviconUrl) {
     return (
-      <span className="table-icon-fallback">
+      <span className="table-icon-fallback" aria-hidden="true">
         {initial}
       </span>
     );
@@ -43,9 +46,9 @@ function RowIcon({ group }: { group: TabGroup }): React.ReactElement {
   return (
     <img
       className="table-icon"
-      src={getFaviconUrl(iconDomain)}
+      src={faviconUrl}
       alt=""
-      onError={() => setFailed(true)}
+      onError={() => setFailedFaviconUrl(faviconUrl)}
     />
   );
 }

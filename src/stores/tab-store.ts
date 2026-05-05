@@ -336,7 +336,7 @@ export const useTabStore = create<TabStore>((set) => ({
     const onCreated = (): void => refresh();
     const onRemoved = (): void => refresh();
     const onUpdated = (_tabId: number, info: chrome.tabs.OnUpdatedInfo): void => {
-      if (info.url || info.title || info.status === 'complete') {
+      if (info.url || info.title || info.favIconUrl || info.status === 'complete') {
         refresh();
       }
     };

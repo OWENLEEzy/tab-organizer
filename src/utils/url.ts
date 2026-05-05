@@ -30,14 +30,6 @@ export function getHostname(url: string): string {
 }
 
 /**
- * Get favicon URL for a domain using Google's favicon service.
- */
-export function getFaviconUrl(domain: string, size: number = 16): string {
-  if (!domain) return '';
-  return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`;
-}
-
-/**
  * Check if a URL is a Tab Out new tab page.
  */
 export function isTabOutPage(url: string): boolean {

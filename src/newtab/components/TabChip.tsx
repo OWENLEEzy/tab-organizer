@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { getFaviconUrl, getHostname, sanitizeUrl } from '../../utils/url';
+import { getHostname, sanitizeUrl } from '../../utils/url';
 import {
   cleanTitle,
   smartTitle,
@@ -23,6 +23,7 @@ function isTouchDevice(): boolean {
 interface TabChipProps {
   url: string;
   title: string;
+  favIconUrl?: string;
   duplicateCount: number;
   active?: boolean;
   isFocused?: boolean;
@@ -84,6 +85,7 @@ function CloseIcon(): React.ReactElement {
 export function TabChip({
   url,
   title,
+  favIconUrl = '',
   duplicateCount,
   active = false,
   isFocused = false,
@@ -94,14 +96,16 @@ export function TabChip({
   onClose,
   onChipClick,
 }: TabChipProps): React.ReactElement {
-  const hostname = getHostname(url);
-  const faviconUrl = getFaviconUrl(hostname);
+  const faviconUrl = favIconUrl.trim();
   const displayLabel = buildLabel(title, url);
   const safeUrl = sanitizeUrl(url);
+  const initial = displayLabel.trim().charAt(0).toUpperCase() || '?';
 
   const chipRef = useRef<HTMLButtonElement>(null);
   // Detect touch device once per component lifecycle
   const [isTouch] = useState(() => isTouchDevice());
+  const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
+  const faviconFailed = faviconUrl !== '' && failedFaviconUrl === faviconUrl;
 
   useEffect(() => {
     if (isFocused && chipRef.current) {
@@ -127,13 +131,9 @@ export function TabChip({
     [onClose, url, title],
   );
 
-  const handleImageError = useCallback(
-    (e: React.SyntheticEvent<HTMLImageElement>) => {
-      const target = e.currentTarget;
-      target.style.display = 'none';
-    },
-    [],
-  );
+  const handleImageError = useCallback(() => {
+    setFailedFaviconUrl(faviconUrl);
+  }, [faviconUrl]);
 
   const chipClasses = [
     'flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-chip border-2 border-transparent px-2.5 py-1.5',
@@ -170,13 +170,20 @@ export function TabChip({
         )}
 
         {/* Favicon */}
-        {faviconUrl && (
+        {faviconUrl && !faviconFailed ? (
           <img
             className="h-4 w-4 shrink-0"
             src={faviconUrl}
             alt=""
             onError={handleImageError}
           />
+        ) : (
+          <span
+            className="bg-surface-light dark:bg-surface-dark text-text-secondary flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] text-[10px] font-semibold"
+            aria-hidden="true"
+          >
+            {initial}
+          </span>
         )}
 
         {/* Title */}

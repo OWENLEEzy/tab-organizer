@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import type { TabGroup } from '../../types';
 import { TabChip } from './TabChip';
-import { getFaviconUrl } from '../../utils/url';
 import { getVisibleTabs } from '../lib/visible-tabs';
 
 // ─── Types ────────────────────────────────────────────────────────────
@@ -114,6 +113,7 @@ function TabChipRow({
       <TabChip
         url={tab.url}
         title={tab.title}
+        favIconUrl={tab.favIconUrl}
         duplicateCount={duplicateCount}
         active={tab.active}
         isFocused={tab.url === focusedUrl}
@@ -149,8 +149,12 @@ export function DomainCard({
   const tabCount = tabs.length;
   const displayName = group.friendlyName || group.domain;
   const selectionMode = (selectedUrls?.size ?? 0) > 0;
-  const [iconFailed, setIconFailed] = useState(false);
-  const iconDomain = group.iconDomain ?? group.domain;
+  const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
+  const groupFaviconUrl = useMemo(
+    () => tabs.find((tab) => tab.favIconUrl.trim() !== '')?.favIconUrl.trim() ?? '',
+    [tabs],
+  );
+  const iconFailed = groupFaviconUrl !== '' && failedFaviconUrl === groupFaviconUrl;
   const initial = displayName.trim().charAt(0).toUpperCase() || '?';
 
   // Count URL occurrences to detect duplicates
@@ -228,18 +232,21 @@ export function DomainCard({
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
           )}
-          {iconFailed || iconDomain === 'local-files' ? (
-            <span className="bg-surface-light dark:bg-surface-dark text-text-secondary flex h-5 w-5 shrink-0 items-center justify-center rounded-[3px] text-xs font-semibold">
+          {iconFailed || !groupFaviconUrl ? (
+            <span
+              className="bg-surface-light dark:bg-surface-dark text-text-secondary flex h-5 w-5 shrink-0 items-center justify-center rounded-[3px] text-xs font-semibold"
+              aria-hidden="true"
+            >
               {initial}
             </span>
           ) : (
             <img
-              src={getFaviconUrl(iconDomain)}
+              src={groupFaviconUrl}
               alt=""
               width={20}
               height={20}
               className="h-5 w-5 shrink-0 rounded-[3px]"
-              onError={() => setIconFailed(true)}
+              onError={() => setFailedFaviconUrl(groupFaviconUrl)}
             />
           )}
           <h3 className="font-body text-base font-semibold text-text-primary-light dark:text-text-primary-dark">

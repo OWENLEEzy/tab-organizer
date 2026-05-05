@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isRealTab, sanitizeUrl, getHostname, getFaviconUrl } from '../utils/url';
+import { isRealTab, sanitizeUrl, getHostname } from '../utils/url';
 
 describe('isRealTab', () => {
   it('returns true for https URLs', () => {
@@ -48,20 +48,5 @@ describe('getHostname', () => {
 
   it('returns empty string for empty string', () => {
     expect(getHostname('')).toBe('');
-  });
-});
-
-describe('getFaviconUrl', () => {
-  it('returns Google favicon URL for a domain', () => {
-    expect(getFaviconUrl('github.com')).toContain('google.com/s2/favicons');
-    expect(getFaviconUrl('github.com')).toContain('github.com');
-  });
-
-  it('returns empty string for empty domain', () => {
-    expect(getFaviconUrl('')).toBe('');
-  });
-
-  it('uses custom size when provided', () => {
-    expect(getFaviconUrl('github.com', 32)).toContain('sz=32');
   });
 });
