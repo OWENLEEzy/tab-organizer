@@ -6,7 +6,9 @@ import type {
   OrganizerSection,
   SectionAssignment,
   ViewMode,
+  RecoverySnapshot,
 } from '../types';
+import { recoveryUrlSignature, shouldReplaceRecoveryCandidate } from '../lib/recovery-snapshots';
 
 const CURRENT_SCHEMA_VERSION = 3;
 const STORAGE_KEYS = [
@@ -18,6 +20,8 @@ const STORAGE_KEYS = [
   'sections',
   'sectionAssignments',
   'viewMode',
+  'recoveryCandidate',
+  'recoveryHistory',
 ] as const;
 
 /**
@@ -51,6 +55,8 @@ const EMPTY_SCHEMA: StorageSchema = {
   sections: [],
   sectionAssignments: [],
   viewMode: 'cards',
+  recoveryCandidate: null,
+  recoveryHistory: [],
 };
 
 function isViewMode(value: unknown): value is ViewMode {
@@ -73,24 +79,87 @@ function normalizeSections(value: unknown): OrganizerSection[] {
     .sort((a, b) => a.order - b.order);
 }
 
+type LegacyAssignment = Partial<SectionAssignment> & {
+  productKey?: unknown;
+  itemType?: unknown;
+  itemKey?: unknown;
+  sectionId?: unknown;
+  order?: unknown;
+};
+
 function normalizeAssignments(value: unknown): SectionAssignment[] {
   if (!Array.isArray(value)) return [];
   return value
-    .filter((assignment): assignment is SectionAssignment => {
+    .filter((assignment): assignment is LegacyAssignment & { sectionId: string } => {
       if (!assignment || typeof assignment !== 'object') return false;
-      const candidate = assignment as Partial<SectionAssignment>;
-      return (
-        (candidate.itemType === 'product' || candidate.itemType === 'tabUrl') &&
-        typeof candidate.itemKey === 'string' &&
-        typeof candidate.sectionId === 'string'
-      );
+      const candidate = assignment as LegacyAssignment;
+      const hasLegacyProductKey = typeof candidate.productKey === 'string';
+      const hasProductItem = candidate.itemType === 'product' && typeof candidate.itemKey === 'string';
+      return (hasLegacyProductKey || hasProductItem) && typeof candidate.sectionId === 'string';
     })
-    .map((assignment, index) => ({
-      itemType: assignment.itemType,
-      itemKey: assignment.itemKey,
-      sectionId: assignment.sectionId,
-      order: Number.isFinite(assignment.order) ? assignment.order : index,
-    }));
+    .map((assignment, index) => {
+      const productKey = typeof assignment.productKey === 'string'
+        ? assignment.productKey
+        : String(assignment.itemKey);
+
+      return {
+        productKey,
+        sectionId: assignment.sectionId,
+        order: Number.isFinite(assignment.order) ? Number(assignment.order) : index,
+      };
+    });
+}
+
+function normalizeRecoverySnapshot(value: unknown): RecoverySnapshot | null {
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as Partial<RecoverySnapshot>;
+  if (
+    typeof candidate.id !== 'string' ||
+    typeof candidate.capturedAt !== 'string' ||
+    !Array.isArray(candidate.tabs) ||
+    !Array.isArray(candidate.products)
+  ) {
+    return null;
+  }
+
+  const tabs = candidate.tabs
+    .filter((tab) => tab && typeof tab === 'object')
+    .map((tab) => tab as RecoverySnapshot['tabs'][number])
+    .filter((tab) => typeof tab.url === 'string' && typeof tab.productKey === 'string')
+    .slice(0, 80);
+
+  if (tabs.length === 0) return null;
+
+  const products = candidate.products
+    .filter((product) => product && typeof product === 'object')
+    .map((product) => product as RecoverySnapshot['products'][number])
+    .filter((product) => typeof product.productKey === 'string' && typeof product.label === 'string');
+
+  return {
+    id: candidate.id,
+    capturedAt: candidate.capturedAt,
+    tabCount: tabs.length,
+    products,
+    tabs,
+  };
+}
+
+function normalizeRecoveryHistory(value: unknown): RecoverySnapshot[] {
+  if (!Array.isArray(value)) return [];
+  const result: RecoverySnapshot[] = [];
+  const seen = new Set<string>();
+
+  for (const item of value) {
+    const snapshot = normalizeRecoverySnapshot(item);
+    if (!snapshot) continue;
+    const signature = recoveryUrlSignature(snapshot);
+    if (seen.has(signature)) continue;
+    seen.add(signature);
+    result.push(snapshot);
+    if (result.length >= 5) break;
+  }
+
+  return result;
 }
 
 /**
@@ -125,6 +194,8 @@ function migrate(data: Partial<StorageSchema>): StorageSchema {
     sections: normalizeSections(data.sections),
     sectionAssignments: normalizeAssignments(data.sectionAssignments),
     viewMode: isViewMode(data.viewMode) ? data.viewMode : 'cards',
+    recoveryCandidate: normalizeRecoverySnapshot(data.recoveryCandidate),
+    recoveryHistory: normalizeRecoveryHistory(data.recoveryHistory),
   };
 }
 
@@ -140,6 +211,8 @@ async function readStorageSnapshot(): Promise<Partial<StorageSchema>> {
     sections: result.sections as OrganizerSection[] | undefined,
     sectionAssignments: result.sectionAssignments as SectionAssignment[] | undefined,
     viewMode: result.viewMode as ViewMode | undefined,
+    recoveryCandidate: result.recoveryCandidate as RecoverySnapshot | null | undefined,
+    recoveryHistory: result.recoveryHistory as RecoverySnapshot[] | undefined,
   };
 }
 
@@ -153,6 +226,8 @@ async function persistStorage(data: StorageSchema): Promise<void> {
     sections: data.sections,
     sectionAssignments: data.sectionAssignments,
     viewMode: data.viewMode,
+    recoveryCandidate: data.recoveryCandidate,
+    recoveryHistory: data.recoveryHistory,
   });
 }
 
@@ -332,6 +407,63 @@ export async function writeOrganizerState(state: {
     sectionAssignments: state.sectionAssignments ?? storage.sectionAssignments,
     viewMode: state.viewMode ?? storage.viewMode,
   }));
+}
+
+export async function updateRecoveryCandidate(snapshot: RecoverySnapshot | null): Promise<void> {
+  await updateStorage((storage) => {
+    if (snapshot == null) {
+      return { ...storage, recoveryCandidate: null };
+    }
+
+    const normalized = normalizeRecoverySnapshot(snapshot);
+    if (!normalized || !shouldReplaceRecoveryCandidate(storage.recoveryCandidate, normalized)) {
+      return storage;
+    }
+
+    return { ...storage, recoveryCandidate: normalized };
+  });
+}
+
+export async function promoteRecoveryCandidate(): Promise<boolean> {
+  let promoted = false;
+
+  await updateStorage((storage) => {
+    const candidate = storage.recoveryCandidate;
+    if (!candidate) return storage;
+
+    const latest = storage.recoveryHistory[0] ?? null;
+    if (latest && recoveryUrlSignature(latest) === recoveryUrlSignature(candidate)) {
+      return storage;
+    }
+
+    promoted = true;
+    return {
+      ...storage,
+      recoveryHistory: [candidate, ...storage.recoveryHistory].slice(0, 5),
+    };
+  });
+
+  return promoted;
+}
+
+export async function deleteRecoverySnapshot(id: string): Promise<void> {
+  await updateStorage((storage) => ({
+    ...storage,
+    recoveryHistory: storage.recoveryHistory.filter((snapshot) => snapshot.id !== id),
+  }));
+}
+
+export async function clearRecoverySnapshots(): Promise<void> {
+  await updateStorage((storage) => ({
+    ...storage,
+    recoveryCandidate: null,
+    recoveryHistory: [],
+  }));
+}
+
+export async function readRecoverySnapshots(): Promise<RecoverySnapshot[]> {
+  const storage = await readStorage();
+  return storage.recoveryHistory;
 }
 
 /**

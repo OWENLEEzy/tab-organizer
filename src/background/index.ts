@@ -1,6 +1,51 @@
 import { updateBadge } from '../utils/badge';
 import { isRealTab } from '../utils/url';
 import { getDashboardUrl } from './dashboard';
+import { buildRecoverySnapshot } from '../lib/recovery-snapshots';
+import { promoteRecoveryCandidate, updateRecoveryCandidate } from '../utils/storage';
+import type { Tab } from '../types';
+
+function toRecoveryTab(raw: chrome.tabs.Tab): Tab {
+  const url = raw.url ?? '';
+  let domain = '';
+  try {
+    domain = url.startsWith('file://') ? 'local-files' : new URL(url).hostname;
+  } catch {
+    domain = '';
+  }
+
+  return {
+    id: raw.id ?? -1,
+    url,
+    title: raw.title ?? '',
+    favIconUrl: raw.favIconUrl ?? '',
+    domain,
+    windowId: raw.windowId ?? -1,
+    active: raw.active ?? false,
+    isTabOut: false,
+    isDuplicate: false,
+    isLandingPage: false,
+    duplicateCount: 0,
+  };
+}
+
+async function captureRecoveryCandidate(): Promise<void> {
+  try {
+    const tabs = await chrome.tabs.query({});
+    const snapshot = buildRecoverySnapshot(tabs.map(toRecoveryTab));
+    await updateRecoveryCandidate(snapshot);
+  } catch {
+    // Recovery should never block core extension behavior.
+  }
+}
+
+let recoveryDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleRecoveryCapture(): void {
+  if (recoveryDebounceTimer) clearTimeout(recoveryDebounceTimer);
+  recoveryDebounceTimer = setTimeout(() => {
+    void captureRecoveryCandidate();
+  }, 1500);
+}
 
 /**
  * Count real web tabs and update the toolbar badge.
@@ -23,26 +68,31 @@ async function refreshBadge(): Promise<void> {
 // Update badge on install
 chrome.runtime.onInstalled.addListener(() => {
   refreshBadge();
+  void captureRecoveryCandidate();
 });
 
 // Update badge on browser startup
 chrome.runtime.onStartup.addListener(() => {
   refreshBadge();
+  void promoteRecoveryCandidate().then(() => captureRecoveryCandidate());
 });
 
 // Update badge when tabs change
 chrome.tabs.onCreated.addListener(() => {
   refreshBadge();
+  scheduleRecoveryCapture();
 });
 
 chrome.tabs.onRemoved.addListener(() => {
   refreshBadge();
+  scheduleRecoveryCapture();
 });
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 chrome.tabs.onUpdated.addListener(() => {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(refreshBadge, 300);
+  scheduleRecoveryCapture();
 });
 
 // Open Tab Out dashboard when toolbar icon is clicked.
@@ -80,3 +130,4 @@ chrome.action.onClicked.addListener(() => {
 
 // Initial run when service worker loads
 refreshBadge();
+void captureRecoveryCandidate();

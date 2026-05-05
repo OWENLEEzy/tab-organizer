@@ -34,10 +34,10 @@ interface TabActions {
   deleteSection: (sectionId: string) => Promise<void>;
   /** Reorder sections and persist the new order. */
   reorderSections: (sections: OrganizerSection[]) => Promise<void>;
-  /** Assign a product group or independent URL item to a section. */
-  moveItemToSection: (itemType: 'product' | 'tabUrl', itemKey: string, sectionId: string) => Promise<void>;
-  /** Remove a product group or independent URL item assignment. */
-  moveItemToMain: (itemType: 'product' | 'tabUrl', itemKey: string) => Promise<void>;
+  /** Assign a product group to a section. */
+  moveProductToSection: (productKey: string, sectionId: string) => Promise<void>;
+  /** Remove a product group assignment. */
+  moveProductToMain: (productKey: string) => Promise<void>;
   /** Persist the visible organizer layout mode. */
   setViewMode: (viewMode: ViewMode) => Promise<void>;
   /** Clear the current error state. */
@@ -92,110 +92,21 @@ function isRealWebTab(tab: Tab): boolean {
   return isRealTab(tab.url);
 }
 
-function countDuplicates(tabs: readonly Tab[]): {
-  duplicateCount: number;
-  hasDuplicates: boolean;
-} {
-  const counts = new Map<string, number>();
-  for (const tab of tabs) {
-    counts.set(tab.url, (counts.get(tab.url) ?? 0) + 1);
-  }
-
-  let duplicateCount = 0;
-  for (const count of counts.values()) {
-    if (count > 1) duplicateCount += count - 1;
-  }
-
-  return {
-    duplicateCount,
-    hasDuplicates: duplicateCount > 0,
-  };
-}
-
-function buildTabUrlItem(url: string, tabs: Tab[], order: number): TabGroup {
-  const first = tabs[0];
-  const { duplicateCount, hasDuplicates } = countDuplicates(tabs);
-  const hostname = deriveDomain(url);
-  return {
-    id: `tabUrl:${encodeURIComponent(url)}`,
-    domain: `tabUrl:${encodeURIComponent(url)}`,
-    friendlyName: first?.title || hostname || 'Tab',
-    label: first?.title || url,
-    itemType: 'tabUrl',
-    itemKey: url,
-    iconDomain: hostname,
-    tabs,
-    collapsed: false,
-    order,
-    color: hasDuplicates ? '#DFAB01' : '#4DAB9A',
-    hasDuplicates,
-    duplicateCount,
-  };
-}
-
-function projectAssignments(
-  productGroups: TabGroup[],
-  assignments: SectionAssignment[],
-): TabGroup[] {
-  const assignedUrls = new Set(
-    assignments
-      .filter((assignment) => assignment.itemType === 'tabUrl')
-      .map((assignment) => assignment.itemKey),
-  );
-
-  const projectedProducts = productGroups
-    .map((group) => {
-      const tabs = group.tabs.filter((tab) => !assignedUrls.has(tab.url));
-      const { duplicateCount, hasDuplicates } = countDuplicates(tabs);
-      return {
-        ...group,
-        tabs,
-        hasDuplicates,
-        duplicateCount,
-        color: hasDuplicates ? '#DFAB01' : '#4DAB9A',
-      };
-    })
-    .filter((group) => group.tabs.length > 0);
-
-  const tabsByUrl = new Map<string, Tab[]>();
-  for (const group of productGroups) {
-    for (const tab of group.tabs) {
-      if (!assignedUrls.has(tab.url)) continue;
-      const existing = tabsByUrl.get(tab.url);
-      if (existing) {
-        existing.push(tab);
-      } else {
-        tabsByUrl.set(tab.url, [tab]);
-      }
-    }
-  }
-
-  const tabUrlItems = [...tabsByUrl.entries()].map(([url, tabs], index) =>
-    buildTabUrlItem(url, tabs, projectedProducts.length + index),
-  );
-
-  return [...projectedProducts, ...tabUrlItems];
-}
-
 function pruneAssignments(
   assignments: SectionAssignment[],
   sections: OrganizerSection[],
   productGroups: TabGroup[],
-  tabs: Tab[],
 ): SectionAssignment[] {
   const sectionIds = new Set(sections.map((section) => section.id));
   const productKeys = new Set(productGroups.map((group) => group.domain));
-  const urls = new Set(tabs.map((tab) => tab.url));
   const seen = new Set<string>();
 
   return assignments.filter((assignment) => {
     if (!sectionIds.has(assignment.sectionId)) return false;
-    if (assignment.itemType === 'product' && !productKeys.has(assignment.itemKey)) return false;
-    if (assignment.itemType === 'tabUrl' && !urls.has(assignment.itemKey)) return false;
+    if (!productKeys.has(assignment.productKey)) return false;
 
-    const key = `${assignment.itemType}:${assignment.itemKey}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
+    if (seen.has(assignment.productKey)) return false;
+    seen.add(assignment.productKey);
     return true;
   });
 }
@@ -230,9 +141,8 @@ export const useTabStore = create<TabStore>((set) => ({
         storage.sectionAssignments,
         sections,
         productGroups,
-        mapped,
       );
-      const groups = projectAssignments(productGroups, sectionAssignments);
+      const groups = productGroups;
 
       // Prune stale groupOrder entries for domains no longer present
       const currentDomains = new Set(productGroups.map((g) => g.domain));
@@ -446,15 +356,11 @@ export const useTabStore = create<TabStore>((set) => ({
   reorderGroups: (newGroups: TabGroup[]) => {
     const groupOrder: Record<string, number> = {};
     for (const group of useTabStore.getState().groups) {
-      if (group.itemType === 'product') {
-        groupOrder[group.itemKey ?? group.domain] = group.order;
-      }
+      groupOrder[group.productKey ?? group.domain] = group.order;
     }
     for (let i = 0; i < newGroups.length; i++) {
       const group = newGroups[i];
-      if (group.itemType === 'product') {
-        groupOrder[group.itemKey ?? group.domain] = i;
-      }
+      groupOrder[group.productKey ?? group.domain] = i;
     }
     set({ groups: newGroups });
     writeGroupOrder(groupOrder).catch((err: unknown) => {
@@ -511,20 +417,19 @@ export const useTabStore = create<TabStore>((set) => ({
     await updateStorage((storage) => ({ ...storage, sections: nextSections }));
   },
 
-  moveItemToSection: async (itemType: 'product' | 'tabUrl', itemKey: string, sectionId: string) => {
+  moveProductToSection: async (productKey: string, sectionId: string) => {
     const current = useTabStore.getState();
     const existingInSection = current.sectionAssignments.filter(
       (assignment) => assignment.sectionId === sectionId,
     );
     const nextAssignment: SectionAssignment = {
-      itemType,
-      itemKey,
+      productKey,
       sectionId,
       order: existingInSection.length,
     };
     const nextAssignments = [
       ...current.sectionAssignments.filter(
-        (assignment) => !(assignment.itemType === itemType && assignment.itemKey === itemKey),
+        (assignment) => assignment.productKey !== productKey,
       ),
       nextAssignment,
     ];
@@ -534,11 +439,11 @@ export const useTabStore = create<TabStore>((set) => ({
     await useTabStore.getState().fetchTabs();
   },
 
-  moveItemToMain: async (itemType: 'product' | 'tabUrl', itemKey: string) => {
+  moveProductToMain: async (productKey: string) => {
     const nextAssignments = useTabStore
       .getState()
       .sectionAssignments
-      .filter((assignment) => !(assignment.itemType === itemType && assignment.itemKey === itemKey));
+      .filter((assignment) => assignment.productKey !== productKey);
     set({ sectionAssignments: nextAssignments });
     await updateStorage((storage) => ({ ...storage, sectionAssignments: nextAssignments }));
     await useTabStore.getState().fetchTabs();

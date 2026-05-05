@@ -31,22 +31,17 @@ const PRODUCT_RULES: ProductRule[] = [
     hostnames: ['calendar.google.com'],
   },
   {
-    key: 'youtube-music',
-    label: 'YouTube Music',
-    iconDomain: 'music.youtube.com',
-    hostnames: ['music.youtube.com'],
-  },
-  {
     key: 'youtube',
     label: 'YouTube',
     iconDomain: 'youtube.com',
-    hostnames: ['youtube.com', 'www.youtube.com', 'm.youtube.com'],
+    hostnames: ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com'],
   },
   {
     key: 'vercel',
     label: 'Vercel',
     iconDomain: 'vercel.com',
-    hostnames: ['vercel.com', 'www.vercel.com'],
+    hostnames: ['vercel.com', 'www.vercel.com', 'vercel.app'],
+    hostnameSuffixes: ['.vercel.app'],
   },
   {
     key: 'github',

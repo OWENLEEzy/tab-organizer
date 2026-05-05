@@ -21,7 +21,7 @@ export interface TabGroup {
   domain: string;
   friendlyName: string;
   label?: string;
-  itemType?: 'product' | 'tabUrl';
+  itemType?: 'product';
   itemKey?: string;
   productKey?: string;
   iconDomain?: string;
@@ -95,10 +95,37 @@ export interface OrganizerSection {
 }
 
 export interface SectionAssignment {
-  itemType: 'product' | 'tabUrl';
-  itemKey: string;
+  productKey: string;
   sectionId: string;
   order: number;
+}
+
+export interface RecoveryProductSummary {
+  productKey: string;
+  label: string;
+  iconDomain: string;
+  tabCount: number;
+}
+
+export interface RecoveryTab {
+  url: string;
+  title: string;
+  domain: string;
+  productKey: string;
+  productLabel: string;
+  iconDomain: string;
+  favIconUrl: string;
+  capturedAt: string;
+  windowId?: number;
+  active?: boolean;
+}
+
+export interface RecoverySnapshot {
+  id: string;
+  capturedAt: string;
+  tabCount: number;
+  products: RecoveryProductSummary[];
+  tabs: RecoveryTab[];
 }
 
 // ─── App Settings ────────────────────────────────────────────────
@@ -123,6 +150,8 @@ export interface StorageSchema {
   sections: OrganizerSection[];
   sectionAssignments: SectionAssignment[];
   viewMode: ViewMode;
+  recoveryCandidate: RecoverySnapshot | null;
+  recoveryHistory: RecoverySnapshot[];
 }
 
 // ─── Store Types ─────────────────────────────────────────────────

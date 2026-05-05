@@ -4,7 +4,6 @@ import { productForHostname } from '../config/products';
 
 // ─── Constants ──────────────────────────────────────────────────────
 
-export const LANDING_PAGES_KEY = '__landing-pages__';
 const LOCAL_FILES_KEY = 'local-files';
 const DEFAULT_COLOR = '#4DAB9A';
 const DUPLICATE_COLOR = '#DFAB01';
