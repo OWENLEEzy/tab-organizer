@@ -194,10 +194,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 DATE=$(date +%Y%m%d)
-PROJECT_DIR=$(cd "$(dirname "$0")" && pwd)
+PROJECT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 PROJECT_NAME=$(basename "$PROJECT_DIR")
+RELEASES_DIR="${PROJECT_DIR}/releases"
+mkdir -p "$RELEASES_DIR"
 OUTPUT_NAME="${PROJECT_NAME}-${DATE}.zip"
-OUTPUT_PATH="${PROJECT_DIR}/${OUTPUT_NAME}"
+OUTPUT_PATH="${RELEASES_DIR}/${OUTPUT_NAME}"
 
 # 如果已存在，先删掉
 [ -f "$OUTPUT_PATH" ] && rm "$OUTPUT_PATH"
@@ -211,9 +213,9 @@ zip -r "$OUTPUT_PATH" "$PROJECT_NAME" \
   --exclude "*/.git/*" \
   --exclude "*/node_modules/*" \
   --exclude "*/dist/*" \
+  --exclude "*/releases/*" \
   --exclude "*/.claude/*" \
   --exclude "*/.DS_Store" \
-  --exclude "*/make_zip.sh" \
   --exclude "*.zip" \
   > /dev/null
 

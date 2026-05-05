@@ -8,17 +8,23 @@ No server. No account. No external API calls. Just a Chrome extension.
 
 ---
 
-## Install with a coding agent
+## 📖 交互式教程 (Tutorial)
 
-Send your coding agent (Claude Code, Codex, etc.) this repo and say **"install this"**:
-
-```
-https://github.com/OWENLEEzy/tab-organizer
-```
-
-The agent will walk you through it. Takes about 1 minute.
+如果你是第一次使用，推荐查看我们的 **[交互式使用教程](https://owenleezy.github.io/tab-organizer/tutorial.html)**，只需 1 分钟即可掌握所有核心功能。
 
 ---
+
+## 🚀 快速安装 (Quick Install)
+
+1. 前往 **[Releases](https://github.com/OWENLEEzy/tab-organizer/releases)** 页面。
+2. 下载最新的 **`tab-organizer-v[版本号].zip`** 文件。
+3. 在本地解压该文件。
+4. 打开 Chrome，进入 `chrome://extensions`。
+5. 开启 **开发者模式 (Developer mode)**。
+6. 点击 **加载已解压的扩展程序 (Load unpacked)**，选择解压出的 `dist` 文件夹即可。
+
+---
+
 
 ## Features
 

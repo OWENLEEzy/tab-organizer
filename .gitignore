@@ -7,9 +7,8 @@ dist-zip
 docs/superpowers/
 
 # Build artifacts
-*.crx
+releases/
 *.pem
-*.zip
 playwright-report/
 test-results/
 
