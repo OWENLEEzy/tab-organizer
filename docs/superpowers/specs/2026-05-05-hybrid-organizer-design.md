@@ -8,14 +8,14 @@
 
 Tab Out should move from hostname cards to a small organizer model. The dashboard will group tabs by product, show recognizable product icons, default to the current card-based experience, and let users switch to a denser table view. Users can create named sections and drag either whole product groups or individual tabs into those sections.
 
-The system will not auto-infer personal sections such as Work, Watch, or Later. Tab Out owns product recognition. The user owns sections.
+The system will not auto-infer personal sections such as Work, Watch, Later, or Homepages. Tab Out owns product recognition. The user owns sections. A Homepages section can exist, but tabs enter it only when the user puts them there.
 
 ## Goals
 
 1. Merge related tabs by product rather than raw hostname.
 2. Keep Google products separate when they represent distinct products, such as Gmail, Google Docs, and Google Drive.
 3. Keep YouTube and YouTube Music separate.
-4. Show a stable icon for every product group, including virtual or normalized groups.
+4. Show a stable icon for every product group and independent tab item.
 5. Default to Cards view and allow users to switch to Table view.
 6. Let users create, rename, reorder, and delete named sections.
 7. Let users drag product groups into sections.
@@ -42,6 +42,8 @@ This design builds on those patterns. It changes the grouping unit from domain t
 
 Grouping should use a stable product key, not the raw hostname.
 
+Landing or homepage URLs do not automatically enter a special Homepages group. They should first be grouped by product like any other tab. For example, `https://www.youtube.com/` belongs to the `youtube` product group until the user moves it into a section.
+
 Examples:
 
 - `mail.google.com` -> `gmail`
@@ -64,19 +66,23 @@ Each product group should expose:
 
 Unknown sites should still group sensibly. The fallback should normalize common host variants such as `www.` and mobile subdomains when safe, but it must not merge unrelated products. If the rule table does not know a product, the fallback should prefer a conservative hostname-derived key.
 
+Homepages is not a product key and not a default grouping bucket. The UI may offer `Homepages` as a suggested section name, but it must behave like user-owned organization state rather than automatic classification.
+
 ## Icon Rules
 
 Cards and table rows should show an icon before the product label.
 
-The icon must use `iconDomain`, not the product key. Product keys such as `gmail` or virtual sections are not valid favicon domains. If favicon loading fails, the UI should show a stable fallback, such as the product initial in a small square.
+The icon must use `iconDomain`, not the product key. Product keys such as `gmail` or section names such as `Homepages` are not valid favicon domains. If favicon loading fails, the UI should show a stable fallback, such as the product initial in a small square.
 
 Individual tab items can use the tab's own favicon first. If unavailable, they can fall back to the product icon or initial.
 
 ## Sections
 
-Sections are user-owned containers. The app does not create semantic defaults such as Work or Watch.
+Sections are user-owned containers. The app does not auto-populate semantic defaults such as Work, Watch, Later, or Homepages.
 
 The default state has the main unsectioned area only. Users can add a section, name it, rename it, reorder it, and delete it.
+
+The app may make common section names easy to choose, including Homepages, but this is only a naming convenience. A section named Homepages has no automatic URL rules. Items appear there only through user assignment.
 
 Deleting a section must not close tabs. Items inside the deleted section return to the main unsectioned area.
 
@@ -108,11 +114,24 @@ Assignments should store:
 
 Product assignments and URL assignments can coexist. URL assignments take precedence for those specific tabs, so a tab assigned by URL does not remain inside the product group display.
 
+## Item Actions
+
+Actions must operate on the tabs currently rendered inside that item, not on every tab that shares a hostname or product.
+
+Examples:
+
+- If a YouTube product group has five tabs and one video URL is moved into a Later section, the YouTube product card now owns four rendered tabs.
+- Clicking `Close all 4 tabs` on the YouTube product card closes only those four rendered tabs.
+- The standalone URL item in Later keeps its own close, save, duplicate, and focus actions.
+- Duplicate actions count duplicates inside the current item unless the UI explicitly says it is acting across all open tabs.
+
+Product-level closing should therefore use exact visible tab identity, such as tab ids or exact URLs from the rendered item. It should not close by hostname after assignments have been projected.
+
 ## Persistence
 
 Use `chrome.storage.local`, through `src/utils/storage.ts`. Do not introduce ordinary browser `localStorage`.
 
-The storage schema should add:
+The storage schema should migrate from version 2 to version 3 and add:
 
 - `sections`
 - `sectionAssignments`
@@ -120,7 +139,15 @@ The storage schema should add:
 
 `viewMode` stores `cards` or `table` and remembers the last view the user chose. The initial default is `cards`.
 
-Stored assignments are temporary organization state, not permanent bookmarks. During tab refresh, Tab Out should compare assignments with the currently open tabs. If no open tab has an assigned URL, that URL assignment should be pruned. If no open tab belongs to an assigned product key, that product assignment should be pruned. Section names can persist, but item membership only tracks currently open work.
+`sections` defaults to an empty array. `sectionAssignments` defaults to an empty array. Existing installs should not get an automatic Homepages section during migration.
+
+Existing `groupOrder` is currently keyed by hostname. Product grouping changes the key space. Migration should be conservative:
+
+- keep order entries only when the stored key already matches a current product key
+- do not guess hostname-to-product mappings during migration
+- prune stale order keys during tab refresh, using the same refresh flow that prunes stale assignments
+
+Stored assignments are temporary organization state, not permanent bookmarks. During tab refresh, Tab Out should compare assignments with the currently open tabs. If no open tab has an assigned URL, that URL assignment should be pruned. If no open tab belongs to an assigned product key, that product assignment should be pruned. Assignments pointing to deleted or invalid section ids should be pruned. Invalid section rows should be ignored or normalized without hiding current tabs. Section names can persist, but item membership only tracks currently open work.
 
 ## Cards View
 
@@ -166,6 +193,14 @@ Table view and Cards view use the same underlying data. Moving an item in one vi
 
 Use the existing `@dnd-kit` stack.
 
+Sortable and droppable ids must be namespaced so product groups, URL items, and sections cannot collide:
+
+- `section:<sectionId>`
+- `product:<productKey>`
+- `tabUrl:<encodedUrl>`
+
+Storage should keep structured assignment fields (`itemType`, `itemKey`, `sectionId`, and `order`) rather than storing these UI ids directly. The DnD layer can derive ids from stored assignment data.
+
 Required interactions:
 
 1. Reorder product cards or rows within an area.
@@ -209,6 +244,7 @@ Unit tests should cover:
 
 - product grouping for Google products
 - YouTube versus YouTube Music
+- landing or homepage URLs staying in their product group until manually assigned
 - `www.` and mobile subdomain normalization where intended
 - unknown-domain fallback
 - favicon domain selection
@@ -216,7 +252,9 @@ Unit tests should cover:
 - URL assignments
 - URL assignment pruning after a tab closes
 - product assignment pruning after a product has no open tabs
+- invalid section assignment pruning
 - repeated URL tabs sharing one URL assignment
+- product item actions operating only on rendered tabs after URL assignment projection
 
 Component tests should cover:
 
@@ -224,6 +262,7 @@ Component tests should cover:
 - icon fallback
 - section create, rename, and delete behavior
 - section delete returning items to the main area
+- a user-created Homepages section not receiving homepage URLs automatically
 - tab URL items not appearing twice after being dragged out
 
 E2E should cover one real organizer path:
@@ -235,6 +274,8 @@ E2E should cover one real organizer path:
 5. Refresh and confirm assignments remain.
 6. Close the assigned URL.
 7. Refresh and confirm the URL assignment is pruned.
+
+A second E2E or focused component test should cover the action boundary: drag one URL out of a product group, close the remaining product group, and confirm the standalone URL item is not closed by the product action.
 
 The final validation gate remains `npm run check`.
 
@@ -251,4 +292,8 @@ The final validation gate remains `npm run check`.
 9. Closing the last open tab for an assigned URL removes that URL assignment from storage.
 10. Deleting a section does not close tabs.
 11. Closing the last open tab for an assigned product removes that product assignment from storage.
-12. The implementation passes `npm run check`.
+12. Landing or homepage URLs stay in their product groups unless the user assigns them to a section such as Homepages.
+13. Product item actions operate only on the tabs currently rendered inside that product item.
+14. DnD ids are namespaced for sections, products, and URL items.
+15. Storage migrates to schema version 3 with `sections`, `sectionAssignments`, and `viewMode`.
+16. The implementation passes `npm run check`.
