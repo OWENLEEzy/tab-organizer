@@ -8,15 +8,16 @@ You're installing **Tab Out** for the user. Your job is not just to set it up --
 
 Before doing anything technical, tell the user what they're about to get:
 
-> **Tab Out** opens a clean dashboard of everything you have open, grouped by domain, when you click its toolbar icon.
+> **Tab Out** opens a clean dashboard of everything you have open, grouped by website/product, when you click its toolbar icon.
 >
 > Here's what makes it great:
-> - **See all your open tabs at a glance** grouped by domain on a grid
-> - **Homepages group** pulls Gmail, X, LinkedIn, YouTube, GitHub homepages into one card for easy cleanup
+> - **See all your open tabs at a glance** grouped by product/domain on a grid
+> - **Create sections** to organize product groups like Gmail, GitHub, Vercel, and YouTube without changing the automatic grouping
+> - **Recover recent sessions** from local snapshots after a restart or crash
 > - **Close tabs with style** satisfying swoosh sound + confetti burst
 > - **Duplicate detection** flags when you have the same page open twice
 > - **Click any tab title to jump to it** even across different Chrome windows
-> - **Save for later** bookmark individual tabs to a checklist before closing them
+> - **Organize mode** drag product groups into your own sections when you want more control
 > - **100% local** no server, no accounts, no data sent anywhere
 >
 > It's just a Chrome extension. Setup takes about 1 minute.
@@ -80,13 +81,14 @@ Once the extension is loaded:
 > You're all set! Click the Tab Out toolbar icon to open the dashboard tab.
 >
 > Here's how it works:
-> 1. **Your open tabs are grouped by domain** in a grid layout.
-> 2. **Homepages** (Gmail inbox, X home, YouTube, etc.) are in their own group at the top.
+> 1. **Your open tabs are grouped by product/domain** in a grid layout.
+> 2. **Create sections** when you want to organize product groups manually.
 > 3. **Click any tab title** to jump directly to that tab.
 > 4. **Click the X** next to any tab to close just that one (with swoosh + confetti).
 > 5. **Click "Close all N tabs"** on a group to close the whole thing.
 > 6. **Duplicate tabs** are flagged with an amber "(2x)" badge. Click "Close duplicates" to keep one copy.
-> 7. **Save a tab for later** by clicking the bookmark icon before closing it. Saved tabs appear in the sidebar.
+> 7. **Use Organize** to move product groups into your own sections without changing the automatic grouping.
+> 8. **Recent sessions** appear locally when Tab Out has recovery snapshots available. Preview before restoring.
 >
 > That's it! No server to run, no config files. Everything works right away.
 
@@ -95,6 +97,6 @@ Once the extension is loaded:
 ## Key Facts
 
 - Tab Out is a pure Chrome extension. No server, no Node.js, no npm.
-- Saved tabs are stored in `chrome.storage.local` (persists across sessions).
+- Sections and recovery snapshots are stored in `chrome.storage.local` (persists across sessions).
 - 100% local. No data is sent to any external service.
 - To update: `cd tab-out && git pull`, then reload the extension in `chrome://extensions`.

@@ -407,32 +407,29 @@ The app renders inside `.tab-out-container`:
 }
 ```
 
-### Two-column dashboard
+### Dashboard workspace
 
-When the saved-items sidebar is visible, the container expands:
+When utility panels such as recovery are visible, the dashboard workspace uses a primary content column plus a utility column:
 
 ```css
-.tab-out-container:has(.dashboard-columns) {
-  max-width: 1300px;
+.dashboard-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: 24px;
+  align-items: start;
 }
 ```
 
-The two-column layout uses flexbox:
+The main product sections live in the primary column:
 
 ```css
-.dashboard-columns {
-  display: flex;
-  gap: 32px;
-  align-items: flex-start;
-}
-.dashboard-columns .active-section {
+.dashboard-primary {
   flex: 1;
   min-width: 0;
 }
 ```
 
-The sidebar (`DeferredColumn`) has a fixed natural width. The active section
-takes remaining space.
+Utility panels are secondary and collapse under the main content on smaller screens.
 
 ### Masonry card grid
 
