@@ -54,8 +54,7 @@ Current primitives include:
 - `MetricPill`
 - `DashboardShell`
 - `StatusStrip`
-- `CommandHeader`
-- `DashboardToolbar`
+- `DashboardHeader`
 
 Primitive APIs should stay visual and interaction-oriented. They must not accept domain objects or know about Chrome extension behavior.
 

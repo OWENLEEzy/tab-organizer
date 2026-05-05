@@ -11,13 +11,13 @@
 - Enable Developer mode.
 - Load unpacked from `dist/`.
 - Click the Tab Out toolbar icon.
-- Confirm product/domain grouping appears.
+- Confirm tab groups appear.
 - Confirm YouTube Music appears inside YouTube.
 - Confirm `*.vercel.app` appears inside Vercel.
-- Create a section and move a product group into it.
+- Create a section and move a group into it.
 - Switch Cards/Table and confirm section assignment is consistent.
 - Confirm Recent sessions shows summaries only, then expands details on click.
-- Restore a product group from a recovery snapshot and confirm it opens only after clicking restore.
+- Restore a group from a recovery snapshot and confirm it opens only after clicking restore.
 
 ## Store Package
 - Zip the contents of `dist/`, not the repository root.

@@ -6,6 +6,8 @@ import { ActionButton } from '../ui/ActionButton';
 interface DashboardHeaderProps {
   title: string;
   hasGroups: boolean;
+  sectionCount: number;
+  dateLabel?: string;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   resultCount: number;
@@ -29,9 +31,20 @@ function SettingsIcon(): React.ReactElement {
   );
 }
 
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
+
 export function DashboardHeader({
   title,
   hasGroups,
+  sectionCount,
+  dateLabel = formatDate(new Date()),
   searchQuery,
   onSearchChange,
   resultCount,
@@ -45,42 +58,59 @@ export function DashboardHeader({
   onCloseAll,
   onOpenSettings,
 }: DashboardHeaderProps): React.ReactElement {
+  const sectionLabel = `${sectionCount} Section${sectionCount === 1 ? '' : 's'}`;
+
   return (
-    <header className="mb-5 flex flex-col gap-4 border-2 border-border-light bg-card-light p-3 dark:border-border-dark dark:bg-card-dark lg:flex-row lg:items-center lg:justify-between" aria-label="Dashboard controls">
-      <div className="flex items-center">
-        <h1 className="font-heading text-xl font-normal tracking-normal text-text-primary-light uppercase dark:text-text-primary-dark whitespace-nowrap">
-          {title}
-        </h1>
-      </div>
-      {hasGroups ? (
-        <div className="min-w-0 flex-1 lg:mx-4">
-          <SearchBar
-            value={searchQuery}
-            onChange={onSearchChange}
-            resultCount={resultCount}
-            totalCount={totalCount}
-          />
-        </div>
-      ) : null}
-      <div className="flex flex-wrap items-center gap-2">
-        {hasGroups ? (
-          <>
-            <ViewToggle value={viewMode} onChange={onViewModeChange} />
-            <ActionButton
-              variant={organizeActive ? 'primary' : 'default'}
-              onClick={onToggleOrganize}
-              aria-pressed={organizeActive}
-              disabled={!canOrganize}
-            >
-              Organize
+    <header className="mb-5 border-2 border-border-light bg-card-light p-3 dark:border-border-dark dark:bg-card-dark sm:p-4" aria-label="Dashboard controls">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 border-b-2 border-border-light pb-3 dark:border-border-dark lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="font-body text-xs font-semibold tracking-normal text-text-secondary">
+              {dateLabel}
+            </p>
+            <h1 className="mt-1 font-heading text-xl font-normal tracking-normal text-text-primary-light dark:text-text-primary-dark">
+              {title}
+            </h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {hasGroups ? (
+              <>
+                <span className="inline-flex min-h-11 items-center border-2 border-border-light px-3 py-2 font-body text-xs font-medium text-text-secondary dark:border-border-dark">
+                  {sectionLabel}
+                </span>
+                <ViewToggle value={viewMode} onChange={onViewModeChange} />
+              </>
+            ) : null}
+            <ActionButton variant="quiet" icon={<SettingsIcon />} onClick={onOpenSettings} aria-label="Settings">
+              Settings
             </ActionButton>
-            <ActionButton onClick={onCreateSection}>New section</ActionButton>
-            <ActionButton variant="danger" onClick={onCloseAll}>Close all</ActionButton>
-          </>
+          </div>
+        </div>
+
+        {hasGroups ? (
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="min-w-0 flex-1 md:min-w-[18rem]">
+              <SearchBar
+                value={searchQuery}
+                onChange={onSearchChange}
+                resultCount={resultCount}
+                totalCount={totalCount}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2 md:justify-end">
+              <ActionButton
+                variant={organizeActive ? 'primary' : 'default'}
+                onClick={onToggleOrganize}
+                aria-pressed={organizeActive}
+                disabled={!canOrganize}
+              >
+                Organize
+              </ActionButton>
+              <ActionButton onClick={onCreateSection}>New Section</ActionButton>
+              <ActionButton variant="danger" onClick={onCloseAll}>Close All</ActionButton>
+            </div>
+          </div>
         ) : null}
-        <ActionButton variant="quiet" icon={<SettingsIcon />} onClick={onOpenSettings} aria-label="Settings">
-          Settings
-        </ActionButton>
       </div>
     </header>
   );

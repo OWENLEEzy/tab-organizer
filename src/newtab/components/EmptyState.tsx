@@ -7,7 +7,7 @@ export function EmptyState(): React.ReactElement {
         No tabs to organize
       </h2>
       <p className="mt-2 font-body text-sm text-text-secondary">
-        Open a few web pages, then come back to see them grouped by product.
+        Open a few web pages, then come back to see them organized into groups.
       </p>
     </div>
   );

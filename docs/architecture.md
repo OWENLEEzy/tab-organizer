@@ -72,7 +72,7 @@ URL-level organizer assignments are not part of V1. Legacy URL assignment shapes
 
 Important components:
 
-- `DashboardShell`, `StatusStrip`, `CommandHeader`, `DashboardToolbar`: dashboard frame and top controls.
+- `DashboardShell`, `StatusStrip`, `DashboardHeader`: dashboard frame and top controls.
 - `SectionBoard`: product section region used by default Cards view.
 - `DndOrganizer`: lazy-loaded organize mode; the only component that imports `@dnd-kit`.
 - `DomainCard`: product card and tab chip list.

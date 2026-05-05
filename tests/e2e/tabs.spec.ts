@@ -7,7 +7,7 @@ test.describe('Tab Management', () => {
 
   test('displays dashboard header', async ({ page }) => {
     await expect(
-      page.getByRole('heading', { name: 'OPEN TABS BY PRODUCT' }),
+      page.getByRole('heading', { name: 'Open Tabs by Group' }),
     ).toBeVisible();
   });
 
@@ -18,13 +18,13 @@ test.describe('Tab Management', () => {
 
   test('close all button shows confirmation dialog', async ({ page }) => {
     // Use the header section to scope the close all button
-    const closeButton = page.locator('button:has-text("Close all")').first();
+    const closeButton = page.getByRole('button', { name: 'Close All' }).first();
     await closeButton.click();
 
     const dialog = page.locator('[role="dialog"]');
     await expect(dialog).toBeVisible();
 
-    const confirmButton = dialog.getByRole('button', { name: 'Close all', exact: true });
+    const confirmButton = dialog.getByRole('button', { name: 'Close All', exact: true });
     await expect(confirmButton).toBeVisible();
   });
 

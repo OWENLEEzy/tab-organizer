@@ -11,24 +11,24 @@ export interface StatusStripAlert {
 interface StatusStripProps {
   totalTabs: number;
   totalDupes: number;
-  totalProducts: number;
+  totalGroups: number;
   alerts: StatusStripAlert[];
 }
 
 export function StatusStrip({
   totalTabs,
   totalDupes,
-  totalProducts,
+  totalGroups,
   alerts,
 }: StatusStripProps): React.ReactElement {
   const parts = [
-    `${totalTabs} tab${totalTabs === 1 ? '' : 's'}`,
-    `${totalDupes} duplicate${totalDupes === 1 ? '' : 's'}`,
-    `${totalProducts} product${totalProducts === 1 ? '' : 's'}`,
+    `${totalTabs} Tab${totalTabs === 1 ? '' : 's'}`,
+    `${totalDupes} Duplicate${totalDupes === 1 ? '' : 's'}`,
+    `${totalGroups} Group${totalGroups === 1 ? '' : 's'}`,
   ];
 
   return (
-    <section className="mb-6 border-x-2 border-b-2 border-border-light bg-accent-amber/30 px-4 py-3 font-body text-xs font-semibold uppercase text-text-primary-light dark:border-border-dark dark:text-text-primary-dark">
+    <section className="mb-6 border-x-2 border-b-2 border-border-light bg-accent-amber/30 px-4 py-3 font-body text-xs font-semibold text-text-primary-light dark:border-border-dark dark:text-text-primary-dark">
       <div className="flex flex-wrap items-center justify-center gap-3 text-center">
         {parts.map((part) => (
           <span key={part}>{part}</span>

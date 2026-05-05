@@ -17,8 +17,10 @@ describe('DashboardHeader', () => {
 
     render(
       <DashboardHeader
-        title="OPEN TABS BY PRODUCT"
+        title="Open Tabs by Group"
         hasGroups
+        sectionCount={2}
+        dateLabel="Tuesday, May 5, 2026"
         searchQuery=""
         onSearchChange={onSearchChange}
         resultCount={6}
@@ -34,12 +36,16 @@ describe('DashboardHeader', () => {
       />,
     );
 
+    expect(screen.getByText('Tuesday, May 5, 2026')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Open Tabs by Group' })).toBeInTheDocument();
+    expect(screen.getByText('2 Sections')).toBeInTheDocument();
+
     fireEvent.change(screen.getByRole('searchbox', { name: 'Search tabs' }), {
       target: { value: 'github' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Organize' }));
-    fireEvent.click(screen.getByRole('button', { name: 'New section' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Close all' }));
+    fireEvent.click(screen.getByRole('button', { name: 'New Section' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close All' }));
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
 
     expect(onSearchChange).toHaveBeenCalledWith('github');
@@ -54,8 +60,10 @@ describe('DashboardHeader', () => {
 
     render(
       <DashboardHeader
-        title="OPEN TABS BY PRODUCT"
+        title="Open Tabs by Group"
         hasGroups={false}
+        sectionCount={0}
+        dateLabel="Tuesday, May 5, 2026"
         searchQuery=""
         onSearchChange={() => {}}
         resultCount={0}
@@ -71,11 +79,12 @@ describe('DashboardHeader', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'OPEN TABS BY PRODUCT' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Open Tabs by Group' })).toBeInTheDocument();
     expect(screen.queryByRole('searchbox', { name: 'Search tabs' })).not.toBeInTheDocument();
+    expect(screen.queryByText('0 Sections')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Organize' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'New section' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Close all' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'New Section' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Close All' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
 

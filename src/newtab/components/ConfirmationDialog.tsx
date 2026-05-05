@@ -95,7 +95,7 @@ export function ConfirmationDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
-        className="rounded-card bg-bg-light shadow-card-hover dark:bg-bg-dark relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] p-6"
+        className="border-2 border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] p-6"
       >
         <h3
           id="confirm-dialog-title"

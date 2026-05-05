@@ -36,22 +36,24 @@ describe('MotherDuck-inspired layout components', () => {
       <StatusStrip
         totalTabs={42}
         totalDupes={3}
-        totalProducts={12}
+        totalGroups={12}
         alerts={[{ id: 'tab-out-pages', label: '2 extra dashboard tabs', actionLabel: 'Close extras', onAction: () => {} }]}
       />,
     );
 
-    expect(screen.getByText('42 tabs')).toBeInTheDocument();
-    expect(screen.getByText('3 duplicates')).toBeInTheDocument();
-    expect(screen.getByText('12 products')).toBeInTheDocument();
+    expect(screen.getByText('42 Tabs')).toBeInTheDocument();
+    expect(screen.getByText('3 Duplicates')).toBeInTheDocument();
+    expect(screen.getByText('12 Groups')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close extras' })).toBeInTheDocument();
   });
 
-  it('renders dashboard header without marketing copy', () => {
+  it('renders the merged dashboard header without marketing copy', () => {
     render(
       <DashboardHeader
-        title="OPEN TABS BY PRODUCT"
+        title="Open Tabs by Group"
         hasGroups
+        sectionCount={1}
+        dateLabel="Tuesday, May 5, 2026"
         searchQuery=""
         onSearchChange={() => {}}
         resultCount={5}
@@ -67,18 +69,23 @@ describe('MotherDuck-inspired layout components', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'OPEN TABS BY PRODUCT' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Open Tabs by Group' })).toBeInTheDocument();
+    expect(screen.getByText('Tuesday, May 5, 2026')).toBeInTheDocument();
+    expect(screen.getByText('1 Section')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search tabs' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
   });
 
   it('composes primary content and utility panels', () => {
     render(
       <DashboardShell
-        top={<StatusStrip totalTabs={1} totalDupes={0} totalProducts={1} alerts={[]} />}
+        top={<StatusStrip totalTabs={1} totalDupes={0} totalGroups={1} alerts={[]} />}
         header={
           <DashboardHeader
-            title="OPEN TABS BY PRODUCT"
+            title="Open Tabs by Group"
             hasGroups
+            sectionCount={1}
+            dateLabel="Tuesday, May 5, 2026"
             searchQuery=""
             onSearchChange={() => {}}
             resultCount={1}

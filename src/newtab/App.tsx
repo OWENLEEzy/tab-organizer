@@ -417,7 +417,7 @@ export function App(): React.ReactElement {
       open: true,
       title: 'Close all tabs',
       message: `This will close all ${tabs.length} open tabs. This cannot be undone.`,
-      confirmLabel: 'Close all',
+      confirmLabel: 'Close All',
       onConfirm: () => {
         playCloseEffects(settings);
         const allUrls = tabs.map((t) => t.url);
@@ -518,8 +518,9 @@ export function App(): React.ReactElement {
   }
 
   const totalTabs = tabs.length;
-  const totalDomains = groups.length;
+  const totalGroups = groups.length;
   const showEmptyState = groups.length === 0;
+  const visibleSectionCount = orderedSections.length + (showEmptyState ? 0 : 1);
   const statusAlerts: StatusStripAlert[] = [];
 
   if (tabOutCount > 1) {
@@ -565,14 +566,15 @@ export function App(): React.ReactElement {
           <StatusStrip
             totalTabs={totalTabs}
             totalDupes={totalDupes}
-            totalProducts={totalDomains}
+            totalGroups={totalGroups}
             alerts={statusAlerts}
           />
         }
         header={
           <DashboardHeader
-            title="OPEN TABS BY PRODUCT"
+            title="Open Tabs by Group"
             hasGroups={!showEmptyState}
+            sectionCount={visibleSectionCount}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             resultCount={filteredTabCount}

@@ -107,7 +107,7 @@ export function SettingsPanel({
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
-        className="rounded-card bg-bg-light shadow-card-hover dark:bg-bg-dark relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] p-6"
+        className="border-2 border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] p-6"
       >
         {/* Title + Close */}
         <div className="mb-6 flex items-center justify-between">
