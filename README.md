@@ -1,111 +1,124 @@
-# Tab Organizer
+<div align="center">
+  <img src="./public/readme-assets/banner.png" alt="Tab Organizer Banner" width="800">
 
-**Keep tabs on your tabs.**
+  # Tab Organizer
+  
+  **The Local-First Dashboard for Your Browser Tabs.**
 
-Tab Organizer is a Chrome extension that opens a dashboard of everything you have open when you click its toolbar icon. Tabs are grouped by domain, with homepages (Gmail, X, LinkedIn, etc.) pulled into their own group. Close tabs with a satisfying swoosh + confetti.
+  [![License: MIT](https://img.shields.io/badge/License-MIT-sage.svg)](https://opensource.org/licenses/MIT)
+  [![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)]()
+  [![Chrome](https://img.shields.io/badge/Chrome-Extension-amber.svg)]()
 
-No server. No account. No external API calls. Just a Chrome extension.
+  [English](#english) | [中文说明](#chinese) | [Original Project ↗️](https://github.com/OWENLEEzy/tab-out)
+
+</div>
 
 ---
 
-## 📖 交互式教程 (Tutorial)
+<a name="english"></a>
 
-如果你是第一次使用，推荐查看我们的 **[交互式使用教程](https://owenleezy.github.io/tab-organizer/tutorial.html)**，只需 1 分钟即可掌握所有核心功能。
+## ✨ The Vision
+
+Tab Organizer is a premium Chrome extension designed to declutter your digital workspace. It transforms your messy tab bar into a clean, Notion-inspired dashboard where tabs are automatically grouped by product and domain.
+
+No servers, no accounts, no tracking. **100% local, 100% private.**
+
+> [!TIP]
+> **New to Tab Organizer?** Check out our **[Interactive Tutorial](https://owenleezy.github.io/tab-organizer/tutorial.html)** and master it in 60 seconds!
 
 ---
 
-## 🚀 快速安装 (Quick Install)
+## 🚀 Quick Installation
 
+1. Go to the **[Releases](https://github.com/OWENLEEzy/tab-organizer/releases)** page.
+2. Download the latest **`tab-organizer-v[version].zip`**.
+3. Extract the ZIP file locally.
+4. Open Chrome and navigate to `chrome://extensions`.
+5. Enable **Developer mode**.
+6. Click **Load unpacked** and select the `dist` folder.
+
+---
+
+## 💎 Features
+
+- **Automated Grouping**: Tabs are intelligently grouped by domain.
+- **Homepages Cluster**: Centralizes your Gmail, X, LinkedIn, and GitHub homepages into a single elegant card.
+- **Localhost Intelligence**: Perfect for developers—shows port numbers so you can distinguish between different "Vibe Coding" projects.
+- **Satisfying Cleanup**: Close tabs with a delightful *swoosh* sound and a burst of confetti.
+- **Duplicate Detection**: Instantly identifies and cleans up redundant tabs with one click.
+- **Keyboard Mastery**: Full search and keyboard navigation across all visible tabs.
+- **Snapshot Recovery**: Lightweight local safety—restore recent sessions without external sync.
+
+---
+
+## 🛠️ Developer Setup
+
+If you want to build from source or contribute:
+
+```bash
+# Clone the repository
+git clone https://github.com/OWENLEEzy/tab-organizer.git
+cd tab-organizer
+
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+```
+
+Once built, load the `dist/` folder in `chrome://extensions`.
+
+---
+
+<a name="chinese"></a>
+
+## 🏮 中文说明
+
+### 🌟 核心理念
+Tab Organizer 是一款专为高效办公设计的 Chrome 扩展程序。它将凌乱的标签栏转化为一个受 Notion 启发的清新看板，自动按域名对标签进行归类。
+
+**完全本地运行：** 无服务器、无账户、无外部 API 调用。您的隐私就是我们的首要任务。
+
+> [!IMPORTANT]
+> **第一次使用？** 强烈建议查看我们的 **[交互式使用教程](https://owenleezy.github.io/tab-organizer/tutorial.html)**，只需 1 分钟即可上手。
+
+### 🚀 快速安装
 1. 前往 **[Releases](https://github.com/OWENLEEzy/tab-organizer/releases)** 页面。
 2. 下载最新的 **`tab-organizer-v[版本号].zip`** 文件。
 3. 在本地解压该文件。
 4. 打开 Chrome，进入 `chrome://extensions`。
 5. 开启 **开发者模式 (Developer mode)**。
-6. 点击 **加载已解压的扩展程序 (Load unpacked)**，选择解压出的 `dist` 文件夹即可。
+6. 点击 **加载已解压的扩展程序 (Load unpacked)**，选择解压出的 `dist` 文件夹。
+
+### 💎 功能亮点
+- **智能分组**：按域名自动整理标签，清爽直观。
+- **首页聚合**：将 Gmail、X、LinkedIn、GitHub 等首页自动归拢到一个卡片。
+- **开发友好**：Localhost 分组会显示端口号，一眼分辨不同的开发项目。
+- **解压动效**：关闭标签时伴有清脆的音效和五彩纸屑。
+- **重复清理**：自动检测重复标签，一键清理冗余。
+- **本地备份**：轻量级的快照功能，安全找回最近的标签页。
 
 ---
 
+## 🏗️ Tech Stack
 
-## Features
-
-- **See all your tabs at a glance** on a clean grid, grouped by domain
-- **Homepages group** pulls Gmail inbox, X home, YouTube, LinkedIn, GitHub homepages into one card
-- **Close tabs with style** with swoosh sound + confetti burst
-- **Duplicate detection** flags when you have the same page open twice, with one-click cleanup
-- **Click any tab to jump to it** across windows, no new tab opened
-- **Save for later** bookmark tabs to a checklist before closing them
-- **Localhost grouping** shows port numbers next to each tab so you can tell your vibe coding projects apart
-- **Expandable groups** show the first 8 tabs with a clickable "+N more"
-- **100% local** your data never leaves your machine
-- **Pure Chrome extension** no server, no Node.js, no npm, no setup beyond loading the extension
+| Component | Technology |
+| :--- | :--- |
+| **Framework** | React 19 + TypeScript |
+| **Styling** | Vanilla CSS (Lightning CSS) |
+| **State** | Zustand |
+| **Build Tool** | Vite + CRXJS |
+| **Storage** | `chrome.storage.local` |
 
 ---
 
-## Manual Setup
+## 🔗 Credits
 
-**推荐：按这三步做**
-
-1. Build one-click package:
-
-```bash
-git clone https://github.com/OWENLEEzy/tab-organizer.git
-cd tab-organizer
-npm install
-npm run build
-```
-
-2. Load unpacked in Chrome:
-
-Open `chrome://extensions` -> 开启 Developer mode -> 点击 **Load unpacked** -> 选 `dist/` 文件夹.
-
-3. Open Tab Organizer:
-
-点击浏览器工具栏里的 Tab Organizer 图标。
-
-If you changed source code and want to rebuild the loadable package:
-
-```bash
-npm run build
-# Quick sync only (icons/paths):
-npm run sync:dist
-```
-
-This writes a Chrome-ready `dist/` bundle directly.
-
-Legacy `extension/` output has been removed. `dist/` is the only loadable and publishable extension bundle.
+Inspired by the original **[Tab Out](https://github.com/OWENLEEzy/tab-out)** project. 
 
 ---
 
-## How it works
-
-```
-You click the Tab Out toolbar icon
-  -> Tab Out opens a dashboard with your open tabs grouped by domain
-  -> Homepages (Gmail, X, etc.) get their own group at the top
-  -> Click any tab title to jump to it
-  -> Close groups you're done with (swoosh + confetti)
-  -> Save tabs for later before closing them
-```
-
-Everything runs inside the Chrome extension. No external server, no API calls, no data sent anywhere. Saved tabs are stored in `chrome.storage.local`.
-
----
-
-## Tech stack
-
-| What | How |
-|------|-----|
-| Extension | Chrome Manifest V3 |
-| Storage | chrome.storage.local |
-| Sound | Web Audio API (synthesized, no files) |
-| Animations | CSS transitions + JS confetti particles |
-
----
-
-## License
-
-MIT
-
----
-
-Built by Tab Organizer contributors
+<div align="center">
+  Made with ❤️ for a cleaner browser.
+</div>
