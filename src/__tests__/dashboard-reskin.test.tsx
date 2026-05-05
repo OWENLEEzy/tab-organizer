@@ -15,12 +15,12 @@ const globalCss = readFileSync(
 
 describe('MotherDuck-inspired dashboard token layer', () => {
   it('defines Tab Out-owned visual tokens instead of relying on raw brand class names', () => {
-    expect(globalCss).toContain('--to-bg-page');
-    expect(globalCss).toContain('--to-bg-surface');
-    expect(globalCss).toContain('--to-bg-yellow');
-    expect(globalCss).toContain('--to-bg-blue');
-    expect(globalCss).toContain('--to-border-strong');
-    expect(globalCss).toContain('--to-font-ui');
+    expect(globalCss).toContain('--color-to-bg-page');
+    expect(globalCss).toContain('--color-to-bg-surface');
+    expect(globalCss).toContain('--color-to-bg-yellow');
+    expect(globalCss).toContain('--color-to-bg-blue');
+    expect(globalCss).toContain('--color-to-border-strong');
+    expect(globalCss).toContain('--font-family-to-ui');
   });
 
   it('keeps warm flat layout classes available to React components', () => {
@@ -60,9 +60,8 @@ describe('MotherDuck-inspired layout components', () => {
         totalCount={8}
         viewMode="cards"
         onViewModeChange={() => {}}
-        organizeActive={false}
-        canOrganize
-        onToggleOrganize={() => {}}
+        onRefresh={() => {}}
+
         onCreateSection={() => {}}
         onCloseAll={() => {}}
         onOpenSettings={() => {}}
@@ -92,9 +91,8 @@ describe('MotherDuck-inspired layout components', () => {
             totalCount={1}
             viewMode="cards"
             onViewModeChange={() => {}}
-            organizeActive={false}
-            canOrganize
-            onToggleOrganize={() => {}}
+            onRefresh={() => {}}
+
             onCreateSection={() => {}}
             onCloseAll={() => {}}
             onOpenSettings={() => {}}
@@ -122,7 +120,7 @@ describe('dashboard reskin composition contract', () => {
     expect(appSource).toContain('DashboardShell');
     expect(appSource).toContain('StatusStrip');
     expect(appSource).toContain('DashboardHeader');
-    expect(appSource).toContain('SectionBoard');
+    expect(appSource).toContain('DndOrganizer');
     expect(appSource).toContain('ProductTable');
   });
 });

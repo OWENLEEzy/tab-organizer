@@ -19,10 +19,13 @@ function SettingsHarness(): React.ReactElement {
         theme="system"
         soundEnabled
         confettiEnabled
+        customGroups={[]}
         onSetTheme={() => {}}
         onToggleSound={() => {}}
         onToggleConfetti={() => {}}
         onResetSortOrder={() => {}}
+        onAddCustomGroup={() => {}}
+        onRemoveCustomGroup={() => {}}
       />
     </>
   );
@@ -43,7 +46,8 @@ describe('SettingsPanel accessibility', () => {
     expect(closeButton).toHaveFocus();
 
     await user.keyboard('{Shift>}{Tab}{/Shift}');
-    expect(screen.getByRole('button', { name: 'Reset to default' })).toHaveFocus();
+    // The last focusable is the 'Add rule' button (after hostname input, label input)
+    expect(screen.getByRole('button', { name: 'Add rule' })).toHaveFocus();
 
     await user.keyboard('{Tab}');
     expect(closeButton).toHaveFocus();
@@ -60,10 +64,13 @@ describe('SettingsPanel accessibility', () => {
         theme="system"
         soundEnabled
         confettiEnabled
+        customGroups={[]}
         onSetTheme={() => {}}
         onToggleSound={() => {}}
         onToggleConfetti={() => {}}
         onResetSortOrder={() => {}}
+        onAddCustomGroup={() => {}}
+        onRemoveCustomGroup={() => {}}
       />,
     );
 

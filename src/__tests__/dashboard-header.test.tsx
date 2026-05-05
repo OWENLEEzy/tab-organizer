@@ -10,7 +10,6 @@ describe('DashboardHeader', () => {
   it('wires search and command actions without owning dashboard state', () => {
     const onSearchChange = vi.fn();
     const onViewModeChange = vi.fn();
-    const onToggleOrganize = vi.fn();
     const onCreateSection = vi.fn();
     const onCloseAll = vi.fn();
     const onOpenSettings = vi.fn();
@@ -27,9 +26,7 @@ describe('DashboardHeader', () => {
         totalCount={12}
         viewMode="cards"
         onViewModeChange={onViewModeChange}
-        organizeActive={false}
-        canOrganize
-        onToggleOrganize={onToggleOrganize}
+        onRefresh={() => {}}
         onCreateSection={onCreateSection}
         onCloseAll={onCloseAll}
         onOpenSettings={onOpenSettings}
@@ -43,13 +40,11 @@ describe('DashboardHeader', () => {
     fireEvent.change(screen.getByRole('searchbox', { name: 'Search tabs' }), {
       target: { value: 'github' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Organize' }));
     fireEvent.click(screen.getByRole('button', { name: 'New Section' }));
     fireEvent.click(screen.getByRole('button', { name: 'Close All' }));
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
 
     expect(onSearchChange).toHaveBeenCalledWith('github');
-    expect(onToggleOrganize).toHaveBeenCalledTimes(1);
     expect(onCreateSection).toHaveBeenCalledTimes(1);
     expect(onCloseAll).toHaveBeenCalledTimes(1);
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
@@ -70,9 +65,7 @@ describe('DashboardHeader', () => {
         totalCount={0}
         viewMode="cards"
         onViewModeChange={() => {}}
-        organizeActive={false}
-        canOrganize={false}
-        onToggleOrganize={() => {}}
+        onRefresh={() => {}}
         onCreateSection={() => {}}
         onCloseAll={() => {}}
         onOpenSettings={onOpenSettings}

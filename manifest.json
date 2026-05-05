@@ -3,7 +3,7 @@
   "name": "Tab Out",
   "version": "2.0.0",
   "description": "Keep tabs on your tabs. Open a dashboard that groups your tabs by domain and lets you close them with style.",
-  "permissions": ["tabs", "storage"],
+  "permissions": ["tabs", "storage", "favicon"],
   "incognito": "not_allowed",
   "background": {
     "service_worker": "src/background/index.ts",

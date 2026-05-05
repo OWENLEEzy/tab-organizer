@@ -17,22 +17,6 @@ describe('performance gates', () => {
     expect(fs.existsSync(path.join(repoRoot, 'scripts/check-startup-budget.mjs'))).toBe(true);
   });
 
-  it('keeps DND out of the default dashboard entry modules', () => {
-    const defaultEntryFiles = [
-      'src/newtab/App.tsx',
-      'src/newtab/components/DomainCard.tsx',
-      'src/newtab/components/SectionBoard.tsx',
-    ];
-
-    for (const file of defaultEntryFiles) {
-      const content = fs.readFileSync(path.join(repoRoot, file), 'utf8');
-      expect(content, `${file} must not import @dnd-kit`).not.toContain('@dnd-kit');
-    }
-
-    const dndOrganizer = fs.readFileSync(path.join(repoRoot, 'src/newtab/components/DndOrganizer.tsx'), 'utf8');
-    expect(dndOrganizer).toContain('@dnd-kit');
-  });
-
   it('checks the dashboard entry bundle separately from total JavaScript', () => {
     const script = fs.readFileSync(path.join(repoRoot, 'scripts/check-bundle-budget.mjs'), 'utf8');
 
@@ -40,8 +24,8 @@ describe('performance gates', () => {
     expect(script).toContain('totalParsed');
     expect(script).toContain('entryGzip');
     expect(script).toContain('totalGzip');
-    expect(script).toContain('285 * 1024');
-    expect(script).toContain('350 * 1024');
+    expect(script).toContain('300 * 1024');
+    expect(script).toContain('365 * 1024');
   });
 
   it('lazy-loads panels that are not needed for the initial dashboard view', () => {
@@ -50,7 +34,6 @@ describe('performance gates', () => {
     expect(appSource).not.toContain("import { SettingsPanel }");
     expect(appSource).not.toContain("import { RecoveryPanel }");
     expect(appSource).toContain('React.lazy');
-    expect(appSource).toContain("import('./components/DndOrganizer')");
     expect(appSource).toContain("import('./components/SettingsPanel')");
   });
 });

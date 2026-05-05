@@ -42,10 +42,13 @@ export function A11yHarness(): React.ReactElement {
         theme="system"
         soundEnabled
         confettiEnabled
+        customGroups={[]}
         onSetTheme={() => {}}
         onToggleSound={() => {}}
         onToggleConfetti={() => {}}
         onResetSortOrder={() => {}}
+        onAddCustomGroup={() => {}}
+        onRemoveCustomGroup={() => {}}
       />
     </main>
   );
