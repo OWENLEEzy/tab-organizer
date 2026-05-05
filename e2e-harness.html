@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tab Out E2E Harness</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Chrome API mock - must run before React app -->
+    <script>
+      (function() {
+        const createEvent = function() {
+          return {
+            addListener: function() {},
+            removeListener: function() {},
+            hasListener: function() { return false; },
+            hasListeners: function() { return false; }
+          };
+        };
+
+        // Mock tabs data for E2E testing
+        var mockTabs = [
+          { id: 1, url: 'https://github.com/explore', title: 'Explore · GitHub', favIconUrl: 'https://github.githubassets.com/favicons/favicon.png', windowId: 1, active: true },
+          { id: 2, url: 'https://github.com/trending', title: 'Trending · GitHub', favIconUrl: 'https://github.githubassets.com/favicons/favicon.png', windowId: 1, active: false },
+          { id: 3, url: 'https://github.com/notifications', title: 'Notifications · GitHub', favIconUrl: 'https://github.githubassets.com/favicons/favicon.png', windowId: 1, active: false },
+          { id: 4, url: 'https://www.youtube.com/watch?v=test1', title: 'Test Video 1 - YouTube', favIconUrl: 'https://www.youtube.com/favicon.ico', windowId: 1, active: false },
+          { id: 5, url: 'https://www.youtube.com/watch?v=test2', title: 'Test Video 2 - YouTube', favIconUrl: 'https://www.youtube.com/favicon.ico', windowId: 1, active: false },
+          { id: 6, url: 'https://docs.google.com/document/d/1', title: 'Test Doc 1 - Google Docs', favIconUrl: 'https://docs.google.com/favicon.ico', windowId: 1, active: false },
+          { id: 7, url: 'https://docs.google.com/document/d/2', title: 'Test Doc 2 - Google Docs', favIconUrl: 'https://docs.google.com/favicon.ico', windowId: 1, active: false },
+          { id: 8, url: 'https://www.reddit.com/r/programming', title: 'r/programming - Reddit', favIconUrl: 'https://www.reddit.com/favicon.ico', windowId: 1, active: false },
+          { id: 9, url: 'https://www.reddit.com/r/webdev', title: 'r/webdev - Reddit', favIconUrl: 'https://www.reddit.com/favicon.ico', windowId: 1, active: false },
+          { id: 10, url: 'https://stackoverflow.com/questions/123', title: 'Test Question - Stack Overflow', favIconUrl: 'https://stackoverflow.com/favicon.ico', windowId: 1, active: false },
+        ];
+
+        window.chrome = {
+          tabs: {
+            query: function() { return Promise.resolve(mockTabs); },
+            remove: function() { return Promise.resolve(); },
+            update: function() { return Promise.resolve(); },
+            create: function() { return Promise.resolve(); },
+            get: function() { return Promise.resolve(mockTabs[0]); },
+            getCurrent: function() { return Promise.resolve({ id: 1, url: 'chrome://newtab', windowId: 1, active: true }); },
+            onActivated: createEvent(),
+            onAttached: createEvent(),
+            onCreated: createEvent(),
+            onDetached: createEvent(),
+            onMoved: createEvent(),
+            onRemoved: createEvent(),
+            onReplaced: createEvent(),
+            onUpdated: createEvent(),
+            onZoomChange: createEvent()
+          },
+          storage: {
+            local: {
+              get: function() { return Promise.resolve({}); },
+              set: function() { return Promise.resolve(); },
+              remove: function() { return Promise.resolve(); },
+              clear: function() { return Promise.resolve(); },
+              getBytesInUse: function() { return Promise.resolve(0); },
+              onChanged: createEvent()
+            },
+            session: {
+              get: function() { return Promise.resolve({}); },
+              set: function() { return Promise.resolve(); },
+              remove: function() { return Promise.resolve(); },
+              clear: function() { return Promise.resolve(); },
+              onChanged: createEvent()
+            },
+            sync: {
+              get: function() { return Promise.resolve({}); },
+              set: function() { return Promise.resolve(); },
+              remove: function() { return Promise.resolve(); },
+              clear: function() { return Promise.resolve(); },
+              onChanged: createEvent()
+            },
+            onChanged: createEvent()
+          },
+          runtime: {
+            getURL: function(path) { return 'chrome-extension://test-extension-id/' + (path || ''); },
+            getManifest: function() { return { version: '1.0.0' }; },
+            id: 'test-extension-id',
+            onMessage: createEvent(),
+            onConnect: createEvent(),
+            onInstalled: createEvent(),
+            sendMessage: function() { return Promise.resolve(); },
+            connect: function() { return {}; }
+          },
+          windows: {
+            get: function() { return Promise.resolve({ id: 1, focused: true }); },
+            getCurrent: function() { return Promise.resolve({ id: 1, focused: true }); },
+            getAll: function() { return Promise.resolve([]); },
+            create: function() { return Promise.resolve({}); },
+            update: function() { return Promise.resolve({}); },
+            remove: function() { return Promise.resolve({}); },
+            onCreated: createEvent(),
+            onRemoved: createEvent(),
+            onFocusChanged: createEvent()
+          }
+        };
+      })();
+    </script>
+    <script type="module" src="/src/e2e/e2e-main.tsx"></script>
+  </body>
+</html>
