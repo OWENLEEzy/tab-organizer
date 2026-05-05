@@ -1,16 +1,12 @@
 import React from 'react';
-import { useDroppable } from '@dnd-kit/core';
 import type { OrganizerSection, TabGroup } from '../../types';
-import { SortableDomainCard } from './SortableDomainCard';
 import { DomainCard } from './DomainCard';
 
-interface SectionBoardProps {
+export interface SectionBoardProps {
   id: string;
   title: string;
   items: TabGroup[];
   section?: OrganizerSection;
-  dndItemIds: string[];
-  dndEnabled: boolean;
   tabCount: number;
   expandedDomains: Set<string>;
   maxChipsVisible: number;
@@ -22,7 +18,6 @@ interface SectionBoardProps {
   onCloseDomain: (group: TabGroup) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onCloseTab: (url: string) => void;
-  onSaveTab: (url: string, title: string) => void;
   onFocusTab: (url: string) => void;
   onChipClick: (url: string, event: React.MouseEvent) => void;
   onToggleExpanded: (domain: string) => void;
@@ -33,8 +28,6 @@ export function SectionBoard({
   title,
   items,
   section,
-  dndItemIds,
-  dndEnabled,
   tabCount,
   expandedDomains,
   maxChipsVisible,
@@ -46,20 +39,18 @@ export function SectionBoard({
   onCloseDomain,
   onCloseDuplicates,
   onCloseTab,
-  onSaveTab,
   onFocusTab,
   onChipClick,
   onToggleExpanded,
 }: SectionBoardProps): React.ReactElement {
-  const { setNodeRef, isOver } = useDroppable({ id });
   return (
-    <section ref={setNodeRef} className={`organizer-section ${isOver ? 'is-over' : ''}`}>
+    <section className="organizer-section" data-section-id={id}>
       <div className="section-header">
-        <h2 className="font-heading text-text-primary-light dark:text-text-primary-dark text-base font-semibold">
+        <h2 className="font-body text-xs font-semibold text-text-primary-light dark:text-text-primary-dark">
           {title}
         </h2>
-        <div className="border-border-light dark:border-border-dark mx-3 h-px flex-1" />
-        <span className="text-text-secondary text-xs whitespace-nowrap">
+        <div className="mx-3 h-[2px] flex-1 border-t-2 border-border-light dark:border-border-dark" />
+        <span className="whitespace-nowrap font-body text-xs font-semibold uppercase text-text-secondary">
           {tabCount} tab{tabCount !== 1 ? 's' : ''}
         </span>
         {section && (
@@ -75,44 +66,22 @@ export function SectionBoard({
       </div>
 
       <div className="missions">
-        {items.map((group, index) => (
-          dndEnabled ? (
-            <SortableDomainCard
-              key={group.id}
-              group={group}
-              sortableId={dndItemIds[index]}
-              draggableTabs
-              expanded={expandedDomains.has(group.domain)}
-              maxChipsVisible={maxChipsVisible}
-              onCloseDomain={onCloseDomain}
-              onCloseDuplicates={onCloseDuplicates}
-              onCloseTab={onCloseTab}
-              onSaveTab={onSaveTab}
-              onFocusTab={onFocusTab}
-              focusedUrl={focusedUrl}
-              closingUrls={closingUrls}
-              selectedUrls={selectedUrls}
-              onChipClick={onChipClick}
-              onToggleExpanded={onToggleExpanded}
-            />
-          ) : (
-            <DomainCard
-              key={group.id}
-              group={group}
-              expanded={expandedDomains.has(group.domain)}
-              maxChipsVisible={maxChipsVisible}
-              onCloseDomain={onCloseDomain}
-              onCloseDuplicates={onCloseDuplicates}
-              onCloseTab={onCloseTab}
-              onSaveTab={onSaveTab}
-              onFocusTab={onFocusTab}
-              focusedUrl={focusedUrl}
-              closingUrls={closingUrls}
-              selectedUrls={selectedUrls}
-              onChipClick={onChipClick}
-              onToggleExpanded={onToggleExpanded}
-            />
-          )
+        {items.map((group) => (
+          <DomainCard
+            key={group.id}
+            group={group}
+            expanded={expandedDomains.has(group.domain)}
+            maxChipsVisible={maxChipsVisible}
+            onCloseDomain={onCloseDomain}
+            onCloseDuplicates={onCloseDuplicates}
+            onCloseTab={onCloseTab}
+            onFocusTab={onFocusTab}
+            focusedUrl={focusedUrl}
+            closingUrls={closingUrls}
+            selectedUrls={selectedUrls}
+            onChipClick={onChipClick}
+            onToggleExpanded={onToggleExpanded}
+          />
         ))}
       </div>
     </section>

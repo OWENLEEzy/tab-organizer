@@ -13,7 +13,7 @@ interface ProductTableProps {
 }
 
 function itemId(group: TabGroup): string {
-  return `${group.itemType ?? 'product'}:${group.itemKey ?? group.domain}`;
+  return `product:${group.itemKey ?? group.productKey ?? group.domain}`;
 }
 
 function duplicateUrls(group: TabGroup): string[] {
@@ -96,7 +96,7 @@ export function ProductTable({
                     onChange={(event) => onMoveItem(group, event.target.value)}
                     aria-label={`Move ${group.friendlyName || group.domain}`}
                   >
-                    <option value="">Right now</option>
+                    <option value="">Unsorted</option>
                     {sections.map((section) => (
                       <option key={section.id} value={section.id}>
                         {section.name}

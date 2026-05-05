@@ -1,28 +1,21 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DndContext, closestCenter } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingState } from './components/LoadingState';
-import { Header } from './components/Header';
-import { DupeBanner } from './components/DupeBanner';
-import { NudgeBanner } from './components/NudgeBanner';
-import { SearchBar } from './components/SearchBar';
 import { SectionBoard } from './components/SectionBoard';
-import { ViewToggle } from './components/ViewToggle';
 import { ProductTable } from './components/ProductTable';
 import { SelectionBar } from './components/SelectionBar';
-import { DeferredColumn } from './components/DeferredColumn';
 import { EmptyState } from './components/EmptyState';
 import { Footer } from './components/Footer';
 import { Toast } from './components/Toast';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
-import { SettingsPanel } from './components/SettingsPanel';
+import { DashboardShell } from './components/layout/DashboardShell';
+import { StatusStrip } from './components/layout/StatusStrip';
+import type { StatusStripAlert } from './components/layout/StatusStrip';
+import { CommandHeader } from './components/layout/CommandHeader';
+import { DashboardToolbar } from './components/layout/DashboardToolbar';
 import { useTabStore } from '../stores/tab-store';
-import { useSavedStore } from '../stores/saved-store';
 import { useSettingsStore } from '../stores/settings-store';
 import { clearGroupOrder } from '../utils/storage';
-import { useChromeStorage } from './hooks/useChromeStorage';
 import { useKeyboard } from './hooks/useKeyboard';
 import { flattenVisibleTabs } from './lib/visible-tabs';
 import { getChipCloseDelay, userPrefersReducedMotion } from './lib/motion';
@@ -34,6 +27,40 @@ import type { TabGroup } from '../types';
 
 const TOAST_DURATION = 2500;
 const MAIN_SECTION_ID = 'section:main';
+const DndOrganizer = React.lazy(() =>
+  import('./components/DndOrganizer').then((module) => ({ default: module.DndOrganizer })),
+);
+const SettingsPanel = React.lazy(() =>
+  import('./components/SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
+);
+
+function productKeyForGroup(group: TabGroup): string {
+  return group.productKey ?? group.itemKey ?? group.domain;
+}
+
+function getDashboardDateDisplay(): string {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void {
+  const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tab-url]'));
+  const target = direction === 'first' ? chips[0] : chips.at(-1);
+
+  if (target) {
+    target.focus({ preventScroll: false });
+    target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    return;
+  }
+
+  if (attempts > 0) {
+    window.setTimeout(() => focusTabChipWhenReady(direction, attempts - 1), 50);
+  }
+}
 
 // ─── Component ────────────────────────────────────────────────────────
 
@@ -55,16 +82,15 @@ export function App(): React.ReactElement {
   const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
   const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
+  const [organizeMode, setOrganizeMode] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── Stores ────────────────────────────────────────────────────────
   const tabStore = useTabStore();
-  const savedStore = useSavedStore();
   const settingsStore = useSettingsStore();
 
   const { tabs, groups, loading: tabsLoading } = tabStore;
   const { sections, sectionAssignments, viewMode } = tabStore;
-  const { active: savedActive, archived: savedArchived, archiveSearch } = savedStore;
   const { settings } = settingsStore;
 
   // ─── Toast helper ──────────────────────────────────────────────────
@@ -106,7 +132,10 @@ export function App(): React.ReactElement {
 
   useEffect(() => {
     async function init() {
-      await Promise.all([tabStore.fetchTabs(), savedStore.fetchSaved(), settingsStore.fetchSettings()]);
+      await Promise.all([
+        tabStore.fetchTabs(),
+        settingsStore.fetchSettings(),
+      ]);
       setLoading(false);
     }
     init();
@@ -119,21 +148,12 @@ export function App(): React.ReactElement {
     return cleanup;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Sync saved data on storage changes ────────────────────────────
-
-  useChromeStorage(() => {
-    savedStore.fetchSaved();
-  });
-
   // ─── Keyboard shortcuts ────────────────────────────────────────────
 
   useKeyboard({
     onSearch: () => {
       const input = document.querySelector<HTMLInputElement>('input[aria-label="Search tabs"]');
       input?.focus();
-    },
-    onSave: () => {
-      showToast('No tab selected');
     },
     onEscape: () => {
       setSearchQuery('');
@@ -144,15 +164,21 @@ export function App(): React.ReactElement {
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     },
     onArrowUp: () => {
+      if (flatChips.length === 0) {
+        focusTabChipWhenReady('last');
+        return;
+      }
       setFocusedIndex((prev) => {
-        if (flatChips.length === 0) return null;
         if (prev === null) return flatChips.length - 1;
         return prev > 0 ? prev - 1 : flatChips.length - 1;
       });
     },
     onArrowDown: () => {
+      if (flatChips.length === 0) {
+        focusTabChipWhenReady('first');
+        return;
+      }
       setFocusedIndex((prev) => {
-        if (flatChips.length === 0) return null;
         if (prev === null) return 0;
         return prev < flatChips.length - 1 ? prev + 1 : 0;
       });
@@ -168,11 +194,6 @@ export function App(): React.ReactElement {
     onDClose: () => {
       if (focusedIndex !== null && flatChips[focusedIndex]) {
         handleCloseTabAnimated(flatChips[focusedIndex].url);
-      }
-    },
-    onDSave: () => {
-      if (focusedIndex !== null && flatChips[focusedIndex]) {
-        handleSaveTab(flatChips[focusedIndex].url, flatChips[focusedIndex].title);
       }
     },
   });
@@ -202,25 +223,19 @@ export function App(): React.ReactElement {
   );
 
   const itemIdForGroup = useCallback((group: TabGroup) => {
-    if (group.itemType === 'tabUrl') {
-      return `tabUrl:${encodeURIComponent(group.itemKey ?? group.tabs[0]?.url ?? '')}`;
-    }
-    return `product:${group.itemKey ?? group.domain}`;
+    return `product:${productKeyForGroup(group)}`;
   }, []);
 
   const assignmentByItemId = useMemo(() => {
     const map = new Map<string, string>();
     for (const assignment of sectionAssignments) {
-      const key = assignment.itemType === 'tabUrl'
-        ? `tabUrl:${assignment.itemKey}`
-        : `product:${assignment.itemKey}`;
-      map.set(key, assignment.sectionId);
+      map.set(`product:${assignment.productKey}`, assignment.sectionId);
     }
     return map;
   }, [sectionAssignments]);
 
   const groupAssignmentKey = useCallback((group: TabGroup) => {
-    return `${group.itemType ?? 'product'}:${group.itemKey ?? group.domain}`;
+    return `product:${productKeyForGroup(group)}`;
   }, []);
 
   const orderedSections = useMemo(
@@ -250,10 +265,10 @@ export function App(): React.ReactElement {
       const assignmentsForSection = sectionAssignments.filter((assignment) => assignment.sectionId === sectionId);
       items.sort((a, b) => {
         const aOrder = assignmentsForSection.find(
-          (assignment) => assignment.itemType === (a.itemType ?? 'product') && assignment.itemKey === (a.itemKey ?? a.domain),
+          (assignment) => `product:${assignment.productKey}` === groupAssignmentKey(a),
         )?.order ?? a.order;
         const bOrder = assignmentsForSection.find(
-          (assignment) => assignment.itemType === (b.itemType ?? 'product') && assignment.itemKey === (b.itemKey ?? b.domain),
+          (assignment) => `product:${assignment.productKey}` === groupAssignmentKey(b),
         )?.order ?? b.order;
         return aOrder - bOrder;
       });
@@ -262,11 +277,6 @@ export function App(): React.ReactElement {
     return result;
   }, [assignmentByItemId, filteredGroups, groupAssignmentKey, orderedSections, sectionAssignments]);
 
-  const allDndItemIds = useMemo(
-    () => filteredGroups.map(itemIdForGroup),
-    [filteredGroups, itemIdForGroup],
-  );
-
   const flatChips = flattenVisibleTabs(
     filteredGroups,
     settings.maxChipsVisible,
@@ -274,6 +284,8 @@ export function App(): React.ReactElement {
   );
 
   const focusedUrl = focusedIndex !== null ? flatChips[focusedIndex]?.url ?? null : null;
+  const canOrganize = viewMode === 'cards' && selectedUrls.size === 0;
+  const organizeActive = organizeMode && canOrganize;
 
   // ─── Tab Out dupe count ────────────────────────────────────────────
 
@@ -281,14 +293,6 @@ export function App(): React.ReactElement {
     () => tabs.filter((t) => isTabOutPage(t.url)).length,
     [tabs],
   );
-
-  // Cache the current tab ID once (doesn't change during NTP lifetime)
-  const currentTabIdRef = useRef<number>(-1);
-  useEffect(() => {
-    chrome.tabs.getCurrent().then((tab) => {
-      if (tab?.id != null) currentTabIdRef.current = tab.id;
-    }).catch(() => {});
-  }, []);
 
   // ─── Handlers ──────────────────────────────────────────────────────
 
@@ -345,33 +349,12 @@ export function App(): React.ReactElement {
     [settings, tabStore, showToast],
   );
 
-  const handleSaveTab = useCallback(
-    (url: string, title: string) => {
-      savedStore.saveTab(url, title).then(() => {
-        showToast('Saved for later');
-      });
-    },
-    [savedStore, showToast],
-  );
-
   const handleFocusTab = useCallback(
     (url: string) => {
       tabStore.focusTab(url);
     },
     [tabStore],
   );
-
-  const handleCloseExtras = useCallback(() => {
-    const tabOutUrls = tabs
-      .filter((t) => isTabOutPage(t.url) && t.id !== currentTabIdRef.current)
-      .map((t) => t.url);
-
-    if (tabOutUrls.length === 0) return;
-
-    tabStore.closeTabsExact(tabOutUrls).then(() => {
-      showToast('Extra Tab Out tabs closed');
-    });
-  }, [tabs, tabStore, showToast]);
 
   const handleResetSortOrder = useCallback(async () => {
     await clearGroupOrder();
@@ -439,15 +422,6 @@ export function App(): React.ReactElement {
     });
   }, [selectedUrls, settings, tabStore, showToast]);
 
-  const handleSaveSelected = useCallback(() => {
-    const chipsToSave = flatChips.filter((c) => selectedUrls.has(c.url));
-    Promise.all(chipsToSave.map((c) => savedStore.saveTab(c.url, c.title))).then(() => {
-      showToast(`Saved ${chipsToSave.length} tab${chipsToSave.length !== 1 ? 's' : ''}`);
-      setSelectedUrls(new Set());
-      setLastClickedIndex(null);
-    });
-  }, [selectedUrls, flatChips, savedStore, showToast]);
-
   const handleCloseAll = useCallback(() => {
     setConfirmDialog({
       open: true,
@@ -470,7 +444,7 @@ export function App(): React.ReactElement {
   }, [settings, tabs, tabStore, showToast]);
 
   const handleCreateSection = useCallback(() => {
-    const name = window.prompt('Section name', 'Later');
+    const name = window.prompt('Section name', 'Work');
     if (name == null) return;
     tabStore.createSection(name).then(() => {
       showToast('Section created');
@@ -489,7 +463,7 @@ export function App(): React.ReactElement {
     setConfirmDialog({
       open: true,
       title: `Delete ${section.name}`,
-      message: 'Items in this section will return to Right now. No tabs will be closed.',
+      message: 'Items in this section will return to Unsorted. No tabs will be closed.',
       confirmLabel: 'Delete section',
       onConfirm: () => {
         tabStore.deleteSection(section.id).then(() => {
@@ -501,108 +475,44 @@ export function App(): React.ReactElement {
   }, [tabStore, showToast]);
 
   const handleSetViewMode = useCallback((mode: 'cards' | 'table') => {
+    if (mode !== 'cards') {
+      setOrganizeMode(false);
+    }
     tabStore.setViewMode(mode).then(() => {
       showToast(mode === 'cards' ? 'Cards view' : 'Table view');
     });
   }, [tabStore, showToast]);
 
+  const handleToggleOrganizeMode = useCallback(() => {
+    setOrganizeMode((prev) => !prev);
+  }, []);
+
   const handleMoveTableItem = useCallback((group: TabGroup, sectionId: string) => {
-    const itemType = group.itemType ?? 'product';
-    const itemKey = group.itemKey ?? group.domain;
+    const productKey = productKeyForGroup(group);
     const move = sectionId
-      ? tabStore.moveItemToSection(itemType, itemKey, sectionId)
-      : tabStore.moveItemToMain(itemType, itemKey);
+      ? tabStore.moveProductToSection(productKey, sectionId)
+      : tabStore.moveProductToMain(productKey);
 
     move.then(() => {
-      showToast(sectionId ? 'Moved to section' : 'Moved to Right now');
+      showToast(sectionId ? 'Moved to section' : 'Moved to Unsorted');
     });
   }, [tabStore, showToast]);
 
-  const handleCheckOff = useCallback(
-    (id: string) => {
-      savedStore.checkOff(id).then(() => {
-        showToast('Checked off');
-      });
-    },
-    [savedStore, showToast],
-  );
+  const handleMoveProductToMain = useCallback((productKey: string) => {
+    tabStore.moveProductToMain(productKey).then(() => {
+      showToast('Moved to Unsorted');
+    });
+  }, [tabStore, showToast]);
 
-  const handleDismiss = useCallback(
-    (id: string) => {
-      savedStore.dismiss(id).then(() => {
-        showToast('Dismissed');
-      });
-    },
-    [savedStore, showToast],
-  );
+  const handleMoveProductToSection = useCallback((productKey: string, sectionId: string) => {
+    tabStore.moveProductToSection(productKey, sectionId).then(() => {
+      showToast('Moved to section');
+    });
+  }, [tabStore, showToast]);
 
-  const handleArchiveSearch = useCallback(
-    (query: string) => {
-      savedStore.setArchiveSearch(query);
-    },
-    [savedStore],
-  );
-
-  // ─── Drag-and-drop handler ───────────────────────────────────────
-
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event;
-      if (!over || active.id === over.id) return;
-
-      const activeId = String(active.id);
-      const overId = String(over.id);
-      const activeGroup = filteredGroups.find((group) => itemIdForGroup(group) === activeId);
-      if (!activeGroup) return;
-
-      const itemType = activeGroup.itemType ?? 'product';
-      const itemKey = activeGroup.itemKey ?? activeGroup.domain;
-
-      if (overId === MAIN_SECTION_ID) {
-        tabStore.moveItemToMain(itemType, itemKey).then(() => {
-          showToast('Moved to Right now');
-        });
-        return;
-      }
-
-      if (overId.startsWith('section:') && overId !== MAIN_SECTION_ID) {
-        const sectionId = overId.slice('section:'.length);
-        tabStore.moveItemToSection(itemType, itemKey, sectionId).then(() => {
-          showToast('Moved to section');
-        });
-        return;
-      }
-
-      const overGroup = filteredGroups.find((group) => itemIdForGroup(group) === overId);
-      if (overGroup) {
-        const targetSectionId = assignmentByItemId.get(groupAssignmentKey(overGroup));
-        if (targetSectionId) {
-          tabStore.moveItemToSection(itemType, itemKey, targetSectionId).then(() => {
-            showToast('Moved to section');
-          });
-          return;
-        }
-      }
-
-      if (itemType !== 'product') return;
-
-      const oldIndex = unsectionedGroups.findIndex((g) => itemIdForGroup(g) === activeId);
-      const newIndex = unsectionedGroups.findIndex((g) => itemIdForGroup(g) === overId);
-      if (oldIndex === -1 || newIndex === -1) return;
-
-      const reordered = arrayMove(unsectionedGroups, oldIndex, newIndex);
-      tabStore.reorderGroups(reordered);
-    },
-    [
-      assignmentByItemId,
-      filteredGroups,
-      groupAssignmentKey,
-      itemIdForGroup,
-      showToast,
-      tabStore,
-      unsectionedGroups,
-    ],
-  );
+  const handleReorderGroups = useCallback((reordered: TabGroup[]) => {
+    tabStore.reorderGroups(reordered);
+  }, [tabStore]);
 
   // ─── Derived state (must be before early return to satisfy rules-of-hooks) ──
 
@@ -619,8 +529,36 @@ export function App(): React.ReactElement {
 
   const totalTabs = tabs.length;
   const totalDomains = groups.length;
-  const hasDeferredContent = savedActive.length > 0 || savedArchived.length > 0;
-  const showEmptyState = groups.length === 0 && !hasDeferredContent;
+  const showEmptyState = groups.length === 0;
+  const statusAlerts: StatusStripAlert[] = [];
+
+  if (tabOutCount > 1) {
+    statusAlerts.push({
+      id: 'extra-tab-out-pages',
+      label: `${tabOutCount - 1} extra dashboard tab${tabOutCount - 1 === 1 ? '' : 's'}`,
+      actionLabel: 'Close extras',
+      onAction: () => {
+        chrome.tabs.getCurrent().then((currentTab) => {
+          const currentTabId = currentTab?.id ?? -1;
+          const tabOutUrls = tabs
+            .filter((t) => isTabOutPage(t.url) && t.id !== currentTabId)
+            .map((t) => t.url);
+          if (tabOutUrls.length > 0) {
+            tabStore.closeTabsExact(tabOutUrls).catch(() => {});
+          }
+        }).catch(() => {});
+      },
+    });
+  }
+
+  if (!nudgeDismissed && totalTabs > 15) {
+    statusAlerts.push({
+      id: 'tab-count-nudge',
+      label: 'High tab count',
+      actionLabel: 'Dismiss',
+      onAction: () => setNudgeDismissed(true),
+    });
+  }
 
   return (
     <ErrorBoundary>
@@ -632,67 +570,48 @@ export function App(): React.ReactElement {
       >
         Skip to main content
       </a>
-      <div className="tab-out-container">
-        {/* Header */}
-        <Header totalTabs={totalTabs} totalDupes={totalDupes} totalDomains={totalDomains} />
-
-        {/* Tab Out duplicates banner */}
-        <DupeBanner count={tabOutCount} onClose={handleCloseExtras} />
-
-        {/* Nudge banner for too many tabs */}
-        {!nudgeDismissed && (
-          <NudgeBanner
-            tabCount={totalTabs}
-            onDismiss={() => setNudgeDismissed(true)}
+      <DashboardShell
+        top={
+          <StatusStrip
+            totalTabs={totalTabs}
+            totalDupes={totalDupes}
+            totalProducts={totalDomains}
+            alerts={statusAlerts}
           />
-        )}
-
-        {/* Search bar */}
-        {groups.length > 0 && (
-          <div className="mb-4">
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
+        }
+        header={
+          <CommandHeader
+            title="OPEN TABS BY PRODUCT"
+            context={getDashboardDateDisplay()}
+            metrics={[
+              { label: 'sections', value: orderedSections.length },
+              { label: 'view', value: viewMode },
+            ]}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
+        }
+        toolbar={
+          groups.length > 0 ? (
+            <DashboardToolbar
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
               resultCount={filteredTabCount}
               totalCount={totalTabs}
+              viewMode={viewMode}
+              onViewModeChange={handleSetViewMode}
+              organizeActive={organizeActive}
+              canOrganize={canOrganize}
+              onToggleOrganize={handleToggleOrganizeMode}
+              onCreateSection={handleCreateSection}
+              onCloseAll={handleCloseAll}
             />
-          </div>
-        )}
-
-        {/* Dashboard — two-column layout */}
+          ) : null
+        }
+      >
         {showEmptyState ? (
           <EmptyState />
         ) : (
-          <div className={`dashboard-columns ${hasDeferredContent ? 'has-sidebar' : ''}`}>
-            {/* Left column: open tabs */}
-            <main id="main-content" tabIndex={-1} className="active-section">
-              {filteredGroups.length > 0 && (
-                <div className="section-header">
-                  <h2 className="font-heading text-text-primary-light dark:text-text-primary-dark text-base font-semibold">
-                    Right now
-                  </h2>
-                  <div className="border-border-light dark:border-border-dark mx-3 h-px flex-1" />
-                  <span className="text-text-secondary text-xs whitespace-nowrap">
-                    {filteredTabCount} tab{filteredTabCount !== 1 ? 's' : ''}
-                  </span>
-                  <ViewToggle value={viewMode} onChange={handleSetViewMode} />
-                  <button
-                    type="button"
-                    className="rounded-chip text-text-secondary hover:bg-surface-light dark:hover:bg-surface-dark focus-visible:ring-accent-blue/40 ml-2 min-h-11 cursor-pointer px-3 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
-                    onClick={handleCreateSection}
-                  >
-                    New section
-                  </button>
-                  {/* Close all button */}
-                  <button
-                    type="button"
-                    className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-blue/40 ml-2 min-h-11 cursor-pointer px-3 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
-                    onClick={handleCloseAll}
-                  >
-                    Close all
-                  </button>
-                </div>
-              )}
+          <main id="main-content" tabIndex={-1} className="active-section">
               {viewMode === 'table' ? (
                 <ProductTable
                   items={filteredGroups}
@@ -703,130 +622,84 @@ export function App(): React.ReactElement {
                   onCloseDuplicates={handleCloseDuplicates}
                   onFocusTab={handleFocusTab}
                 />
-              ) : selectedUrls.size > 0 ? (
-                <SectionBoard
-                  id={MAIN_SECTION_ID}
-                  title="Right now"
-                  items={filteredGroups}
-                  dndItemIds={filteredGroups.map(itemIdForGroup)}
-                  dndEnabled={false}
-                  tabCount={filteredTabCount}
-                  expandedDomains={expandedDomains}
-                  maxChipsVisible={settings.maxChipsVisible}
-                  focusedUrl={focusedUrl}
-                  closingUrls={closingUrls}
-                  selectedUrls={selectedUrls}
-                  onCloseDomain={handleCloseDomain}
-                  onCloseDuplicates={handleCloseDuplicates}
-                  onCloseTab={handleCloseTabAnimated}
-                  onSaveTab={handleSaveTab}
-                  onFocusTab={handleFocusTab}
-                  onChipClick={handleChipClick}
-                  onToggleExpanded={handleToggleExpanded}
-                />
+              ) : organizeActive ? (
+                <React.Suspense fallback={null}>
+                  <DndOrganizer
+                    filteredGroups={filteredGroups}
+                    unsectionedGroups={unsectionedGroups}
+                    orderedSections={orderedSections}
+                    groupsBySection={groupsBySection}
+                    assignmentByItemId={assignmentByItemId}
+                    itemIdForGroup={itemIdForGroup}
+                    expandedDomains={expandedDomains}
+                    maxChipsVisible={settings.maxChipsVisible}
+                    focusedUrl={focusedUrl}
+                    closingUrls={closingUrls}
+                    selectedUrls={selectedUrls}
+                    onMoveProductToMain={handleMoveProductToMain}
+                    onMoveProductToSection={handleMoveProductToSection}
+                    onReorderGroups={handleReorderGroups}
+                    onRenameSection={handleRenameSection}
+                    onDeleteSection={handleDeleteSection}
+                    onCloseDomain={handleCloseDomain}
+                    onCloseDuplicates={handleCloseDuplicates}
+                    onCloseTab={handleCloseTabAnimated}
+                    onFocusTab={handleFocusTab}
+                    onChipClick={handleChipClick}
+                    onToggleExpanded={handleToggleExpanded}
+                  />
+                </React.Suspense>
               ) : (
-                <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  <SortableContext
-                    items={allDndItemIds}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <SectionBoard
-                      id={MAIN_SECTION_ID}
-                      title="Right now"
-                      items={unsectionedGroups}
-                      dndItemIds={unsectionedGroups.map(itemIdForGroup)}
-                      dndEnabled
-                      tabCount={unsectionedGroups.reduce((sum, group) => sum + group.tabs.length, 0)}
-                      expandedDomains={expandedDomains}
-                      maxChipsVisible={settings.maxChipsVisible}
-                      focusedUrl={focusedUrl}
-                      closingUrls={closingUrls}
-                      selectedUrls={selectedUrls}
-                      onCloseDomain={handleCloseDomain}
-                      onCloseDuplicates={handleCloseDuplicates}
-                      onCloseTab={handleCloseTabAnimated}
-                      onSaveTab={handleSaveTab}
-                      onFocusTab={handleFocusTab}
-                      onChipClick={handleChipClick}
-                      onToggleExpanded={handleToggleExpanded}
-                    />
-                    {orderedSections.map((section) => {
-                      const items = groupsBySection.get(section.id) ?? [];
-                      return (
-                        <SectionBoard
-                          key={section.id}
-                          id={`section:${section.id}`}
-                          title={section.name}
-                          section={section}
-                          items={items}
-                          dndItemIds={items.map(itemIdForGroup)}
-                          dndEnabled
-                          tabCount={items.reduce((sum, group) => sum + group.tabs.length, 0)}
-                          expandedDomains={expandedDomains}
-                          maxChipsVisible={settings.maxChipsVisible}
-                          focusedUrl={focusedUrl}
-                          closingUrls={closingUrls}
-                          selectedUrls={selectedUrls}
-                          onRenameSection={handleRenameSection}
-                          onDeleteSection={handleDeleteSection}
-                          onCloseDomain={handleCloseDomain}
-                          onCloseDuplicates={handleCloseDuplicates}
-                          onCloseTab={handleCloseTabAnimated}
-                          onSaveTab={handleSaveTab}
-                          onFocusTab={handleFocusTab}
-                          onChipClick={handleChipClick}
-                          onToggleExpanded={handleToggleExpanded}
-                        />
-                      );
-                    })}
-                  </SortableContext>
-                </DndContext>
+                <>
+                  <SectionBoard
+                    id={MAIN_SECTION_ID}
+                    title="Unsorted"
+                    items={unsectionedGroups}
+                    tabCount={unsectionedGroups.reduce((sum, group) => sum + group.tabs.length, 0)}
+                    expandedDomains={expandedDomains}
+                    maxChipsVisible={settings.maxChipsVisible}
+                    focusedUrl={focusedUrl}
+                    closingUrls={closingUrls}
+                    selectedUrls={selectedUrls}
+                    onCloseDomain={handleCloseDomain}
+                    onCloseDuplicates={handleCloseDuplicates}
+                    onCloseTab={handleCloseTabAnimated}
+                    onFocusTab={handleFocusTab}
+                    onChipClick={handleChipClick}
+                    onToggleExpanded={handleToggleExpanded}
+                  />
+                  {orderedSections.map((section) => {
+                    const items = groupsBySection.get(section.id) ?? [];
+                    return (
+                      <SectionBoard
+                        key={section.id}
+                        id={`section:${section.id}`}
+                        title={section.name}
+                        section={section}
+                        items={items}
+                        tabCount={items.reduce((sum, group) => sum + group.tabs.length, 0)}
+                        expandedDomains={expandedDomains}
+                        maxChipsVisible={settings.maxChipsVisible}
+                        focusedUrl={focusedUrl}
+                        closingUrls={closingUrls}
+                        selectedUrls={selectedUrls}
+                        onRenameSection={handleRenameSection}
+                        onDeleteSection={handleDeleteSection}
+                        onCloseDomain={handleCloseDomain}
+                        onCloseDuplicates={handleCloseDuplicates}
+                        onCloseTab={handleCloseTabAnimated}
+                        onFocusTab={handleFocusTab}
+                        onChipClick={handleChipClick}
+                        onToggleExpanded={handleToggleExpanded}
+                      />
+                    );
+                  })}
+                </>
               )}
-            </main>
-
-            {/* Right column: Saved for Later */}
-            <DeferredColumn
-              active={savedActive}
-              archived={savedArchived}
-              archiveSearch={archiveSearch}
-              onCheckOff={handleCheckOff}
-              onDismiss={handleDismiss}
-              onArchiveSearch={handleArchiveSearch}
-            />
-          </div>
+          </main>
         )}
-
-        {/* Footer */}
         <Footer tabCount={totalTabs} />
-
-        {/* Settings gear (bottom-right) */}
-        <button
-          type="button"
-          className="border-border-light bg-bg-light text-text-secondary shadow-card hover:shadow-card-hover hover:text-text-primary-light focus-visible:ring-accent-blue/40 dark:border-border-dark dark:bg-bg-dark dark:hover:text-text-primary-dark fixed right-5 bottom-5 z-40 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border transition-all focus-visible:ring-2 focus-visible:outline-none"
-          onClick={() => setSettingsOpen(true)}
-          aria-label="Settings"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="h-4 w-4"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-            />
-          </svg>
-        </button>
-      </div>
+      </DashboardShell>
 
       {/* Confirmation dialog */}
       <ConfirmationDialog
@@ -839,17 +712,21 @@ export function App(): React.ReactElement {
       />
 
       {/* Settings panel */}
-      <SettingsPanel
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        theme={settings.theme}
-        soundEnabled={settings.soundEnabled}
-        confettiEnabled={settings.confettiEnabled}
-        onSetTheme={settingsStore.setTheme}
-        onToggleSound={settingsStore.toggleSound}
-        onToggleConfetti={settingsStore.toggleConfetti}
-        onResetSortOrder={handleResetSortOrder}
-      />
+      {settingsOpen && (
+        <React.Suspense fallback={null}>
+          <SettingsPanel
+            open={settingsOpen}
+            onClose={() => setSettingsOpen(false)}
+            theme={settings.theme}
+            soundEnabled={settings.soundEnabled}
+            confettiEnabled={settings.confettiEnabled}
+            onSetTheme={settingsStore.setTheme}
+            onToggleSound={settingsStore.toggleSound}
+            onToggleConfetti={settingsStore.toggleConfetti}
+            onResetSortOrder={handleResetSortOrder}
+          />
+        </React.Suspense>
+      )}
 
       {/* Toast overlay */}
       <Toast message={toast.message} visible={toast.visible} />
@@ -859,7 +736,6 @@ export function App(): React.ReactElement {
         <SelectionBar
           count={selectedUrls.size}
           onClose={handleCloseSelected}
-          onSave={handleSaveSelected}
           onClear={handleClearSelection}
         />
       )}

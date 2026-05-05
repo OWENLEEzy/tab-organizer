@@ -1,6 +1,4 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import type { TabGroup } from '../../types';
 import { TabChip } from './TabChip';
 import { getFaviconUrl } from '../../utils/url';
@@ -16,14 +14,12 @@ interface DomainCardProps {
   onCloseDomain: (group: TabGroup) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onCloseTab: (url: string) => void;
-  onSaveTab: (url: string, title: string) => void;
   onFocusTab: (url: string) => void;
   focusedUrl?: string | null;
   closingUrls?: Set<string>;
   selectedUrls?: Set<string>;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   onToggleExpanded?: (domain: string) => void;
-  draggableTabs?: boolean;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -92,12 +88,7 @@ function DedupIcon(): React.ReactElement {
   );
 }
 
-function dndIdForTabUrl(url: string): string {
-  return `tabUrl:${encodeURIComponent(url)}`;
-}
-
-function DraggableTabChip({
-  enabled,
+function TabChipRow({
   tab,
   duplicateCount,
   focusedUrl,
@@ -106,10 +97,8 @@ function DraggableTabChip({
   selectionMode,
   onFocus,
   onClose,
-  onSave,
   onChipClick,
 }: {
-  enabled: boolean;
   tab: TabGroup['tabs'][number];
   duplicateCount: number;
   focusedUrl?: string | null;
@@ -118,40 +107,10 @@ function DraggableTabChip({
   selectionMode: boolean;
   onFocus: (url: string) => void;
   onClose: (url: string) => void;
-  onSave: (url: string, title: string) => void;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
 }): React.ReactElement {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    isDragging,
-  } = useDraggable({
-    id: dndIdForTabUrl(tab.url),
-    disabled: !enabled,
-  });
-  const { role: _role, tabIndex: _tabIndex, ...dragAttributes } = attributes;
-
-  const style: React.CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.45 : 1,
-  };
-
   return (
-    <div ref={setNodeRef} style={style} className="draggable-tab-row">
-      {enabled && (
-        <span
-          className="tab-drag-handle"
-          aria-label={`Drag ${tab.title || tab.url}`}
-          role="button"
-          tabIndex={0}
-          {...dragAttributes}
-          {...listeners}
-        >
-          ⋮
-        </span>
-      )}
+    <div className="tab-chip-row">
       <TabChip
         url={tab.url}
         title={tab.title}
@@ -163,7 +122,6 @@ function DraggableTabChip({
         selectionMode={selectionMode}
         onFocus={onFocus}
         onClose={onClose}
-        onSave={onSave}
         onChipClick={onChipClick}
       />
     </div>
@@ -180,14 +138,12 @@ export function DomainCard({
   onCloseDomain,
   onCloseDuplicates,
   onCloseTab,
-  onSaveTab,
   onFocusTab,
   focusedUrl,
   closingUrls,
   selectedUrls,
   onChipClick,
   onToggleExpanded,
-  draggableTabs = false,
 }: DomainCardProps): React.ReactElement {
   const tabs = useMemo(() => group.tabs || [], [group.tabs]);
   const tabCount = tabs.length;
@@ -238,13 +194,6 @@ export function DomainCard({
     [onCloseTab],
   );
 
-  const handleSaveTab = useCallback(
-    (url: string, title: string) => {
-      onSaveTab(url, title);
-    },
-    [onSaveTab],
-  );
-
   const handleFocusTab = useCallback(
     (url: string) => {
       onFocusTab(url);
@@ -254,12 +203,11 @@ export function DomainCard({
 
   // ─── Render ──────────────────────────────────────────────────────────
 
-  const statusBarColor = hasDupes ? 'bg-accent-amber' : 'bg-accent-sage';
+  const statusBarColor = hasDupes ? 'bg-accent-amber/30' : 'bg-accent-sage/80';
 
   return (
-    <div className="rounded-card bg-card-light dark:bg-card-dark shadow-card hover:shadow-card-hover overflow-hidden transition-all duration-200 hover:-translate-y-0.5">
-      {/* Status bar — 3px top accent */}
-      <div className={`h-[3px] ${statusBarColor}`} />
+    <div className="overflow-hidden rounded-card border-2 border-border-light bg-card-light shadow-none transition-colors duration-150 dark:border-border-dark dark:bg-card-dark">
+      <div className={`h-2 border-b-2 border-border-light dark:border-border-dark ${statusBarColor}`} />
 
       <div className="p-4">
         {/* Header: domain name + badges — drag handle when DnD is active */}
@@ -294,18 +242,18 @@ export function DomainCard({
               onError={() => setIconFailed(true)}
             />
           )}
-          <h3 className="font-heading text-text-primary-light dark:text-text-primary-dark text-base font-semibold">
+          <h3 className="font-body text-base font-semibold text-text-primary-light dark:text-text-primary-dark">
             {displayName}
           </h3>
 
           {/* Tab count badge */}
-          <span className="rounded-chip bg-surface-light dark:bg-surface-dark text-text-secondary font-body inline-flex items-center gap-1 px-2 py-0.5 text-xs">
+          <span className="inline-flex items-center gap-1 rounded-chip border-2 border-border-light bg-surface-light px-2 py-0.5 font-body text-xs text-text-secondary dark:border-border-dark dark:bg-surface-dark">
             <TabsIcon />
             {tabCount} tab{tabCount !== 1 ? 's' : ''} open
           </span>
 
           {hasDupes && (
-          <span className="rounded-chip bg-accent-amber/10 text-accent-amber font-body inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium">
+          <span className="inline-flex items-center gap-1 rounded-chip border-2 border-border-light bg-accent-amber/10 px-2 py-0.5 font-body text-xs font-medium text-accent-amber dark:border-border-dark">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-3 w-3" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
             </svg>
@@ -317,9 +265,8 @@ export function DomainCard({
         {/* Tab chips */}
         <div className="flex flex-col gap-0.5">
           {visibleTabs.map((tab) => (
-            <DraggableTabChip
+            <TabChipRow
               key={tab.url}
-              enabled={draggableTabs && !selectionMode && group.itemType !== 'tabUrl'}
               tab={tab}
               duplicateCount={urlCounts[tab.url] ?? 1}
               focusedUrl={focusedUrl}
@@ -328,7 +275,6 @@ export function DomainCard({
               selectionMode={selectionMode}
               onFocus={handleFocusTab}
               onClose={handleCloseTab}
-              onSave={handleSaveTab}
               onChipClick={onChipClick}
             />
           ))}
@@ -354,7 +300,7 @@ export function DomainCard({
         )}
 
         {/* Footer actions */}
-        <div className="border-border-light dark:border-border-dark mt-3 flex flex-wrap gap-2 border-t pt-3">
+        <div className="mt-3 flex flex-wrap gap-2 border-t-2 border-border-light pt-3 dark:border-border-dark">
           <button
             type="button"
             className="rounded-chip text-text-secondary font-body hover:bg-surface-light hover:text-accent-red dark:hover:bg-surface-dark focus-visible:ring-accent-blue/40 inline-flex min-h-11 cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"

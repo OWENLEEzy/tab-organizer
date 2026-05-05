@@ -1,73 +1,86 @@
 @import 'tailwindcss';
 @import './fonts.css';
 
-/* ─── Notion Design Tokens ──────────────────────────────────────── */
+/* ─── Warm flat dashboard tokens ────────────────────────────────── */
+/* stylelint-disable custom-property-pattern, custom-property-empty-line-before */
 @theme {
-  /* Surface colors */
-  --color-surface-light: #F7F6F3;
-  --color-surface-dark: #252525;
+  --to-bg-page: #f4efea;
+  --to-bg-surface: #ffffff;
+  --to-bg-muted: #f8f8f7;
+  --to-bg-stone: #e4ded7;
+  --to-bg-yellow: #ffde00;
+  --to-bg-blue: #6fc2ff;
+  --to-bg-teal: #16aa98;
+  --to-bg-coral: #ff7169;
+  --to-bg-dark: #383838;
 
-  /* Border colors */
-  --color-border-light: #E8E7E4;
-  --color-border-dark: #373737;
+  --to-text-primary: #383838;
+  --to-text-secondary: #5b5b5b;
+  --to-text-muted: #818181;
+  --to-text-inverse: #ffffff;
 
-  /* Text colors */
-  --color-text-primary-light: #37352F;
-  --color-text-primary-dark: #E8E7E4;
-  --color-text-secondary: #6B6966;
+  --to-border-strong: #383838;
+  --to-border-muted: rgba(56, 56, 56, 0.24);
+  --to-border-inverse: #ffffff;
 
-  /* Accent colors */
-  --color-accent-blue: #0969DA;
-  --color-accent-amber: #8A5A00;
-  --color-accent-red: #EB5757;
-  --color-accent-sage: #4DAB9A;
+  --to-radius-card: 2px;
+  --to-radius-button: 2px;
+  --to-border-width: 1px;
+  --to-border-width-strong: 2px;
+  --to-shadow-none: none;
 
-  /* Background colors */
-  --color-bg-light: #FFFFFF;
-  --color-bg-dark: #191919;
+  --to-font-display: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
+  --to-font-ui: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
+  --to-font-reading: 'DM Sans', system-ui, sans-serif;
 
-  /* Card colors */
-  --color-card-light: #FFFDF9;
-  --color-card-dark: #2A2A2A;
-
-  /* Toast colors */
-  --color-toast-bg-light: #37352F;
-  --color-toast-bg-dark: #E8E7E4;
-
-  /* Typography */
-  --font-family-heading: 'Newsreader', 'Georgia', serif;
-  --font-family-body: 'DM Sans', system-ui, sans-serif;
-
-  /* Border radius */
-  --radius-card: 6px;
-  --radius-chip: 4px;
-
-  /* Shadows */
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-card-hover: 0 4px 20px rgba(26, 22, 19, 0.06);
-
+  --color-surface-light: var(--to-bg-muted);
+  --color-surface-dark: #2f2f2f;
+  --color-border-light: var(--to-border-strong);
+  --color-border-dark: #f4efea;
+  --color-text-primary-light: var(--to-text-primary);
+  --color-text-primary-dark: #f4efea;
+  --color-text-secondary: var(--to-text-secondary);
+  --color-accent-blue: var(--to-bg-blue);
+  --color-accent-amber: #8a5a00;
+  --color-accent-red: var(--to-bg-coral);
+  --color-accent-sage: var(--to-bg-teal);
+  --color-bg-light: var(--to-bg-page);
+  --color-bg-dark: var(--to-bg-dark);
+  --color-card-light: var(--to-bg-surface);
+  --color-card-dark: #3f3f3f;
+  --color-toast-bg-light: var(--to-text-primary);
+  --color-toast-bg-dark: var(--to-bg-surface);
+  --font-family-heading: var(--to-font-display);
+  --font-family-body: var(--to-font-ui);
+  --radius-card: var(--to-radius-card);
+  --radius-chip: var(--to-radius-button);
+  --shadow-card: var(--to-shadow-none);
+  --shadow-card-hover: var(--to-shadow-none);
 }
+/* stylelint-enable custom-property-pattern, custom-property-empty-line-before */
 
 /* ─── Dark mode via class toggle ────────────────────────────────── */
 @variant dark (&:where(.dark, .dark *));
 
 /* ─── Custom properties for non-Tailwind usage (confetti, canvas) ── */
 
-/* Paper texture background */
+/* No decorative page overlay in the warm flat system. */
 body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 0;
+  content: none;
 }
 
 /* Base body styles */
 body {
+  background: var(--color-bg-light);
+  color: var(--color-text-primary-light);
   font-family: var(--font-family-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.dark body {
+  background: var(--color-bg-dark);
+  color: var(--color-text-primary-dark);
 }
 
 /* ─── Global focus ring ─────────────────────────────────────────── */
@@ -95,6 +108,31 @@ body {
   max-width: 1300px;
 }
 
+.dashboard-shell {
+  position: relative;
+  z-index: 1;
+  width: min(1280px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 0 0 72px;
+}
+
+.dashboard-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: 24px;
+  align-items: start;
+}
+
+.dashboard-primary {
+  min-width: 0;
+}
+
+.dashboard-utilities {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
 /* ─── Two-column dashboard layout ─────────────────────────────── */
 .dashboard-columns {
   display: flex;
@@ -105,6 +143,135 @@ body {
 .dashboard-columns .active-section {
   flex: 1;
   min-width: 0;
+}
+
+.recovery-panel {
+  width: 260px;
+  flex-shrink: 0;
+}
+
+.recovery-panel-header,
+.recovery-card-top,
+.recovery-card-actions,
+.recovery-products button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.recovery-panel-header {
+  margin-bottom: 12px;
+}
+
+.recovery-panel h2 {
+  color: var(--color-text-primary-light);
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.dark .recovery-panel h2 {
+  color: var(--color-text-primary-dark);
+}
+
+.recovery-button,
+.recovery-product-button {
+  min-height: 36px;
+  cursor: pointer;
+  border-radius: var(--radius-chip);
+  color: var(--color-text-secondary);
+  padding: 6px 10px;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.recovery-product-button {
+  width: 100%;
+  background: var(--color-surface-light);
+  font-size: 0.8rem;
+}
+
+.dark .recovery-product-button {
+  background: var(--color-surface-dark);
+}
+
+.recovery-button:hover,
+.recovery-product-button:hover {
+  background: var(--color-surface-light);
+  color: var(--color-text-primary-light);
+}
+
+.dark .recovery-button:hover,
+.dark .recovery-product-button:hover {
+  background: var(--color-surface-dark);
+  color: var(--color-text-primary-dark);
+}
+
+.recovery-list {
+  display: grid;
+  gap: 10px;
+}
+
+.recovery-card {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-card);
+  background: var(--color-card-light);
+  padding: 12px;
+}
+
+.dark .recovery-card {
+  border-color: var(--color-border-dark);
+  background: var(--color-card-dark);
+}
+
+.recovery-time {
+  color: var(--color-text-primary-light);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.dark .recovery-time {
+  color: var(--color-text-primary-dark);
+}
+
+.recovery-count,
+.recovery-tabs small {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+}
+
+.recovery-products {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.recovery-card-actions {
+  justify-content: flex-start;
+  margin-top: 8px;
+}
+
+.recovery-tabs {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.recovery-tabs li {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.recovery-tab-title {
+  overflow: hidden;
+  color: var(--color-text-primary-light);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dark .recovery-tab-title {
+  color: var(--color-text-primary-dark);
 }
 
 .section-header {
@@ -134,30 +301,15 @@ body {
   gap: 6px;
 }
 
-.draggable-tab-row {
+.tab-chip-row {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.draggable-tab-row > .group {
+.tab-chip-row > .group {
   flex: 1;
   min-width: 0;
-}
-
-.tab-drag-handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  min-height: 36px;
-  flex-shrink: 0;
-  cursor: grab;
-  color: var(--color-text-secondary);
-}
-
-.tab-drag-handle:active {
-  cursor: grabbing;
 }
 
 .section-actions button,
@@ -210,7 +362,7 @@ body {
 
 .product-table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--color-border-light);
+  border: 2px solid var(--color-border-light);
   border-radius: var(--radius-card);
   background: var(--color-card-light);
 }
@@ -229,16 +381,18 @@ body {
 .product-table th,
 .product-table td {
   padding: 10px 12px;
-  border-bottom: 1px solid var(--color-border-light);
+  border-bottom: 2px solid var(--color-border-light);
   color: var(--color-text-primary-light);
   font-size: 14px;
   text-align: left;
 }
 
 .product-table th {
+  background: var(--color-surface-light);
   color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 600;
+  text-transform: uppercase;
 }
 
 .dark .product-table th,
@@ -287,12 +441,13 @@ body {
 .product-table select {
   max-width: 180px;
   padding: 4px 8px;
-  border: 1px solid var(--color-border-light);
-  background: transparent;
+  border: 2px solid var(--color-border-light);
+  background: var(--color-card-light);
   color: inherit;
 }
 
 .dark .product-table select {
+  background: var(--color-card-dark);
   border-color: var(--color-border-dark);
 }
 
@@ -317,6 +472,23 @@ body {
 @media (max-width: 800px) {
   .dashboard-columns {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 1080px) {
+  .dashboard-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-utilities {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-shell {
+    width: min(calc(100vw - 20px), 1280px);
+    padding-bottom: 48px;
   }
 }
 

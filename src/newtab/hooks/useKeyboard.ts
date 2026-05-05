@@ -4,13 +4,11 @@ import { useEffect, useRef } from 'react';
 
 interface KeyboardActions {
   onSearch: () => void;
-  onSave: () => void;
   onEscape: () => void;
   onArrowUp: () => void;
   onArrowDown: () => void;
   onEnter: () => void;
   onDClose: () => void;
-  onDSave: () => void;
 }
 
 function getTargetElement(target: EventTarget | null): HTMLElement | null {
@@ -67,7 +65,6 @@ function isInsideDialog(target: HTMLElement | null): boolean {
  *
  * Shortcuts:
  *   Cmd/Ctrl + K  or  /  (outside inputs)  -> onSearch
- *   Cmd/Ctrl + S                             -> onSave  (prevents default)
  *   Escape                                   -> onEscape
  *   ArrowUp                                  -> onArrowUp
  *   ArrowDown                                -> onArrowDown
@@ -96,13 +93,6 @@ export function useKeyboard(actions: KeyboardActions): void {
       if (isMod && e.key === 'k') {
         e.preventDefault();
         callbackRef.current.onSearch();
-        return;
-      }
-
-      // Cmd/Ctrl + S -> onSave (prevent browser save dialog)
-      if (isMod && e.key === 's') {
-        e.preventDefault();
-        callbackRef.current.onSave();
         return;
       }
 
@@ -148,12 +138,6 @@ export function useKeyboard(actions: KeyboardActions): void {
         return;
       }
 
-      // s -> onDSave (only unmodified, outside input fields)
-      if (e.key === 's' && !isMod && !targetIsInput && !targetIsBlockedInteractive) {
-        e.preventDefault();
-        callbackRef.current.onDSave();
-        return;
-      }
     };
 
     document.addEventListener('keydown', handleKeyDown);

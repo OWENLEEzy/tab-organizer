@@ -31,7 +31,6 @@ interface TabChipProps {
   selectionMode?: boolean;
   onFocus: (url: string) => void;
   onClose: (url: string, title: string) => void;
-  onSave: (url: string, title: string) => void;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
 }
 
@@ -58,28 +57,6 @@ function buildLabel(rawTitle: string, url: string): string {
   }
 
   return label;
-}
-
-// ─── SVG Icons ────────────────────────────────────────────────────────
-
-function BookmarkIcon(): React.ReactElement {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={2}
-      stroke="currentColor"
-      className="h-3.5 w-3.5"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z"
-      />
-    </svg>
-  );
 }
 
 function CloseIcon(): React.ReactElement {
@@ -115,7 +92,6 @@ export function TabChip({
   selectionMode = false,
   onFocus,
   onClose,
-  onSave,
   onChipClick,
 }: TabChipProps): React.ReactElement {
   const hostname = getHostname(url);
@@ -151,14 +127,6 @@ export function TabChip({
     [onClose, url, title],
   );
 
-  const handleSave = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      onSave(url, title);
-    },
-    [onSave, url, title],
-  );
-
   const handleImageError = useCallback(
     (e: React.SyntheticEvent<HTMLImageElement>) => {
       const target = e.currentTarget;
@@ -168,15 +136,15 @@ export function TabChip({
   );
 
   const chipClasses = [
-    'flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-chip px-2.5 py-1.5',
-    'cursor-pointer transition-colors duration-150',
-    isSelected ? '' : 'hover:bg-surface-light dark:hover:bg-surface-dark',
+    'flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-chip border-2 border-transparent px-2.5 py-1.5',
+    'cursor-pointer bg-transparent transition-colors duration-150',
+    isSelected ? '' : 'hover:border-border-light hover:bg-surface-light dark:hover:border-border-dark dark:hover:bg-surface-dark',
     'focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none',
-    duplicateCount > 1 ? 'border-l-2 border-accent-amber bg-accent-amber/[0.04]' : '',
-    active && !isSelected ? 'bg-accent-sage/[0.06]' : '',
-    isFocused && !isSelected ? 'ring-2 ring-accent-blue/40 bg-surface-light dark:bg-surface-dark' : '',
+    duplicateCount > 1 ? 'border-accent-amber bg-accent-amber/[0.08]' : '',
+    active && !isSelected ? 'border-accent-sage bg-accent-sage/[0.08]' : '',
+    isFocused && !isSelected ? 'ring-2 ring-accent-blue/40 border-border-light bg-surface-light dark:border-border-dark dark:bg-surface-dark' : '',
     isClosing ? 'chip-closing' : '',
-    isSelected ? 'ring-2 ring-accent-blue bg-accent-blue/[0.12]' : '',
+    isSelected ? 'ring-2 ring-accent-blue border-accent-blue bg-accent-blue/[0.12]' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -227,15 +195,6 @@ export function TabChip({
       {/* Action buttons — always visible on touch, visible on hover for desktop */}
       {!isSelected && (
         <div className={`ml-auto flex shrink-0 items-center gap-1 transition-opacity duration-150 ${isTouch ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`}>
-          <button
-            type="button"
-            className="rounded-chip text-text-secondary hover:bg-accent-blue/10 hover:text-accent-blue focus-visible:ring-accent-blue/40 flex h-11 w-11 cursor-pointer items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
-            onClick={handleSave}
-            title="Save for later"
-            aria-label={`Save ${displayLabel} for later`}
-          >
-            <BookmarkIcon />
-          </button>
           <button
             type="button"
             className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-red/40 flex h-11 w-11 cursor-pointer items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
