@@ -6,7 +6,6 @@ import { getHostname, getFaviconUrl } from '../../utils/url';
 
 /**
  * Convert an ISO date string into a human-readable relative time label.
- * Port from extension/app.js lines 479-492.
  */
 function timeAgo(dateStr: string): string {
   if (!dateStr) return '';

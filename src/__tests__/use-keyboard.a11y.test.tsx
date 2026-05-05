@@ -82,6 +82,18 @@ describe('useKeyboard', () => {
     expect(screen.getByTestId('close-count')).toHaveTextContent('0');
   });
 
+  it('does not treat Cmd/Ctrl+D as the close shortcut', async () => {
+    const user = userEvent.setup();
+
+    render(<KeyboardHarness />);
+
+    await user.keyboard('{Meta>}d{/Meta}');
+    expect(screen.getByTestId('close-count')).toHaveTextContent('0');
+
+    await user.keyboard('{Control>}d{/Control}');
+    expect(screen.getByTestId('close-count')).toHaveTextContent('0');
+  });
+
   it('prevents page scrolling when arrow navigation is handled globally', () => {
     render(<KeyboardHarness />);
 

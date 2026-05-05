@@ -64,7 +64,7 @@ export function SearchBar({
       {/* Input field */}
       <input
         ref={inputRef}
-        type="text"
+        type="search"
         className="border-border-light dark:border-border-dark bg-bg-light dark:bg-bg-dark text-text-primary-light dark:text-text-primary-dark rounded-chip placeholder:text-text-secondary focus:border-accent-sage focus-visible:ring-accent-blue/40 min-h-11 w-full border py-2 pr-24 pl-9 text-sm transition-colors outline-none focus-visible:ring-2"
         placeholder="Search tabs..."
         value={value}

@@ -142,14 +142,14 @@ export function useKeyboard(actions: KeyboardActions): void {
         return;
       }
 
-      // d -> onDClose (only outside input fields)
-      if (e.key === 'd' && !targetIsInput && !targetIsBlockedInteractive) {
+      // d -> onDClose (only unmodified, outside input fields)
+      if (e.key === 'd' && !isMod && !targetIsInput && !targetIsBlockedInteractive) {
         callbackRef.current.onDClose();
         return;
       }
 
-      // s -> onDSave (only outside input fields — Cmd+S still works in inputs)
-      if (e.key === 's' && !targetIsInput && !targetIsBlockedInteractive) {
+      // s -> onDSave (only unmodified, outside input fields)
+      if (e.key === 's' && !isMod && !targetIsInput && !targetIsBlockedInteractive) {
         e.preventDefault();
         callbackRef.current.onDSave();
         return;
