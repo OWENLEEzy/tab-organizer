@@ -1,55 +1,14 @@
 import type { Tab, TabGroup } from '../types';
-import { FRIENDLY_DOMAINS } from '../config/friendly-domains';
 import { productForHostname } from '../config/products';
+import { friendlyDomain } from './title-cleaner';
+import { countDuplicates } from './tab-utils';
+import { getTabDomain } from '../utils/url';
 
 // ─── Constants ──────────────────────────────────────────────────────
 
-const LOCAL_FILES_KEY = 'local-files';
 const DEFAULT_COLOR = '#4DAB9A';
 const DUPLICATE_COLOR = '#DFAB01';
 
-// ─── Helpers ────────────────────────────────────────────────────────
-
-/**
- * Derive a human-friendly display name for a domain.
- * Uses the FRIENDLY_DOMAINS lookup table, falls back to cleaning
- * the raw hostname (strip "www.", TLD, etc.).
- */
-function friendlyNameForDomain(domain: string): string {
-  if (FRIENDLY_DOMAINS[domain]) return FRIENDLY_DOMAINS[domain];
-  if (domain === LOCAL_FILES_KEY) return FRIENDLY_DOMAINS[LOCAL_FILES_KEY] ?? 'Local Files';
-
-  // Strip common prefix and TLD for a clean fallback
-  const cleaned = domain.replace(/^www\./, '').replace(/\.[a-z.]+$/, '');
-  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
-}
-
-/**
- * Count how many tabs in the array are duplicates (same URL appears
- * more than once).  Returns `{ duplicateCount, hasDuplicates }`.
- */
-function countDuplicates(tabs: readonly Tab[]): {
-  duplicateCount: number;
-  hasDuplicates: boolean;
-} {
-  const urlCounts = new Map<string, number>();
-  for (const tab of tabs) {
-    const count = urlCounts.get(tab.url) ?? 0;
-    urlCounts.set(tab.url, count + 1);
-  }
-
-  let duplicateCount = 0;
-  for (const count of urlCounts.values()) {
-    if (count > 1) duplicateCount += count - 1;
-  }
-
-  return { duplicateCount, hasDuplicates: duplicateCount > 0 };
-}
-
-/**
- * Check whether a domain is associated with any landing page pattern,
- * used for priority sorting (landing-page domains sort before others).
- */
 // ─── Public API ─────────────────────────────────────────────────────
 
 /**
@@ -90,12 +49,7 @@ export function groupTabsByDomain(
 
   for (const tab of tabs) {
     try {
-      let hostname: string;
-      if (tab.url.startsWith('file://')) {
-        hostname = LOCAL_FILES_KEY;
-      } else {
-        hostname = new URL(tab.url).hostname;
-      }
+      const hostname = getTabDomain(tab.url);
 
       if (!hostname) continue;
 
@@ -146,7 +100,7 @@ export function groupTabsByDomain(
     groups.push({
       id: key,
       domain: key,
-      friendlyName: productLabels.get(key) ?? friendlyNameForDomain(key),
+      friendlyName: productLabels.get(key) ?? friendlyDomain(key),
       itemType: 'product',
       itemKey: key,
       productKey: key,

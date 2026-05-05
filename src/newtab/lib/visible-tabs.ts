@@ -1,22 +1,10 @@
 import type { Tab, TabGroup } from '../../types';
+import { dedupeTabsByUrl } from '../../lib/tab-utils';
 
 export interface VisibleTabChip {
   domain: string;
   url: string;
   title: string;
-}
-
-export function dedupeTabsByUrl(tabs: readonly Tab[]): Tab[] {
-  const seen = new Set<string>();
-
-  return tabs.filter((tab) => {
-    if (seen.has(tab.url)) {
-      return false;
-    }
-
-    seen.add(tab.url);
-    return true;
-  });
 }
 
 export function getVisibleTabs(

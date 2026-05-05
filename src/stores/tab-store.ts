@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { OrganizerSection, SectionAssignment, Tab, TabGroup, ViewMode } from '../types';
 import { groupTabsByDomain } from '../lib/tab-grouper';
 import { readStorage, updateStorage, writeGroupOrder } from '../utils/storage';
-import { getHostname, isRealTab, isTabOutPage } from '../utils/url';
+import { getTabDomain, isRealTab, isTabOutPage } from '../utils/url';
 import { getErrorMessage } from '../utils/error';
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -57,15 +57,6 @@ export type TabStore = {
 // ─── Helpers ────────────────────────────────────────────────────────
 
 /**
- * Build the domain string for a tab's URL.
- * Returns empty string for unparseable URLs.
- */
-function deriveDomain(url: string): string {
-  if (url.startsWith('file://')) return 'local-files';
-  return getHostname(url);
-}
-
-/**
  * Map a raw chrome.tabs.Tab into our application Tab type.
  */
 function toAppTab(raw: chrome.tabs.Tab): Tab {
@@ -75,7 +66,7 @@ function toAppTab(raw: chrome.tabs.Tab): Tab {
     url,
     title: raw.title ?? '',
     favIconUrl: raw.favIconUrl ?? '',
-    domain: deriveDomain(url),
+    domain: getTabDomain(url),
     windowId: raw.windowId ?? -1,
     active: raw.active ?? false,
     isTabOut: isTabOutPage(url),
@@ -83,13 +74,6 @@ function toAppTab(raw: chrome.tabs.Tab): Tab {
     isLandingPage: false,
     duplicateCount: 0,
   };
-}
-
-/**
- * Filter out browser-internal URLs (chrome://, about:, etc.)
- */
-function isRealWebTab(tab: Tab): boolean {
-  return isRealTab(tab.url);
 }
 
 function pruneAssignments(
@@ -132,7 +116,7 @@ export const useTabStore = create<TabStore>((set) => ({
     set({ error: null });
     try {
       const rawTabs = await chrome.tabs.query({});
-      const mapped = rawTabs.map(toAppTab).filter(isRealWebTab);
+      const mapped = rawTabs.map(toAppTab).filter((t) => isRealTab(t.url));
       const storage = await readStorage();
       const groupOrder = storage.groupOrder;
       const productGroups = groupTabsByDomain(mapped, groupOrder);

@@ -1,5 +1,5 @@
 import { updateBadge } from '../utils/badge';
-import { isRealTab } from '../utils/url';
+import { getTabDomain, isRealTab } from '../utils/url';
 import { getDashboardUrl } from './dashboard';
 import { buildRecoverySnapshot } from '../lib/recovery-snapshots';
 import { promoteRecoveryCandidate, updateRecoveryCandidate } from '../utils/storage';
@@ -7,19 +7,12 @@ import type { Tab } from '../types';
 
 function toRecoveryTab(raw: chrome.tabs.Tab): Tab {
   const url = raw.url ?? '';
-  let domain = '';
-  try {
-    domain = url.startsWith('file://') ? 'local-files' : new URL(url).hostname;
-  } catch {
-    domain = '';
-  }
-
   return {
     id: raw.id ?? -1,
     url,
     title: raw.title ?? '',
     favIconUrl: raw.favIconUrl ?? '',
-    domain,
+    domain: getTabDomain(url),
     windowId: raw.windowId ?? -1,
     active: raw.active ?? false,
     isTabOut: false,

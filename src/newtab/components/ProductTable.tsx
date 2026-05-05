@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import type { OrganizerSection, TabGroup } from '../../types';
 import { TabChip } from './TabChip';
 import { getFaviconUrl } from '../../utils/favicon';
+import { getDuplicateUrls } from '../../lib/tab-utils';
 
 interface ProductTableProps {
   items: TabGroup[];
@@ -38,16 +39,6 @@ function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
 
 function itemId(group: TabGroup): string {
   return `product:${group.itemKey ?? group.productKey ?? group.domain}`;
-}
-
-function duplicateUrls(group: TabGroup): string[] {
-  const counts = new Map<string, number>();
-  for (const tab of group.tabs) {
-    counts.set(tab.url, (counts.get(tab.url) ?? 0) + 1);
-  }
-  return [...counts.entries()]
-    .filter(([, count]) => count > 1)
-    .map(([url]) => url);
 }
 
 function RowIcon({ group }: { group: TabGroup }): React.ReactElement {
@@ -113,7 +104,7 @@ export function ProductTable({
           {rows.map((group) => {
             const id = itemId(group);
             const sectionId = assignmentByItemId.get(id) ?? '';
-            const dupes = duplicateUrls(group);
+            const dupes = getDuplicateUrls(group.tabs);
             const isExpanded = expandedDomains.has(group.domain);
             const selectionMode = (selectedUrls?.size ?? 0) > 0;
 

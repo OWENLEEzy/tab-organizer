@@ -1,6 +1,6 @@
 import { productForHostname } from '../config/products';
 import type { RecoveryProductSummary, RecoverySnapshot, RecoveryTab, Tab } from '../types';
-import { getHostname, isRealTab } from '../utils/url';
+import { getTabDomain, isRealTab } from '../utils/url';
 
 const MAX_TABS_PER_SNAPSHOT = 80;
 
@@ -11,10 +11,6 @@ function snapshotId(capturedAt: string, tabs: RecoveryTab[]): string {
     hash = Math.imul(31, hash) + key.charCodeAt(index) | 0;
   }
   return `recovery-${Math.abs(hash).toString(36)}`;
-}
-
-function isRecoverableUrl(url: string): boolean {
-  return isRealTab(url);
 }
 
 function normalizeUrl(url: string): string {
@@ -46,8 +42,8 @@ export function buildRecoverySnapshot(
   const recoveryTabs: RecoveryTab[] = [];
 
   for (const tab of tabs) {
-    if (!isRecoverableUrl(tab.url)) continue;
-    const hostname = tab.url.startsWith('file://') ? 'local-files' : getHostname(tab.url);
+    if (!isRealTab(tab.url)) continue;
+    const hostname = getTabDomain(tab.url);
     if (!hostname) continue;
 
     const product = productForHostname(hostname);
