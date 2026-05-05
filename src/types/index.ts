@@ -21,12 +21,22 @@ export interface TabGroup {
   domain: string;
   friendlyName: string;
   label?: string;
+  itemType?: 'product';
+  itemKey?: string;
+  productKey?: string;
+  iconDomain?: string;
   tabs: Tab[];
   collapsed: boolean;
   order: number;
   color: string;
   hasDuplicates: boolean;
   duplicateCount: number;
+}
+
+export interface ProductInfo {
+  key: string;
+  label: string;
+  iconDomain: string;
 }
 
 // ─── Saved for Later ─────────────────────────────────────────────
@@ -74,6 +84,50 @@ export interface LandingPagePattern {
   test?: (path: string, url: string) => boolean;
 }
 
+// ─── Hybrid Organizer ──────────────────────────────────────────────
+
+export type ViewMode = 'cards' | 'table';
+
+export interface OrganizerSection {
+  id: string;
+  name: string;
+  order: number;
+}
+
+export interface SectionAssignment {
+  productKey: string;
+  sectionId: string;
+  order: number;
+}
+
+export interface RecoveryProductSummary {
+  productKey: string;
+  label: string;
+  iconDomain: string;
+  tabCount: number;
+}
+
+export interface RecoveryTab {
+  url: string;
+  title: string;
+  domain: string;
+  productKey: string;
+  productLabel: string;
+  iconDomain: string;
+  favIconUrl: string;
+  capturedAt: string;
+  windowId?: number;
+  active?: boolean;
+}
+
+export interface RecoverySnapshot {
+  id: string;
+  capturedAt: string;
+  tabCount: number;
+  products: RecoveryProductSummary[];
+  tabs: RecoveryTab[];
+}
+
 // ─── App Settings ────────────────────────────────────────────────
 
 export interface AppSettings {
@@ -93,6 +147,11 @@ export interface StorageSchema {
   workspaces: Workspace[];
   settings: AppSettings;
   groupOrder: Record<string, number>;
+  sections: OrganizerSection[];
+  sectionAssignments: SectionAssignment[];
+  viewMode: ViewMode;
+  recoveryCandidate: RecoverySnapshot | null;
+  recoveryHistory: RecoverySnapshot[];
 }
 
 // ─── Store Types ─────────────────────────────────────────────────
@@ -100,6 +159,9 @@ export interface StorageSchema {
 export interface TabState {
   tabs: Tab[];
   groups: TabGroup[];
+  sections: OrganizerSection[];
+  sectionAssignments: SectionAssignment[];
+  viewMode: ViewMode;
   loading: boolean;
   showAllWindows: boolean;
 }

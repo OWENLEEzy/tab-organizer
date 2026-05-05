@@ -18,6 +18,8 @@ export function sanitizeUrl(url: string): string {
   return url.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+export const LOCAL_FILES_KEY = 'local-files';
+
 /**
  * Extract hostname from a URL, returns empty string on failure.
  */
@@ -30,11 +32,13 @@ export function getHostname(url: string): string {
 }
 
 /**
- * Get favicon URL for a domain using Google's favicon service.
+ * Get the logical domain for a tab URL.
+ * Maps file:// URLs to a stable 'local-files' key.
  */
-export function getFaviconUrl(domain: string, size: number = 16): string {
-  if (!domain) return '';
-  return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`;
+export function getTabDomain(url: string): string {
+  if (!url) return '';
+  if (url.startsWith('file://')) return LOCAL_FILES_KEY;
+  return getHostname(url);
 }
 
 /**

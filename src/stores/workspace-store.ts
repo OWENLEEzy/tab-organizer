@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Workspace, SavedTab } from '../types';
-import { readStorage, writeStorage } from '../utils/storage';
+import { readWorkspaces, writeWorkspaces } from '../utils/storage';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -39,8 +39,8 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
   fetchWorkspaces: async () => {
     set({ loading: true });
     try {
-      const storage = await readStorage();
-      set({ workspaces: storage.workspaces, loading: false });
+      const workspaces = await readWorkspaces();
+      set({ workspaces, loading: false });
     } catch {
       set({ workspaces: [], loading: false });
     }
@@ -61,8 +61,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     const updated = [...prev, workspace];
     set({ workspaces: updated });
     try {
-      const storage = await readStorage();
-      await writeStorage({ ...storage, workspaces: updated });
+      await writeWorkspaces(updated);
     } catch {
       set({ workspaces: prev });
     }
@@ -73,8 +72,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     const updated = prev.filter((w) => w.id !== id);
     set({ workspaces: updated });
     try {
-      const storage = await readStorage();
-      await writeStorage({ ...storage, workspaces: updated });
+      await writeWorkspaces(updated);
     } catch {
       set({ workspaces: prev });
     }
@@ -87,8 +85,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     );
     set({ workspaces: updated });
     try {
-      const storage = await readStorage();
-      await writeStorage({ ...storage, workspaces: updated });
+      await writeWorkspaces(updated);
     } catch {
       set({ workspaces: prev });
     }
@@ -103,8 +100,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     );
     set({ workspaces: updated });
     try {
-      const storage = await readStorage();
-      await writeStorage({ ...storage, workspaces: updated });
+      await writeWorkspaces(updated);
     } catch {
       set({ workspaces: prev });
     }
@@ -123,8 +119,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     );
     set({ workspaces: updated });
     try {
-      const storage = await readStorage();
-      await writeStorage({ ...storage, workspaces: updated });
+      await writeWorkspaces(updated);
     } catch {
       set({ workspaces: prev });
     }

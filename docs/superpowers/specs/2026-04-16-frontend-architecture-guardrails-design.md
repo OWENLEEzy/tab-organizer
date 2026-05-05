@@ -19,6 +19,7 @@ This is a gradual architecture cleanup plan, not a large refactor. The project k
 3. Define a target structure that future work must move toward.
 4. Add lightweight, enforceable guardrails instead of relying on convention alone.
 5. Produce documentation that explains both current state and target state.
+6. Document the actual Chrome extension runtime boundaries so the architecture reflects how Tab Out really runs.
 
 ## Non-Goals
 
@@ -42,6 +43,13 @@ This is a gradual architecture cleanup plan, not a large refactor. The project k
 - Storage safety improved with `updateStorage()` in `src/utils/storage.ts`, but there is no formal rule yet that all business writes must go through domain-safe storage adapters.
 - `writeStorage()` still exists and needs explicit usage boundaries.
 
+### Runtime boundaries
+
+- The new tab page is a React runtime that owns page composition, user-triggered flows, and cross-store orchestration.
+- The background service worker is a separate runtime that owns badge refresh and passive browser listeners.
+- `chrome.storage.local` is shared extension state across runtimes and requires stricter write boundaries than ordinary page state.
+- Browser APIs are currently used from more than one layer, but ownership rules are not yet documented.
+
 ### Reuse and consistency
 
 - Several UI patterns already repeat across components:
@@ -53,6 +61,29 @@ This is a gradual architecture cleanup plan, not a large refactor. The project k
 - Reuse decisions are currently convention-based rather than documented and enforced.
 
 ## Approved Architecture Direction
+
+### 0. Runtime Ownership
+
+Tab Out has three first-class runtime slices, and the architecture docs must describe all three:
+
+- `src/newtab/**`: the new tab page runtime
+- `src/background/**`: the service worker runtime
+- `chrome.storage.local`: shared persisted state across extension runtimes
+
+Rules:
+
+- `src/background/**` owns passive listeners and extension-level side effects that do not require page UI:
+  - badge refresh
+  - startup/install listeners
+  - tab lifecycle listeners used only for badge maintenance
+- `src/newtab/**` owns user-triggered flows tied to visible UI:
+  - fetching and rendering grouped tabs
+  - focusing tabs and windows
+  - closing tabs
+  - restoring workspaces
+  - reacting to storage changes that affect the current page
+- `src/utils/storage.ts` owns direct `chrome.storage.local` access.
+- Presentational components never call `chrome.*` APIs directly.
 
 ### 1. Page Layer
 
@@ -94,7 +125,14 @@ Rules:
 - stores may own domain state and domain actions
 - stores must not directly call `chrome.storage.local`
 - stores should not compose full `StorageSchema` snapshots themselves
+- stores may call `chrome.tabs` and `chrome.windows` only for domain browser actions in the new tab runtime
 - cross-domain orchestration belongs in the page layer, not inside stores
+- target for this phase: stores import domain storage readers and writers, not storage internals
+
+Current-phase exceptions must be explicit and temporary:
+
+- if a store still imports `readStorage()` or `updateStorage()`, the spec and lint config must name that file as an approved exception
+- each exception needs an exit path, for example adding `readGroupOrder()`, `readWorkspaces()`, or `writeWorkspaces()`
 
 ### 3. Storage Layer
 
@@ -102,13 +140,45 @@ Rules:
 
 Rules:
 
-- `readStorage()` is the read entrypoint
-- `updateStorage()` is the default write entrypoint for read-modify-write flows
+- `readStorage()` is the core storage read entrypoint used inside the storage adapter and by temporary approved exceptions only
+- `updateStorage()` is the core storage write entrypoint for read-modify-write flows inside the storage adapter
 - domain writers such as `writeSettings()` and `writeGroupOrder()` are preferred over raw full-schema writes
 - `writeStorage()` is reserved for full replacement scenarios only:
   - migration
   - import/restore
   - controlled test setup
+
+Public domain API direction for this phase:
+
+- saved tabs:
+  - `getSavedTabs()`
+  - `saveTabForLater()`
+  - `checkOffSavedTab()`
+  - `dismissSavedTab()`
+- settings:
+  - `readSettings()`
+  - `writeSettings()`
+- group order:
+  - `readGroupOrder()` should be added in this phase
+  - `writeGroupOrder()`
+- workspaces:
+  - `readWorkspaces()` should be added in this phase
+  - `writeWorkspaces()` should be added in this phase
+
+Internal-only API direction for this phase:
+
+- `readStorage()`
+- `updateStorage()`
+- `writeStorage()`
+- `readStorageSnapshot()`
+- `persistStorage()`
+
+Enforcement target for this phase:
+
+- pages, components, and stores do not import `writeStorage()`
+- pages, components, and stores should not import `updateStorage()` directly once the missing domain readers and writers are added
+- tests may import storage internals when validating migration, concurrency, or adapter behavior
+- if a temporary store exception remains, it must be called out in the lint allowlist and the architecture doc as debt, not treated as normal usage
 
 Target direction after this phase:
 
@@ -129,6 +199,7 @@ Examples:
 Rule:
 
 - UI code should express intent, not call effect primitives directly
+- background-only effects stay in the background runtime instead of leaking into page components
 
 ## Component Layering Model
 
@@ -234,6 +305,7 @@ Purpose:
 Content:
 
 - system overview
+- runtime ownership: newtab page vs background vs shared storage
 - layer responsibilities
 - data flow
 - storage model and safety rules
@@ -262,11 +334,31 @@ Content:
 
 ### ESLint guardrails to add now
 
-1. Restrict direct `chrome.storage.local` access outside `src/utils/storage.ts`.
-2. Restrict importing `writeStorage` outside approved storage internals and tests.
-3. Restrict importing `playCloseSound` and `shootConfetti` from page/component code.
-4. Restrict component files from importing stores directly.
-5. Restrict component files from importing storage utilities directly.
+1. Restrict direct `chrome.storage.local` property access outside:
+   - `src/utils/storage.ts`
+   - `src/__tests__/**`
+2. Restrict importing `writeStorage` outside:
+   - `src/utils/storage.ts`
+   - `src/__tests__/**`
+   - future migration or import/restore files explicitly named in the allowlist
+3. Restrict importing `readStorage` and `updateStorage` outside approved internal files.
+   - target end state for this phase:
+     - stores import only domain readers and writers
+   - if that is not yet true during rollout, the allowlist must explicitly name the remaining temporary exceptions such as:
+     - `src/stores/tab-store.ts`
+     - `src/stores/settings-store.ts`
+     - `src/stores/workspace-store.ts`
+     - `src/__tests__/**`
+4. Restrict importing `playCloseSound` and `shootConfetti` outside:
+   - `src/lib/close-effects.ts`
+   - `src/__tests__/**`
+5. Restrict files under `src/newtab/components/**` from importing stores directly.
+6. Restrict files under `src/newtab/components/**` from importing storage utilities directly.
+7. Page orchestrator exceptions must be explicit.
+   - `src/newtab/App.tsx` may import stores because it is the page orchestrator
+   - this exception does not apply to `src/newtab/components/**`
+
+The lint implementation must encode file matchers and exceptions directly. No rule should depend on an unwritten convention.
 
 ### Documentation-enforced rules
 
@@ -279,6 +371,11 @@ Content:
    - composite
    - primitive
 3. Every new side effect must have a named entrypoint rather than ad hoc direct calls.
+4. Every new browser API integration must declare its owning runtime:
+   - newtab page
+   - store in newtab runtime
+   - background service worker
+   - storage adapter
 
 ### Verification guardrails
 
@@ -290,9 +387,14 @@ Content:
 ## Implementation Plan For This Phase
 
 1. Write the three docs using the approved target architecture above.
-2. Add the minimum viable ESLint guardrails.
-3. Keep implementation incremental and avoid broad file reorganization.
-4. Verify with `npm test`, `npm run lint`, and `npm run build`.
+2. Add the minimum domain readers and writers needed to make the storage boundary enforceable:
+   - `readGroupOrder()`
+   - `readWorkspaces()`
+   - `writeWorkspaces()`
+   - or equivalent domain-safe adapters with the same boundary effect
+3. Add the minimum viable ESLint guardrails with explicit matchers and allowlists.
+4. Keep implementation incremental and avoid broad file reorganization.
+5. Verify with `npm test`, `npm run lint`, and `npm run build`.
 
 ## Risks
 
@@ -306,19 +408,24 @@ If the docs only describe current implementation, they will fossilize accidental
 
 ### Over-enforcing too early
 
-If lint rules are stronger than the codebase can support today, they will be ignored or bypassed. This phase should enforce the highest-signal restrictions only.
+If lint rules are stronger than the codebase can support today, they will be ignored or bypassed. This phase should enforce the highest-signal restrictions only, and every temporary exception must be named rather than left implicit.
 
 ### Primitive explosion
 
 If every repeated class string becomes a shared component immediately, the UI layer will become harder to work in. Primitive extraction should start with the most repeated, stable patterns only.
 
+### Runtime blind spots
+
+If the docs describe only the React page and ignore the background runtime, future changes will put browser listeners and badge effects in arbitrary places. The formal architecture doc must describe the full extension runtime model, not only the visible UI tree.
+
 ## Acceptance Criteria
 
-- A design doc exists for this architecture direction.
+- This spec file is the phase design doc for this architecture direction.
 - Three formal docs exist:
   - frontend design
   - architecture
   - component reuse
-- ESLint includes minimum viable architectural guardrails.
+- The architecture doc explicitly documents runtime ownership for newtab, background, and shared storage.
+- Storage adapters expose the minimum domain readers and writers needed to make the lint boundary real, or any temporary exceptions are explicitly documented as debt.
+- ESLint includes minimum viable architectural guardrails with explicit file scopes and allowlists.
 - Existing test, lint, and build commands still pass.
-

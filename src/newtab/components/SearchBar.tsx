@@ -51,7 +51,7 @@ export function SearchBar({
         viewBox="0 0 24 24"
         strokeWidth={1.5}
         stroke="currentColor"
-        className="pointer-events-none absolute left-3 h-4 w-4 text-text-secondary"
+        className="text-text-secondary pointer-events-none absolute left-3 h-4 w-4"
         aria-hidden="true"
       >
         <path
@@ -64,8 +64,8 @@ export function SearchBar({
       {/* Input field */}
       <input
         ref={inputRef}
-        type="text"
-        className="border-border-light dark:border-border-dark bg-bg-light dark:bg-bg-dark text-text-primary-light dark:text-text-primary-dark w-full rounded-chip border py-2 pl-9 pr-20 text-sm placeholder:text-text-secondary outline-none focus:border-accent-sage focus:ring-2 focus:ring-accent-blue/30 transition-colors"
+        type="search"
+        className="border-border-light dark:border-border-dark bg-bg-light dark:bg-bg-dark text-text-primary-light dark:text-text-primary-dark rounded-chip placeholder:text-text-secondary focus:border-accent-sage focus-visible:ring-accent-blue/40 min-h-11 w-full border py-2 pr-24 pl-9 text-sm transition-colors outline-none focus-visible:ring-2"
         placeholder="Search tabs..."
         value={value}
         onChange={handleInputChange}
@@ -78,7 +78,7 @@ export function SearchBar({
       <div className="absolute right-3 flex items-center gap-2">
         {/* Result count */}
         {showResults && (
-          <span className="text-xs text-text-secondary whitespace-nowrap">
+          <span className="text-text-secondary text-xs whitespace-nowrap">
             {resultCount} of {totalCount}
           </span>
         )}
@@ -88,7 +88,7 @@ export function SearchBar({
           <button
             type="button"
             onClick={handleClear}
-            className="flex h-5 w-5 items-center justify-center rounded-chip text-text-secondary transition-colors hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none"
+            className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark focus-visible:ring-accent-blue/40 flex h-11 w-11 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
             aria-label="Clear search"
           >
             <svg
@@ -111,7 +111,7 @@ export function SearchBar({
 
         {/* Keyboard shortcut hint */}
         {!focused && value.length === 0 && (
-          <kbd className="rounded-chip border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark px-1.5 py-0.5 font-body text-[11px] text-text-secondary">
+          <kbd className="rounded-chip border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark font-body text-text-secondary border px-1.5 py-0.5 text-[11px]">
             /
           </kbd>
         )}

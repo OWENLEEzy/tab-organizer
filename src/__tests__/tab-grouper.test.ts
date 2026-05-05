@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { groupTabsByDomain } from '../lib/tab-grouper';
 import type { Tab } from '../types';
 
-// ─── Test helpers ──────────────────────────────────────────────────
-
 function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
   return {
     title: 'Test Tab',
@@ -19,80 +17,87 @@ function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
   };
 }
 
-// ─── Tests ─────────────────────────────────────────────────────────
-
 describe('groupTabsByDomain', () => {
   it('returns empty array for empty input', () => {
     expect(groupTabsByDomain([])).toEqual([]);
   });
 
-  it('groups tabs by hostname', () => {
+  it('groups tabs by product key instead of raw hostname', () => {
     const tabs = [
-      makeTab({ id: 1, url: 'https://github.com/user/repo1' }),
-      makeTab({ id: 2, url: 'https://github.com/user/repo2' }),
+      makeTab({ id: 1, url: 'https://www.youtube.com/' }),
+      makeTab({ id: 2, url: 'https://m.youtube.com/watch?v=abc' }),
       makeTab({ id: 3, url: 'https://stackoverflow.com/questions/1' }),
     ];
 
     const groups = groupTabsByDomain(tabs);
-
-    expect(groups).toHaveLength(2);
-
-    const githubGroup = groups.find((g) => g.domain === 'github.com');
+    const youtubeGroup = groups.find((g) => g.domain === 'youtube');
     const soGroup = groups.find((g) => g.domain === 'stackoverflow.com');
 
-    expect(githubGroup).toBeDefined();
-    expect(githubGroup!.tabs).toHaveLength(2);
+    expect(groups).toHaveLength(2);
+    expect(youtubeGroup).toBeDefined();
+    expect(youtubeGroup!.tabs).toHaveLength(2);
+    expect(youtubeGroup!.friendlyName).toBe('YouTube');
+    expect(youtubeGroup!.iconDomain).toBe('youtube.com');
+    expect(youtubeGroup!.itemType).toBe('product');
     expect(soGroup).toBeDefined();
     expect(soGroup!.tabs).toHaveLength(1);
   });
 
-  it('places landing pages in their own group', () => {
+  it('keeps landing pages in their product group until manually assigned', () => {
     const tabs = [
-      makeTab({ id: 1, url: 'https://github.com/' }),           // landing
-      makeTab({ id: 2, url: 'https://github.com/user/repo' }),  // not landing
-      makeTab({ id: 3, url: 'https://x.com/home' }),            // landing
+      makeTab({ id: 1, url: 'https://www.youtube.com/' }),
+      makeTab({ id: 2, url: 'https://www.youtube.com/watch?v=1' }),
+      makeTab({ id: 3, url: 'https://github.com/' }),
     ];
 
     const groups = groupTabsByDomain(tabs);
 
-    const landingGroup = groups.find((g) => g.domain === '__landing-pages__');
-    const githubGroup = groups.find((g) => g.domain === 'github.com');
-
-    expect(landingGroup).toBeDefined();
-    expect(landingGroup!.tabs).toHaveLength(2); // github.com/ and x.com/home
-    expect(githubGroup).toBeDefined();
-    expect(githubGroup!.tabs).toHaveLength(1); // github.com/user/repo
+    expect(groups.find((g) => g.domain === '__landing-pages__')).toBeUndefined();
+    expect(groups.find((g) => g.domain === 'youtube')!.tabs).toHaveLength(2);
+    expect(groups.find((g) => g.domain === 'github')!.tabs).toHaveLength(1);
   });
 
-  it('sorts landing pages group first', () => {
+  it('keeps Google products separated', () => {
     const tabs = [
-      makeTab({ id: 1, url: 'https://stackoverflow.com/questions/1' }),
-      makeTab({ id: 2, url: 'https://x.com/home' }),
-      makeTab({ id: 3, url: 'https://example.com/page' }),
+      makeTab({ id: 1, url: 'https://mail.google.com/mail/u/0/#inbox' }),
+      makeTab({ id: 2, url: 'https://docs.google.com/document/d/1/edit' }),
+      makeTab({ id: 3, url: 'https://drive.google.com/drive/my-drive' }),
     ];
 
     const groups = groupTabsByDomain(tabs);
+    const keys = groups.map((g) => g.domain).sort();
 
-    expect(groups[0].domain).toBe('__landing-pages__');
+    expect(keys).toEqual(['gmail', 'google-docs', 'google-drive']);
+    expect(groups.find((g) => g.domain === 'gmail')?.iconDomain).toBe('mail.google.com');
+    expect(groups.find((g) => g.domain === 'google-docs')?.friendlyName).toBe('Google Docs');
   });
 
-  it('sorts landing-page domains (priority) before non-landing domains', () => {
+  it('merges YouTube and YouTube Music into one product', () => {
     const tabs = [
-      makeTab({ id: 1, url: 'https://example.com/page1' }),
-      makeTab({ id: 2, url: 'https://github.com/user/repo' }),
-      makeTab({ id: 3, url: 'https://x.com/someuser/status' }),
+      makeTab({ id: 1, url: 'https://www.youtube.com/watch?v=1' }),
+      makeTab({ id: 2, url: 'https://music.youtube.com/watch?v=2' }),
+    ];
+
+    const groups = groupTabsByDomain(tabs);
+    const keys = groups.map((g) => g.domain).sort();
+
+    expect(keys).toEqual(['youtube']);
+    expect(groups.find((g) => g.domain === 'youtube')?.tabs).toHaveLength(2);
+    expect(groups.find((g) => g.domain === 'youtube')?.iconDomain).toBe('youtube.com');
+  });
+
+  it('merges Vercel dashboard and vercel.app deployments into one product', () => {
+    const tabs = [
+      makeTab({ id: 1, url: 'https://vercel.com/dashboard' }),
+      makeTab({ id: 2, url: 'https://my-product.vercel.app/' }),
+      makeTab({ id: 3, url: 'https://preview-abc.my-product.vercel.app/path' }),
     ];
 
     const groups = groupTabsByDomain(tabs);
 
-    // Landing-page domains (github.com, x.com) should sort before example.com
-    const domains = groups.map((g) => g.domain);
-    const githubIdx = domains.indexOf('github.com');
-    const xIdx = domains.indexOf('x.com');
-    const exampleIdx = domains.indexOf('example.com');
-
-    expect(githubIdx).toBeLessThan(exampleIdx);
-    expect(xIdx).toBeLessThan(exampleIdx);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].domain).toBe('vercel');
+    expect(groups[0].tabs).toHaveLength(3);
   });
 
   it('handles file:// URLs as local-files group', () => {
@@ -103,23 +108,37 @@ describe('groupTabsByDomain', () => {
     ];
 
     const groups = groupTabsByDomain(tabs);
-
     const localGroup = groups.find((g) => g.domain === 'local-files');
+
     expect(localGroup).toBeDefined();
     expect(localGroup!.tabs).toHaveLength(2);
     expect(localGroup!.friendlyName).toBe('Local Files');
   });
 
-  it('assigns correct friendly names from FRIENDLY_DOMAINS', () => {
+  it('assigns correct friendly names from product rules', () => {
     const tabs = [
       makeTab({ id: 1, url: 'https://github.com/user/repo' }),
     ];
 
     const groups = groupTabsByDomain(tabs);
     expect(groups[0].friendlyName).toBe('GitHub');
+    expect(groups[0].domain).toBe('github');
   });
 
-  it('detects duplicate tabs and sets color and flags', () => {
+  it('detects duplicate tabs and sets color and flags inside product groups', () => {
+    const tabs = [
+      makeTab({ id: 1, url: 'https://www.youtube.com/watch?v=1' }),
+      makeTab({ id: 2, url: 'https://m.youtube.com/watch?v=1' }),
+    ];
+
+    const groups = groupTabsByDomain(tabs);
+
+    expect(groups[0].hasDuplicates).toBe(false);
+    expect(groups[0].duplicateCount).toBe(0);
+    expect(groups[0].color).toBe('#4DAB9A');
+  });
+
+  it('detects exact duplicate URLs', () => {
     const tabs = [
       makeTab({ id: 1, url: 'https://example.com/page' }),
       makeTab({ id: 2, url: 'https://example.com/page' }),
@@ -132,19 +151,6 @@ describe('groupTabsByDomain', () => {
     expect(groups[0].color).toBe('#DFAB01');
   });
 
-  it('uses default color when no duplicates', () => {
-    const tabs = [
-      makeTab({ id: 1, url: 'https://example.com/page1' }),
-      makeTab({ id: 2, url: 'https://example.com/page2' }),
-    ];
-
-    const groups = groupTabsByDomain(tabs);
-
-    expect(groups[0].hasDuplicates).toBe(false);
-    expect(groups[0].duplicateCount).toBe(0);
-    expect(groups[0].color).toBe('#4DAB9A');
-  });
-
   it('assigns sequential order values', () => {
     const tabs = [
       makeTab({ id: 1, url: 'https://example.com/a' }),
@@ -153,37 +159,26 @@ describe('groupTabsByDomain', () => {
     ];
 
     const groups = groupTabsByDomain(tabs);
-
-    const orders = groups.map((g) => g.order);
-    expect(orders).toEqual([0, 1, 2]);
+    expect(groups.map((g) => g.order)).toEqual([0, 1, 2]);
   });
 
   it('sets collapsed to false for all groups', () => {
-    const tabs = [
+    const groups = groupTabsByDomain([
       makeTab({ id: 1, url: 'https://example.com/a' }),
-    ];
+    ]);
 
-    const groups = groupTabsByDomain(tabs);
-
-    for (const group of groups) {
-      expect(group.collapsed).toBe(false);
-    }
+    expect(groups.every((group) => group.collapsed === false)).toBe(true);
   });
 
   it('skips malformed URLs without crashing', () => {
-    const tabs = [
+    const groups = groupTabsByDomain([
       makeTab({ id: 1, url: 'not-a-url' }),
       makeTab({ id: 2, url: 'https://example.com/valid' }),
-    ];
+    ]);
 
-    const groups = groupTabsByDomain(tabs);
-
-    // Only the valid URL should produce a group
     expect(groups).toHaveLength(1);
     expect(groups[0].domain).toBe('example.com');
   });
-
-  // ─── customOrder parameter ──────────────────────────────────────────
 
   describe('customOrder', () => {
     it('behaves the same when customOrder is undefined', () => {
@@ -196,13 +191,10 @@ describe('groupTabsByDomain', () => {
       const withoutOrder = groupTabsByDomain(tabs);
       const withEmpty = groupTabsByDomain(tabs, {});
 
-      const domainsWithout = withoutOrder.map((g) => g.domain);
-      const domainsWith = withEmpty.map((g) => g.domain);
-
-      expect(domainsWith).toEqual(domainsWithout);
+      expect(withEmpty.map((g) => g.domain)).toEqual(withoutOrder.map((g) => g.domain));
     });
 
-    it('applies custom order when all domains are ordered', () => {
+    it('applies custom order when all products are ordered', () => {
       const tabs = [
         makeTab({ id: 1, url: 'https://github.com/user/repo' }),
         makeTab({ id: 2, url: 'https://example.com/page' }),
@@ -212,48 +204,25 @@ describe('groupTabsByDomain', () => {
       const groups = groupTabsByDomain(tabs, {
         'example.com': 0,
         'x.com': 1,
-        'github.com': 2,
+        github: 2,
       });
 
-      const domains = groups.map((g) => g.domain);
-      expect(domains).toEqual(['example.com', 'x.com', 'github.com']);
+      expect(groups.map((g) => g.domain)).toEqual(['example.com', 'x.com', 'github']);
     });
 
-    it('sorts ordered domains before unordered ones', () => {
+    it('sorts ordered products before unordered ones', () => {
       const tabs = [
         makeTab({ id: 1, url: 'https://github.com/user/repo' }),
         makeTab({ id: 2, url: 'https://example.com/page' }),
         makeTab({ id: 3, url: 'https://x.com/status' }),
       ];
 
-      // Only order example.com; github.com and x.com should sort after
       const groups = groupTabsByDomain(tabs, {
         'example.com': 0,
       });
 
-      const domains = groups.map((g) => g.domain);
-      expect(domains[0]).toBe('example.com');
-      // github.com and x.com come after, in default sort order
-      expect(domains.length).toBe(3);
-    });
-
-    it('preserves landing-page-first rule for unordered domains', () => {
-      const tabs = [
-        makeTab({ id: 1, url: 'https://x.com/home' }),           // landing
-        makeTab({ id: 2, url: 'https://example.com/page' }),      // normal
-        makeTab({ id: 3, url: 'https://github.com/user/repo' }),  // priority domain
-      ];
-
-      // Order only example.com; landing pages and priority domains
-      // without custom order should use default sort
-      const groups = groupTabsByDomain(tabs, {
-        'example.com': 2,
-      });
-
-      const domains = groups.map((g) => g.domain);
-      // example.com has custom order, but custom-ordered items sort BEFORE unordered
-      // So example.com goes first because it has a custom order
-      expect(domains[0]).toBe('example.com');
+      expect(groups[0].domain).toBe('example.com');
+      expect(groups).toHaveLength(3);
     });
   });
 });

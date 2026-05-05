@@ -1,103 +1,40 @@
 import type { Tab, TabGroup } from '../types';
-import { FRIENDLY_DOMAINS } from '../config/friendly-domains';
-import { LANDING_PAGE_PATTERNS, isLandingPage } from './landing-pages';
+import { productForHostname } from '../config/products';
+import { friendlyDomain } from './title-cleaner';
+import { countDuplicates } from './tab-utils';
+import { getTabDomain } from '../utils/url';
 
 // ─── Constants ──────────────────────────────────────────────────────
 
-export const LANDING_PAGES_KEY = '__landing-pages__';
-const LOCAL_FILES_KEY = 'local-files';
 const DEFAULT_COLOR = '#4DAB9A';
 const DUPLICATE_COLOR = '#DFAB01';
-
-// ─── Helpers ────────────────────────────────────────────────────────
-
-/**
- * Derive a human-friendly display name for a domain.
- * Uses the FRIENDLY_DOMAINS lookup table, falls back to cleaning
- * the raw hostname (strip "www.", TLD, etc.).
- */
-function friendlyNameForDomain(domain: string): string {
-  if (FRIENDLY_DOMAINS[domain]) return FRIENDLY_DOMAINS[domain];
-  if (domain === LANDING_PAGES_KEY) return 'Homepages';
-  if (domain === LOCAL_FILES_KEY) return FRIENDLY_DOMAINS[LOCAL_FILES_KEY] ?? 'Local Files';
-
-  // Strip common prefix and TLD for a clean fallback
-  const cleaned = domain.replace(/^www\./, '').replace(/\.[a-z.]+$/, '');
-  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
-}
-
-/**
- * Count how many tabs in the array are duplicates (same URL appears
- * more than once).  Returns `{ duplicateCount, hasDuplicates }`.
- */
-function countDuplicates(tabs: readonly Tab[]): {
-  duplicateCount: number;
-  hasDuplicates: boolean;
-} {
-  const urlCounts = new Map<string, number>();
-  for (const tab of tabs) {
-    const count = urlCounts.get(tab.url) ?? 0;
-    urlCounts.set(tab.url, count + 1);
-  }
-
-  let duplicateCount = 0;
-  for (const count of urlCounts.values()) {
-    if (count > 1) duplicateCount += count - 1;
-  }
-
-  return { duplicateCount, hasDuplicates: duplicateCount > 0 };
-}
-
-/**
- * Check whether a domain is associated with any landing page pattern,
- * used for priority sorting (landing-page domains sort before others).
- */
-function isLandingDomain(domain: string): boolean {
-  const hostnames = new Set(
-    LANDING_PAGE_PATTERNS.map((p) => p.hostname).filter(Boolean),
-  );
-  const suffixes = LANDING_PAGE_PATTERNS
-    .map((p) => p.hostnameEndsWith)
-    .filter(Boolean);
-
-  if (hostnames.has(domain)) return true;
-  return suffixes.some((s) => domain.endsWith(s!));
-}
 
 // ─── Public API ─────────────────────────────────────────────────────
 
 /**
  * Default sort comparator for domain keys.
- * Landing pages first, then landing-domain priority, then by tab count descending.
+ * Tab count descending, then stable product key.
  */
 function defaultSortComparator(
   groupMap: Map<string, Tab[]>,
 ): (a: string, b: string) => number {
   return (a, b) => {
-    const aIsLanding = a === LANDING_PAGES_KEY;
-    const bIsLanding = b === LANDING_PAGES_KEY;
-    if (aIsLanding !== bIsLanding) return aIsLanding ? -1 : 1;
-
-    const aIsPriority = isLandingDomain(a);
-    const bIsPriority = isLandingDomain(b);
-    if (aIsPriority !== bIsPriority) return aIsPriority ? -1 : 1;
-
-    return groupMap.get(b)!.length - groupMap.get(a)!.length;
+    const countDiff = groupMap.get(b)!.length - groupMap.get(a)!.length;
+    if (countDiff !== 0) return countDiff;
+    return a.localeCompare(b);
   };
 }
 
 /**
- * Group tabs by domain, pulling landing pages into their own group.
+ * Group tabs by product.
  *
  * Algorithm:
- * 1. Separate landing-page tabs into `__landing-pages__` group.
- * 2. Group remaining tabs by hostname.
- * 3. Handle `file://` URLs as `local-files`.
- * 4. Sort: custom order first (if provided), then default logic
- *    (landing pages → priority domains → tab count descending).
+ * 1. Resolve each tab's hostname into a stable product identity.
+ * 2. Handle `file://` URLs as `local-files`.
+ * 3. Sort: custom order first (if provided), then by tab count.
  *
  * The returned groups are fully hydrated TabGroup objects ready for
- * rendering — each carries its friendly name, color, duplicate info,
+ * rendering — each carries its product label, icon domain, color, duplicate info,
  * and a stable sort order.
  */
 export function groupTabsByDomain(
@@ -107,40 +44,28 @@ export function groupTabsByDomain(
   if (tabs.length === 0) return [];
 
   const groupMap = new Map<string, Tab[]>();
-  const landingTabs: Tab[] = [];
+  const productLabels = new Map<string, string>();
+  const productIconDomains = new Map<string, string>();
 
   for (const tab of tabs) {
     try {
-      // 1. Landing pages go into their own bucket
-      if (isLandingPage(tab.url)) {
-        landingTabs.push(tab);
-        continue;
-      }
-
-      // 2. file:// URLs → local-files group
-      let hostname: string;
-      if (tab.url.startsWith('file://')) {
-        hostname = LOCAL_FILES_KEY;
-      } else {
-        hostname = new URL(tab.url).hostname;
-      }
+      const hostname = getTabDomain(tab.url);
 
       if (!hostname) continue;
 
-      const existing = groupMap.get(hostname);
+      const product = productForHostname(hostname);
+      productLabels.set(product.key, product.label);
+      productIconDomains.set(product.key, product.iconDomain);
+
+      const existing = groupMap.get(product.key);
       if (existing) {
         existing.push(tab);
       } else {
-        groupMap.set(hostname, [tab]);
+        groupMap.set(product.key, [tab]);
       }
     } catch {
       // Skip malformed URLs
     }
-  }
-
-  // Add landing pages group (only if there are any)
-  if (landingTabs.length > 0) {
-    groupMap.set(LANDING_PAGES_KEY, landingTabs);
   }
 
   // Build sorted groups
@@ -175,7 +100,11 @@ export function groupTabsByDomain(
     groups.push({
       id: key,
       domain: key,
-      friendlyName: friendlyNameForDomain(key),
+      friendlyName: productLabels.get(key) ?? friendlyDomain(key),
+      itemType: 'product',
+      itemKey: key,
+      productKey: key,
+      iconDomain: productIconDomains.get(key) ?? key,
       tabs: groupTabs,
       collapsed: false,
       order: i,

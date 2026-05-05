@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { AppSettings, CustomGroup } from '../types';
-import { readStorage, writeStorage, DEFAULT_SETTINGS } from '../utils/storage';
+import { readSettings, writeSettings, DEFAULT_SETTINGS } from '../utils/storage';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -33,8 +33,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   fetchSettings: async () => {
     set({ loading: true });
     try {
-      const storage = await readStorage();
-      set({ settings: storage.settings, loading: false });
+      const settings = await readSettings();
+      set({ settings, loading: false });
     } catch {
       set({ settings: DEFAULT_SETTINGS, loading: false });
     }
@@ -45,8 +45,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const updated: AppSettings = { ...prev, soundEnabled: !prev.soundEnabled };
     set({ settings: updated });
     try {
-      const storage = await readStorage();
-      await writeStorage({ ...storage, settings: updated });
+      await writeSettings({ soundEnabled: updated.soundEnabled });
     } catch {
       set({ settings: prev });
     }
@@ -57,8 +56,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const updated: AppSettings = { ...prev, confettiEnabled: !prev.confettiEnabled };
     set({ settings: updated });
     try {
-      const storage = await readStorage();
-      await writeStorage({ ...storage, settings: updated });
+      await writeSettings({ confettiEnabled: updated.confettiEnabled });
     } catch {
       set({ settings: prev });
     }
@@ -69,8 +67,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const updated: AppSettings = { ...prev, theme };
     set({ settings: updated });
     try {
-      const storage = await readStorage();
-      await writeStorage({ ...storage, settings: updated });
+      await writeSettings({ theme });
     } catch {
       set({ settings: prev });
     }
@@ -84,8 +81,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     };
     set({ settings: updated });
     try {
-      const storage = await readStorage();
-      await writeStorage({ ...storage, settings: updated });
+      await writeSettings({ customGroups: updated.customGroups });
     } catch {
       set({ settings: prev });
     }
@@ -99,8 +95,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     };
     set({ settings: updated });
     try {
-      const storage = await readStorage();
-      await writeStorage({ ...storage, settings: updated });
+      await writeSettings({ customGroups: updated.customGroups });
     } catch {
       set({ settings: prev });
     }

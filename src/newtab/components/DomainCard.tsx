@@ -1,18 +1,25 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import type { TabGroup } from '../../types';
 import { TabChip } from './TabChip';
+import { getVisibleTabs } from '../lib/visible-tabs';
+import { getFaviconUrl } from '../../utils/favicon';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
 interface DomainCardProps {
   group: TabGroup;
   dragHandleProps?: Record<string, unknown>;
+  expanded?: boolean;
   maxChipsVisible?: number;
   onCloseDomain: (group: TabGroup) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onCloseTab: (url: string) => void;
-  onSaveTab: (url: string, title: string) => void;
   onFocusTab: (url: string) => void;
+  focusedUrl?: string | null;
+  closingUrls?: Set<string>;
+  selectedUrls?: Set<string>;
+  onChipClick?: (url: string, event: React.MouseEvent) => void;
+  onToggleExpanded?: (domain: string) => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -21,25 +28,6 @@ const DEFAULT_MAX_CHIPS = 8;
 
 // ─── SVG Icons ────────────────────────────────────────────────────────
 
-function TabsIcon(): React.ReactElement {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      className="h-3.5 w-3.5"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"
-      />
-    </svg>
-  );
-}
 
 function CloseAllIcon(): React.ReactElement {
   return (
@@ -81,23 +69,75 @@ function DedupIcon(): React.ReactElement {
   );
 }
 
+function TabChipRow({
+  tab,
+  duplicateCount,
+  focusedUrl,
+  closingUrls,
+  selectedUrls,
+  selectionMode,
+  onFocus,
+  onClose,
+  onChipClick,
+}: {
+  tab: TabGroup['tabs'][number];
+  duplicateCount: number;
+  focusedUrl?: string | null;
+  closingUrls?: Set<string>;
+  selectedUrls?: Set<string>;
+  selectionMode: boolean;
+  onFocus: (url: string) => void;
+  onClose: (url: string) => void;
+  onChipClick?: (url: string, event: React.MouseEvent) => void;
+}): React.ReactElement {
+  return (
+    <div className="tab-chip-row">
+      <TabChip
+        url={tab.url}
+        title={tab.title}
+        favIconUrl={tab.favIconUrl}
+        duplicateCount={duplicateCount}
+        active={tab.active}
+        isFocused={tab.url === focusedUrl}
+        isClosing={closingUrls?.has(tab.url)}
+        isSelected={selectedUrls?.has(tab.url)}
+        selectionMode={selectionMode}
+        onFocus={onFocus}
+        onClose={onClose}
+        onChipClick={onChipClick}
+      />
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────
 
 export function DomainCard({
   group,
   dragHandleProps,
+  expanded = false,
   maxChipsVisible = DEFAULT_MAX_CHIPS,
   onCloseDomain,
   onCloseDuplicates,
   onCloseTab,
-  onSaveTab,
   onFocusTab,
+  focusedUrl,
+  closingUrls,
+  selectedUrls,
+  onChipClick,
+  onToggleExpanded,
 }: DomainCardProps): React.ReactElement {
-  const [expanded, setExpanded] = useState(false);
-
-  const tabs = group.tabs || [];
+  const tabs = useMemo(() => group.tabs || [], [group.tabs]);
   const tabCount = tabs.length;
   const displayName = group.friendlyName || group.domain;
+  const selectionMode = (selectedUrls?.size ?? 0) > 0;
+  const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
+  const groupFaviconUrl = useMemo(
+    () => tabs.find((tab) => tab.favIconUrl.trim() !== '')?.favIconUrl.trim() ?? getFaviconUrl(tabs[0]?.url || ''),
+    [tabs],
+  );
+  const iconFailed = groupFaviconUrl !== '' && failedFaviconUrl === groupFaviconUrl;
+  const initial = displayName.trim().charAt(0).toUpperCase() || '?';
 
   // Count URL occurrences to detect duplicates
   const { urlCounts, dupeUrls, totalExtras } = useMemo(() => {
@@ -112,18 +152,10 @@ export function DomainCard({
 
   const hasDupes = dupeUrls.length > 0;
 
-  // Deduplicate for display: show each URL once, with (Nx) badge if duplicated
-  const uniqueTabs = useMemo(() => {
-    const seen = new Set<string>();
-    return tabs.filter((tab) => {
-      if (seen.has(tab.url)) return false;
-      seen.add(tab.url);
-      return true;
-    });
-  }, [tabs]);
-
-  const visibleTabs = uniqueTabs.slice(0, maxChipsVisible);
-  const hiddenTabs = uniqueTabs.slice(maxChipsVisible);
+  const { visibleTabs, hiddenTabs } = useMemo(
+    () => getVisibleTabs(tabs, maxChipsVisible, expanded),
+    [tabs, maxChipsVisible, expanded],
+  );
   const extraCount = hiddenTabs.length;
 
   // ─── Handlers ────────────────────────────────────────────────────────
@@ -138,21 +170,14 @@ export function DomainCard({
   }, [onCloseDuplicates, dupeUrls]);
 
   const handleExpand = useCallback(() => {
-    setExpanded((prev) => !prev);
-  }, []);
+    onToggleExpanded?.(group.domain);
+  }, [group.domain, onToggleExpanded]);
 
   const handleCloseTab = useCallback(
     (url: string) => {
       onCloseTab(url);
     },
     [onCloseTab],
-  );
-
-  const handleSaveTab = useCallback(
-    (url: string, title: string) => {
-      onSaveTab(url, title);
-    },
-    [onSaveTab],
   );
 
   const handleFocusTab = useCallback(
@@ -164,17 +189,16 @@ export function DomainCard({
 
   // ─── Render ──────────────────────────────────────────────────────────
 
-  const statusBarColor = hasDupes ? 'bg-accent-amber' : 'bg-accent-sage';
+  const statusBarColor = hasDupes ? 'bg-accent-amber/30' : 'bg-accent-sage/80';
 
   return (
-    <div className="rounded-card bg-card-light dark:bg-card-dark shadow-card transition-shadow duration-200 hover:shadow-card-hover overflow-hidden">
-      {/* Status bar — 3px top accent */}
-      <div className={`h-[3px] ${statusBarColor}`} />
+    <div className="overflow-hidden rounded-card border-2 border-border-light bg-card-light shadow-none transition-colors duration-150 dark:border-border-dark dark:bg-card-dark">
+      <div className={`h-2 border-b-2 border-border-light dark:border-border-dark ${statusBarColor}`} />
 
-      <div className="p-4">
+      <div className="border-b-2 border-border-light p-4 dark:border-border-dark">
         {/* Header: domain name + badges — drag handle when DnD is active */}
         <div
-          className="mb-3 flex flex-wrap items-center gap-2 cursor-grab active:cursor-grabbing"
+          className={`flex flex-wrap items-center gap-2${dragHandleProps ? ' cursor-grab active:cursor-grabbing' : ''}`}
           {...dragHandleProps}
         >
           {dragHandleProps && (
@@ -184,67 +208,83 @@ export function DomainCard({
               viewBox="0 0 24 24"
               strokeWidth={1.5}
               stroke="currentColor"
-              className="h-4 w-4 text-text-secondary shrink-0"
+              className="text-text-secondary h-4 w-4 shrink-0"
               aria-hidden="true"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
           )}
-          <h3 className="font-heading text-base font-semibold text-text-primary-light dark:text-text-primary-dark">
+          {iconFailed || !groupFaviconUrl ? (
+            <span
+              className="bg-surface-light dark:bg-surface-dark text-text-secondary flex h-5 w-5 shrink-0 items-center justify-center rounded-[3px] text-xs font-semibold"
+              aria-hidden="true"
+            >
+              {initial}
+            </span>
+          ) : (
+            <img
+              src={groupFaviconUrl}
+              alt=""
+              width={20}
+              height={20}
+              className="favicon h-5 w-5 shrink-0 rounded-[3px]"
+              onError={() => setFailedFaviconUrl(groupFaviconUrl)}
+            />
+          )}
+          <h3 className="min-w-0 flex-1 truncate font-heading text-base font-normal tracking-tight text-text-primary-light dark:text-text-primary-dark">
             {displayName}
           </h3>
 
-          {/* Tab count badge */}
-          <span className="inline-flex items-center gap-1 rounded-chip bg-surface-light dark:bg-surface-dark px-2 py-0.5 text-xs text-text-secondary font-body">
-            <TabsIcon />
-            {tabCount} tab{tabCount !== 1 ? 's' : ''} open
-          </span>
-
-          {/* Duplicate count badge */}
-          {hasDupes && (
-            <span className="inline-flex items-center rounded-chip bg-accent-amber/10 px-2 py-0.5 text-xs text-accent-amber font-body font-medium">
-              {totalExtras} duplicate{totalExtras !== 1 ? 's' : ''}
-            </span>
-          )}
+          <div className="flex items-center gap-1">
+            {hasDupes && (
+              <button
+                type="button"
+                className="flex h-7 items-center gap-1 rounded-sm bg-accent-amber px-2 text-[10px] font-bold uppercase tracking-widest text-white transition-opacity hover:opacity-90"
+                onClick={handleCloseDuplicates}
+                title="Close duplicate tabs"
+              >
+                <DedupIcon />
+                <span>{totalExtras}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              className="flex h-7 w-7 items-center justify-center rounded-sm text-text-secondary transition-colors hover:bg-surface-light hover:text-accent-red dark:hover:bg-surface-dark"
+              onClick={handleCloseDomain}
+              title={`Close all ${tabs.length} tabs`}
+              aria-label={`Close all ${tabs.length} ${displayName} tabs`}
+            >
+              <CloseAllIcon />
+            </button>
+          </div>
         </div>
+      </div>
+
+      <div className="p-4">
 
         {/* Tab chips */}
         <div className="flex flex-col gap-0.5">
           {visibleTabs.map((tab) => (
-            <TabChip
+            <TabChipRow
               key={tab.url}
-              url={tab.url}
-              title={tab.title}
+              tab={tab}
               duplicateCount={urlCounts[tab.url] ?? 1}
+              focusedUrl={focusedUrl}
+              closingUrls={closingUrls}
+              selectedUrls={selectedUrls}
+              selectionMode={selectionMode}
               onFocus={handleFocusTab}
               onClose={handleCloseTab}
-              onSave={handleSaveTab}
+              onChipClick={onChipClick}
             />
           ))}
-
-          {/* Overflow hidden chips */}
-          {extraCount > 0 && expanded && (
-            <div className="flex flex-col gap-0.5">
-              {hiddenTabs.map((tab) => (
-                <TabChip
-                  key={tab.url}
-                  url={tab.url}
-                  title={tab.title}
-                  duplicateCount={urlCounts[tab.url] ?? 1}
-                  onFocus={handleFocusTab}
-                  onClose={handleCloseTab}
-                  onSave={handleSaveTab}
-                />
-              ))}
-            </div>
-          )}
         </div>
 
         {/* "+N more" expand button */}
         {extraCount > 0 && (
           <button
             type="button"
-            className="mt-1 flex items-center rounded-chip px-2.5 py-1.5 text-sm text-accent-blue font-body transition-colors duration-150 hover:bg-accent-blue/10 focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none cursor-pointer"
+            className="rounded-chip text-accent-blue font-body hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 mt-1 flex min-h-11 cursor-pointer items-center px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
             onClick={handleExpand}
             aria-expanded={expanded}
             aria-label={
@@ -260,10 +300,10 @@ export function DomainCard({
         )}
 
         {/* Footer actions */}
-        <div className="mt-3 flex flex-wrap gap-2 border-t border-border-light dark:border-border-dark pt-3">
+        <div className="mt-3 flex flex-wrap gap-2 border-t-2 border-border-light pt-3 dark:border-border-dark">
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-chip px-3 py-1.5 text-sm text-text-secondary font-body transition-colors duration-150 hover:bg-surface-light hover:text-accent-red dark:hover:bg-surface-dark focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none cursor-pointer"
+            className="rounded-chip text-text-secondary font-body hover:bg-surface-light hover:text-accent-red dark:hover:bg-surface-dark focus-visible:ring-accent-blue/40 inline-flex min-h-11 cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
             onClick={handleCloseDomain}
           >
             <CloseAllIcon />
@@ -273,7 +313,7 @@ export function DomainCard({
           {hasDupes && (
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-chip px-3 py-1.5 text-sm text-text-secondary font-body transition-colors duration-150 hover:bg-accent-amber/10 hover:text-accent-amber focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none cursor-pointer"
+              className="rounded-chip text-text-secondary font-body hover:bg-accent-amber/10 hover:text-accent-amber focus-visible:ring-accent-blue/40 inline-flex min-h-11 cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
               onClick={handleCloseDuplicates}
             >
               <DedupIcon />

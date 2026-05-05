@@ -7,9 +7,15 @@ dist-zip
 docs/superpowers/
 
 # Build artifacts
-*.crx
+releases/
 *.pem
-*.zip
+playwright-report/
+test-results/
 
 # Personal config (landing page patterns, etc.) — never push to GitHub
 extension/config.local.js
+
+# Agent and IDE directories
+.claude/
+.codex/
+.superpowers/

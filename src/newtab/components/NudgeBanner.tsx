@@ -22,17 +22,17 @@ export function NudgeBanner({
   return (
     <div
       role="alert"
-      className="mb-4 flex items-center justify-between rounded-card border border-accent-red/20 bg-gradient-to-br from-accent-red/[0.04] to-accent-red/[0.09] px-6 py-4 animate-[fadeUp_0.5s_ease_both]"
+      className="rounded-card border-accent-red/20 from-accent-red/[0.04] to-accent-red/[0.09] mb-4 flex animate-[fadeUp_0.5s_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
     >
       <div className="flex items-center gap-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-red/10">
+        <div className="bg-accent-red/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}
             stroke="currentColor"
-            className="h-[18px] w-[18px] text-accent-red"
+            className="text-accent-red h-[18px] w-[18px]"
             aria-hidden="true"
           >
             <path
@@ -42,15 +42,15 @@ export function NudgeBanner({
             />
           </svg>
         </div>
-        <p className="text-sm leading-relaxed text-text-primary-light dark:text-text-primary-dark">
+        <p className="text-text-primary-light dark:text-text-primary-dark text-sm leading-relaxed">
           You have <strong className="font-semibold">{tabCount}</strong> tabs open. Consider closing the ones you&apos;re not using.
         </p>
       </div>
       <button
         type="button"
         onClick={onDismiss}
-        className="ml-4 flex h-6 w-6 shrink-0 items-center justify-center rounded-chip text-text-secondary transition-colors hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none"
-        aria-label="Dismiss"
+        className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-blue/40 ml-4 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        aria-label="Dismiss tab count warning"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

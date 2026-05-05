@@ -44,12 +44,12 @@ export function stripTitleNoise(title: string): string {
   cleaned = cleaned.replace(/\s*\([\d,]+\+?\)\s*/g, ' ');
   // Strip email addresses preceded by a dash (privacy + cleaner display)
   cleaned = cleaned.replace(
-    /\s*[\-\u2010-\u2015]\s*[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g,
+    /\s*[\u2010-\u2015-]\s*[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
     '',
   );
   // Strip remaining bare email addresses
   cleaned = cleaned.replace(
-    /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g,
+    /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
     '',
   );
   // Clean X/Twitter format

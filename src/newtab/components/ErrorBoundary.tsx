@@ -21,16 +21,17 @@ export class ErrorBoundary extends React.Component<
   render(): React.ReactNode {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-screen items-center justify-center p-8">
+        <div className="flex min-h-screen items-center justify-center p-8" role="alert">
           <div className="text-center">
-            <h1 className="font-heading text-2xl text-accent-red mb-2">
+            <h1 className="font-heading text-accent-red mb-2 text-2xl">
               Something went wrong
             </h1>
-            <p className="text-text-secondary text-sm mb-4">
+            <p className="text-text-secondary mb-4 text-sm">
               Tab Out encountered an unexpected error.
             </p>
             <button
-              className="rounded-chip bg-accent-blue px-4 py-2 text-sm text-white hover:opacity-85"
+              type="button"
+              className="rounded-chip bg-accent-blue focus-visible:ring-accent-blue/40 min-h-11 cursor-pointer px-4 py-2 text-sm text-white transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
               onClick={() => window.location.reload()}
             >
               Reload

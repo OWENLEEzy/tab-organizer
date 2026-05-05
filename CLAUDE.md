@@ -24,10 +24,10 @@ npm run lint         # eslint
 
 Chrome Extension MV3 built with Vite + CRXJS. Two entry points:
 
-- `src/newtab/` — React app overriding `chrome://newtab`
+- `src/newtab/` — React dashboard opened from the extension toolbar action
 - `src/background/index.ts` — Service worker (badge updates)
 
-CRXJS reads `manifest.json` at project root and auto-resolves entry points. Do NOT add `rollupOptions.input`.
+CRXJS reads `manifest.json` at project root and resolves the background service worker. Keep `src/newtab/index.html` as an explicit Vite build input so the toolbar-opened dashboard remains bundled.
 
 ```
 src/
@@ -53,7 +53,7 @@ src/
 │   ├── settings-store.ts       # User preferences
 │   └── workspace-store.ts      # Workspace/session state
 ├── background/index.ts         # Service worker (badge updates)
-├── newtab/                     # React new tab page
+├── newtab/                     # React dashboard page
 │   ├── App.tsx, main.tsx, index.html
 │   ├── components/             # 17 UI components (see below)
 │   ├── hooks/                  # useChromeStorage, useKeyboard
@@ -67,7 +67,7 @@ src/
 - `public/fonts/` — Local woff2 font files (Newsreader, DM Sans)
 - `public/icons/` — Extension icons (16/48/128px)
 
-`extension/` — Legacy vanilla JS version, preserved as reference only. Do NOT modify.
+`dist/` — Generated Chrome-ready output. Do NOT edit manually; rebuild it via `npm run build`.
 
 ## Key Dependencies
 

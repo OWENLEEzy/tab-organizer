@@ -13,17 +13,17 @@ export function DupeBanner({ count, onClose }: DupeBannerProps): React.ReactElem
   return (
     <div
       role="alert"
-      className="mb-4 flex items-center justify-between rounded-card border border-accent-amber/20 bg-gradient-to-br from-accent-amber/[0.04] to-accent-amber/[0.09] px-6 py-4 animate-[fadeUp_0.5s_ease_both]"
+      className="rounded-card border-accent-amber/20 from-accent-amber/[0.04] to-accent-amber/[0.09] mb-4 flex animate-[fadeUp_0.5s_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
     >
       <div className="flex items-center gap-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-amber/10">
+        <div className="bg-accent-amber/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}
             stroke="currentColor"
-            className="h-[18px] w-[18px] text-accent-amber"
+            className="text-accent-amber h-[18px] w-[18px]"
             aria-hidden="true"
           >
             <path
@@ -33,14 +33,14 @@ export function DupeBanner({ count, onClose }: DupeBannerProps): React.ReactElem
             />
           </svg>
         </div>
-        <p className="text-sm leading-relaxed text-text-primary-light dark:text-text-primary-dark">
+        <p className="text-text-primary-light dark:text-text-primary-dark text-sm leading-relaxed">
           You have <strong className="font-semibold">{count}</strong> Tab Out tabs open. Keep just this one?
         </p>
       </div>
       <button
         type="button"
         onClick={onClose}
-        className="whitespace-nowrap rounded-chip bg-accent-amber px-5 py-2 font-body text-xs font-semibold text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:ring-accent-amber/50 focus-visible:outline-none"
+        className="rounded-chip bg-accent-amber font-body focus-visible:ring-accent-amber/50 min-h-11 cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
       >
         Close extras
       </button>
