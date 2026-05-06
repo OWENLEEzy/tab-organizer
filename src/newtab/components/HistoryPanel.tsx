@@ -41,22 +41,28 @@ export function HistoryPanel({
   const latest = snapshots[0] ?? null;
   const older = useMemo(() => snapshots.slice(1), [snapshots]);
 
-  if (!latest) return null;
-
-  const visibleSnapshots = [latest, ...older];
+  const visibleSnapshots = latest ? [latest, ...older] : [];
 
   return (
     <UtilityPanel
       title="History"
       count={visibleSnapshots.length}
-      actions={(
+      actions={visibleSnapshots.length > 0 ? (
         <ActionButton variant="quiet" className="min-h-8 px-2 py-1" onClick={onClearSnapshots}>
           Clear
         </ActionButton>
-      )}
+      ) : null}
     >
       <div className="history-list" aria-label="Recent snapshots">
-        {visibleSnapshots.map((snapshot) => {
+        {visibleSnapshots.length === 0 ? (
+          <div className="history-empty-state text-center py-12 px-6">
+            <div className="text-text-secondary text-sm mb-2 opacity-60">No history yet</div>
+            <p className="text-text-secondary text-[11px] leading-relaxed opacity-40 max-w-[180px] mx-auto">
+              Snapshots are captured automatically when you close tabs or restart your browser.
+            </p>
+          </div>
+        ) : (
+          visibleSnapshots.map((snapshot) => {
           const expanded = expandedId === snapshot.id;
           return (
             <section key={snapshot.id} className="history-card">
@@ -106,7 +112,8 @@ export function HistoryPanel({
               )}
             </section>
           );
-        })}
+          })
+        )}
       </div>
     </UtilityPanel>
   );
