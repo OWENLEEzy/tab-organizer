@@ -4,11 +4,13 @@ import { groupTabsByDomain } from '../lib/tab-grouper';
 import {
   clearHistory,
   deleteHistorySnapshot,
+  promoteHistorySnapshot,
   readHistory,
   readStorage,
   updateStorage,
   writeGroupOrder,
 } from '../utils/storage';
+import { buildHistorySnapshot } from '../lib/history-snapshots';
 import { getTabDomain, isRealTab, isTabOutPage } from '../utils/url';
 import { getErrorMessage } from '../utils/error';
 
@@ -117,6 +119,15 @@ function orderedGroups(groups: ManualGroup[]): ManualGroup[] {
   return [...groups].sort((a, b) => a.order - b.order);
 }
 
+async function protectHistoryBeforeClosing(allTabs: chrome.tabs.Tab[]): Promise<void> {
+  try {
+    const snapshot = buildHistorySnapshot(allTabs.map(toAppTab));
+    await promoteHistorySnapshot(snapshot);
+  } catch (err: unknown) {
+    console.warn('[Tab Out] Failed to protect history before closing tabs:', err);
+  }
+}
+
 // ─── Store ──────────────────────────────────────────────────────────
 
 export const useTabStore = create<TabStore>((set) => ({
@@ -184,6 +195,7 @@ export const useTabStore = create<TabStore>((set) => ({
     const allTabs = await chrome.tabs.query({});
     const match = allTabs.find((t) => t.url === url);
     if (match?.id != null) {
+      await protectHistoryBeforeClosing(allTabs);
       await chrome.tabs.remove(match.id);
     }
     await useTabStore.getState().fetchTabs();
@@ -199,6 +211,7 @@ export const useTabStore = create<TabStore>((set) => ({
       .filter((id): id is number => id != null);
 
     if (toClose.length > 0) {
+      await protectHistoryBeforeClosing(allTabs);
       await chrome.tabs.remove(toClose);
     }
 
@@ -239,7 +252,10 @@ export const useTabStore = create<TabStore>((set) => ({
       .map((tab) => tab.id)
       .filter((id): id is number => id != null);
 
-    if (toClose.length > 0) await chrome.tabs.remove(toClose);
+    if (toClose.length > 0) {
+      await protectHistoryBeforeClosing(allTabs);
+      await chrome.tabs.remove(toClose);
+    }
     await useTabStore.getState().fetchTabs();
   },
 
@@ -251,7 +267,10 @@ export const useTabStore = create<TabStore>((set) => ({
       .filter((t) => t.url && urlSet.has(t.url))
       .map((t) => t.id)
       .filter((id): id is number => id != null);
-    if (toClose.length > 0) await chrome.tabs.remove(toClose);
+    if (toClose.length > 0) {
+      await protectHistoryBeforeClosing(allTabs);
+      await chrome.tabs.remove(toClose);
+    }
     await useTabStore.getState().fetchTabs();
   },
 
@@ -286,7 +305,10 @@ export const useTabStore = create<TabStore>((set) => ({
       }
     }
 
-    if (toClose.length > 0) await chrome.tabs.remove(toClose);
+    if (toClose.length > 0) {
+      await protectHistoryBeforeClosing(allTabs);
+      await chrome.tabs.remove(toClose);
+    }
     await useTabStore.getState().fetchTabs();
   },
 
@@ -464,7 +486,7 @@ export const useTabStore = create<TabStore>((set) => ({
 
   restoreHistorySnapshot: async (snapshotId: string) => {
     const snapshots = await readHistory();
-    const snapshot = snapshots.find((s: any) => s.id === snapshotId);
+    const snapshot = snapshots.find((s) => s.id === snapshotId);
     if (!snapshot) return;
 
     for (const tab of snapshot.tabs) {
@@ -475,10 +497,10 @@ export const useTabStore = create<TabStore>((set) => ({
 
   restoreHistoryProduct: async (snapshotId: string, productKey: string) => {
     const snapshots = await readHistory();
-    const snapshot = snapshots.find((s: any) => s.id === snapshotId);
+    const snapshot = snapshots.find((s) => s.id === snapshotId);
     if (!snapshot) return;
 
-    const productTabs = snapshot.tabs.filter((t: any) => t.productKey === productKey);
+    const productTabs = snapshot.tabs.filter((t) => t.productKey === productKey);
     for (const tab of productTabs) {
       await chrome.tabs.create({ url: tab.url, active: false });
     }

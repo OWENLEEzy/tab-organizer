@@ -78,7 +78,7 @@ chrome.tabs.onCreated.addListener(() => {
 
 chrome.tabs.onRemoved.addListener(() => {
   refreshBadge();
-  scheduleHistoryCapture();
+  void promoteHistoryCandidate().then(() => scheduleHistoryCapture());
 });
 
 let badgeDebounceTimer: ReturnType<typeof setTimeout> | null = null;

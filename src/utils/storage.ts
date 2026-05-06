@@ -172,32 +172,36 @@ function normalizeHistory(value: unknown): HistorySnapshot[] {
  * Migrate storage data from older schema versions.
  * Applies migrations sequentially: v0→v1, v1→v2, etc.
  */
-function migrate(data: any): StorageSchema {
-  const version = data.schemaVersion ?? 0;
+function migrate(data: Record<string, unknown>): StorageSchema {
+  const version = (data['schemaVersion'] as number | undefined) ?? 0;
+
+  let manualGroups = data['manualGroups'];
+  let groupAssignments = data['groupAssignments'];
+  let historyCandidate = data['historyCandidate'];
+  let history = data['history'];
 
   if (version < 4) {
-    // v3 → v4: Rename Sections to Groups, Recovery to History
-    if (data.sections) data.manualGroups = data.sections;
-    if (data.sectionAssignments) data.groupAssignments = data.sectionAssignments;
-    if (data.recoveryCandidate) data.historyCandidate = data.recoveryCandidate;
-    if (data.recoveryHistory) data.history = data.recoveryHistory;
+    if (data['sections']) manualGroups = data['sections'];
+    if (data['sectionAssignments']) groupAssignments = data['sectionAssignments'];
+    if (data['recoveryCandidate']) historyCandidate = data['recoveryCandidate'];
+    if (data['recoveryHistory']) history = data['recoveryHistory'];
   }
 
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    deferred: Array.isArray(data.deferred) ? data.deferred : [],
-    workspaces: Array.isArray(data.workspaces) ? data.workspaces : [],
-    settings: { ...DEFAULT_SETTINGS, ...data.settings },
-    groupOrder: data.groupOrder ?? {},
-    manualGroups: normalizeManualGroups(data.manualGroups),
-    groupAssignments: normalizeAssignments(data.groupAssignments),
-    viewMode: isViewMode(data.viewMode) ? data.viewMode : 'cards',
-    historyCandidate: normalizeHistorySnapshot(data.historyCandidate),
-    history: normalizeHistory(data.history),
+    deferred: Array.isArray(data['deferred']) ? (data['deferred'] as SavedTab[]) : [],
+    workspaces: Array.isArray(data['workspaces']) ? (data['workspaces'] as Workspace[]) : [],
+    settings: { ...DEFAULT_SETTINGS, ...(data['settings'] as Partial<AppSettings> | undefined) },
+    groupOrder: (data['groupOrder'] as Record<string, number> | undefined) ?? {},
+    manualGroups: normalizeManualGroups(manualGroups),
+    groupAssignments: normalizeAssignments(groupAssignments),
+    viewMode: isViewMode(data['viewMode']) ? data['viewMode'] : 'cards',
+    historyCandidate: normalizeHistorySnapshot(historyCandidate),
+    history: normalizeHistory(history),
   };
 }
 
-async function readStorageSnapshot(): Promise<any> {
+async function readStorageSnapshot(): Promise<Record<string, unknown>> {
   const result = await chrome.storage.local.get([...STORAGE_KEYS, 'sections', 'sectionAssignments', 'recoveryCandidate', 'recoveryHistory']);
 
   return {
@@ -264,7 +268,7 @@ export async function updateStorage(
 
   await queuedWrite(async () => {
     const current = migrate(await readStorageSnapshot());
-    nextState = migrate(await updater(current));
+    nextState = migrate(await updater(current) as unknown as Record<string, unknown>);
     await persistStorage(nextState);
   });
 
@@ -430,26 +434,51 @@ export async function updateHistoryCandidate(snapshot: HistorySnapshot | null): 
   });
 }
 
-export async function promoteHistoryCandidate(): Promise<boolean> {
-  let promoted = false;
+function promoteSnapshotInStorage(
+  storage: StorageSchema,
+  snapshot: HistorySnapshot | null,
+): { next: StorageSchema; promoted: boolean } {
+  const normalized = normalizeHistorySnapshot(snapshot);
+  if (!normalized) return { next: storage, promoted: false };
 
-  await updateStorage((storage) => {
-    const candidate = storage.historyCandidate;
-    if (!candidate) return storage;
-
-    const latest = storage.history[0] ?? null;
-    if (latest && historyUrlSignature(latest) === historyUrlSignature(candidate)) {
-      return storage;
-    }
-
-    promoted = true;
+  const signature = historyUrlSignature(normalized);
+  const latest = storage.history[0] ?? null;
+  if (latest && historyUrlSignature(latest) === signature) {
     return {
-      ...storage,
-      history: [candidate, ...storage.history].slice(0, 5),
+      next: { ...storage, historyCandidate: normalized },
+      promoted: false,
     };
+  }
+
+  const history = [
+    normalized,
+    ...storage.history.filter((item) => historyUrlSignature(item) !== signature),
+  ].slice(0, 5);
+
+  return {
+    next: {
+      ...storage,
+      historyCandidate: normalized,
+      history,
+    },
+    promoted: true,
+  };
+}
+
+export async function promoteHistorySnapshot(snapshot: HistorySnapshot | null): Promise<boolean> {
+  let promoted = false;
+  await updateStorage((storage) => {
+    const result = promoteSnapshotInStorage(storage, snapshot);
+    promoted = result.promoted;
+    return result.next;
   });
 
   return promoted;
+}
+
+export async function promoteHistoryCandidate(): Promise<boolean> {
+  const storage = await readStorage();
+  return promoteHistorySnapshot(storage.historyCandidate);
 }
 
 export async function deleteHistorySnapshot(id: string): Promise<void> {

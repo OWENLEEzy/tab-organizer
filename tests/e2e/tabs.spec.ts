@@ -7,7 +7,7 @@ test.describe('Tab Management', () => {
 
   test('displays dashboard header', async ({ page }) => {
     await expect(
-      page.getByRole('heading', { name: 'Open Tabs by Group' }),
+      page.getByRole('heading', { name: 'Open Tabs by Product' }),
     ).toBeVisible();
   });
 

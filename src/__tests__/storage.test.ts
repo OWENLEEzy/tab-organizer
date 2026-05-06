@@ -8,6 +8,7 @@ import {
   writeSettings,
   updateHistoryCandidate,
   promoteHistoryCandidate,
+  promoteHistorySnapshot,
   deleteHistorySnapshot,
   clearHistory,
 } from '../utils/storage';
@@ -180,6 +181,42 @@ function makeSnapshot(id: string, urls: string[]): HistorySnapshot {
 }
 
 describe('history storage', () => {
+  it('safely ignores null direct snapshot promotions', async () => {
+    const promoted = await promoteHistorySnapshot(null);
+    const result = await readStorage();
+
+    expect(promoted).toBe(false);
+    expect(result.history).toEqual([]);
+    expect(result.historyCandidate).toBeNull();
+  });
+
+  it('directly promotes snapshots with signature dedupe and five item cap', async () => {
+    for (let index = 0; index < 6; index += 1) {
+      await promoteHistorySnapshot(makeSnapshot(String(index), [`https://example.com/${index}`]));
+    }
+
+    let result = await readStorage();
+    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['5', '4', '3', '2', '1']);
+
+    const promoted = await promoteHistorySnapshot(makeSnapshot('duplicate', ['https://example.com/3']));
+    result = await readStorage();
+
+    expect(promoted).toBe(true);
+    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['duplicate', '5', '4', '2', '1']);
+    expect(result.historyCandidate?.id).toBe('duplicate');
+  });
+
+  it('does not duplicate the latest URL signature when directly promoted again', async () => {
+    await promoteHistorySnapshot(makeSnapshot('1', ['https://example.com/1']));
+
+    const promoted = await promoteHistorySnapshot(makeSnapshot('same-url', ['https://example.com/1']));
+    const result = await readStorage();
+
+    expect(promoted).toBe(false);
+    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['1']);
+    expect(result.historyCandidate?.id).toBe('same-url');
+  });
+
   it('stores a bounded latest candidate and promotes it to history on startup', async () => {
     const tooManyTabs = Array.from({ length: 85 }, (_, index) => `https://example.com/${index}`);
     const candidate = makeSnapshot('1', tooManyTabs);
