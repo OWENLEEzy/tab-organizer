@@ -43,12 +43,14 @@
 **Tab Organizer** is built for the "Tab Hoarder" who values a clean, aesthetic, and distraction-free workspace. Inspired by the minimalist elegance of **Notion**, it aims to solve "Tab Fatigue" by shifting the focus from a horizontal list of icons to a structured, product-centric dashboard.
 
 ## 🚀 Installation
-1. **Download**: Go to [Releases](https://github.com/OWENLEEzy/tab-organizer/releases) and grab the latest `.zip`.
-2. **Unpack**: Extract the folder to a safe location on your computer.
+1. **Download**: Visit the [Releases](https://github.com/OWENLEEzy/tab-organizer/releases) page.
+   - **⚠️ IMPORTANT**: Download the file named **`tab-organizer-latest.zip`**.
+   - **DO NOT** download the "Source code (zip)" at the bottom; it is uncompiled and won't work as an extension directly.
+2. **Unpack**: Extract the downloaded `.zip` file to a permanent folder on your computer (e.g., Documents).
 3. **Load**: 
    - Open Chrome and type `chrome://extensions` in the address bar.
    - Toggle **Developer mode** (top right).
-   - Click **Load unpacked** and select the `dist` folder from your extracted ZIP.
+   - Click **Load unpacked** and select the folder you just extracted.
 4. **Pin**: Pin the Tab Organizer icon to your toolbar for instant access.
 
 ## 💎 Core Features

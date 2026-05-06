@@ -43,9 +43,14 @@ jobs:
           tag_name: latest
           name: "Tab Organizer (Latest Build)"
           body: |
-            这是由 GitHub Actions 自动生成的最新构建版本。
-            更新时间: ${{ github.event.head_commit.timestamp }}
-            提交信息: ${{ github.event.head_commit.message }}
+            Latest pre-built release of Tab Organizer.
+            
+            **Installation:**
+            1. Download `tab-organizer-latest.zip` (NOT the Source Code).
+            2. Unzip the file.
+            3. Load the folder in `chrome://extensions` (Developer Mode).
+            
+            Commit: ${{ github.event.head_commit.message }}
           files: tab-organizer-latest.zip
           prerelease: false
           make_latest: true
