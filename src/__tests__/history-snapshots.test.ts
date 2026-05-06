@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildRecoverySnapshot, shouldReplaceRecoveryCandidate } from '../lib/recovery-snapshots';
-import type { RecoverySnapshot, Tab } from '../types';
+import { buildHistorySnapshot, shouldReplaceHistoryCandidate } from '../lib/history-snapshots';
+import type { HistorySnapshot, Tab } from '../types';
 
 function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
   return {
@@ -17,16 +17,16 @@ function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
   };
 }
 
-function snapshotWithUrls(urls: string[]): RecoverySnapshot {
-  return buildRecoverySnapshot(
+function snapshotWithUrls(urls: string[]): HistorySnapshot {
+  return buildHistorySnapshot(
     urls.map((url, index) => makeTab({ id: index, url, title: `Tab ${index}` })),
     '2026-05-05T00:00:00.000Z',
   )!;
 }
 
-describe('buildRecoverySnapshot', () => {
+describe('buildHistorySnapshot', () => {
   it('excludes browser internal and Tab Out pages and keeps product summaries', () => {
-    const snapshot = buildRecoverySnapshot(
+    const snapshot = buildHistorySnapshot(
       [
         makeTab({ id: 1, url: 'https://github.com/OWENLEEzy/tab-out', title: 'Repo' }),
         makeTab({ id: 2, url: 'https://music.youtube.com/watch?v=1', title: 'Song' }),
@@ -44,11 +44,11 @@ describe('buildRecoverySnapshot', () => {
   });
 
   it('returns null when there are no real tabs and caps snapshots at 80 tabs', () => {
-    expect(buildRecoverySnapshot([
+    expect(buildHistorySnapshot([
       makeTab({ id: 1, url: 'chrome://newtab/' }),
     ])).toBeNull();
 
-    const snapshot = buildRecoverySnapshot(
+    const snapshot = buildHistorySnapshot(
       Array.from({ length: 85 }, (_, index) => makeTab({ id: index, url: `https://example.com/${index}` })),
       '2026-05-05T00:00:00.000Z',
     );
@@ -58,7 +58,7 @@ describe('buildRecoverySnapshot', () => {
   });
 });
 
-describe('shouldReplaceRecoveryCandidate', () => {
+describe('shouldReplaceHistoryCandidate', () => {
   it('ignores title-only changes and replaces candidates when the URL set changes', () => {
     const current = snapshotWithUrls(['https://example.com/a']);
     const sameUrlsNewTitle = {
@@ -67,7 +67,7 @@ describe('shouldReplaceRecoveryCandidate', () => {
     };
     const changedUrls = snapshotWithUrls(['https://example.com/b']);
 
-    expect(shouldReplaceRecoveryCandidate(current, sameUrlsNewTitle)).toBe(false);
-    expect(shouldReplaceRecoveryCandidate(current, changedUrls)).toBe(true);
+    expect(shouldReplaceHistoryCandidate(current, sameUrlsNewTitle)).toBe(false);
+    expect(shouldReplaceHistoryCandidate(current, changedUrls)).toBe(true);
   });
 });

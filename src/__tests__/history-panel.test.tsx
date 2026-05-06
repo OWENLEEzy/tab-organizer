@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { RecoveryPanel } from '../newtab/components/RecoveryPanel';
-import type { RecoverySnapshot } from '../types';
+import { HistoryPanel } from '../newtab/components/HistoryPanel';
+import type { HistorySnapshot } from '../types';
 
-function makeSnapshot(): RecoverySnapshot {
+function makeSnapshot(): HistorySnapshot {
   return {
     id: 'snapshot-1',
     capturedAt: '2026-05-05T00:00:00.000Z',
@@ -38,7 +38,7 @@ function makeSnapshot(): RecoverySnapshot {
   };
 }
 
-describe('RecoveryPanel', () => {
+describe('HistoryPanel', () => {
   beforeEach(() => {
     cleanup();
   });
@@ -47,7 +47,7 @@ describe('RecoveryPanel', () => {
     const user = userEvent.setup();
 
     render(
-      <RecoveryPanel
+      <HistoryPanel
         snapshots={[makeSnapshot()]}
         onRestoreSnapshot={vi.fn()}
         onRestoreProduct={vi.fn()}
@@ -56,11 +56,11 @@ describe('RecoveryPanel', () => {
       />,
     );
 
-    expect(screen.getByText('Recent sessions')).toBeInTheDocument();
+    expect(screen.getByText('History')).toBeInTheDocument();
     expect(screen.getByText('2 tabs')).toBeInTheDocument();
     expect(screen.queryByText('Repo')).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /show session details/i }));
+    await user.click(screen.getByRole('button', { name: /show details/i }));
 
     expect(await screen.findByText('Repo')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /restore GitHub/i })).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe('RecoveryPanel', () => {
     const onRestoreSnapshot = vi.fn();
 
     render(
-      <RecoveryPanel
+      <HistoryPanel
         snapshots={[makeSnapshot()]}
         onRestoreSnapshot={onRestoreSnapshot}
         onRestoreProduct={vi.fn()}
@@ -82,7 +82,7 @@ describe('RecoveryPanel', () => {
 
     expect(onRestoreSnapshot).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: /restore full session/i }));
+    await user.click(screen.getByRole('button', { name: /restore all/i }));
 
     expect(onRestoreSnapshot).toHaveBeenCalledWith('snapshot-1');
   });

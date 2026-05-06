@@ -1,16 +1,16 @@
 import React, { useMemo, useState } from 'react';
-import type { RecoverySnapshot } from '../../types';
+import type { HistorySnapshot } from '../../types';
 import { UtilityPanel } from './layout/UtilityPanel';
 import { ActionButton } from './ui/ActionButton';
 
-const RecoverySnapshotDetails = React.lazy(() =>
-  import('./RecoverySnapshotDetails').then((module) => ({
-    default: module.RecoverySnapshotDetails,
+const HistorySnapshotDetails = React.lazy(() =>
+  import('./HistorySnapshotDetails').then((module) => ({
+    default: module.HistorySnapshotDetails,
   })),
 );
 
-interface RecoveryPanelProps {
-  snapshots: RecoverySnapshot[];
+interface HistoryPanelProps {
+  snapshots: HistorySnapshot[];
   onRestoreSnapshot: (snapshotId: string) => void;
   onRestoreProduct: (snapshotId: string, productKey: string) => void;
   onDeleteSnapshot: (snapshotId: string) => void;
@@ -30,52 +30,58 @@ function formatCapturedAt(value: string): string {
   }
 }
 
-export function RecoveryPanel({
+export function HistoryPanel({
   snapshots,
   onRestoreSnapshot,
   onRestoreProduct,
   onDeleteSnapshot,
   onClearSnapshots,
-}: RecoveryPanelProps): React.ReactElement | null {
+}: HistoryPanelProps): React.ReactElement | null {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const latest = snapshots[0] ?? null;
   const older = useMemo(() => snapshots.slice(1), [snapshots]);
 
-  if (!latest) return null;
-
-  const visibleSnapshots = [latest, ...older];
+  const visibleSnapshots = latest ? [latest, ...older] : [];
 
   return (
     <UtilityPanel
-      title="Recent sessions"
+      title="History"
       count={visibleSnapshots.length}
-      actions={(
+      actions={visibleSnapshots.length > 0 ? (
         <ActionButton variant="quiet" className="min-h-8 px-2 py-1" onClick={onClearSnapshots}>
           Clear
         </ActionButton>
-      )}
+      ) : null}
     >
-      <div className="recovery-list" aria-label="Recent sessions">
-        {visibleSnapshots.map((snapshot) => {
+      <div className="history-list" aria-label="Recent snapshots">
+        {visibleSnapshots.length === 0 ? (
+          <div className="history-empty-state text-center py-12 px-6">
+            <div className="text-text-secondary text-sm mb-2 opacity-60">No history yet</div>
+            <p className="text-text-secondary text-[11px] leading-relaxed opacity-40 max-w-[180px] mx-auto">
+              Snapshots are captured automatically when you close tabs or restart your browser.
+            </p>
+          </div>
+        ) : (
+          visibleSnapshots.map((snapshot) => {
           const expanded = expandedId === snapshot.id;
           return (
-            <section key={snapshot.id} className="recovery-card">
-              <div className="recovery-card-top">
+            <section key={snapshot.id} className="history-card">
+              <div className="history-card-top">
                 <div>
-                  <div className="recovery-time">{formatCapturedAt(snapshot.capturedAt)}</div>
-                  <div className="recovery-count">{snapshot.tabCount} tabs</div>
+                  <div className="history-time">{formatCapturedAt(snapshot.capturedAt)}</div>
+                  <div className="history-count">{snapshot.tabCount} tabs</div>
                 </div>
-                <button type="button" className="recovery-button" onClick={() => onRestoreSnapshot(snapshot.id)}>
-                  Restore full session
+                <button type="button" className="history-button" onClick={() => onRestoreSnapshot(snapshot.id)}>
+                  Restore all
                 </button>
               </div>
 
-              <div className="recovery-products">
+              <div className="history-products">
                 {snapshot.products.map((product) => (
                   <button
                     key={product.productKey}
                     type="button"
-                    className="recovery-product-button"
+                    className="history-product-button"
                     onClick={() => onRestoreProduct(snapshot.id, product.productKey)}
                     aria-label={`Restore ${product.label}`}
                   >
@@ -85,28 +91,29 @@ export function RecoveryPanel({
                 ))}
               </div>
 
-              <div className="recovery-card-actions">
+              <div className="history-card-actions">
                 <button
                   type="button"
-                  className="recovery-button"
+                  className="history-button"
                   onClick={() => setExpandedId(expanded ? null : snapshot.id)}
                   aria-expanded={expanded}
                 >
-                  {expanded ? 'Hide session details' : 'Show session details'}
+                  {expanded ? 'Hide details' : 'Show details'}
                 </button>
-                <button type="button" className="recovery-button" onClick={() => onDeleteSnapshot(snapshot.id)}>
+                <button type="button" className="history-button" onClick={() => onDeleteSnapshot(snapshot.id)}>
                   Delete
                 </button>
               </div>
 
               {expanded && (
-                <React.Suspense fallback={<div className="recovery-loading">Loading details...</div>}>
-                  <RecoverySnapshotDetails snapshot={snapshot} />
+                <React.Suspense fallback={<div className="history-loading">Loading details...</div>}>
+                  <HistorySnapshotDetails snapshot={snapshot} />
                 </React.Suspense>
               )}
             </section>
           );
-        })}
+          })
+        )}
       </div>
     </UtilityPanel>
   );

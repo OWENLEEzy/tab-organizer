@@ -10,15 +10,15 @@ describe('DashboardHeader', () => {
   it('wires search and command actions without owning dashboard state', () => {
     const onSearchChange = vi.fn();
     const onViewModeChange = vi.fn();
-    const onCreateSection = vi.fn();
+    const onCreateGroup = vi.fn();
     const onCloseAll = vi.fn();
     const onOpenSettings = vi.fn();
 
     render(
       <DashboardHeader
-        title="Open Tabs by Group"
+        title="Open Tabs by Product"
         hasGroups
-        sectionCount={2}
+        groupCount={2}
         dateLabel="Tuesday, May 5, 2026"
         searchQuery=""
         onSearchChange={onSearchChange}
@@ -27,25 +27,25 @@ describe('DashboardHeader', () => {
         viewMode="cards"
         onViewModeChange={onViewModeChange}
         onRefresh={() => {}}
-        onCreateSection={onCreateSection}
+        onCreateGroup={onCreateGroup}
         onCloseAll={onCloseAll}
         onOpenSettings={onOpenSettings}
       />,
     );
 
     expect(screen.getByText('Tuesday, May 5, 2026')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Open Tabs by Group' })).toBeInTheDocument();
-    expect(screen.getByText('2 Sections')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
+    expect(screen.getByText('2 Groups')).toBeInTheDocument();
 
     fireEvent.change(screen.getByRole('searchbox', { name: 'Search tabs' }), {
       target: { value: 'github' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'New Section' }));
+    fireEvent.click(screen.getByRole('button', { name: 'New Group' }));
     fireEvent.click(screen.getByRole('button', { name: 'Close All' }));
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
 
     expect(onSearchChange).toHaveBeenCalledWith('github');
-    expect(onCreateSection).toHaveBeenCalledTimes(1);
+    expect(onCreateGroup).toHaveBeenCalledTimes(1);
     expect(onCloseAll).toHaveBeenCalledTimes(1);
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
@@ -55,9 +55,9 @@ describe('DashboardHeader', () => {
 
     render(
       <DashboardHeader
-        title="Open Tabs by Group"
+        title="Open Tabs by Product"
         hasGroups={false}
-        sectionCount={0}
+        groupCount={0}
         dateLabel="Tuesday, May 5, 2026"
         searchQuery=""
         onSearchChange={() => {}}
@@ -66,17 +66,17 @@ describe('DashboardHeader', () => {
         viewMode="cards"
         onViewModeChange={() => {}}
         onRefresh={() => {}}
-        onCreateSection={() => {}}
+        onCreateGroup={() => {}}
         onCloseAll={() => {}}
         onOpenSettings={onOpenSettings}
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'Open Tabs by Group' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
     expect(screen.queryByRole('searchbox', { name: 'Search tabs' })).not.toBeInTheDocument();
-    expect(screen.queryByText('0 Sections')).not.toBeInTheDocument();
+    expect(screen.queryByText('0 Groups')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Organize' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'New Section' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'New Group' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Close All' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));

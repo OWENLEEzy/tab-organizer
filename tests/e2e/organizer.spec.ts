@@ -9,10 +9,10 @@ test.describe('Hybrid Organizer', () => {
     await page.waitForSelector('[class*="rounded-card"]');
 
     page.once('dialog', async (dialog) => {
-      expect(dialog.message()).toContain('Section name');
+      expect(dialog.message()).toContain('Group name');
       await dialog.accept('Later');
     });
-    await page.getByRole('button', { name: 'New section' }).click();
+    await page.getByRole('button', { name: 'New Group' }).click();
     await expect(page.getByRole('heading', { name: 'Later' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Table' }).click();

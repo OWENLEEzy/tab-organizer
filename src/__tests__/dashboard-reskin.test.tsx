@@ -14,7 +14,7 @@ const globalCss = readFileSync(
 );
 
 describe('MotherDuck-inspired dashboard token layer', () => {
-  it('defines Tab Out-owned visual tokens instead of relying on raw brand class names', () => {
+  it('defines visual tokens instead of relying on raw brand class names', () => {
     expect(globalCss).toContain('--color-to-bg-page');
     expect(globalCss).toContain('--color-to-bg-surface');
     expect(globalCss).toContain('--color-to-bg-yellow');
@@ -50,9 +50,9 @@ describe('MotherDuck-inspired layout components', () => {
   it('renders the merged dashboard header without marketing copy', () => {
     render(
       <DashboardHeader
-        title="Open Tabs by Group"
+        title="Open Tabs by Product"
         hasGroups
-        sectionCount={1}
+        groupCount={1}
         dateLabel="Tuesday, May 5, 2026"
         searchQuery=""
         onSearchChange={() => {}}
@@ -61,16 +61,15 @@ describe('MotherDuck-inspired layout components', () => {
         viewMode="cards"
         onViewModeChange={() => {}}
         onRefresh={() => {}}
-
-        onCreateSection={() => {}}
+        onCreateGroup={() => {}}
         onCloseAll={() => {}}
         onOpenSettings={() => {}}
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'Open Tabs by Group' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
     expect(screen.getByText('Tuesday, May 5, 2026')).toBeInTheDocument();
-    expect(screen.getByText('1 Section')).toBeInTheDocument();
+    expect(screen.getByText('1 Group')).toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: 'Search tabs' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
   });
@@ -81,9 +80,9 @@ describe('MotherDuck-inspired layout components', () => {
         top={<StatusStrip totalTabs={1} totalDupes={0} totalGroups={1} alerts={[]} />}
         header={
           <DashboardHeader
-            title="Open Tabs by Group"
+            title="Open Tabs by Product"
             hasGroups
-            sectionCount={1}
+            groupCount={1}
             dateLabel="Tuesday, May 5, 2026"
             searchQuery=""
             onSearchChange={() => {}}
@@ -92,8 +91,7 @@ describe('MotherDuck-inspired layout components', () => {
             viewMode="cards"
             onViewModeChange={() => {}}
             onRefresh={() => {}}
-
-            onCreateSection={() => {}}
+            onCreateGroup={() => {}}
             onCloseAll={() => {}}
             onOpenSettings={() => {}}
           />

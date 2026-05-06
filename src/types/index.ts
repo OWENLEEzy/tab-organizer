@@ -88,26 +88,26 @@ export interface LandingPagePattern {
 
 export type ViewMode = 'cards' | 'table';
 
-export interface OrganizerSection {
+export interface ManualGroup {
   id: string;
   name: string;
   order: number;
 }
 
-export interface SectionAssignment {
+export interface GroupAssignment {
   productKey: string;
-  sectionId: string;
+  groupId: string;
   order: number;
 }
 
-export interface RecoveryProductSummary {
+export interface HistoryProductSummary {
   productKey: string;
   label: string;
   iconDomain: string;
   tabCount: number;
 }
 
-export interface RecoveryTab {
+export interface HistoryTab {
   url: string;
   title: string;
   domain: string;
@@ -120,12 +120,12 @@ export interface RecoveryTab {
   active?: boolean;
 }
 
-export interface RecoverySnapshot {
+export interface HistorySnapshot {
   id: string;
   capturedAt: string;
   tabCount: number;
-  products: RecoveryProductSummary[];
-  tabs: RecoveryTab[];
+  products: HistoryProductSummary[];
+  tabs: HistoryTab[];
 }
 
 // ─── App Settings ────────────────────────────────────────────────
@@ -147,20 +147,20 @@ export interface StorageSchema {
   workspaces: Workspace[];
   settings: AppSettings;
   groupOrder: Record<string, number>;
-  sections: OrganizerSection[];
-  sectionAssignments: SectionAssignment[];
+  manualGroups: ManualGroup[];
+  groupAssignments: GroupAssignment[];
   viewMode: ViewMode;
-  recoveryCandidate: RecoverySnapshot | null;
-  recoveryHistory: RecoverySnapshot[];
+  historyCandidate: HistorySnapshot | null;
+  history: HistorySnapshot[];
 }
 
 // ─── Store Types ─────────────────────────────────────────────────
 
 export interface TabState {
   tabs: Tab[];
-  groups: TabGroup[];
-  sections: OrganizerSection[];
-  sectionAssignments: SectionAssignment[];
+  products: TabGroup[];
+  manualGroups: ManualGroup[];
+  groupAssignments: GroupAssignment[];
   viewMode: ViewMode;
   loading: boolean;
   showAllWindows: boolean;

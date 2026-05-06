@@ -90,10 +90,10 @@ describe('Chrome favicon rendering', () => {
     const { container } = render(
       <ProductTable
         items={[group]}
-        sections={[]}
+        groups={[]}
         assignmentByItemId={new Map()}
         onMoveItem={() => {}}
-        onCloseDomain={() => {}}
+        onCloseProduct={() => {}}
         onCloseDuplicates={() => {}}
         onFocusTab={() => {}}
         expandedDomains={new Set()}

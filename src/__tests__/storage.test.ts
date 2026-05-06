@@ -6,12 +6,13 @@ import {
   dismissSavedTab,
   writeGroupOrder,
   writeSettings,
-  updateRecoveryCandidate,
-  promoteRecoveryCandidate,
-  deleteRecoverySnapshot,
-  clearRecoverySnapshots,
+  updateHistoryCandidate,
+  promoteHistoryCandidate,
+  promoteHistorySnapshot,
+  deleteHistorySnapshot,
+  clearHistory,
 } from '../utils/storage';
-import type { RecoverySnapshot } from '../types';
+import type { HistorySnapshot } from '../types';
 
 // Mock chrome.storage.local
 const storage: Record<string, unknown> = {};
@@ -50,6 +51,10 @@ vi.stubGlobal('chrome', {
         Object.assign(storage, items);
         return Promise.resolve();
       }),
+      remove: vi.fn((keys: string | string[]) => {
+        (Array.isArray(keys) ? keys : [keys]).forEach((k) => delete storage[k]);
+        return Promise.resolve();
+      }),
     },
     onChanged: {
       addListener: vi.fn(),
@@ -64,88 +69,90 @@ vi.stubGlobal('chrome', {
 describe('readStorage', () => {
   it('returns default schema when storage is empty', async () => {
     const result = await readStorage();
-    expect(result.schemaVersion).toBe(3);
+    expect(result.schemaVersion).toBe(4);
     expect(result.deferred).toEqual([]);
     expect(result.workspaces).toEqual([]);
     expect(result.settings.theme).toBe('system');
     expect(result.groupOrder).toEqual({});
-    expect(result.sections).toEqual([]);
-    expect(result.sectionAssignments).toEqual([]);
+    expect(result.manualGroups).toEqual([]);
+    expect(result.groupAssignments).toEqual([]);
     expect(result.viewMode).toBe('cards');
-    expect(result.recoveryCandidate).toBeNull();
-    expect(result.recoveryHistory).toEqual([]);
+    expect(result.historyCandidate).toBeNull();
+    expect(result.history).toEqual([]);
   });
 
-  it('migrates from v0 (no schemaVersion) to v3', async () => {
+  it('migrates from v0 (no schemaVersion) to v4', async () => {
     storage['deferred'] = [{ id: '1', url: 'https://example.com', title: 'Test', domain: 'example.com', savedAt: '2026-01-01T00:00:00.000Z', completed: false, dismissed: false }];
     const result = await readStorage();
-    expect(result.schemaVersion).toBe(3);
+    expect(result.schemaVersion).toBe(4);
     expect(result.deferred).toHaveLength(1);
     expect(result.groupOrder).toEqual({});
-    expect(result.sections).toEqual([]);
-    expect(result.sectionAssignments).toEqual([]);
+    expect(result.manualGroups).toEqual([]);
+    expect(result.groupAssignments).toEqual([]);
     expect(result.viewMode).toBe('cards');
   });
 
-  it('migrates from v1 (no groupOrder) to v3', async () => {
-    storage['schemaVersion'] = 1;
-    storage['deferred'] = [];
-    storage['workspaces'] = [];
-    storage['settings'] = { ...DEFAULT_SETTINGS, theme: 'dark' };
-    const result = await readStorage();
-    expect(result.schemaVersion).toBe(3);
-    expect(result.groupOrder).toEqual({});
-    expect(result.sections).toEqual([]);
-    expect(result.sectionAssignments).toEqual([]);
-  });
-
-  it('preserves existing groupOrder from v2 without creating Homepages', async () => {
-    storage['schemaVersion'] = 2;
-    storage['deferred'] = [];
-    storage['workspaces'] = [];
-    storage['settings'] = DEFAULT_SETTINGS;
-    storage['groupOrder'] = { 'github.com': 0, 'google.com': 1 };
-    const result = await readStorage();
-    expect(result.groupOrder).toEqual({ 'github.com': 0, 'google.com': 1 });
-    expect(result.sections).toEqual([]);
-    expect(result.sectionAssignments).toEqual([]);
-    expect(result.viewMode).toBe('cards');
-  });
-
-  it('normalizes v3 product-section organizer state and rejects tabUrl assignments', async () => {
-    const rejectedUrlAssignmentType = 'tab' + 'Url';
+  it('migrates from v3 terminology to v4', async () => {
     storage['schemaVersion'] = 3;
-    storage['deferred'] = [];
-    storage['workspaces'] = [];
-    storage['settings'] = DEFAULT_SETTINGS;
-    storage['groupOrder'] = {};
-    storage['sections'] = [
+    storage['sections'] = [{ id: 'work', name: 'Work', order: 1 }];
+    storage['sectionAssignments'] = [{ productKey: 'github', sectionId: 'work', order: 0 }];
+    storage['recoveryHistory'] = [{
+      id: 'snap-1',
+      capturedAt: '2026-05-05T00:00:00Z',
+      tabCount: 1,
+      products: [{ productKey: 'github', label: 'GitHub', iconDomain: 'github.com', tabCount: 1 }],
+      tabs: [{
+        url: 'https://github.com',
+        title: 'GitHub',
+        domain: 'github.com',
+        productKey: 'github',
+        productLabel: 'GitHub',
+        iconDomain: 'github.com',
+        favIconUrl: '',
+        capturedAt: '2026-05-05T00:00:00Z',
+      }]
+    }];
+    storage['recoveryCandidate'] = null;
+
+    const result = await readStorage();
+
+    expect(result.schemaVersion).toBe(4);
+    expect(result.manualGroups).toEqual([{ id: 'work', name: 'Work', order: 1 }]);
+    expect(result.groupAssignments).toEqual([{ productKey: 'github', groupId: 'work', order: 0 }]);
+    expect(result.history).toHaveLength(1);
+    expect(result.history[0].id).toBe('snap-1');
+  });
+
+  it('normalizes v4 product-group organizer state and rejects tabUrl assignments', async () => {
+    const rejectedUrlAssignmentType = 'tab' + 'Url';
+    storage['schemaVersion'] = 4;
+    storage['manualGroups'] = [
       { id: 'later', name: 'Later', order: 2 },
       { id: 'homepages', name: 'Homepages', order: 1 },
       { id: '', name: 'bad' },
       { id: 'untitled', name: '   ', order: 3 },
     ];
-    storage['sectionAssignments'] = [
-      { productKey: 'youtube', sectionId: 'later', order: 0 },
-      { itemType: 'product', itemKey: 'github', sectionId: 'later', order: 1 },
-      { itemType: rejectedUrlAssignmentType, itemKey: 'https://example.com', sectionId: 'later' },
-      { itemType: 'bad', itemKey: 'x', sectionId: 'later' },
+    storage['groupAssignments'] = [
+      { productKey: 'youtube', groupId: 'later', order: 0 },
+      { itemType: 'product', itemKey: 'github', groupId: 'later', order: 1 },
+      { itemType: rejectedUrlAssignmentType, itemKey: 'https://example.com', groupId: 'later' },
+      { itemType: 'bad', itemKey: 'x', groupId: 'later' },
     ];
     storage['viewMode'] = 'table';
 
     const result = await readStorage();
 
-    expect(result.sections.map((section) => section.id)).toEqual(['homepages', 'later', 'untitled']);
-    expect(result.sections.find((section) => section.id === 'untitled')?.name).toBe('Untitled');
-    expect(result.sectionAssignments).toEqual([
-      { productKey: 'youtube', sectionId: 'later', order: 0 },
-      { productKey: 'github', sectionId: 'later', order: 1 },
+    expect(result.manualGroups.map((g) => g.id)).toEqual(['homepages', 'later', 'untitled']);
+    expect(result.manualGroups.find((g) => g.id === 'untitled')?.name).toBe('Untitled');
+    expect(result.groupAssignments).toEqual([
+      { productKey: 'youtube', groupId: 'later', order: 0 },
+      { productKey: 'github', groupId: 'later', order: 1 },
     ]);
     expect(result.viewMode).toBe('table');
   });
 });
 
-function makeSnapshot(id: string, urls: string[]): RecoverySnapshot {
+function makeSnapshot(id: string, urls: string[]): HistorySnapshot {
   return {
     id,
     capturedAt: `2026-05-05T00:00:0${id}.000Z`,
@@ -173,57 +180,93 @@ function makeSnapshot(id: string, urls: string[]): RecoverySnapshot {
   };
 }
 
-describe('recovery storage', () => {
+describe('history storage', () => {
+  it('safely ignores null direct snapshot promotions', async () => {
+    const promoted = await promoteHistorySnapshot(null);
+    const result = await readStorage();
+
+    expect(promoted).toBe(false);
+    expect(result.history).toEqual([]);
+    expect(result.historyCandidate).toBeNull();
+  });
+
+  it('directly promotes snapshots with signature dedupe and five item cap', async () => {
+    for (let index = 0; index < 6; index += 1) {
+      await promoteHistorySnapshot(makeSnapshot(String(index), [`https://example.com/${index}`]));
+    }
+
+    let result = await readStorage();
+    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['5', '4', '3', '2', '1']);
+
+    const promoted = await promoteHistorySnapshot(makeSnapshot('duplicate', ['https://example.com/3']));
+    result = await readStorage();
+
+    expect(promoted).toBe(true);
+    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['duplicate', '5', '4', '2', '1']);
+    expect(result.historyCandidate?.id).toBe('duplicate');
+  });
+
+  it('does not duplicate the latest URL signature when directly promoted again', async () => {
+    await promoteHistorySnapshot(makeSnapshot('1', ['https://example.com/1']));
+
+    const promoted = await promoteHistorySnapshot(makeSnapshot('same-url', ['https://example.com/1']));
+    const result = await readStorage();
+
+    expect(promoted).toBe(false);
+    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['1']);
+    expect(result.historyCandidate?.id).toBe('same-url');
+  });
+
   it('stores a bounded latest candidate and promotes it to history on startup', async () => {
     const tooManyTabs = Array.from({ length: 85 }, (_, index) => `https://example.com/${index}`);
     const candidate = makeSnapshot('1', tooManyTabs);
 
-    await updateRecoveryCandidate(candidate);
+    await updateHistoryCandidate(candidate);
     let result = await readStorage();
 
-    expect(result.recoveryCandidate?.tabs).toHaveLength(80);
-    expect(result.recoveryCandidate?.tabCount).toBe(80);
-    expect(result.recoveryHistory).toHaveLength(0);
+    expect(result.historyCandidate?.tabs).toHaveLength(80);
+    expect(result.historyCandidate?.tabCount).toBe(80);
+    expect(result.history).toHaveLength(0);
 
-    const promoted = await promoteRecoveryCandidate();
+    const promoted = await promoteHistoryCandidate();
     result = await readStorage();
 
     expect(promoted).toBe(true);
-    expect(result.recoveryHistory).toHaveLength(1);
-    expect(result.recoveryHistory[0].tabs).toHaveLength(80);
+    expect(result.history).toHaveLength(1);
+    expect(result.history[0].tabs).toHaveLength(80);
   });
 
-  it('keeps only five recovery history snapshots and skips duplicate URL sets', async () => {
+  it('keeps only five history snapshots and skips duplicate URL sets', async () => {
     for (let index = 0; index < 7; index += 1) {
-      await updateRecoveryCandidate(makeSnapshot(String(index), [`https://example.com/${index}`]));
-      await promoteRecoveryCandidate();
+      await updateHistoryCandidate(makeSnapshot(String(index), [`https://example.com/${index}`]));
+      await promoteHistoryCandidate();
     }
 
     let result = await readStorage();
-    expect(result.recoveryHistory.map((snapshot) => snapshot.id)).toEqual(['6', '5', '4', '3', '2']);
+    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['6', '5', '4', '3', '2']);
 
-    await updateRecoveryCandidate(makeSnapshot('duplicate', ['https://example.com/6']));
-    const promoted = await promoteRecoveryCandidate();
+    await updateHistoryCandidate(makeSnapshot('duplicate', ['https://example.com/6']));
+    const promoted = await promoteHistoryCandidate();
     result = await readStorage();
 
     expect(promoted).toBe(false);
-    expect(result.recoveryHistory.map((snapshot) => snapshot.id)).toEqual(['6', '5', '4', '3', '2']);
+    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['6', '5', '4', '3', '2']);
   });
 
-  it('deletes one recovery snapshot and clears recovery history', async () => {
-    await updateRecoveryCandidate(makeSnapshot('1', ['https://example.com/1']));
-    await promoteRecoveryCandidate();
-    await updateRecoveryCandidate(makeSnapshot('2', ['https://example.com/2']));
-    await promoteRecoveryCandidate();
+  it('deletes one history snapshot and clears history', async () => {
+    await updateHistoryCandidate(makeSnapshot('1', ['https://example.com/1']));
+    await promoteHistoryCandidate();
+    await updateHistoryCandidate(makeSnapshot('2', ['https://example.com/2']));
+    await promoteHistoryCandidate();
 
-    await deleteRecoverySnapshot('1');
+    await deleteHistorySnapshot('1');
     let result = await readStorage();
-    expect(result.recoveryHistory.map((snapshot) => snapshot.id)).toEqual(['2']);
+    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['2']);
 
-    await clearRecoverySnapshots();
+    await clearHistory();
     result = await readStorage();
-    expect(result.recoveryHistory).toEqual([]);
-    expect(result.recoveryCandidate).toBeNull();
+    expect(result.history).toEqual([]);
+    expect(result.historyCandidate).toBeNull();
   });
 });
 
@@ -268,7 +311,7 @@ describe('writeGroupOrder', () => {
   });
 
   it('does not clobber unrelated settings when another write lands first', async () => {
-    storage['schemaVersion'] = 2;
+    storage['schemaVersion'] = 4;
     storage['deferred'] = [];
     storage['workspaces'] = [];
     storage['settings'] = DEFAULT_SETTINGS;
@@ -284,7 +327,7 @@ describe('writeGroupOrder', () => {
       readCount += 1;
       if (readCount === 1) {
         const staleSnapshot = {
-          schemaVersion: 2,
+          schemaVersion: 4,
           deferred: [],
           workspaces: [],
           settings: DEFAULT_SETTINGS,
