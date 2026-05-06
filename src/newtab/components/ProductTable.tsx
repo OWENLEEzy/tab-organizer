@@ -93,11 +93,11 @@ export function ProductTable({
         <thead>
           <tr>
             <th className="w-10"></th>
-            <th>Name</th>
-            <th>Group</th>
-            <th>Tabs</th>
-            <th>Duplicates</th>
-            <th>Actions</th>
+            <th className="col-name">Name</th>
+            <th className="col-group w-32">Group</th>
+            <th className="col-tabs w-20 text-center">Tabs</th>
+            <th className="col-dupes w-24 text-center">Duplicates</th>
+            <th className="col-actions text-right pr-4">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -111,7 +111,7 @@ export function ProductTable({
             return (
               <React.Fragment key={p.id}>
                 <tr className={isExpanded ? 'bg-surface-light/30 dark:bg-surface-dark/30' : ''}>
-                  <td>
+                  <td className="w-10">
                     <button
                       type="button"
                       className="product-table-expand-toggle"
@@ -122,7 +122,7 @@ export function ProductTable({
                       <ChevronIcon expanded={isExpanded} />
                     </button>
                   </td>
-                  <td>
+                  <td className="col-name">
                     <button
                       type="button"
                       className="product-table-name"
@@ -132,11 +132,12 @@ export function ProductTable({
                       <span>{p.friendlyName || p.domain}</span>
                     </button>
                   </td>
-                  <td>
+                  <td className="col-group">
                     <select
                       value={groupId}
                       onChange={(event) => onMoveItem(p, event.target.value)}
                       aria-label={`Move ${p.friendlyName || p.domain}`}
+                      className="w-full"
                     >
                       <option value="">Unsorted</option>
                       {groups.map((g) => (
@@ -146,10 +147,10 @@ export function ProductTable({
                       ))}
                     </select>
                   </td>
-                  <td>{p.tabs.length}</td>
-                  <td>{p.duplicateCount}</td>
-                  <td>
-                    <div className="table-actions">
+                  <td className="col-tabs text-center">{p.tabs.length}</td>
+                  <td className="col-dupes text-center">{p.duplicateCount}</td>
+                  <td className="col-actions text-right pr-4">
+                    <div className="table-actions justify-end">
                       <button type="button" onClick={() => onCloseProduct(p)}>
                         Close
                       </button>
