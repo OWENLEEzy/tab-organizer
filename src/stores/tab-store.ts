@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { OrganizerSection, RecoverySnapshot, SectionAssignment, Tab, TabGroup, ViewMode } from '../types';
+import type { ManualGroup, HistorySnapshot, GroupAssignment, Tab, TabGroup, ViewMode } from '../types';
 import { groupTabsByDomain } from '../lib/tab-grouper';
 import {
   clearHistory,

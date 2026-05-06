@@ -615,7 +615,7 @@ export function App(): React.ReactElement {
                   groups={orderedGroups}
                   assignmentByItemId={assignmentByItemId}
                   onMoveItem={handleMoveTableItem}
-                  onCloseDomain={handleCloseProduct}
+                  onCloseProduct={handleCloseProduct}
                   onCloseDuplicates={handleCloseDuplicates}
                   onFocusTab={handleFocusTab}
                   expandedDomains={expandedDomains}
