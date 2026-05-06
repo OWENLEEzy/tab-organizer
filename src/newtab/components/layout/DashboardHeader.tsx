@@ -6,7 +6,7 @@ import { ActionButton } from '../ui/ActionButton';
 interface DashboardHeaderProps {
   title: string;
   hasGroups: boolean;
-  sectionCount: number;
+  groupCount: number;
   dateLabel?: string;
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -15,9 +15,11 @@ interface DashboardHeaderProps {
   viewMode: 'cards' | 'table';
   onViewModeChange: (mode: 'cards' | 'table') => void;
   onRefresh: () => void;
-  onCreateSection: () => void;
+  onCreateGroup: () => void;
   onCloseAll: () => void;
   onOpenSettings: () => void;
+  isSidebarExpanded?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 function RefreshIcon(): React.ReactElement {
@@ -37,6 +39,14 @@ function SettingsIcon(): React.ReactElement {
   );
 }
 
+function SidebarIcon(): React.ReactElement {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-4 w-4">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5v15m6-15v15m-10.5-15h15a2.25 2.25 0 0 1 2.25 2.25v13.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75A2.25 2.25 0 0 1 4.5 4.5Z" />
+    </svg>
+  );
+}
+
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat(undefined, {
     weekday: 'long',
@@ -49,7 +59,7 @@ function formatDate(date: Date): string {
 export function DashboardHeader({
   title,
   hasGroups,
-  sectionCount,
+  groupCount,
   dateLabel = formatDate(new Date()),
   searchQuery,
   onSearchChange,
@@ -58,11 +68,13 @@ export function DashboardHeader({
   viewMode,
   onViewModeChange,
   onRefresh,
-  onCreateSection,
+  onCreateGroup,
   onCloseAll,
   onOpenSettings,
+  isSidebarExpanded = false,
+  onToggleSidebar,
 }: DashboardHeaderProps): React.ReactElement {
-  const sectionLabel = `${sectionCount} Section${sectionCount === 1 ? '' : 's'}`;
+  const groupLabel = `${groupCount} Group${groupCount === 1 ? '' : 's'}`;
 
   return (
     <header className="pb-6 pt-8" aria-label="Dashboard controls">
@@ -80,7 +92,7 @@ export function DashboardHeader({
             {hasGroups ? (
               <>
                 <span className="inline-flex items-center rounded-sm bg-surface-light px-3 py-1.5 font-body text-xs font-semibold text-text-secondary dark:bg-surface-dark">
-                  {sectionLabel}
+                  {groupLabel}
                 </span>
                 <ViewToggle value={viewMode} onChange={onViewModeChange} />
               </>
@@ -88,6 +100,15 @@ export function DashboardHeader({
             <div className="h-6 w-px bg-border-light dark:bg-border-dark mx-2" />
             <ActionButton variant="quiet" icon={<SettingsIcon />} onClick={onOpenSettings} aria-label="Settings">
               Settings
+            </ActionButton>
+            <ActionButton 
+              variant="quiet" 
+              icon={<SidebarIcon />} 
+              onClick={onToggleSidebar} 
+              aria-label={isSidebarExpanded ? 'Hide History' : 'Show History'}
+              className={isSidebarExpanded ? 'text-accent-blue bg-accent-blue/5' : ''}
+            >
+              {isSidebarExpanded ? 'Hide History' : 'History'}
             </ActionButton>
           </div>
         </div>
@@ -106,7 +127,7 @@ export function DashboardHeader({
               <ActionButton variant="quiet" icon={<RefreshIcon />} onClick={onRefresh} aria-label="Refresh tabs">
                 Refresh
               </ActionButton>
-              <ActionButton onClick={onCreateSection}>New Section</ActionButton>
+              <ActionButton onClick={onCreateGroup}>New Group</ActionButton>
               <ActionButton variant="danger" onClick={onCloseAll}>Close All</ActionButton>
             </div>
           </div>

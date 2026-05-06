@@ -1,15 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import type { OrganizerSection, TabGroup } from '../../types';
+import type { ManualGroup, TabGroup } from '../../types';
 import { TabChip } from './TabChip';
 import { getFaviconUrl } from '../../utils/favicon';
 import { getDuplicateUrls } from '../../lib/tab-utils';
 
 interface ProductTableProps {
   items: TabGroup[];
-  sections: OrganizerSection[];
+  groups: ManualGroup[];
   assignmentByItemId: Map<string, string>;
-  onMoveItem: (group: TabGroup, sectionId: string) => void;
-  onCloseDomain: (group: TabGroup) => void;
+  onMoveItem: (p: TabGroup, groupId: string) => void;
+  onCloseProduct: (p: TabGroup) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onFocusTab: (url: string) => void;
   expandedDomains?: Set<string>;
@@ -37,8 +37,8 @@ function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
   );
 }
 
-function itemId(group: TabGroup): string {
-  return `product:${group.itemKey ?? group.productKey ?? group.domain}`;
+function itemId(p: TabGroup): string {
+  return `product:${p.itemKey ?? p.productKey ?? p.domain}`;
 }
 
 function RowIcon({ group }: { group: TabGroup }): React.ReactElement {
@@ -71,10 +71,10 @@ function RowIcon({ group }: { group: TabGroup }): React.ReactElement {
 
 export function ProductTable({
   items,
-  sections,
+  groups,
   assignmentByItemId,
   onMoveItem,
-  onCloseDomain,
+  onCloseProduct,
   onCloseDuplicates,
   onFocusTab,
   expandedDomains = new Set(),
@@ -94,30 +94,30 @@ export function ProductTable({
           <tr>
             <th className="w-10"></th>
             <th>Name</th>
-            <th>Section</th>
+            <th>Group</th>
             <th>Tabs</th>
             <th>Duplicates</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((group) => {
-            const id = itemId(group);
-            const sectionId = assignmentByItemId.get(id) ?? '';
-            const dupes = getDuplicateUrls(group.tabs);
-            const isExpanded = expandedDomains.has(group.domain);
+          {rows.map((p) => {
+            const id = itemId(p);
+            const groupId = assignmentByItemId.get(id) ?? '';
+            const dupes = getDuplicateUrls(p.tabs);
+            const isExpanded = expandedDomains.has(p.domain);
             const selectionMode = (selectedUrls?.size ?? 0) > 0;
 
             return (
-              <React.Fragment key={group.id}>
+              <React.Fragment key={p.id}>
                 <tr className={isExpanded ? 'bg-surface-light/30 dark:bg-surface-dark/30' : ''}>
                   <td>
                     <button
                       type="button"
                       className="product-table-expand-toggle"
-                      onClick={() => onToggleExpanded(group.domain)}
+                      onClick={() => onToggleExpanded(p.domain)}
                       aria-expanded={isExpanded}
-                      aria-label={isExpanded ? `Collapse ${group.friendlyName || group.domain}` : `Expand ${group.friendlyName || group.domain}`}
+                      aria-label={isExpanded ? `Collapse ${p.friendlyName || p.domain}` : `Expand ${p.friendlyName || p.domain}`}
                     >
                       <ChevronIcon expanded={isExpanded} />
                     </button>
@@ -126,31 +126,31 @@ export function ProductTable({
                     <button
                       type="button"
                       className="product-table-name"
-                      onClick={() => onFocusTab(group.tabs[0]?.url ?? '')}
+                      onClick={() => onFocusTab(p.tabs[0]?.url ?? '')}
                     >
-                      <RowIcon group={group} />
-                      <span>{group.friendlyName || group.domain}</span>
+                      <RowIcon group={p} />
+                      <span>{p.friendlyName || p.domain}</span>
                     </button>
                   </td>
                   <td>
                     <select
-                      value={sectionId}
-                      onChange={(event) => onMoveItem(group, event.target.value)}
-                      aria-label={`Move ${group.friendlyName || group.domain}`}
+                      value={groupId}
+                      onChange={(event) => onMoveItem(p, event.target.value)}
+                      aria-label={`Move ${p.friendlyName || p.domain}`}
                     >
                       <option value="">Unsorted</option>
-                      {sections.map((section) => (
-                        <option key={section.id} value={section.id}>
-                          {section.name}
+                      {groups.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name}
                         </option>
                       ))}
                     </select>
                   </td>
-                  <td>{group.tabs.length}</td>
-                  <td>{group.duplicateCount}</td>
+                  <td>{p.tabs.length}</td>
+                  <td>{p.duplicateCount}</td>
                   <td>
                     <div className="table-actions">
-                      <button type="button" onClick={() => onCloseDomain(group)}>
+                      <button type="button" onClick={() => onCloseProduct(p)}>
                         Close
                       </button>
                       {dupes.length > 0 && (
@@ -165,13 +165,13 @@ export function ProductTable({
                   <tr className="product-table-detail-row">
                     <td colSpan={6}>
                       <div className="product-table-tabs-list">
-                        {group.tabs.map((tab) => (
+                        {p.tabs.map((tab) => (
                           <TabChip
                             key={tab.url}
                             url={tab.url}
                             title={tab.title}
                             favIconUrl={tab.favIconUrl}
-                            duplicateCount={group.tabs.filter(t => t.url === tab.url).length}
+                            duplicateCount={p.tabs.filter(t => t.url === tab.url).length}
                             active={tab.active}
                             isFocused={tab.url === focusedUrl}
                             isClosing={closingUrls?.has(tab.url)}

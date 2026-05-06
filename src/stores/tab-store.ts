@@ -1,7 +1,14 @@
 import { create } from 'zustand';
-import type { OrganizerSection, SectionAssignment, Tab, TabGroup, ViewMode } from '../types';
+import type { OrganizerSection, RecoverySnapshot, SectionAssignment, Tab, TabGroup, ViewMode } from '../types';
 import { groupTabsByDomain } from '../lib/tab-grouper';
-import { readStorage, updateStorage, writeGroupOrder } from '../utils/storage';
+import {
+  clearHistory,
+  deleteHistorySnapshot,
+  readHistory,
+  readStorage,
+  updateStorage,
+  writeGroupOrder,
+} from '../utils/storage';
 import { getTabDomain, isRealTab, isTabOutPage } from '../utils/url';
 import { getErrorMessage } from '../utils/error';
 
@@ -24,31 +31,42 @@ interface TabActions {
   focusTab: (url: string) => Promise<void>;
   /** Register chrome.tabs listeners for real-time updates. Returns cleanup function. */
   startListeners: () => () => void;
-  /** Reorder groups after drag-and-drop and persist the new order. */
-  reorderGroups: (newGroups: TabGroup[]) => void;
-  /** Create a user-owned organization section. */
-  createSection: (name: string) => Promise<void>;
-  /** Rename a user-owned organization section. */
-  renameSection: (sectionId: string, name: string) => Promise<void>;
-  /** Delete a section and return its items to the main area. */
-  deleteSection: (sectionId: string) => Promise<void>;
-  /** Reorder sections and persist the new order. */
-  reorderSections: (sections: OrganizerSection[]) => Promise<void>;
-  /** Assign a product group to a section. */
-  moveProductToSection: (productKey: string, sectionId: string) => Promise<void>;
+  /** Reorder products after drag-and-drop and persist the new order. */
+  reorderProducts: (newProducts: TabGroup[]) => void;
+  /** Create a user-owned organization group. */
+  createGroup: (name: string) => Promise<void>;
+  /** Rename a user-owned organization group. */
+  renameGroup: (groupId: string, name: string) => Promise<void>;
+  /** Delete a group and return its items to the main area. */
+  deleteGroup: (groupId: string) => Promise<void>;
+  /** Reorder manual groups and persist the new order. */
+  reorderGroups: (groups: ManualGroup[]) => Promise<void>;
+  /** Assign a product to a group. */
+  moveProductToGroup: (productKey: string, groupId: string) => Promise<void>;
   /** Remove a product group assignment. */
   moveProductToMain: (productKey: string) => Promise<void>;
   /** Persist the visible organizer layout mode. */
   setViewMode: (viewMode: ViewMode) => Promise<void>;
   /** Clear the current error state. */
   clearError: () => void;
+  /** Fetch recent history snapshots from storage. */
+  fetchHistory: () => Promise<void>;
+  /** Restore all tabs from a specific history snapshot. */
+  restoreHistorySnapshot: (snapshotId: string) => Promise<void>;
+  /** Restore tabs from a specific product within a snapshot. */
+  restoreHistoryProduct: (snapshotId: string, productKey: string) => Promise<void>;
+  /** Delete a specific snapshot from history. */
+  deleteHistorySnapshot: (snapshotId: string) => Promise<void>;
+  /** Clear all historical snapshots. */
+  clearHistory: () => Promise<void>;
 }
 
 export type TabStore = {
   tabs: Tab[];
-  groups: TabGroup[];
-  sections: OrganizerSection[];
-  sectionAssignments: SectionAssignment[];
+  products: TabGroup[];
+  manualGroups: ManualGroup[];
+  groupAssignments: GroupAssignment[];
+  history: HistorySnapshot[];
   viewMode: ViewMode;
   loading: boolean;
   error: string | null;
@@ -77,16 +95,16 @@ function toAppTab(raw: chrome.tabs.Tab): Tab {
 }
 
 function pruneAssignments(
-  assignments: SectionAssignment[],
-  sections: OrganizerSection[],
+  assignments: GroupAssignment[],
+  groups: ManualGroup[],
   productGroups: TabGroup[],
-): SectionAssignment[] {
-  const sectionIds = new Set(sections.map((section) => section.id));
+): GroupAssignment[] {
+  const groupIds = new Set(groups.map((g) => g.id));
   const productKeys = new Set(productGroups.map((group) => group.domain));
   const seen = new Set<string>();
 
   return assignments.filter((assignment) => {
-    if (!sectionIds.has(assignment.sectionId)) return false;
+    if (!groupIds.has(assignment.groupId)) return false;
     if (!productKeys.has(assignment.productKey)) return false;
 
     if (seen.has(assignment.productKey)) return false;
@@ -95,17 +113,18 @@ function pruneAssignments(
   });
 }
 
-function orderedSections(sections: OrganizerSection[]): OrganizerSection[] {
-  return [...sections].sort((a, b) => a.order - b.order);
+function orderedGroups(groups: ManualGroup[]): ManualGroup[] {
+  return [...groups].sort((a, b) => a.order - b.order);
 }
 
 // ─── Store ──────────────────────────────────────────────────────────
 
 export const useTabStore = create<TabStore>((set) => ({
   tabs: [],
-  groups: [],
-  sections: [],
-  sectionAssignments: [],
+  products: [],
+  manualGroups: [],
+  groupAssignments: [],
+  history: [],
   viewMode: 'cards',
   loading: false,
   error: null,
@@ -120,18 +139,18 @@ export const useTabStore = create<TabStore>((set) => ({
       const storage = await readStorage();
       const groupOrder = storage.groupOrder;
       const productGroups = groupTabsByDomain(mapped, groupOrder);
-      const sections = orderedSections(storage.sections);
-      const sectionAssignments = pruneAssignments(
-        storage.sectionAssignments,
-        sections,
+      const manualGroups = orderedGroups(storage.manualGroups);
+      const groupAssignments = pruneAssignments(
+        storage.groupAssignments,
+        manualGroups,
         productGroups,
       );
-      const groups = productGroups;
+      const products = productGroups;
 
       // Prune stale groupOrder entries for domains no longer present
       const currentDomains = new Set(productGroups.map((g) => g.domain));
       const staleKeys = Object.keys(groupOrder).filter((d) => !currentDomains.has(d));
-      if (staleKeys.length > 0 || sectionAssignments.length !== storage.sectionAssignments.length) {
+      if (staleKeys.length > 0 || groupAssignments.length !== storage.groupAssignments.length) {
         const cleaned: Record<string, number> = {};
         for (const [domain, order] of Object.entries(groupOrder)) {
           if (currentDomains.has(domain)) {
@@ -141,7 +160,7 @@ export const useTabStore = create<TabStore>((set) => ({
         await updateStorage((current) => ({
           ...current,
           groupOrder: cleaned,
-          sectionAssignments,
+          groupAssignments,
         })).catch((err: unknown) => {
           console.warn('[Tab Out] Failed to prune stale organizer storage:', err);
         });
@@ -149,14 +168,14 @@ export const useTabStore = create<TabStore>((set) => ({
 
       set({
         tabs: mapped,
-        groups,
-        sections,
-        sectionAssignments,
+        products,
+        manualGroups,
+        groupAssignments,
         viewMode: storage.viewMode,
         loading: false,
       });
     } catch (err: unknown) {
-      set({ tabs: [], groups: [], loading: false, error: getErrorMessage(err, 'Failed to fetch tabs') });
+      set({ tabs: [], products: [], loading: false, error: getErrorMessage(err, 'Failed to fetch tabs') });
     }
   },
 
@@ -337,104 +356,142 @@ export const useTabStore = create<TabStore>((set) => ({
     };
   },
 
-  reorderGroups: (newGroups: TabGroup[]) => {
+  reorderProducts: (newProducts: TabGroup[]) => {
     const groupOrder: Record<string, number> = {};
-    for (const group of useTabStore.getState().groups) {
-      groupOrder[group.productKey ?? group.domain] = group.order;
+    for (const p of useTabStore.getState().products) {
+      groupOrder[p.productKey ?? p.domain] = p.order;
     }
-    for (let i = 0; i < newGroups.length; i++) {
-      const group = newGroups[i];
-      groupOrder[group.productKey ?? group.domain] = i;
+    for (let i = 0; i < newProducts.length; i++) {
+      const p = newProducts[i];
+      groupOrder[p.productKey ?? p.domain] = i;
     }
-    set({ groups: newGroups });
+    set({ products: newProducts });
     writeGroupOrder(groupOrder).catch((err: unknown) => {
-      console.warn('[Tab Out] Failed to persist group order:', err);
+      console.warn('[Tab Out] Failed to persist product order:', err);
     });
   },
 
-  createSection: async (name: string) => {
+  createGroup: async (name: string) => {
     const trimmed = name.trim() || 'Untitled';
-    const current = useTabStore.getState().sections;
-    const section: OrganizerSection = {
+    const current = useTabStore.getState().manualGroups;
+    const group: ManualGroup = {
       id: crypto.randomUUID(),
       name: trimmed,
       order: current.length,
     };
-    const nextSections = [...current, section];
-    set({ sections: nextSections });
-    await updateStorage((storage) => ({ ...storage, sections: nextSections }));
+    const nextGroups = [...current, group];
+    set({ manualGroups: nextGroups });
+    await updateStorage((storage) => ({ ...storage, manualGroups: nextGroups }));
   },
 
-  renameSection: async (sectionId: string, name: string) => {
+  renameGroup: async (groupId: string, name: string) => {
     const trimmed = name.trim() || 'Untitled';
-    const nextSections = useTabStore
+    const nextGroups = useTabStore
       .getState()
-      .sections
-      .map((section) => section.id === sectionId ? { ...section, name: trimmed } : section);
-    set({ sections: nextSections });
-    await updateStorage((storage) => ({ ...storage, sections: nextSections }));
+      .manualGroups
+      .map((g) => g.id === groupId ? { ...g, name: trimmed } : g);
+    set({ manualGroups: nextGroups });
+    await updateStorage((storage) => ({ ...storage, manualGroups: nextGroups }));
   },
 
-  deleteSection: async (sectionId: string) => {
-    const nextSections = useTabStore
+  deleteGroup: async (groupId: string) => {
+    const nextGroups = useTabStore
       .getState()
-      .sections
-      .filter((section) => section.id !== sectionId)
-      .map((section, index) => ({ ...section, order: index }));
+      .manualGroups
+      .filter((g) => g.id !== groupId)
+      .map((g, index) => ({ ...g, order: index }));
     const nextAssignments = useTabStore
       .getState()
-      .sectionAssignments
-      .filter((assignment) => assignment.sectionId !== sectionId);
+      .groupAssignments
+      .filter((assignment) => assignment.groupId !== groupId);
 
-    set({ sections: nextSections, sectionAssignments: nextAssignments });
+    set({ manualGroups: nextGroups, groupAssignments: nextAssignments });
     await updateStorage((storage) => ({
       ...storage,
-      sections: nextSections,
-      sectionAssignments: nextAssignments,
+      manualGroups: nextGroups,
+      groupAssignments: nextAssignments,
     }));
     await useTabStore.getState().fetchTabs();
   },
 
-  reorderSections: async (sections: OrganizerSection[]) => {
-    const nextSections = sections.map((section, index) => ({ ...section, order: index }));
-    set({ sections: nextSections });
-    await updateStorage((storage) => ({ ...storage, sections: nextSections }));
+  reorderGroups: async (groups: ManualGroup[]) => {
+    const nextGroups = groups.map((g, index) => ({ ...g, order: index }));
+    set({ manualGroups: nextGroups });
+    await updateStorage((storage) => ({ ...storage, manualGroups: nextGroups }));
   },
 
-  moveProductToSection: async (productKey: string, sectionId: string) => {
+  moveProductToGroup: async (productKey: string, groupId: string) => {
     const current = useTabStore.getState();
-    const existingInSection = current.sectionAssignments.filter(
-      (assignment) => assignment.sectionId === sectionId,
+    const existingInGroup = current.groupAssignments.filter(
+      (assignment) => assignment.groupId === groupId,
     );
-    const nextAssignment: SectionAssignment = {
+    const nextAssignment: GroupAssignment = {
       productKey,
-      sectionId,
-      order: existingInSection.length,
+      groupId,
+      order: existingInGroup.length,
     };
     const nextAssignments = [
-      ...current.sectionAssignments.filter(
+      ...current.groupAssignments.filter(
         (assignment) => assignment.productKey !== productKey,
       ),
       nextAssignment,
     ];
 
-    set({ sectionAssignments: nextAssignments });
-    await updateStorage((storage) => ({ ...storage, sectionAssignments: nextAssignments }));
+    set({ groupAssignments: nextAssignments });
+    await updateStorage((storage) => ({ ...storage, groupAssignments: nextAssignments }));
     await useTabStore.getState().fetchTabs();
   },
 
   moveProductToMain: async (productKey: string) => {
     const nextAssignments = useTabStore
       .getState()
-      .sectionAssignments
+      .groupAssignments
       .filter((assignment) => assignment.productKey !== productKey);
-    set({ sectionAssignments: nextAssignments });
-    await updateStorage((storage) => ({ ...storage, sectionAssignments: nextAssignments }));
+    set({ groupAssignments: nextAssignments });
+    await updateStorage((storage) => ({ ...storage, groupAssignments: nextAssignments }));
     await useTabStore.getState().fetchTabs();
   },
 
   setViewMode: async (viewMode: ViewMode) => {
     set({ viewMode });
     await updateStorage((storage) => ({ ...storage, viewMode }));
+  },
+
+  fetchHistory: async () => {
+    const snapshots = await readHistory();
+    set({ history: snapshots });
+  },
+
+  restoreHistorySnapshot: async (snapshotId: string) => {
+    const snapshots = await readHistory();
+    const snapshot = snapshots.find((s: any) => s.id === snapshotId);
+    if (!snapshot) return;
+
+    for (const tab of snapshot.tabs) {
+      await chrome.tabs.create({ url: tab.url, active: false });
+    }
+    await useTabStore.getState().fetchTabs();
+  },
+
+  restoreHistoryProduct: async (snapshotId: string, productKey: string) => {
+    const snapshots = await readHistory();
+    const snapshot = snapshots.find((s: any) => s.id === snapshotId);
+    if (!snapshot) return;
+
+    const productTabs = snapshot.tabs.filter((t: any) => t.productKey === productKey);
+    for (const tab of productTabs) {
+      await chrome.tabs.create({ url: tab.url, active: false });
+    }
+    await useTabStore.getState().fetchTabs();
+  },
+
+  deleteHistorySnapshot: async (id: string) => {
+    await deleteHistorySnapshot(id);
+    await useTabStore.getState().fetchHistory();
+  },
+
+  clearHistory: async () => {
+    await clearHistory();
+    set({ history: [] });
   },
 }));

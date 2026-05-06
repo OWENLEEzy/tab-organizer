@@ -19,6 +19,10 @@ const chromeStorage = {
     Object.assign(chromeStorage.data, items);
     return Promise.resolve();
   }),
+  remove: vi.fn((keys: string | string[]) => {
+    (Array.isArray(keys) ? keys : [keys]).forEach((k) => delete chromeStorage.data[k]);
+    return Promise.resolve();
+  }),
 };
 
 vi.stubGlobal('chrome', {
@@ -44,9 +48,9 @@ describe('useTabStore', () => {
     chromeStorage.data = {};
     useTabStore.setState({
       tabs: [],
-      groups: [],
-      sections: [],
-      sectionAssignments: [],
+      products: [],
+      manualGroups: [],
+      groupAssignments: [],
       viewMode: 'cards',
       loading: false,
       error: null,
@@ -76,7 +80,7 @@ describe('useTabStore', () => {
       fetchTabs: useTabStore.getInitialState().fetchTabs,
     });
     chromeStorage.data = {
-      schemaVersion: 3,
+      schemaVersion: 4,
       deferred: [],
       workspaces: [],
       settings: {
@@ -88,11 +92,11 @@ describe('useTabStore', () => {
         landingPagePatterns: [],
       },
       groupOrder: { youtube: 0, 'old-hostname.com': 1 },
-      sections: [{ id: 'later', name: 'Later', order: 0 }],
-      sectionAssignments: [
-        { productKey: 'youtube', sectionId: 'later', order: 0 },
-        { productKey: 'missing-product', sectionId: 'later', order: 2 },
-        { itemType: rejectedUrlAssignmentType, itemKey: 'https://www.youtube.com/watch?v=1', sectionId: 'later', order: 3 },
+      manualGroups: [{ id: 'later', name: 'Later', order: 0 }],
+      groupAssignments: [
+        { productKey: 'youtube', groupId: 'later', order: 0 },
+        { productKey: 'missing-product', groupId: 'later', order: 2 },
+        { itemType: rejectedUrlAssignmentType, itemKey: 'https://www.youtube.com/watch?v=1', groupId: 'later', order: 3 },
       ],
       viewMode: 'table',
     };
@@ -104,22 +108,22 @@ describe('useTabStore', () => {
     await useTabStore.getState().fetchTabs();
 
     const state = useTabStore.getState();
-    const youtube = state.groups.find((group) => group.itemType === 'product' && group.domain === 'youtube');
+    const youtube = state.products.find((p) => p.itemType === 'product' && p.domain === 'youtube');
     expect(youtube?.tabs.map((tab) => tab.url)).toEqual([
       'https://www.youtube.com/watch?v=1',
       'https://www.youtube.com/watch?v=2',
     ]);
-    expect(state.sectionAssignments).toEqual([
-      { productKey: 'youtube', sectionId: 'later', order: 0 },
+    expect(state.groupAssignments).toEqual([
+      { productKey: 'youtube', groupId: 'later', order: 0 },
     ]);
     expect(state.viewMode).toBe('table');
     expect(chromeStorage.data['groupOrder']).toEqual({ youtube: 0 });
   });
 
-  it('moves product groups into sections', async () => {
+  it('moves product groups into manual groups', async () => {
     useTabStore.setState({
       fetchTabs: vi.fn().mockResolvedValue(undefined),
-      groups: [
+      products: [
         {
           id: 'github',
           domain: 'github',
@@ -135,22 +139,22 @@ describe('useTabStore', () => {
           duplicateCount: 0,
         },
       ],
-      sections: [{ id: 'later', name: 'Later', order: 0 }],
-      sectionAssignments: [],
+      manualGroups: [{ id: 'later', name: 'Later', order: 0 }],
+      groupAssignments: [],
     });
 
-    await useTabStore.getState().moveProductToSection('github', 'later');
+    await useTabStore.getState().moveProductToGroup('github', 'later');
 
-    expect(useTabStore.getState().sectionAssignments).toEqual([
-      { productKey: 'github', sectionId: 'later', order: 0 },
+    expect(useTabStore.getState().groupAssignments).toEqual([
+      { productKey: 'github', groupId: 'later', order: 0 },
     ]);
-    expect(chromeStorage.data['sectionAssignments']).toEqual([
-      { productKey: 'github', sectionId: 'later', order: 0 },
+    expect(chromeStorage.data['groupAssignments']).toEqual([
+      { productKey: 'github', groupId: 'later', order: 0 },
     ]);
 
     await useTabStore.getState().moveProductToMain('github');
 
-    expect(useTabStore.getState().sectionAssignments).toEqual([]);
+    expect(useTabStore.getState().groupAssignments).toEqual([]);
   });
 
   it('closes exact rendered product URLs instead of every tab on the same host', async () => {

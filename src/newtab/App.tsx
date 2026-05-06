@@ -12,6 +12,7 @@ import { DashboardShell } from './components/layout/DashboardShell';
 import { StatusStrip } from './components/layout/StatusStrip';
 import type { StatusStripAlert } from './components/layout/StatusStrip';
 import { DashboardHeader } from './components/layout/DashboardHeader';
+import { HistoryPanel } from './components/HistoryPanel';
 import { useTabStore } from '../stores/tab-store';
 import { useSettingsStore } from '../stores/settings-store';
 import { clearGroupOrder } from '../utils/storage';
@@ -31,8 +32,8 @@ const SettingsPanel = React.lazy(() =>
   import('./components/SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
 );
 
-function productKeyForGroup(group: TabGroup): string {
-  return group.productKey ?? group.itemKey ?? group.domain;
+function productKeyForProduct(p: TabGroup): string {
+  return p.productKey ?? p.itemKey ?? p.domain;
 }
 
 function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void {
@@ -64,6 +65,7 @@ export function App(): React.ReactElement {
     onConfirm: () => void;
   }>({ open: false, title: '', message: '', confirmLabel: '', onConfirm: () => {} });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false); // Collapsed by default as requested
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [closingUrls, setClosingUrls] = useState<Set<string>>(new Set());
@@ -79,8 +81,8 @@ export function App(): React.ReactElement {
   const tabStore = useTabStore();
   const settingsStore = useSettingsStore();
 
-  const { tabs, groups, loading: tabsLoading } = tabStore;
-  const { sections, sectionAssignments, viewMode } = tabStore;
+  const { tabs, products, loading: tabsLoading } = tabStore;
+  const { manualGroups, groupAssignments, viewMode, history } = tabStore;
   const { settings } = settingsStore;
 
   // ─── Toast helper ──────────────────────────────────────────────────
@@ -125,6 +127,7 @@ export function App(): React.ReactElement {
       await Promise.all([
         tabStore.fetchTabs(),
         settingsStore.fetchSettings(),
+        tabStore.fetchHistory(),
       ]);
       setLoading(false);
     }
@@ -190,74 +193,74 @@ export function App(): React.ReactElement {
 
   // ─── Search filtering ──────────────────────────────────────────────
 
-  const filteredGroups = useMemo(() => {
-    if (!searchQuery.trim()) return groups;
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) return products;
     const query = searchQuery.toLowerCase();
-    return groups
-      .map((group) => ({
-        ...group,
-        tabs: group.tabs.filter(
+    return products
+      .map((p) => ({
+        ...p,
+        tabs: p.tabs.filter(
           (tab) =>
             (tab.title || '').toLowerCase().includes(query) ||
             tab.url.toLowerCase().includes(query) ||
-            group.domain.toLowerCase().includes(query) ||
-            (group.friendlyName || '').toLowerCase().includes(query),
+            p.domain.toLowerCase().includes(query) ||
+            (p.friendlyName || '').toLowerCase().includes(query),
         ),
       }))
-      .filter((group) => group.tabs.length > 0);
-  }, [groups, searchQuery]);
+      .filter((p) => p.tabs.length > 0);
+  }, [products, searchQuery]);
 
   const filteredTabCount = useMemo(
-    () => filteredGroups.reduce((sum, g) => sum + g.tabs.length, 0),
-    [filteredGroups],
+    () => filteredProducts.reduce((sum, p) => sum + p.tabs.length, 0),
+    [filteredProducts],
   );
 
-  const itemIdForGroup = useCallback((group: TabGroup) => {
-    return `product:${productKeyForGroup(group)}`;
+  const itemIdForProduct = useCallback((p: TabGroup) => {
+    return `product:${productKeyForProduct(p)}`;
   }, []);
 
   const assignmentByItemId = useMemo(() => {
     const map = new Map<string, string>();
-    for (const assignment of sectionAssignments) {
-      map.set(`product:${assignment.productKey}`, assignment.sectionId);
+    for (const assignment of groupAssignments) {
+      map.set(`product:${assignment.productKey}`, assignment.groupId);
     }
     return map;
-  }, [sectionAssignments]);
+  }, [groupAssignments]);
 
-  const groupAssignmentKey = useCallback((group: TabGroup) => {
-    return `product:${productKeyForGroup(group)}`;
+  const groupAssignmentKey = useCallback((p: TabGroup) => {
+    return `product:${productKeyForProduct(p)}`;
   }, []);
 
-  const orderedSections = useMemo(
-    () => [...sections].sort((a, b) => a.order - b.order),
-    [sections],
+  const orderedGroups = useMemo(
+    () => [...manualGroups].sort((a, b) => a.order - b.order),
+    [manualGroups],
   );
 
-  const unsectionedGroups = useMemo(
-    () => filteredGroups.filter((group) => !assignmentByItemId.has(groupAssignmentKey(group))),
-    [filteredGroups, assignmentByItemId, groupAssignmentKey],
+  const unassignedProducts = useMemo(
+    () => filteredProducts.filter((p) => !assignmentByItemId.has(groupAssignmentKey(p))),
+    [filteredProducts, assignmentByItemId, groupAssignmentKey],
   );
 
-  const groupsBySection = useMemo(() => {
+  const productsByGroup = useMemo(() => {
     const result = new Map<string, TabGroup[]>();
-    for (const section of orderedSections) {
-      result.set(section.id, []);
+    for (const group of orderedGroups) {
+      result.set(group.id, []);
     }
 
-    for (const group of filteredGroups) {
-      const sectionId = assignmentByItemId.get(groupAssignmentKey(group));
-      if (!sectionId) continue;
-      const bucket = result.get(sectionId);
-      if (bucket) bucket.push(group);
+    for (const p of filteredProducts) {
+      const groupId = assignmentByItemId.get(groupAssignmentKey(p));
+      if (!groupId) continue;
+      const bucket = result.get(groupId);
+      if (bucket) bucket.push(p);
     }
 
-    for (const [sectionId, items] of result) {
-      const assignmentsForSection = sectionAssignments.filter((assignment) => assignment.sectionId === sectionId);
+    for (const [groupId, items] of result) {
+      const assignmentsForGroup = groupAssignments.filter((assignment) => assignment.groupId === groupId);
       items.sort((a, b) => {
-        const aOrder = assignmentsForSection.find(
+        const aOrder = assignmentsForGroup.find(
           (assignment) => `product:${assignment.productKey}` === groupAssignmentKey(a),
         )?.order ?? a.order;
-        const bOrder = assignmentsForSection.find(
+        const bOrder = assignmentsForGroup.find(
           (assignment) => `product:${assignment.productKey}` === groupAssignmentKey(b),
         )?.order ?? b.order;
         return aOrder - bOrder;
@@ -265,10 +268,10 @@ export function App(): React.ReactElement {
     }
 
     return result;
-  }, [assignmentByItemId, filteredGroups, groupAssignmentKey, orderedSections, sectionAssignments]);
+  }, [assignmentByItemId, filteredProducts, groupAssignmentKey, orderedGroups, groupAssignments]);
 
   const flatChips = flattenVisibleTabs(
-    filteredGroups,
+    filteredProducts,
     settings.maxChipsVisible,
     expandedDomains,
   );
@@ -285,12 +288,12 @@ export function App(): React.ReactElement {
 
   // ─── Handlers ──────────────────────────────────────────────────────
 
-  const handleCloseDomain = useCallback(
-    (group: TabGroup) => {
-      const urls = group.tabs.map((t) => t.url);
+  const handleCloseProduct = useCallback(
+    (p: TabGroup) => {
+      const urls = p.tabs.map((t) => t.url);
       playCloseEffects(settings);
       tabStore.closeTabsExact(urls).then(() => {
-        showToast(`Closed all ${group.tabs.length} ${group.friendlyName || group.domain} tabs`);
+        showToast(`Closed all ${p.tabs.length} ${p.friendlyName || p.domain} tabs`);
         playCloseEffects(settings, {
           sound: false,
           confettiOrigin: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
@@ -434,31 +437,31 @@ export function App(): React.ReactElement {
     });
   }, [settings, tabs, tabStore, showToast]);
 
-  const handleCreateSection = useCallback(() => {
-    const name = window.prompt('Section name', 'Work');
+  const handleCreateGroup = useCallback(() => {
+    const name = window.prompt('Group name', 'Work');
     if (name == null) return;
-    tabStore.createSection(name).then(() => {
-      showToast('Section created');
+    tabStore.createGroup(name).then(() => {
+      showToast('Group created');
     });
   }, [tabStore, showToast]);
 
-  const handleRenameSection = useCallback((section: { id: string; name: string }) => {
-    const name = window.prompt('Section name', section.name);
+  const handleRenameGroup = useCallback((group: { id: string; name: string }) => {
+    const name = window.prompt('Group name', group.name);
     if (name == null) return;
-    tabStore.renameSection(section.id, name).then(() => {
-      showToast('Section renamed');
+    tabStore.renameGroup(group.id, name).then(() => {
+      showToast('Group renamed');
     });
   }, [tabStore, showToast]);
 
-  const handleDeleteSection = useCallback((section: { id: string; name: string }) => {
+  const handleDeleteGroup = useCallback((group: { id: string; name: string }) => {
     setConfirmDialog({
       open: true,
-      title: `Delete ${section.name}`,
-      message: 'Items in this section will return to Unsorted. No tabs will be closed.',
-      confirmLabel: 'Delete section',
+      title: `Delete ${group.name}`,
+      message: 'Items in this group will return to Unsorted. No tabs will be closed.',
+      confirmLabel: 'Delete group',
       onConfirm: () => {
-        tabStore.deleteSection(section.id).then(() => {
-          showToast('Section deleted');
+        tabStore.deleteGroup(group.id).then(() => {
+          showToast('Group deleted');
         });
         setConfirmDialog((prev) => ({ ...prev, open: false }));
       },
@@ -479,14 +482,14 @@ export function App(): React.ReactElement {
     showToast('Refreshed');
   }, [tabStore, showToast]);
 
-  const handleMoveTableItem = useCallback((group: TabGroup, sectionId: string) => {
-    const productKey = productKeyForGroup(group);
-    const move = sectionId
-      ? tabStore.moveProductToSection(productKey, sectionId)
+  const handleMoveTableItem = useCallback((p: TabGroup, groupId: string) => {
+    const productKey = productKeyForProduct(p);
+    const move = groupId
+      ? tabStore.moveProductToGroup(productKey, groupId)
       : tabStore.moveProductToMain(productKey);
 
     move.then(() => {
-      showToast(sectionId ? 'Moved to section' : 'Moved to Unsorted');
+      showToast(groupId ? 'Moved to group' : 'Moved to Unsorted');
     });
   }, [tabStore, showToast]);
 
@@ -496,9 +499,9 @@ export function App(): React.ReactElement {
     });
   }, [tabStore, showToast]);
 
-  const handleMoveProductToSection = useCallback((productKey: string, sectionId: string) => {
-    tabStore.moveProductToSection(productKey, sectionId).then(() => {
-      showToast('Moved to section');
+  const handleMoveProductToGroup = useCallback((productKey: string, groupId: string) => {
+    tabStore.moveProductToGroup(productKey, groupId).then(() => {
+      showToast('Moved to group');
     });
   }, [tabStore, showToast]);
 
@@ -506,8 +509,8 @@ export function App(): React.ReactElement {
   // ─── Derived state (must be before early return to satisfy rules-of-hooks) ──
 
   const totalDupes = useMemo(
-    () => groups.reduce((sum, g) => sum + g.duplicateCount, 0),
-    [groups],
+    () => products.reduce((sum, p) => sum + p.duplicateCount, 0),
+    [products],
   );
 
   // ─── Render ────────────────────────────────────────────────────────
@@ -517,9 +520,9 @@ export function App(): React.ReactElement {
   }
 
   const totalTabs = tabs.length;
-  const totalGroups = groups.length;
-  const showEmptyState = groups.length === 0;
-  const visibleSectionCount = orderedSections.length + (showEmptyState ? 0 : 1);
+  const totalProducts = products.length;
+  const showEmptyState = products.length === 0;
+  const visibleGroupCount = orderedGroups.length + (showEmptyState ? 0 : 1);
   const statusAlerts: StatusStripAlert[] = [];
 
   if (tabOutCount > 1) {
@@ -565,15 +568,15 @@ export function App(): React.ReactElement {
           <StatusStrip
             totalTabs={totalTabs}
             totalDupes={totalDupes}
-            totalGroups={totalGroups}
+            totalGroups={totalProducts}
             alerts={statusAlerts}
           />
         }
         header={
           <DashboardHeader
-            title="Open Tabs by Group"
+            title="Open Tabs by Product"
             hasGroups={!showEmptyState}
-            sectionCount={visibleSectionCount}
+            groupCount={visibleGroupCount}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             resultCount={filteredTabCount}
@@ -581,9 +584,22 @@ export function App(): React.ReactElement {
             viewMode={viewMode}
             onViewModeChange={handleSetViewMode}
             onRefresh={handleRefresh}
-            onCreateSection={handleCreateSection}
+            onCreateGroup={handleCreateGroup}
             onCloseAll={handleCloseAll}
             onOpenSettings={() => setSettingsOpen(true)}
+            isSidebarExpanded={isSidebarExpanded}
+            onToggleSidebar={() => setIsSidebarExpanded(!isSidebarExpanded)}
+          />
+        }
+        isSidebarExpanded={isSidebarExpanded}
+        onToggleSidebar={() => setIsSidebarExpanded(!isSidebarExpanded)}
+        utilities={
+          <HistoryPanel
+            snapshots={history}
+            onRestoreSnapshot={tabStore.restoreHistorySnapshot}
+            onRestoreProduct={tabStore.restoreHistoryProduct}
+            onDeleteSnapshot={tabStore.deleteHistorySnapshot}
+            onClearSnapshots={tabStore.clearHistory}
           />
         }
         toolbar={null}
@@ -595,11 +611,11 @@ export function App(): React.ReactElement {
           <main id="main-content" tabIndex={-1} className="active-section">
               {viewMode === 'table' ? (
                 <ProductTable
-                  items={filteredGroups}
-                  sections={orderedSections}
+                  items={filteredProducts}
+                  groups={orderedGroups}
                   assignmentByItemId={assignmentByItemId}
                   onMoveItem={handleMoveTableItem}
-                  onCloseDomain={handleCloseDomain}
+                  onCloseDomain={handleCloseProduct}
                   onCloseDuplicates={handleCloseDuplicates}
                   onFocusTab={handleFocusTab}
                   expandedDomains={expandedDomains}
@@ -613,22 +629,22 @@ export function App(): React.ReactElement {
               ) : (
                 <ErrorBoundary>
                   <DndOrganizer
-                    filteredGroups={filteredGroups}
-                    unsectionedGroups={unsectionedGroups}
-                    orderedSections={orderedSections}
-                    groupsBySection={groupsBySection}
+                    filteredProducts={filteredProducts}
+                    unassignedProducts={unassignedProducts}
+                    orderedGroups={orderedGroups}
+                    productsByGroup={productsByGroup}
                     assignmentByItemId={assignmentByItemId}
-                    itemIdForGroup={itemIdForGroup}
+                    itemIdForProduct={itemIdForProduct}
                     expandedDomains={expandedDomains}
                     maxChipsVisible={settings.maxChipsVisible}
                     focusedUrl={focusedUrl}
                     closingUrls={closingUrls}
                     selectedUrls={selectedUrls}
                     onMoveProductToMain={handleMoveProductToMain}
-                    onMoveProductToSection={handleMoveProductToSection}
-                    onRenameSection={handleRenameSection}
-                    onDeleteSection={handleDeleteSection}
-                    onCloseDomain={handleCloseDomain}
+                    onMoveProductToGroup={handleMoveProductToGroup}
+                    onRenameGroup={handleRenameGroup}
+                    onDeleteGroup={handleDeleteGroup}
+                    onCloseProduct={handleCloseProduct}
                     onCloseDuplicates={handleCloseDuplicates}
                     onCloseTab={handleCloseTabAnimated}
                     onFocusTab={handleFocusTab}

@@ -1,16 +1,16 @@
 import { productForHostname } from '../config/products';
-import type { RecoveryProductSummary, RecoverySnapshot, RecoveryTab, Tab } from '../types';
+import type { HistoryProductSummary, HistorySnapshot, HistoryTab, Tab } from '../types';
 import { getTabDomain, isRealTab } from '../utils/url';
 
 const MAX_TABS_PER_SNAPSHOT = 80;
 
-function snapshotId(capturedAt: string, tabs: RecoveryTab[]): string {
+function snapshotId(capturedAt: string, tabs: HistoryTab[]): string {
   const key = `${capturedAt}:${tabs.map((tab) => tab.url).join('|')}`;
   let hash = 0;
   for (let index = 0; index < key.length; index += 1) {
     hash = Math.imul(31, hash) + key.charCodeAt(index) | 0;
   }
-  return `recovery-${Math.abs(hash).toString(36)}`;
+  return `history-${Math.abs(hash).toString(36)}`;
 }
 
 function normalizeUrl(url: string): string {
@@ -23,23 +23,23 @@ function normalizeUrl(url: string): string {
   }
 }
 
-export function recoveryUrlSignature(snapshot: RecoverySnapshot): string {
+export function historyUrlSignature(snapshot: HistorySnapshot): string {
   return snapshot.tabs.map((tab) => normalizeUrl(tab.url)).sort().join('\n');
 }
 
-export function shouldReplaceRecoveryCandidate(
-  current: RecoverySnapshot | null,
-  next: RecoverySnapshot,
+export function shouldReplaceHistoryCandidate(
+  current: HistorySnapshot | null,
+  next: HistorySnapshot,
 ): boolean {
   if (!current) return true;
-  return recoveryUrlSignature(current) !== recoveryUrlSignature(next);
+  return historyUrlSignature(current) !== historyUrlSignature(next);
 }
 
-export function buildRecoverySnapshot(
+export function buildHistorySnapshot(
   tabs: readonly Tab[],
   capturedAt: string = new Date().toISOString(),
-): RecoverySnapshot | null {
-  const recoveryTabs: RecoveryTab[] = [];
+): HistorySnapshot | null {
+  const historyTabs: HistoryTab[] = [];
 
   for (const tab of tabs) {
     if (!isRealTab(tab.url)) continue;
@@ -47,7 +47,7 @@ export function buildRecoverySnapshot(
     if (!hostname) continue;
 
     const product = productForHostname(hostname);
-    recoveryTabs.push({
+    historyTabs.push({
       url: tab.url,
       title: tab.title,
       domain: hostname,
@@ -60,13 +60,13 @@ export function buildRecoverySnapshot(
       active: tab.active,
     });
 
-    if (recoveryTabs.length >= MAX_TABS_PER_SNAPSHOT) break;
+    if (historyTabs.length >= MAX_TABS_PER_SNAPSHOT) break;
   }
 
-  if (recoveryTabs.length === 0) return null;
+  if (historyTabs.length === 0) return null;
 
-  const productsByKey = new Map<string, RecoveryProductSummary>();
-  for (const tab of recoveryTabs) {
+  const productsByKey = new Map<string, HistoryProductSummary>();
+  for (const tab of historyTabs) {
     const existing = productsByKey.get(tab.productKey);
     if (existing) {
       existing.tabCount += 1;
@@ -87,10 +87,10 @@ export function buildRecoverySnapshot(
   });
 
   return {
-    id: snapshotId(capturedAt, recoveryTabs),
+    id: snapshotId(capturedAt, historyTabs),
     capturedAt,
-    tabCount: recoveryTabs.length,
+    tabCount: historyTabs.length,
     products,
-    tabs: recoveryTabs,
+    tabs: historyTabs,
   };
 }

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tab Organizer 使用教程 - 你的标签页整理艺术</title>
+    <title>Tab Organizer Tutorial - The Art of Browser Organization</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,27 +11,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
 
     <style>
-        /* ===========================================
-           THEME: NOTEBOOK TABS
-           Editorial, organized, elegant, tactile
-           =========================================== */
         :root {
-            /* Colors */
             --bg-outer: #2d2d2d;
             --bg-page: #f8f6f1;
             --text-primary: #1a1a1a;
             --text-secondary: #555555;
-            --tab-1: #98d4bb; /* Mint */
-            --tab-2: #c7b8ea; /* Lavender */
-            --tab-3: #f4b8c5; /* Pink */
-            --tab-4: #a8d8ea; /* Sky */
-            --tab-5: #ffe6a7; /* Cream */
+            --tab-1: #98d4bb;
+            --tab-2: #c7b8ea;
+            --tab-3: #f4b8c5;
+            --tab-4: #a8d8ea;
+            --tab-5: #ffe6a7;
             
-            /* Typography */
             --font-display: 'Bodoni Moda', serif;
             --font-body: 'DM Sans', sans-serif;
             
-            /* Viewport-aware sizing */
             --title-size: clamp(2rem, 6vw, 4.5rem);
             --h2-size: clamp(1.5rem, 4vw, 3rem);
             --body-size: clamp(0.875rem, 1.5vw, 1.125rem);
@@ -39,14 +32,10 @@
             --slide-padding: clamp(2rem, 6vw, 5rem);
             --content-gap: clamp(1rem, 3vh, 2.5rem);
             
-            /* Animation */
             --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
             --duration: 0.8s;
         }
 
-        /* ===========================================
-           VIEWPORT FITTING: MANDATORY BASE STYLES
-           =========================================== */
         html, body {
             margin: 0;
             padding: 0;
@@ -60,6 +49,37 @@
             scroll-behavior: smooth;
         }
 
+        /* Language Toggle */
+        .lang-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0,0,0,0.1);
+            padding: 8px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s var(--ease-out-expo);
+        }
+        .lang-switch:hover { transform: translateY(-2px); }
+        .lang-switch span { opacity: 0.3; transition: opacity 0.3s; }
+        .lang-switch span.active { opacity: 1; color: var(--text-primary); }
+
+        /* Multi-language Visibility */
+        [lang-en] { display: block; }
+        [lang-zh] { display: none; }
+        
+        body.zh [lang-en] { display: none; }
+        body.zh [lang-zh] { display: block; }
+
         .slide {
             width: 100vw;
             height: 100vh;
@@ -72,7 +92,6 @@
             position: relative;
         }
 
-        /* The "Notebook Page" Card */
         .page {
             width: min(90vw, 1200px);
             height: min(85vh, 750px);
@@ -82,29 +101,6 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            transition: transform 0.5s var(--ease-out-expo);
-        }
-
-        /* Binder Holes Decoration */
-        .binder {
-            position: absolute;
-            left: 20px;
-            top: 0;
-            bottom: 0;
-            width: 40px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            padding: 40px 0;
-            pointer-events: none;
-            opacity: 0.2;
-        }
-        .hole {
-            width: 15px;
-            height: 15px;
-            background: var(--bg-outer);
-            border-radius: 50%;
-            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.5);
         }
 
         .slide-content {
@@ -119,7 +115,6 @@
             overflow: hidden;
         }
 
-        /* Colorful Tabs on Right Edge */
         .tabs-container {
             position: absolute;
             right: 0;
@@ -144,7 +139,6 @@
             text-transform: uppercase;
             letter-spacing: 0.1em;
             color: rgba(0,0,0,0.6);
-            transition: width 0.3s var(--ease-out-expo);
             border-radius: 4px 0 0 4px;
         }
         .tab.active {
@@ -153,7 +147,6 @@
             color: rgba(0,0,0,0.9);
         }
 
-        /* Typography */
         h1 {
             font-family: var(--font-display);
             font-size: var(--title-size);
@@ -182,34 +175,16 @@
             color: var(--text-primary);
         }
 
-        /* Lists */
-        ul {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        li {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-        }
-        li::before {
-            content: "•";
-            color: var(--tab-1);
-            font-weight: bold;
-            font-size: 1.5em;
-            line-height: 1;
-        }
+        ul { list-style: none; display: flex; flex-direction: column; gap: 1rem; }
+        li { display: flex; align-items: flex-start; gap: 1rem; }
+        li::before { content: "•"; color: var(--tab-1); font-weight: bold; font-size: 1.5em; line-height: 1; }
 
-        /* Buttons/Links */
         .cta-button {
             display: inline-flex;
             align-items: center;
             background: var(--text-primary);
             color: white;
             padding: 1rem 2rem;
-            border-radius: 0;
             text-decoration: none;
             font-family: var(--font-body);
             font-weight: 600;
@@ -217,52 +192,21 @@
             transition: transform 0.3s var(--ease-out-expo), background 0.3s;
             align-self: flex-start;
         }
-        .cta-button:hover {
-            transform: translateY(-4px);
-            background: #000;
-        }
+        .cta-button:hover { transform: translateY(-4px); background: #000; }
 
-        /* Grid for features */
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 2rem;
-        }
-        .feature-card {
-            background: rgba(0,0,0,0.03);
-            padding: 1.5rem;
-            border-left: 4px solid var(--tab-1);
-        }
-        .feature-card h3 {
-            font-family: var(--font-display);
-            margin-bottom: 0.5rem;
-        }
+        .feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; }
+        .feature-card { background: rgba(0,0,0,0.03); padding: 1.5rem; border-left: 4px solid var(--tab-1); }
+        .feature-card h3 { font-family: var(--font-display); margin-bottom: 0.5rem; }
 
-        /* Animations */
         .reveal {
             opacity: 0;
             transform: translateY(30px);
-            transition: opacity var(--duration) var(--ease-out-expo),
-                        transform var(--duration) var(--ease-out-expo);
+            transition: opacity var(--duration) var(--ease-out-expo), transform var(--duration) var(--ease-out-expo);
         }
-        .slide.active .reveal {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .slide.active .reveal { opacity: 1; transform: translateY(0); }
         .reveal:nth-child(2) { transition-delay: 0.2s; }
         .reveal:nth-child(3) { transition-delay: 0.4s; }
 
-        /* Media Queries for Viewport Fitting */
-        @media (max-height: 700px) {
-            .page { height: 90vh; }
-            :root { --slide-padding: 2rem; --content-gap: 1rem; }
-        }
-        @media (max-width: 800px) {
-            .feature-grid { grid-template-columns: 1fr; }
-            .tabs-container { display: none; }
-        }
-
-        /* Keyboard Hint */
         .kb-hint {
             position: fixed;
             bottom: 20px;
@@ -278,25 +222,30 @@
 </head>
 <body>
 
-    <div class="kb-hint">使用方向键或滚轮切换页面</div>
+    <div class="lang-switch" onclick="toggleLang()">
+        <span id="label-en" class="active">EN</span>
+        <span id="label-zh">中</span>
+    </div>
+
+    <div class="kb-hint" lang-en>USE ARROW KEYS OR SCROLL TO NAVIGATE</div>
+    <div class="kb-hint" lang-zh>使用方向键或滚轮切换页面</div>
 
     <!-- Slide 1: Title -->
     <section class="slide" id="slide-1">
         <div class="page">
-            <div class="binder">
-                <div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div>
-            </div>
             <div class="slide-content">
                 <p class="reveal accent-text">Tab Organizer</p>
-                <h1 class="reveal">你的标签页<br>整理艺术</h1>
-                <p class="reveal">告别混乱，找回专注。三分钟开启极简浏览之旅。</p>
+                <h1 class="reveal" lang-en>The Art of Browser<br>Organization</h1>
+                <h1 class="reveal" lang-zh>你的标签页<br>整理艺术</h1>
+                <p class="reveal" lang-en>Say goodbye to clutter. Start your minimalist browsing journey in 3 minutes.</p>
+                <p class="reveal" lang-zh>告别混乱，找回专注。三分钟开启极简浏览之旅。</p>
             </div>
             <div class="tabs-container">
-                <div class="tab active" style="background: var(--tab-1)">封面</div>
-                <div class="tab" style="background: var(--tab-2)">下载</div>
-                <div class="tab" style="background: var(--tab-3)">安装</div>
-                <div class="tab" style="background: var(--tab-4)">功能</div>
-                <div class="tab" style="background: var(--tab-5)">开始</div>
+                <div class="tab active" style="background: var(--tab-1)"><span lang-en>Cover</span><span lang-zh>封面</span></div>
+                <div class="tab" style="background: var(--tab-2)"><span lang-en>Intro</span><span lang-zh>优势</span></div>
+                <div class="tab" style="background: var(--tab-3)"><span lang-en>Unzip</span><span lang-zh>下载</span></div>
+                <div class="tab" style="background: var(--tab-4)"><span lang-en>Setup</span><span lang-zh>安装</span></div>
+                <div class="tab" style="background: var(--tab-5)"><span lang-en>Start</span><span lang-zh>开始</span></div>
             </div>
         </div>
     </section>
@@ -305,32 +254,41 @@
     <section class="slide" id="slide-2">
         <div class="page">
             <div class="slide-content">
-                <h2 class="reveal">为什么要使用 Tab Out?</h2>
+                <h2 class="reveal" lang-en>Why Tab Organizer?</h2>
+                <h2 class="reveal" lang-zh>为什么要使用 Tab Organizer?</h2>
                 <div class="feature-grid reveal">
                     <div class="feature-card">
-                        <h3>自动归类</h3>
-                        <p>不再迷失在成百上千个标签中，自动按域名分组。</p>
+                        <h3 lang-en>Automated Grouping</h3>
+                        <h3 lang-zh>自动归类</h3>
+                        <p lang-en>Never get lost in hundreds of tabs again. Automatically grouped by domain.</p>
+                        <p lang-zh>不再迷失在成百上千个标签中，自动按域名分组。</p>
                     </div>
                     <div class="feature-card" style="border-left-color: var(--tab-2)">
-                        <h3>本地优先</h3>
-                        <p>数据不离身，隐私零泄露。纯本地运行，极速响应。</p>
+                        <h3 lang-en>Local First</h3>
+                        <h3 lang-zh>本地优先</h3>
+                        <p lang-en>Data stays with you. zero privacy leaks. Purely local, lightning fast.</p>
+                        <p lang-zh>数据不离身，隐私零泄露。纯本地运行，极速响应。</p>
                     </div>
                     <div class="feature-card" style="border-left-color: var(--tab-3)">
-                        <h3>优雅审美</h3>
-                        <p>Notion 风格设计，让整理成为一种视觉享受。</p>
+                        <h3 lang-en>Elegant Aesthetics</h3>
+                        <h3 lang-zh>优雅审美</h3>
+                        <p lang-en>Notion-inspired design, making organization a visual treat.</p>
+                        <p lang-zh>Notion 风格设计，让整理成为一种视觉享受。</p>
                     </div>
                     <div class="feature-card" style="border-left-color: var(--tab-4)">
-                        <h3>安全备份</h3>
-                        <p>本地快照功能，即使误关也能随时找回。</p>
+                        <h3 lang-en>Secure Backup</h3>
+                        <h3 lang-zh>安全备份</h3>
+                        <p lang-en>Local snapshots ensure you can restore even if you accidentally close a tab.</p>
+                        <p lang-zh>本地快照功能，即使误关也能随时找回。</p>
                     </div>
                 </div>
             </div>
             <div class="tabs-container">
-                <div class="tab" style="background: var(--tab-1)">封面</div>
-                <div class="tab active" style="background: var(--tab-2)">优势</div>
-                <div class="tab" style="background: var(--tab-3)">下载</div>
-                <div class="tab" style="background: var(--tab-4)">安装</div>
-                <div class="tab" style="background: var(--tab-5)">开始</div>
+                <div class="tab" style="background: var(--tab-1)"><span lang-en>Cover</span><span lang-zh>封面</span></div>
+                <div class="tab active" style="background: var(--tab-2)"><span lang-en>Intro</span><span lang-zh>优势</span></div>
+                <div class="tab" style="background: var(--tab-3)"><span lang-en>Unzip</span><span lang-zh>下载</span></div>
+                <div class="tab" style="background: var(--tab-4)"><span lang-en>Setup</span><span lang-zh>安装</span></div>
+                <div class="tab" style="background: var(--tab-5)"><span lang-en>Start</span><span lang-zh>开始</span></div>
             </div>
         </div>
     </section>
@@ -339,17 +297,23 @@
     <section class="slide" id="slide-3">
         <div class="page">
             <div class="slide-content">
-                <h2 class="reveal">Step 1: 获取工具</h2>
-                <p class="reveal">首先，从 Google Drive 下载最新的安装包。这是一个 ZIP 压缩文件，包含了 Tab Out 的所有运行核心。</p>
-                <a href="https://drive.google.com/file/d/1yT4uzozDDz_S-6T_YcEhc7l__Ic-8bix/view?usp=sharing" class="cta-button reveal">下载最新 ZIP 包</a>
-                <p class="reveal" style="font-size: 0.8rem; opacity: 0.6;">* 下载后请将其解压到你喜欢的文件夹中（例如桌面或文档）。</p>
+                <h2 class="reveal" lang-en>Step 1: Get the Tool</h2>
+                <h2 class="reveal" lang-zh>Step 1: 获取工具</h2>
+                <p class="reveal" lang-en>Download the latest package from Google Drive. It's a ZIP file containing everything you need.</p>
+                <p class="reveal" lang-zh>首先，从 Google Drive 下载最新的安装包。这是一个 ZIP 压缩文件，包含了 Tab Organizer 的所有运行核心。</p>
+                <a href="https://drive.google.com/file/d/1yT4uzozDDz_S-6T_YcEhc7l__Ic-8bix/view?usp=sharing" class="cta-button reveal">
+                    <span lang-en>Download ZIP Package</span>
+                    <span lang-zh>下载最新 ZIP 包</span>
+                </a>
+                <p class="reveal" style="font-size: 0.8rem; opacity: 0.6;" lang-en>* After downloading, please unzip it to your preferred folder.</p>
+                <p class="reveal" style="font-size: 0.8rem; opacity: 0.6;" lang-zh>* 下载后请将其解压到你喜欢的文件夹中（例如桌面或文档）。</p>
             </div>
             <div class="tabs-container">
-                <div class="tab" style="background: var(--tab-1)">封面</div>
-                <div class="tab" style="background: var(--tab-2)">优势</div>
-                <div class="tab active" style="background: var(--tab-3)">下载</div>
-                <div class="tab" style="background: var(--tab-4)">安装</div>
-                <div class="tab" style="background: var(--tab-5)">开始</div>
+                <div class="tab" style="background: var(--tab-1)"><span lang-en>Cover</span><span lang-zh>封面</span></div>
+                <div class="tab" style="background: var(--tab-2)"><span lang-en>Intro</span><span lang-zh>优势</span></div>
+                <div class="tab active" style="background: var(--tab-3)"><span lang-en>Unzip</span><span lang-zh>下载</span></div>
+                <div class="tab" style="background: var(--tab-4)"><span lang-en>Setup</span><span lang-zh>安装</span></div>
+                <div class="tab" style="background: var(--tab-5)"><span lang-en>Start</span><span lang-zh>开始</span></div>
             </div>
         </div>
     </section>
@@ -358,19 +322,23 @@
     <section class="slide" id="slide-4">
         <div class="page">
             <div class="slide-content">
-                <h2 class="reveal">Step 2: 开启开发者模式</h2>
+                <h2 class="reveal" lang-en>Step 2: Enable Developer Mode</h2>
+                <h2 class="reveal" lang-zh>Step 2: 开启开发者模式</h2>
                 <ul class="reveal">
-                    <li>打开 Chrome 浏览器，在地址栏输入 <code>chrome://extensions</code> 并回车。</li>
-                    <li>在页面右上角找到 <strong>"开发者模式 (Developer mode)"</strong> 选项。</li>
-                    <li>将其状态切换为 <strong>“开启”</strong>。</li>
+                    <li lang-en>Open Chrome and enter <code>chrome://extensions</code> in the address bar.</li>
+                    <li lang-zh>打开 Chrome 浏览器，在地址栏输入 <code>chrome://extensions</code> 并回车。</li>
+                    <li lang-en>Find the <strong>"Developer mode"</strong> toggle in the top right corner.</li>
+                    <li lang-zh>在页面右上角找到 <strong>"开发者模式 (Developer mode)"</strong> 选项。</li>
+                    <li lang-en>Switch it to <strong>"On"</strong>.</li>
+                    <li lang-zh>将其状态切换为 <strong>“开启”</strong>。</li>
                 </ul>
             </div>
             <div class="tabs-container">
-                <div class="tab" style="background: var(--tab-1)">封面</div>
-                <div class="tab" style="background: var(--tab-2)">下载</div>
-                <div class="tab active" style="background: var(--tab-3)">设置</div>
-                <div class="tab" style="background: var(--tab-4)">安装</div>
-                <div class="tab" style="background: var(--tab-5)">开始</div>
+                <div class="tab" style="background: var(--tab-1)"><span lang-en>Cover</span><span lang-zh>封面</span></div>
+                <div class="tab" style="background: var(--tab-2)"><span lang-en>Intro</span><span lang-zh>优势</span></div>
+                <div class="tab" style="background: var(--tab-3)"><span lang-en>Unzip</span><span lang-zh>下载</span></div>
+                <div class="tab active" style="background: var(--tab-4)"><span lang-en>Setup</span><span lang-zh>安装</span></div>
+                <div class="tab" style="background: var(--tab-5)"><span lang-en>Start</span><span lang-zh>开始</span></div>
             </div>
         </div>
     </section>
@@ -379,19 +347,23 @@
     <section class="slide" id="slide-5">
         <div class="page">
             <div class="slide-content">
-                <h2 class="reveal">Step 3: 加载并启动</h2>
+                <h2 class="reveal" lang-en>Step 3: Load and Launch</h2>
+                <h2 class="reveal" lang-zh>Step 3: 加载并启动</h2>
                 <ul class="reveal">
-                    <li>点击左上角的 <strong>"加载已解压的扩展程序 (Load unpacked)"</strong> 按钮。</li>
-                    <li>在弹出的窗口中，选择你刚才解压出来的 <code>dist</code> 文件夹。</li>
-                    <li>安装成功！点击浏览器工具栏的 Tab Out 图标，开启你的整理艺术。</li>
+                    <li lang-en>Click the <strong>"Load unpacked"</strong> button in the top left corner.</li>
+                    <li lang-zh>点击左上角的 <strong>"加载已解压的扩展程序 (Load unpacked)"</strong> 按钮。</li>
+                    <li lang-en>Select the <code>dist</code> folder you just extracted.</li>
+                    <li lang-zh>在弹出的窗口中，选择你刚才解压出来的 <code>dist</code> 文件夹。</li>
+                    <li lang-en>Success! Click the Tab Organizer icon in your toolbar to begin.</li>
+                    <li lang-zh>安装成功！点击浏览器工具栏的 Tab Organizer 图标，开启你的整理艺术。</li>
                 </ul>
             </div>
             <div class="tabs-container">
-                <div class="tab" style="background: var(--tab-1)">封面</div>
-                <div class="tab" style="background: var(--tab-2)">下载</div>
-                <div class="tab" style="background: var(--tab-3)">设置</div>
-                <div class="tab active" style="background: var(--tab-4)">加载</div>
-                <div class="tab" style="background: var(--tab-5)">开始</div>
+                <div class="tab" style="background: var(--tab-1)"><span lang-en>Cover</span><span lang-zh>封面</span></div>
+                <div class="tab" style="background: var(--tab-2)"><span lang-en>Intro</span><span lang-zh>优势</span></div>
+                <div class="tab" style="background: var(--tab-3)"><span lang-en>Unzip</span><span lang-zh>下载</span></div>
+                <div class="tab active" style="background: var(--tab-4)"><span lang-en>Setup</span><span lang-zh>安装</span></div>
+                <div class="tab" style="background: var(--tab-5)"><span lang-en>Start</span><span lang-zh>开始</span></div>
             </div>
         </div>
     </section>
@@ -400,30 +372,44 @@
     <section class="slide" id="slide-6">
         <div class="page">
             <div class="slide-content" style="text-align: center; align-items: center;">
-                <h1 class="reveal">准备好了吗？</h1>
-                <p class="reveal">现在就去尝试你的第一个分组，感受清爽的浏览器体验。</p>
+                <h1 class="reveal" lang-en>Are you ready?</h1>
+                <h1 class="reveal" lang-zh>准备好了吗？</h1>
+                <p class="reveal" lang-en>Experience the clarity of a cleaner browser today.</p>
+                <p class="reveal" lang-zh>现在就去尝试你的第一个分组，感受清爽的浏览器体验。</p>
                 <div class="reveal" style="margin-top: 2rem;">
                     <p class="accent-text">"Less tabs, more focus."</p>
                 </div>
             </div>
             <div class="tabs-container">
-                <div class="tab" style="background: var(--tab-1)">封面</div>
-                <div class="tab" style="background: var(--tab-2)">下载</div>
-                <div class="tab" style="background: var(--tab-3)">设置</div>
-                <div class="tab" style="background: var(--tab-4)">加载</div>
-                <div class="tab active" style="background: var(--tab-5)">享受</div>
+                <div class="tab" style="background: var(--tab-1)"><span lang-en>Cover</span><span lang-zh>封面</span></div>
+                <div class="tab" style="background: var(--tab-2)"><span lang-en>Intro</span><span lang-zh>优势</span></div>
+                <div class="tab" style="background: var(--tab-3)"><span lang-en>Unzip</span><span lang-zh>下载</span></div>
+                <div class="tab" style="background: var(--tab-4)"><span lang-en>Setup</span><span lang-zh>安装</span></div>
+                <div class="tab active" style="background: var(--tab-5)"><span lang-en>Enjoy</span><span lang-zh>享受</span></div>
             </div>
         </div>
     </section>
 
     <script>
+        function toggleLang() {
+            const body = document.body;
+            const isZh = body.classList.toggle('zh');
+            document.getElementById('label-en').classList.toggle('active', !isZh);
+            document.getElementById('label-zh').classList.toggle('active', isZh);
+            localStorage.setItem('tutorial-lang', isZh ? 'zh' : 'en');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            // Restore language preference
+            const savedLang = localStorage.getItem('tutorial-lang');
+            if (savedLang === 'zh') {
+                document.body.classList.add('zh');
+                document.getElementById('label-en').classList.remove('active');
+                document.getElementById('label-zh').classList.add('active');
+            }
+
             const slides = document.querySelectorAll('.slide');
-            const tabs = document.querySelectorAll('.tab');
-            
-            const observerOptions = {
-                threshold: 0.5
-            };
+            const observerOptions = { threshold: 0.5 };
 
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
@@ -434,9 +420,6 @@
             }, observerOptions);
 
             slides.forEach(slide => observer.observe(slide));
-
-            // Simple scroll-based navigation logic could be added here
-            // but native scroll-snap already handles the heavy lifting.
         });
     </script>
 </body>

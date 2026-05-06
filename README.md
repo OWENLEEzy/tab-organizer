@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./public/readme-assets/banner.png" alt="Tab Organizer Banner" width="800">
+  <img src="./public/readme-assets/real-screenshot.png" alt="Tab Organizer Dashboard" width="800">
 
   # Tab Organizer
   
@@ -9,116 +9,152 @@
   [![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)]()
   [![Chrome](https://img.shields.io/badge/Chrome-Extension-amber.svg)]()
 
-  [English](#english) | [中文说明](#chinese) | [Original Project ↗️](https://github.com/OWENLEEzy/tab-out)
+  ### [English](README.md) | [中文说明](README_zh.md) | [Original Project ↗️](https://github.com/OWENLEEzy/tab-out)
+
+</div>
+
+  ### [English](README.md) | [中文说明](README_zh.md) | [Original Project ↗️](https://github.com/OWENLEEzy/tab-out)
 
 </div>
 
 ---
 
-<a name="english"></a>
-
-## ✨ The Vision
-
-Tab Organizer is a premium Chrome extension designed to declutter your digital workspace. It transforms your messy tab bar into a clean, Notion-inspired dashboard where tabs are automatically grouped by product and domain.
-
-No servers, no accounts, no tracking. **100% local, 100% private.**
-
-> [!TIP]
-> **New to Tab Organizer?** Check out our **[Interactive Tutorial](https://owenleezy.github.io/tab-organizer/tutorial.html)** and master it in 60 seconds!
-
----
-
-## 🚀 Quick Installation
-
-1. Go to the **[Releases](https://github.com/OWENLEEzy/tab-organizer/releases)** page.
-2. Download the latest **`tab-organizer-v[version].zip`**.
-3. Extract the ZIP file locally.
-4. Open Chrome and navigate to `chrome://extensions`.
-5. Enable **Developer mode**.
-6. Click **Load unpacked** and select the `dist` folder.
+# 📖 Table of Contents
+- [PART I: User Guide](#part-i-user-guide)
+  - [✨ Vision & Philosophy](#-vision--philosophy)
+  - [🚀 Installation](#-installation)
+  - [💎 Core Features](#-core-features)
+  - [⌨️ Usage & Shortcuts](#️-usage--shortcuts)
+  - [🔒 Privacy & Security](#-privacy--security)
+- [PART II: Developer Hub](#part-ii-developer-hub)
+  - [🏗️ Technical Architecture](#️-technical-architecture)
+  - [🔄 Data & Mutation Flow](#-data--mutation-flow)
+  - [📂 Project Structure](#-project-structure)
+  - [📚 Documentation Architecture](#-documentation-architecture)
+  - [🛠️ Development Lifecycle](#️-development-lifecycle)
+  - [🧪 Testing Strategy](#-testing-strategy)
+- [🏗️ Tech Stack](#️-tech-stack)
 
 ---
 
-## 💎 Features
+# PART I: User Guide
 
-- **Automated Grouping**: Tabs are intelligently grouped by domain.
-- **Homepages Cluster**: Centralizes your Gmail, X, LinkedIn, and GitHub homepages into a single elegant card.
-- **Localhost Intelligence**: Perfect for developers—shows port numbers so you can distinguish between different "Vibe Coding" projects.
-- **Satisfying Cleanup**: Close tabs with a delightful *swoosh* sound and a burst of confetti.
-- **Duplicate Detection**: Instantly identifies and cleans up redundant tabs with one click.
-- **Keyboard Mastery**: Full search and keyboard navigation across all visible tabs.
-- **Snapshot Recovery**: Lightweight local safety—restore recent sessions without external sync.
+## ✨ Vision & Philosophy
+**Tab Organizer** is built for the "Tab Hoarder" who values a clean, aesthetic, and distraction-free workspace. Inspired by the minimalist elegance of **Notion**, it aims to solve "Tab Fatigue" by shifting the focus from a horizontal list of icons to a structured, product-centric dashboard.
+
+## 🚀 Installation
+1. **Download**: Go to [Releases](https://github.com/OWENLEEzy/tab-organizer/releases) and grab the latest `.zip`.
+2. **Unpack**: Extract the folder to a safe location on your computer.
+3. **Load**: 
+   - Open Chrome and type `chrome://extensions` in the address bar.
+   - Toggle **Developer mode** (top right).
+   - Click **Load unpacked** and select the `dist` folder from your extracted ZIP.
+4. **Pin**: Pin the Tab Organizer icon to your toolbar for instant access.
+
+## 💎 Core Features
+- **Smart Product Grouping**: Uses a proprietary mapping logic to group tabs by "Product" (e.g., all Google Docs together, all GitHub repos together) rather than just raw domains.
+- **Visual Cleanup**:
+  - **Swoosh & Confetti**: Closing tabs feels rewarding with high-quality micro-interactions.
+  - **Duplicate Badges**: Amber badges highlight redundant tabs; one click closes all extras.
+- **Multiple Views**:
+  - **Cards View**: A spacious, tactile layout for visual scanning.
+  - **Table View**: A dense, high-efficiency list for power users.
+- **Recovery System**: Automatically takes local "snapshots" of your open sessions. If you accidentally close a window, restore it in seconds.
+- **Developer Mode Intelligence**: Recognizes `localhost` and `127.0.0.1` projects, grouping them by port number automatically.
+
+## ⌨️ Usage & Shortcuts
+- **Open Dashboard**: Click the extension icon or use `Cmd+Shift+K` (customizable in Chrome shortcuts).
+- **Quick Search**: Just start typing anywhere to filter your tabs instantly.
+- **Navigation**: Use `Arrow Keys` to move between tab chips, and `Enter` to switch to that tab.
+- **Organize Mode**: Toggle "Organize" in the header to drag and drop product groups into custom sections.
+
+## 🔒 Privacy & Security
+Tab Organizer is **Local-First**. 
+- **No Cloud**: Your tab data never leaves your machine.
+- **No Tracking**: No analytics, no telemetry, no tracking pixels.
+- **No Permissions Bloat**: Only uses `tabs` and `storage` permissions.
 
 ---
 
-## 🛠️ Developer Setup
+# PART II: Developer Hub
 
-If you want to build from source or contribute:
+## 🏗️ System Architecture & Engineering
+Tab Organizer is engineered as a robust, local-first Chrome Extension leveraging modern web technologies and Manifest V3 (MV3) best practices.
 
-```bash
-# Clone the repository
-git clone https://github.com/OWENLEEzy/tab-organizer.git
-cd tab-organizer
+### 1. Runtime Ownership & Core Pillars
+The project is divided into three distinct execution contexts, each with strict responsibilities:
 
-# Install dependencies
-npm install
+- **The Background Service Worker (`src/background/`)**: 
+  - **Stateless Event Hub**: Acts as the central listener for Chrome system events (tab creation, window focus, etc.).
+  - **Badge Orchestration**: Manages the toolbar badge count using a debounced update logic to ensure zero-flicker UI.
+  - **Context Management**: Handles the "Singleton" dashboard pattern—ensuring only one Tab Organizer dashboard is open or focused at a time.
+- **The Dashboard Runtime (`src/newtab/`)**:
+  - **Orchestrator Pattern**: `App.tsx` is the single point of entry for global state. It performs the "Final Join" between raw browser tabs and user-defined groupings.
+  - **Lazy-Loaded Modules**: High-impact dependencies like `@dnd-kit` are lazy-loaded only when "Organize Mode" is active to keep the initial paint under 100ms.
+- **The Storage Adapter (`src/utils/storage.ts`)**:
+  - **Serializable Queue**: Implements a write-queue to handle atomic updates to `chrome.storage.local`. This prevents data corruption during rapid tab-closing bursts.
+  - **Schema Normalization**: Automatically prunes stale product assignments and migrates legacy data shapes at the boundary.
 
-# Build the project
-npm run build
+### 2. State & Data Lifecycle
+We employ a **Unidirectional Data Flow** with a synchronized storage backend.
+
+```text
+[Browser Event] ──▶ [Background SW] ──▶ [Dashboard Refresh]
+                                              │
+      ┌───────────────────────────────────────┘
+      ▼
+[User Action] ──▶ [Zustand Store] ──▶ [Storage Adapter] ──▶ [Persistence]
+      ▲                                       │
+      └───────────────────────────────────────┘
+```
+- **State Source of Truth**: The active dashboard state is held in **Zustand**. 
+- **Persistence Source of Truth**: All configuration (sections, order, settings) is persisted in **Chrome Storage Local**. 
+- **Snapshot Engine**: A background routine periodically captures the current tab state into "Recovery Snapshots" using a lightweight JSON structure, capped to a configurable history limit.
+
+### 3. Logic & Domain Separation
+To maintain testability and clean code, we separate concerns:
+- **`src/lib/` (Pure Logic)**: Contains the "Grouping Engine" and "Title Sanitizers". These are pure TS functions that transform raw `chrome.tabs.Tab` objects into our internal `TabGroup` hierarchy. Zero dependencies on React or DOM APIs.
+- **`src/stores/` (State)**: Encapsulates the mutation logic. No direct calls to `chrome.tabs` are allowed inside components; they must go through store actions.
+- **`src/components/` (UI)**: Pure presentational elements. They do not know about Zustand or Chrome APIs.
+
+## 📂 Project Structure
+```text
+src/
+├── background/   # MV3 Service Worker (Stateless event logic)
+├── newtab/       # React App (Page orchestrator & Components)
+│   ├── components/ # Pure UI/UX (Atomic design)
+│   └── styles/     # Tailwind v4 (Design tokens & Global CSS)
+├── stores/       # Zustand State (Tabs, Settings, Recovery, Organizer)
+├── lib/          # Domain Logic (Grouping engine, Snapshot logic)
+├── utils/        # Infrastructure (Storage adapters, Chrome API wrappers)
+├── types/        # Type System (Shared interfaces & Enums)
+└── __tests__/    # Quality Gate (Unit, UI, A11y, E2E)
 ```
 
-Once built, load the `dist/` folder in `chrome://extensions`.
+## 🛠️ Development Lifecycle
+- **Build Pipeline**: Vite + CRXJS provides a seamless development experience for MV3, handling hot module replacement for the dashboard UI.
+- **Performance Budgeting**: We strictly monitor the bundle size to ensure the extension remains lightweight. Current budget is <500KB for the main bundle.
+- **CSS Architecture**: Tailwind v4 with Lightning CSS is used to implement the "Warm Paper" design system, ensuring fast rendering and consistent spacing.
 
----
-
-<a name="chinese"></a>
-
-## 🏮 中文说明
-
-### 🌟 核心理念
-Tab Organizer 是一款专为高效办公设计的 Chrome 扩展程序。它将凌乱的标签栏转化为一个受 Notion 启发的清新看板，自动按域名对标签进行归类。
-
-**完全本地运行：** 无服务器、无账户、无外部 API 调用。您的隐私就是我们的首要任务。
-
-> [!IMPORTANT]
-> **第一次使用？** 强烈建议查看我们的 **[交互式使用教程](https://owenleezy.github.io/tab-organizer/tutorial.html)**，只需 1 分钟即可上手。
-
-### 🚀 快速安装
-1. 前往 **[Releases](https://github.com/OWENLEEzy/tab-organizer/releases)** 页面。
-2. 下载最新的 **`tab-organizer-v[版本号].zip`** 文件。
-3. 在本地解压该文件。
-4. 打开 Chrome，进入 `chrome://extensions`。
-5. 开启 **开发者模式 (Developer mode)**。
-6. 点击 **加载已解压的扩展程序 (Load unpacked)**，选择解压出的 `dist` 文件夹。
-
-### 💎 功能亮点
-- **智能分组**：按域名自动整理标签，清爽直观。
-- **首页聚合**：将 Gmail、X、LinkedIn、GitHub 等首页自动归拢到一个卡片。
-- **开发友好**：Localhost 分组会显示端口号，一眼分辨不同的开发项目。
-- **解压动效**：关闭标签时伴有清脆的音效和五彩纸屑。
-- **重复清理**：自动检测重复标签，一键清理冗余。
-- **本地备份**：轻量级的快照功能，安全找回最近的标签页。
+## 🧪 Testing Strategy
+- **Unit Testing**: Vitest handles core logic testing (grouping, URL parsing).
+- **UI/A11y Testing**: We use a custom Vitest harness to verify component rendering and accessibility.
+- **E2E Testing**: Playwright runs in a real browser environment to ensure tab-closing and navigation flows work as expected.
+- **Gatekeeping**: `npm run check` is required before any merge. It enforces linting, testing, and bundle size budgets.
 
 ---
 
 ## 🏗️ Tech Stack
-
-| Component | Technology |
+| Layer | Technology |
 | :--- | :--- |
 | **Framework** | React 19 + TypeScript |
-| **Styling** | Vanilla CSS (Lightning CSS) |
-| **State** | Zustand |
-| **Build Tool** | Vite + CRXJS |
-| **Storage** | `chrome.storage.local` |
+| **State** | Zustand (Local Persistence) |
+| **Styling** | Tailwind CSS v4 + Newsreader & DM Sans |
+| **Build** | Vite + CRXJS |
+| **Testing** | Vitest + Playwright |
+| **Runtime** | Chrome Extension MV3 |
 
 ---
 
 ## 🔗 Credits
-
-Inspired by the original **[Tab Out](https://github.com/OWENLEEzy/tab-out)** project. 
-
----
-
-<div align="center">
-  Made with ❤️ for a cleaner browser.
-</div>
+Inspired by the original **[Tab Out](https://github.com/OWENLEEzy/tab-out)**. Built with ❤️ for a cleaner browser.
