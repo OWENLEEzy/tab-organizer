@@ -247,15 +247,6 @@ export function DomainCard({
                 <span>{totalExtras}</span>
               </button>
             )}
-            <button
-              type="button"
-              className="flex h-7 w-7 items-center justify-center rounded-sm text-text-secondary transition-colors hover:bg-surface-light hover:text-accent-red dark:hover:bg-surface-dark"
-              onClick={handleCloseDomain}
-              title={`Close all ${tabs.length} tabs`}
-              aria-label={`Close all ${tabs.length} ${displayName} tabs`}
-            >
-              <CloseAllIcon />
-            </button>
           </div>
         </div>
       </div>

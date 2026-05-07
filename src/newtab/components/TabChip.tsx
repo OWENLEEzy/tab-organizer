@@ -161,7 +161,13 @@ export function TabChip({
         onClick={handleClick}
         aria-current={active ? 'page' : undefined}
       >
-        {/* Active indicator dot */}
+        {/* 
+          Active indicator dot 
+          This indicator shows if a tab is the currently active (selected) tab in its window.
+          - In a multi-window setup, each window will have exactly one active tab.
+          - If the user is viewing this Dashboard, the Dashboard tab itself is active (but filtered out),
+            so dots will only appear for active tabs in OTHER windows.
+        */}
         {active && (
           <span
             className="bg-accent-sage h-1.5 w-1.5 shrink-0 rounded-full"

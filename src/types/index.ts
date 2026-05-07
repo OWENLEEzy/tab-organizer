@@ -191,3 +191,14 @@ export interface ConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
+
+export interface PromptDialogProps {
+  open: boolean;
+  title: string;
+  label: string;
+  initialValue: string;
+  placeholder?: string;
+  confirmLabel: string;
+  onConfirm: (value: string) => void;
+  onCancel: () => void;
+}

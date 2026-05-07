@@ -316,4 +316,37 @@ describe('useTabStore', () => {
 
     expect(chromeTabs.remove).toHaveBeenCalledWith([11, 12]);
   });
+
+  it('correctly maps active status when fetching tabs', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+    });
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(1, 'https://example.com/1', { active: true }),
+      makeChromeTab(2, 'https://example.com/2', { active: false }),
+    ]);
+
+    await useTabStore.getState().fetchTabs();
+
+    const state = useTabStore.getState();
+    expect(state.tabs.find((t) => t.id === 1)?.active).toBe(true);
+    expect(state.tabs.find((t) => t.id === 2)?.active).toBe(false);
+  });
+
+  it('handles the edge case where no real tabs are active', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+    });
+    // Scenario: All active tabs are internal pages (filtered out by isRealTab)
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(1, 'chrome://settings', { active: true }),
+      makeChromeTab(2, 'https://example.com/1', { active: false }),
+    ]);
+
+    await useTabStore.getState().fetchTabs();
+
+    const state = useTabStore.getState();
+    expect(state.tabs).toHaveLength(1);
+    expect(state.tabs[0].active).toBe(false);
+  });
 });

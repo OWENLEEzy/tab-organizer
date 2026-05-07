@@ -138,6 +138,19 @@ describe('groupTabsByDomain', () => {
     expect(groups[0].color).toBe('#4DAB9A');
   });
 
+  it('preserves the active status of tabs during grouping', () => {
+    const tabs = [
+      makeTab({ id: 1, url: 'https://example.com/1', active: true }),
+      makeTab({ id: 2, url: 'https://example.com/2', active: false }),
+    ];
+
+    const groups = groupTabsByDomain(tabs);
+    const exampleGroup = groups[0];
+
+    expect(exampleGroup.tabs.find((t) => t.id === 1)?.active).toBe(true);
+    expect(exampleGroup.tabs.find((t) => t.id === 2)?.active).toBe(false);
+  });
+
   it('detects exact duplicate URLs', () => {
     const tabs = [
       makeTab({ id: 1, url: 'https://example.com/page' }),
@@ -223,6 +236,36 @@ describe('groupTabsByDomain', () => {
 
       expect(groups[0].domain).toBe('example');
       expect(groups).toHaveLength(3);
+    });
+  });
+
+  describe('domain consolidation', () => {
+    it('consolidates localized Google domains into a single group', () => {
+      const tabs = [
+        makeTab({ id: 1, url: 'https://www.google.com/' }),
+        makeTab({ id: 2, url: 'https://www.google.com.hk/' }),
+        makeTab({ id: 3, url: 'https://www.google.co.uk/' }),
+      ];
+
+      const groups = groupTabsByDomain(tabs);
+
+      expect(groups).toHaveLength(1);
+      expect(groups[0].productKey).toBe('google');
+      expect(groups[0].tabs).toHaveLength(3);
+    });
+
+    it('strips www and m prefixes when grouping unknown domains', () => {
+      const tabs = [
+        makeTab({ id: 1, url: 'https://example.com/' }),
+        makeTab({ id: 2, url: 'https://www.example.com/' }),
+        makeTab({ id: 3, url: 'https://m.example.com/' }),
+      ];
+
+      const groups = groupTabsByDomain(tabs);
+
+      expect(groups).toHaveLength(1);
+      expect(groups[0].productKey).toBe('example');
+      expect(groups[0].tabs).toHaveLength(3);
     });
   });
 });
