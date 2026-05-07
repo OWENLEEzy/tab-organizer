@@ -1,114 +1,14 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTabStore } from '../../stores/tab-store';
 import { useSettingsStore } from '../../stores/settings-store';
-import { clearGroupOrder } from '../../utils/storage';
 import { useKeyboard } from './useKeyboard';
 import { flattenVisibleTabs } from '../lib/visible-tabs';
-import { getChipCloseDelay, userPrefersReducedMotion } from '../lib/motion';
-import { playCloseEffects } from '../../lib/close-effects';
 import { isTabOutPage } from '../../utils/url';
-import type { TabGroup, ManualGroup } from '../../types';
+import type { TabGroup } from '../../types';
+import { useUIState } from './useUIState';
+import { useTabHandlers } from './useTabHandlers';
 
-// ─── Types ────────────────────────────────────────────────────────────
-
-interface AppState {
-  toast: { message: string; visible: boolean };
-  searchQuery: string;
-  confirmDialog: {
-    open: boolean;
-    title: string;
-    message: string;
-    confirmLabel: string;
-    onConfirm: () => void;
-  };
-  settingsOpen: boolean;
-  isSidebarExpanded: boolean;
-  nudgeDismissed: boolean;
-  focusedIndex: number | null;
-  closingUrls: Set<string>;
-  selectedUrls: Set<string>;
-  lastClickedIndex: number | null;
-  expandedDomains: Set<string>;
-  promptDialog: {
-    open: boolean;
-    title: string;
-    label: string;
-    initialValue: string;
-    confirmLabel: string;
-    onConfirm: (value: string) => void;
-  };
-}
-
-type AppAction =
-  | { type: 'SET_TOAST'; message: string; visible: boolean }
-  | { type: 'SET_SEARCH_QUERY'; query: string }
-  | { type: 'SET_CONFIRM_DIALOG'; dialog: AppState['confirmDialog'] }
-  | { type: 'CLOSE_CONFIRM_DIALOG' }
-  | { type: 'SET_SETTINGS_OPEN'; open: boolean }
-  | { type: 'SET_SIDEBAR_EXPANDED'; expanded: boolean }
-  | { type: 'SET_NUDGE_DISMISSED'; dismissed: boolean }
-  | { type: 'SET_FOCUSED_INDEX'; index: number | null | ((prev: number | null) => number | null) }
-  | { type: 'SET_CLOSING_URLS'; urls: Set<string> | ((prev: Set<string>) => Set<string>) }
-  | { type: 'SET_SELECTED_URLS'; urls: Set<string> | ((prev: Set<string>) => Set<string>) }
-  | { type: 'SET_LAST_CLICKED_INDEX'; index: number | null }
-  | { type: 'SET_EXPANDED_DOMAINS'; domains: Set<string> | ((prev: Set<string>) => Set<string>) }
-  | { type: 'SET_PROMPT_DIALOG'; dialog: AppState['promptDialog'] }
-  | { type: 'CLOSE_PROMPT_DIALOG' }
-  | { type: 'RESET_INTERACTION' };
-
-const initialState: AppState = {
-  toast: { message: '', visible: false },
-  searchQuery: '',
-  confirmDialog: { open: false, title: '', message: '', confirmLabel: '', onConfirm: () => {} },
-  settingsOpen: false,
-  isSidebarExpanded: false,
-  nudgeDismissed: false,
-  focusedIndex: null,
-  closingUrls: new Set(),
-  selectedUrls: new Set(),
-  lastClickedIndex: null,
-  expandedDomains: new Set(),
-  promptDialog: { open: false, title: '', label: '', initialValue: '', confirmLabel: '', onConfirm: () => {} },
-};
-
-function appReducer(state: AppState, action: AppAction): AppState {
-  switch (action.type) {
-    case 'SET_TOAST':
-      return { ...state, toast: { message: action.message, visible: action.visible } };
-    case 'SET_SEARCH_QUERY':
-      return { ...state, searchQuery: action.query };
-    case 'SET_CONFIRM_DIALOG':
-      return { ...state, confirmDialog: action.dialog };
-    case 'CLOSE_CONFIRM_DIALOG':
-      return { ...state, confirmDialog: { ...state.confirmDialog, open: false } };
-    case 'SET_SETTINGS_OPEN':
-      return { ...state, settingsOpen: action.open };
-    case 'SET_SIDEBAR_EXPANDED':
-      return { ...state, isSidebarExpanded: action.expanded };
-    case 'SET_NUDGE_DISMISSED':
-      return { ...state, nudgeDismissed: action.dismissed };
-    case 'SET_FOCUSED_INDEX':
-      return { ...state, focusedIndex: typeof action.index === 'function' ? action.index(state.focusedIndex) : action.index };
-    case 'SET_CLOSING_URLS':
-      return { ...state, closingUrls: typeof action.urls === 'function' ? action.urls(state.closingUrls) : action.urls };
-    case 'SET_SELECTED_URLS':
-      return { ...state, selectedUrls: typeof action.urls === 'function' ? action.urls(state.selectedUrls) : action.urls };
-    case 'SET_LAST_CLICKED_INDEX':
-      return { ...state, lastClickedIndex: action.index };
-    case 'SET_EXPANDED_DOMAINS':
-      return { ...state, expandedDomains: typeof action.domains === 'function' ? action.domains(state.expandedDomains) : action.domains };
-    case 'SET_PROMPT_DIALOG':
-      return { ...state, promptDialog: action.dialog };
-    case 'CLOSE_PROMPT_DIALOG':
-      return { ...state, promptDialog: { ...state.promptDialog, open: false } };
-    case 'RESET_INTERACTION':
-      return { ...state, searchQuery: '', settingsOpen: false, focusedIndex: null, selectedUrls: new Set(), lastClickedIndex: null };
-    default:
-      return state;
-  }
-}
-
-const TOAST_DURATION = 2500;
+// ─── Helpers ────────────────────────────────────────────────────────────
 
 function productKeyForProduct(p: TabGroup): string {
   return p.productKey ?? p.itemKey ?? p.domain;
@@ -131,84 +31,24 @@ function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void
 
 export function useAppLogic() {
   const [loading, setLoading] = React.useState(true);
-  const [state, dispatch] = React.useReducer(appReducer, initialState);
-
+  
+  // ─── Modular Hooks ──────────────────────────────────────────────────
+  const { state, dispatch, showToast } = useUIState();
   const {
-    toast,
     searchQuery,
-    confirmDialog,
-    settingsOpen,
-    isSidebarExpanded,
-    nudgeDismissed,
     focusedIndex,
-    closingUrls,
+    expandedDomains,
     selectedUrls,
     lastClickedIndex,
-    expandedDomains,
   } = state;
-
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── Stores ────────────────────────────────────────────────────────
   const tabStore = useTabStore();
   const settingsStore = useSettingsStore();
 
   const { tabs, products, loading: tabsLoading } = tabStore;
-  const { manualGroups, groupAssignments, viewMode, history } = tabStore;
+  const { manualGroups, groupAssignments } = tabStore;
   const { settings } = settingsStore;
-
-  // ─── Toast helper ──────────────────────────────────────────────────
-
-  const showToast = useCallback((message: string) => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    dispatch({ type: 'SET_TOAST', message, visible: true });
-    toastTimer.current = setTimeout(() => {
-      dispatch({ type: 'SET_TOAST', message, visible: false });
-    }, TOAST_DURATION);
-  }, []);
-
-  // ─── Init: fetch data + dark mode ──────────────────────────────────
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const applyTheme = () => {
-      const { theme } = useSettingsStore.getState().settings;
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else if (theme === 'light') {
-        document.documentElement.classList.remove('dark');
-      } else {
-        document.documentElement.classList.toggle('dark', mq.matches);
-      }
-    };
-
-    applyTheme();
-    mq.addEventListener('change', applyTheme);
-
-    const unsub = useSettingsStore.subscribe(applyTheme);
-
-    return () => {
-      mq.removeEventListener('change', applyTheme);
-      unsub();
-    };
-  }, []);
-
-  useEffect(() => {
-    async function init() {
-      await Promise.all([
-        tabStore.fetchTabs(),
-        settingsStore.fetchSettings(),
-        tabStore.fetchHistory(),
-      ]);
-      setLoading(false);
-    }
-    init();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    const cleanup = tabStore.startListeners();
-    return cleanup;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Derived state ──────────────────────────────────────────────────
 
@@ -293,11 +133,11 @@ export function useAppLogic() {
     return result;
   }, [assignmentByItemId, filteredProducts, groupAssignmentKey, orderedGroups, groupAssignments]);
 
-  const flatChips = flattenVisibleTabs(
+  const flatChips = useMemo(() => flattenVisibleTabs(
     filteredProducts,
     settings.maxChipsVisible,
     expandedDomains,
-  );
+  ), [filteredProducts, settings.maxChipsVisible, expandedDomains]);
 
   const focusedUrl = focusedIndex !== null ? flatChips[focusedIndex]?.url ?? null : null;
 
@@ -312,317 +152,57 @@ export function useAppLogic() {
   );
 
   // ─── Handlers ──────────────────────────────────────────────────────
+  const handlers = useTabHandlers({
+    settings,
+    dispatch,
+    showToast,
+    flatChips,
+    selectedUrls,
+    lastClickedIndex,
+  });
 
-  const performBatchClose = useCallback(
-    async (urls: string[], toastMessage: string) => {
-      if (urls.length === 0) return;
-      playCloseEffects(settings);
-      await tabStore.closeTabsExact(urls);
-      showToast(toastMessage);
-      playCloseEffects(settings, {
-        sound: false,
-        confettiOrigin: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
-      });
-    },
-    [settings, tabStore, showToast],
-  );
+  // ─── Init: fetch data + dark mode ──────────────────────────────────
 
-  const handleCloseProduct = useCallback(
-    (p: TabGroup) => {
-      dispatch({
-        type: 'SET_CONFIRM_DIALOG',
-        dialog: {
-          open: true,
-          title: `Close all ${p.friendlyName || p.domain} tabs`,
-          message: `This will close all ${p.tabs.length} tabs for this product.`,
-          confirmLabel: 'Close all',
-          onConfirm: () => {
-            const urls = p.tabs.map((t) => t.url);
-            performBatchClose(urls, `Closed all ${p.tabs.length} ${p.friendlyName || p.domain} tabs`);
-            dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
-          },
-        },
-      });
-    },
-    [performBatchClose],
-  );
-
-  const handleCloseManualGroup = useCallback(
-    (groups: TabGroup[], title: string) => {
-      const urls = groups.flatMap((p) => p.tabs.map((t) => t.url));
-      dispatch({
-        type: 'SET_CONFIRM_DIALOG',
-        dialog: {
-          open: true,
-          title: `Close all tabs in ${title}`,
-          message: `This will close all ${urls.length} tabs in this section.`,
-          confirmLabel: 'Close all',
-          onConfirm: () => {
-            performBatchClose(urls, `Closed all ${urls.length} tabs in ${title}`);
-            dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
-          },
-        },
-      });
-    },
-    [performBatchClose],
-  );
-
-  const handleCloseDuplicates = useCallback(
-    (urls: string[]) => {
-      dispatch({
-        type: 'SET_CONFIRM_DIALOG',
-        dialog: {
-          open: true,
-          title: 'Close duplicates',
-          message: `This will close all ${urls.length} duplicate tabs, keeping one of each.`,
-          confirmLabel: 'Close Duplicates',
-          onConfirm: () => {
-            playCloseEffects(settings);
-            tabStore.closeDuplicates(urls, true).then(() => {
-              showToast('Duplicates closed');
-            });
-            dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
-          },
-        },
-      });
-    },
-    [settings, tabStore, showToast],
-  );
-
-  const handleCloseTabAnimated = useCallback(
-    (url: string) => {
-      const closeDelay = getChipCloseDelay(userPrefersReducedMotion());
-      playCloseEffects(settings);
-
-      if (closeDelay === 0) {
-        tabStore.closeTabByUrl(url).then(() => {
-          showToast('Tab closed');
-        });
-        return;
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const applyTheme = () => {
+      const { theme } = useSettingsStore.getState().settings;
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else if (theme === 'light') {
+        document.documentElement.classList.remove('dark');
+      } else {
+        document.documentElement.classList.toggle('dark', mq.matches);
       }
-
-      dispatch({ type: 'SET_CLOSING_URLS', urls: (prev) => new Set([...prev, url]) });
-      setTimeout(() => {
-        tabStore.closeTabByUrl(url).then(() => {
-          showToast('Tab closed');
-          dispatch({
-            type: 'SET_CLOSING_URLS',
-            urls: (prev) => {
-              const next = new Set(prev);
-              next.delete(url);
-              return next;
-            },
-          });
-        });
-      }, closeDelay);
-    },
-    [settings, tabStore, showToast],
-  );
-
-  const handleFocusTab = useCallback(
-    (url: string) => {
-      tabStore.focusTab(url);
-    },
-    [tabStore],
-  );
-
-  const handleResetSortOrder = useCallback(async () => {
-    await clearGroupOrder();
-    await tabStore.fetchTabs();
-    showToast('Sort order reset');
-    dispatch({ type: 'SET_SETTINGS_OPEN', open: false });
-  }, [tabStore, showToast]);
-
-  const handleChipClick = useCallback(
-    (url: string, event: React.MouseEvent) => {
-      const chipIndex = flatChips.findIndex((c) => c.url === url);
-      if (chipIndex === -1) return;
-
-      if (event.shiftKey && lastClickedIndex !== null) {
-        const start = Math.min(lastClickedIndex, chipIndex);
-        const end = Math.max(lastClickedIndex, chipIndex);
-        const rangeUrls = flatChips.slice(start, end + 1).map((c) => c.url);
-        dispatch({
-          type: 'SET_SELECTED_URLS',
-          urls: (prev) => new Set([...prev, ...rangeUrls]),
-        });
-      } else if (event.metaKey || event.ctrlKey || selectedUrls.size > 0) {
-        dispatch({
-          type: 'SET_SELECTED_URLS',
-          urls: (prev) => {
-            const next = new Set(prev);
-            if (next.has(url)) {
-              next.delete(url);
-            } else {
-              next.add(url);
-            }
-            return next;
-          },
-        });
-      }
-      dispatch({ type: 'SET_LAST_CLICKED_INDEX', index: chipIndex });
-    },
-    [flatChips, lastClickedIndex, selectedUrls],
-  );
-
-  const handleClearSelection = useCallback(() => {
-    dispatch({ type: 'SET_SELECTED_URLS', urls: new Set() });
-    dispatch({ type: 'SET_LAST_CLICKED_INDEX', index: null });
-  }, []);
-
-  const handleToggleExpanded = useCallback((domain: string) => {
-    dispatch({
-      type: 'SET_EXPANDED_DOMAINS',
-      domains: (prev) => {
-        const next = new Set(prev);
-        if (next.has(domain)) {
-          next.delete(domain);
-        } else {
-          next.add(domain);
-        }
-        return next;
-      },
-    });
-  }, []);
-
-  const handleCloseSelected = useCallback(() => {
-    const urls = [...selectedUrls];
-    const count = urls.length;
-    
-    const performClose = () => {
-      playCloseEffects(settings);
-      tabStore.closeOneTabPerUrl(urls).then(() => {
-        showToast(`Closed ${count} tab${count !== 1 ? 's' : ''}`);
-        dispatch({ type: 'SET_SELECTED_URLS', urls: new Set() });
-        dispatch({ type: 'SET_LAST_CLICKED_INDEX', index: null });
-      });
     };
 
-    if (count > 2) {
-      dispatch({
-        type: 'SET_CONFIRM_DIALOG',
-        dialog: {
-          open: true,
-          title: `Close ${count} selected tabs`,
-          message: `Are you sure you want to close these ${count} tabs?`,
-          confirmLabel: 'Close Selected',
-          onConfirm: () => {
-            performClose();
-            dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
-          },
-        },
-      });
-    } else {
-      performClose();
+    applyTheme();
+    mq.addEventListener('change', applyTheme);
+
+    const unsub = useSettingsStore.subscribe(applyTheme);
+
+    return () => {
+      mq.removeEventListener('change', applyTheme);
+      unsub();
+    };
+  }, []);
+
+  useEffect(() => {
+    async function init() {
+      await Promise.all([
+        tabStore.fetchTabs(),
+        settingsStore.fetchSettings(),
+        tabStore.fetchHistory(),
+      ]);
+      setLoading(false);
     }
-  }, [selectedUrls, settings, tabStore, showToast]);
+    init();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleCloseAll = useCallback(() => {
-    dispatch({
-      type: 'SET_CONFIRM_DIALOG',
-      dialog: {
-        open: true,
-        title: 'Close all tabs',
-        message: `This will close all ${tabs.length} open tabs. This cannot be undone.`,
-        confirmLabel: 'Close All',
-        onConfirm: () => {
-          const allUrls = tabs.map((t) => t.url);
-          performBatchClose(allUrls, `Closed ${tabs.length} tabs`);
-          dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
-        },
-      },
-    });
-  }, [tabs, performBatchClose]);
-
-  const handleCreateGroup = useCallback(() => {
-    dispatch({
-      type: 'SET_PROMPT_DIALOG',
-      dialog: {
-        open: true,
-        title: 'New Section',
-        label: 'Section Name',
-        initialValue: 'Work',
-        confirmLabel: 'Create Section',
-        onConfirm: (name) => {
-          tabStore.createGroup(name).then(() => {
-            showToast('Group created');
-          });
-          dispatch({ type: 'CLOSE_PROMPT_DIALOG' });
-        },
-      },
-    });
-  }, [tabStore, showToast]);
-
-  const handleRenameGroup = useCallback((group: { id: string; name: string }) => {
-    dispatch({
-      type: 'SET_PROMPT_DIALOG',
-      dialog: {
-        open: true,
-        title: 'Rename Section',
-        label: 'Section Name',
-        initialValue: group.name,
-        confirmLabel: 'Save Changes',
-        onConfirm: (name) => {
-          tabStore.renameGroup(group.id, name).then(() => {
-            showToast('Group renamed');
-          });
-          dispatch({ type: 'CLOSE_PROMPT_DIALOG' });
-        },
-      },
-    });
-  }, [tabStore, showToast]);
-
-  const handleDeleteGroup = useCallback((group: { id: string; name: string }) => {
-    dispatch({
-      type: 'SET_CONFIRM_DIALOG',
-      dialog: {
-        open: true,
-        title: `Delete ${group.name}`,
-        message: 'Items in this group will return to Unsorted. No tabs will be closed.',
-        confirmLabel: 'Delete group',
-        onConfirm: () => {
-          tabStore.deleteGroup(group.id).then(() => {
-            showToast('Group deleted');
-          });
-          dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
-        },
-      },
-    });
-  }, [tabStore, showToast]);
-
-  const handleSetViewMode = useCallback((mode: 'cards' | 'table') => {
-    tabStore.setViewMode(mode).then(() => {
-      showToast(mode === 'cards' ? 'Cards view' : 'Table view');
-    });
-  }, [tabStore, showToast]);
-
-  const handleRefresh = useCallback(async () => {
-    await tabStore.fetchTabs();
-    showToast('Refreshed');
-  }, [tabStore, showToast]);
-
-  const handleMoveTableItem = useCallback((p: TabGroup, groupId: string) => {
-    const productKey = productKeyForProduct(p);
-    const move = groupId
-      ? tabStore.moveProductToGroup(productKey, groupId)
-      : tabStore.moveProductToMain(productKey);
-
-    move.then(() => {
-      showToast(groupId ? 'Moved to group' : 'Moved to Unsorted');
-    });
-  }, [tabStore, showToast]);
-
-  const handleMoveProductToMain = useCallback((productKey: string) => {
-    tabStore.moveProductToMain(productKey).then(() => {
-      showToast('Moved to Unsorted');
-    });
-  }, [tabStore, showToast]);
-
-  const handleMoveProductToGroup = useCallback((productKey: string, groupId: string) => {
-    tabStore.moveProductToGroup(productKey, groupId).then(() => {
-      showToast('Moved to group');
-    });
-  }, [tabStore, showToast]);
+  useEffect(() => {
+    const cleanup = tabStore.startListeners();
+    return cleanup;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Keyboard shortcuts ────────────────────────────────────────────
 
@@ -659,12 +239,12 @@ export function useAppLogic() {
       const active = document.activeElement;
       if (active?.closest('[data-tab-url]')) return;
       if (focusedIndex !== null && flatChips[focusedIndex]) {
-        handleFocusTab(flatChips[focusedIndex].url);
+        handlers.handleFocusTab(flatChips[focusedIndex].url);
       }
     },
     onDClose: () => {
       if (focusedIndex !== null && flatChips[focusedIndex]) {
-        handleCloseTabAnimated(flatChips[focusedIndex].url);
+        handlers.handleCloseTabAnimated(flatChips[focusedIndex].url);
       }
     },
   });
@@ -698,26 +278,8 @@ export function useAppLogic() {
     },
     dispatch,
     handlers: {
+      ...handlers,
       showToast,
-      handleCloseProduct,
-      handleCloseManualGroup,
-      handleCloseDuplicates,
-      handleCloseTabAnimated,
-      handleFocusTab,
-      handleResetSortOrder,
-      handleChipClick,
-      handleClearSelection,
-      handleToggleExpanded,
-      handleCloseSelected,
-      handleCloseAll,
-      handleCreateGroup,
-      handleRenameGroup,
-      handleDeleteGroup,
-      handleSetViewMode,
-      handleRefresh,
-      handleMoveTableItem,
-      handleMoveProductToMain,
-      handleMoveProductToGroup,
     },
   };
 }

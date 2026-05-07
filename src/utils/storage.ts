@@ -116,6 +116,27 @@ function normalizeAssignments(value: unknown): GroupAssignment[] {
     });
 }
 
+/**
+ * Prune assignments that point to non-existent groups or products.
+ */
+export function pruneAssignments(
+  assignments: GroupAssignment[],
+  groups: ManualGroup[],
+  currentProductKeys: Set<string>,
+): GroupAssignment[] {
+  const groupIds = new Set(groups.map((g) => g.id));
+  const seen = new Set<string>();
+
+  return assignments.filter((assignment) => {
+    if (!groupIds.has(assignment.groupId)) return false;
+    if (!currentProductKeys.has(assignment.productKey)) return false;
+
+    if (seen.has(assignment.productKey)) return false;
+    seen.add(assignment.productKey);
+    return true;
+  });
+}
+
 function normalizeHistorySnapshot(value: unknown): HistorySnapshot | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Partial<HistorySnapshot>;
@@ -391,6 +412,39 @@ export async function writeGroupOrder(order: Record<string, number>): Promise<vo
  */
 export async function clearGroupOrder(): Promise<void> {
   await writeGroupOrder({});
+}
+
+/**
+ * Cleanup groupOrder and assignments for items no longer present in the browser.
+ */
+export async function pruneStaleStorage(currentProductKeys: Set<string>): Promise<void> {
+  await updateStorage((current) => {
+    const staleKeys = Object.keys(current.groupOrder).filter((d) => !currentProductKeys.has(d));
+    const nextAssignments = pruneAssignments(
+      current.groupAssignments,
+      current.manualGroups,
+      currentProductKeys
+    );
+
+    if (staleKeys.length === 0 && nextAssignments.length === current.groupAssignments.length) {
+      return current;
+    }
+
+    const cleanedOrder: Record<string, number> = {};
+    for (const [domain, order] of Object.entries(current.groupOrder)) {
+      if (currentProductKeys.has(domain)) {
+        cleanedOrder[domain] = order;
+      }
+    }
+
+    return {
+      ...current,
+      groupOrder: cleanedOrder,
+      groupAssignments: nextAssignments,
+    };
+  }).catch((err: unknown) => {
+    console.warn('[Tab Out] Failed to prune stale organizer storage:', err);
+  });
 }
 
 export async function readOrganizerState(): Promise<{

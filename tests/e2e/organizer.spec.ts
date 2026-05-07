@@ -8,11 +8,12 @@ test.describe('Hybrid Organizer', () => {
   test('creates a section, moves a product in table view, and persists after refresh', async ({ page }) => {
     await page.waitForSelector('[class*="rounded-card"]');
 
-    page.once('dialog', async (dialog) => {
-      expect(dialog.message()).toContain('Group name');
-      await dialog.accept('Later');
-    });
     await page.getByRole('button', { name: 'New Group' }).click();
+    const dialog = page.locator('[role="dialog"]');
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel('Section Name').fill('Later');
+    await dialog.getByRole('button', { name: 'Create Section' }).click();
+    await expect(dialog).not.toBeVisible();
     await expect(page.getByRole('heading', { name: 'Later' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Table' }).click();

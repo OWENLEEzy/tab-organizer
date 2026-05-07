@@ -14,7 +14,6 @@ import { StatusStrip } from './components/layout/StatusStrip';
 import type { StatusStripAlert } from './components/layout/StatusStrip';
 import { DashboardHeader } from './components/layout/DashboardHeader';
 import { HistoryPanel } from './components/HistoryPanel';
-import { isTabOutPage } from '../utils/url';
 import { useAppLogic } from './hooks/useAppLogic';
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -45,18 +44,7 @@ export function App(): React.ReactElement {
       label: `${state.tabOutCount - 1} extra dashboard tab${state.tabOutCount - 1 === 1 ? '' : 's'}`,
       actionLabel: 'Close extras',
       onAction: () => {
-        chrome.tabs.getCurrent().then((currentTab) => {
-          const currentTabId = currentTab?.id ?? -1;
-          const tabOutUrls: string[] = [];
-          for (const t of tabStore.tabs) {
-            if (isTabOutPage(t.url) && t.id !== currentTabId) {
-              tabOutUrls.push(t.url);
-            }
-          }
-          if (tabOutUrls.length > 0) {
-            tabStore.closeTabsExact(tabOutUrls).catch(() => {});
-          }
-        }).catch(() => {});
+        tabStore.closeExtraDashboards();
       },
     });
   }
@@ -187,6 +175,7 @@ export function App(): React.ReactElement {
 
       {/* Prompt dialog */}
       <PromptDialog
+        key={state.promptDialog.open ? state.promptDialog.title : 'closed'}
         open={state.promptDialog.open}
         title={state.promptDialog.title}
         label={state.promptDialog.label}

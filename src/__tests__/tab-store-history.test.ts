@@ -81,12 +81,12 @@ describe('TabStore History Actions', () => {
 
   it('deleteHistorySnapshot removes snapshot', async () => {
     await useTabStore.getState().deleteHistorySnapshot('s1');
-    expect(chromeStorage.data['history'] as any[]).toHaveLength(0);
+    expect(chromeStorage.data['history'] as HistorySnapshot[]).toHaveLength(0);
   });
 
   it('clearHistory removes all snapshots', async () => {
     await useTabStore.getState().clearHistory();
-    expect(chromeStorage.data['history'] as any[]).toHaveLength(0);
+    expect(chromeStorage.data['history'] as HistorySnapshot[]).toHaveLength(0);
     expect(useTabStore.getState().history).toHaveLength(0);
   });
 });

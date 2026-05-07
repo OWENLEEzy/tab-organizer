@@ -9,6 +9,8 @@ import {
   readStorage,
   updateStorage,
   writeGroupOrder,
+  pruneAssignments,
+  pruneStaleStorage,
 } from '../utils/storage';
 import { buildHistorySnapshot } from '../lib/history-snapshots';
 import { getTabDomain, isRealTab, isTabOutPage } from '../utils/url';
@@ -61,6 +63,8 @@ interface TabActions {
   deleteHistorySnapshot: (snapshotId: string) => Promise<void>;
   /** Clear all historical snapshots. */
   clearHistory: () => Promise<void>;
+  /** Find and close all other open dashboard tabs except the current one. */
+  closeExtraDashboards: () => Promise<void>;
 }
 
 export type TabStore = {
@@ -94,25 +98,6 @@ function toAppTab(raw: chrome.tabs.Tab): Tab {
     isLandingPage: false,
     duplicateCount: 0,
   };
-}
-
-function pruneAssignments(
-  assignments: GroupAssignment[],
-  groups: ManualGroup[],
-  productGroups: TabGroup[],
-): GroupAssignment[] {
-  const groupIds = new Set(groups.map((g) => g.id));
-  const productKeys = new Set(productGroups.map((group) => group.domain));
-  const seen = new Set<string>();
-
-  return assignments.filter((assignment) => {
-    if (!groupIds.has(assignment.groupId)) return false;
-    if (!productKeys.has(assignment.productKey)) return false;
-
-    if (seen.has(assignment.productKey)) return false;
-    seen.add(assignment.productKey);
-    return true;
-  });
 }
 
 function orderedGroups(groups: ManualGroup[]): ManualGroup[] {
@@ -151,31 +136,16 @@ export const useTabStore = create<TabStore>((set) => ({
       const groupOrder = storage.groupOrder;
       const productGroups = groupTabsByDomain(mapped, groupOrder);
       const manualGroups = orderedGroups(storage.manualGroups);
+      const productDomains = new Set(productGroups.map((g) => g.domain));
       const groupAssignments = pruneAssignments(
         storage.groupAssignments,
         manualGroups,
-        productGroups,
+        productDomains,
       );
       const products = productGroups;
 
-      // Prune stale groupOrder entries for domains no longer present
-      const currentDomains = new Set(productGroups.map((g) => g.domain));
-      const staleKeys = Object.keys(groupOrder).filter((d) => !currentDomains.has(d));
-      if (staleKeys.length > 0 || groupAssignments.length !== storage.groupAssignments.length) {
-        const cleaned: Record<string, number> = {};
-        for (const [domain, order] of Object.entries(groupOrder)) {
-          if (currentDomains.has(domain)) {
-            cleaned[domain] = order;
-          }
-        }
-        await updateStorage((current) => ({
-          ...current,
-          groupOrder: cleaned,
-          groupAssignments,
-        })).catch((err: unknown) => {
-          console.warn('[Tab Out] Failed to prune stale organizer storage:', err);
-        });
-      }
+      // Prune stale groupOrder entries for domains no longer present in background
+      await pruneStaleStorage(productDomains);
 
       set({
         tabs: mapped,
@@ -515,5 +485,22 @@ export const useTabStore = create<TabStore>((set) => ({
   clearHistory: async () => {
     await clearHistory();
     set({ history: [] });
+  },
+
+  closeExtraDashboards: async () => {
+    try {
+      const currentTab = await chrome.tabs.getCurrent();
+      const currentTabId = currentTab?.id ?? -1;
+      const allTabs = useTabStore.getState().tabs;
+      const extraDashboards = allTabs
+        .filter((t) => t.isTabOut && t.id !== currentTabId)
+        .map((t) => t.url);
+
+      if (extraDashboards.length > 0) {
+        await useTabStore.getState().closeTabsExact(extraDashboards);
+      }
+    } catch (err: unknown) {
+      console.warn('[Tab Out] Failed to close extra dashboards:', err);
+    }
   },
 }));

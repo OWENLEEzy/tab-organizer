@@ -115,7 +115,7 @@ export function TabChip({
     }
   }, [isFocused]);
 
-  const handleClick = useCallback((e: React.MouseEvent) => {
+  const handleFocusOrSelect = useCallback((e: React.MouseEvent) => {
     if (onChipClick && (selectionMode || e.shiftKey || e.metaKey || e.ctrlKey)) {
       e.stopPropagation();
       onChipClick(url, e);
@@ -158,7 +158,7 @@ export function TabChip({
         className={chipClasses}
         data-tab-url={safeUrl}
         title={displayLabel}
-        onClick={handleClick}
+        onClick={handleFocusOrSelect}
         aria-current={active ? 'page' : undefined}
       >
         {/* 

@@ -17,12 +17,7 @@ export function PromptDialog({
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync value when initialValue changes or dialog opens
-  useEffect(() => {
-    if (open) {
-      setValue(initialValue);
-    }
-  }, [open, initialValue]);
+
 
   // Close on Escape key
   useEffect(() => {

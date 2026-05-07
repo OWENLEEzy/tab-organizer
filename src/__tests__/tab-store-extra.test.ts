@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTabStore } from '../stores/tab-store';
 import { readStorage } from '../utils/storage';
+import type { TabGroup } from '../types';
 
 const chromeTabs = {
   query: vi.fn(),
@@ -41,7 +42,7 @@ vi.stubGlobal('chrome', {
 });
 
 // Mock randomUUID
-vi.spyOn(crypto, 'randomUUID').mockReturnValue('fake-uuid' as any);
+vi.spyOn(crypto, 'randomUUID').mockReturnValue('fake-uuid' as `${string}-${string}-${string}-${string}-${string}`);
 
 describe('TabStore Manual Groups & Reordering', () => {
   beforeEach(() => {
@@ -92,7 +93,7 @@ describe('TabStore Manual Groups & Reordering', () => {
     const products = [
         { domain: 'a.com', order: 0, tabs: [], friendlyName: 'A', id: 'a', color: '', hasDuplicates: false, duplicateCount: 0 },
         { domain: 'b.com', order: 1, tabs: [], friendlyName: 'B', id: 'b', color: '', hasDuplicates: false, duplicateCount: 0 }
-    ] as any;
+    ] as unknown as TabGroup[];
     useTabStore.setState({ products });
     
     useTabStore.getState().reorderProducts([products[1], products[0]]);
