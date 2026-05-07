@@ -4,12 +4,30 @@ Tab Out is a local-only Chrome MV3 extension. Clicking the toolbar icon opens a
 React dashboard of the user's currently open Chrome tabs. It is not a server
 app, account system, cloud sync product, bookmark manager, or task manager.
 
+## How To Work In This Repo
+
+- `AGENTS.md` and `CLAUDE.md` are mirrors of the same project guidance. Keep
+  them semantically identical when either file changes.
+- Start from the real code and current git state. Do not rely on stale plan text,
+  old PR descriptions, or the generated `dist/` output to describe source truth.
+- Keep changes scoped to the requested behavior. Do not add account, sync,
+  analytics, cloud storage, bookmark/task-manager, or external API semantics
+  unless the user explicitly changes the product contract.
+- Preserve unrelated work in the tree. If `git status` shows modified files you
+  did not touch, treat them as user work and avoid rewriting or reverting them.
+- Prefer the smallest relevant verification loop while debugging, then run
+  `npm run check` before claiming UI, storage, grouping, accessibility, or build
+  changes are ready.
+- When updating this file, record durable repo rules only: product contracts,
+  architecture boundaries, commands, verification gates, and recurring gotchas.
+  Do not turn it into a changelog or a one-off task log.
+
 ## Product Contract
 
 - The first screen is the working dashboard, not a marketing page.
 - Tabs are grouped automatically by product/domain; this grouping is the source
   of truth for the UI.
-- Manual sections organize product groups. They must not rewrite grouping
+- Manual groups organize product groups. They must not rewrite grouping
   semantics or become URL-level task management.
 - The extension is local-first by design: no account, no server sync, no
   analytics, no external storage, and no external API dependency.
@@ -52,14 +70,14 @@ Source of truth: `docs/frontend-design.md` and
 
 - Product/domain grouping from real Chrome tabs.
 - Cards view and Table view.
-- Product-only sections and section assignments.
+- Product-only manual groups and group assignments.
 - Organize mode for dragging product groups into sections.
 - Duplicate detection, duplicate badges, and close-duplicate actions.
 - Tab title click/focus across Chrome windows.
 - Single-tab close and group-close flows with sound/confetti effects.
 - Search and keyboard navigation across visible tab chips.
 - Settings panel for local preferences.
-- Recent sessions panel with local snapshot preview, restore, delete, and clear.
+- History panel with local snapshot preview, restore, delete, and clear.
 - Background badge updates from tab lifecycle events.
 - Browser-internal pages, extension pages, and Tab Out pages are filtered out of
   grouping and recovery snapshots.
@@ -79,7 +97,7 @@ src/
   background/       MV3 service worker and toolbar action behavior
   newtab/           React dashboard UI, hooks, components, styles
   stores/           Zustand state for tabs, settings, workspace/session data
-  lib/              Pure domain logic: grouping, titles, recovery, effects
+  lib/              Pure domain logic: grouping, titles, history, effects
   utils/            Chrome/storage/url/error adapters and helpers
   config/           Product/domain mapping and grouping configuration
   types/            Shared TypeScript interfaces
@@ -98,12 +116,12 @@ Build/runtime shape:
 - `src/newtab/index.html` is the dashboard entry.
 - `src/newtab/App.tsx` is the page orchestrator. It owns store wiring,
   transient UI state, search/keyboard flow, close/focus/dedupe handlers,
-  settings, recovery, confirmations, toast, and lazy organize mode.
+  settings, history, confirmations, toast, and lazy organize mode.
 - `src/background/index.ts` is the MV3 service worker. It refreshes badge counts
   and opens or focuses the dashboard from the toolbar action.
 - `src/utils/storage.ts` is the only adapter over `chrome.storage.local`.
 - `src/lib/tab-grouper.ts` owns product/domain grouping and duplicate counts.
-- `src/lib/recovery-snapshots.ts` owns snapshot creation and replacement rules.
+- `src/lib/history-snapshots.ts` owns snapshot creation and replacement rules.
 - `src/newtab/components/DndOrganizer.tsx` is the only component that imports
   `@dnd-kit`.
 
@@ -123,15 +141,47 @@ User action
 - Components under `src/newtab/components/` receive data and callbacks by props.
 - Components do not call `chrome.tabs.*`, `chrome.storage.local`, or storage
   utilities directly.
-- Product sections contain product groups only.
+- Manual groups contain product groups only.
 - URL-level section assignments are not part of the current model.
 - Organizer ids are namespaced as `product:<productKey>` and
-  `section:<sectionId>`.
+  `group:<groupId>`.
 - Default Cards/Table views must not import or render drag handles.
 - `@dnd-kit` must stay out of the default dashboard entry path.
 - `dist/` is generated output. Do not edit it manually.
 - CRXJS reads `manifest.json`; keep `src/newtab/index.html` as an explicit Vite
   build input so the toolbar dashboard stays bundled.
+
+## Change Playbooks
+
+For UI changes:
+
+- Check `docs/frontend-design.md` and `src/newtab/styles/global.css` first.
+- Preserve Cards/Table parity unless the user asks for a mode-specific change.
+- Verify scan, jump, close, dedupe, organize, settings, and history paths still
+  make sense after simplification.
+- Add or update explicit dark-mode styling for new surfaces.
+
+For grouping, duplicate, or visible-tab behavior:
+
+- Treat `src/lib/tab-grouper.ts` and the visible chip model as source of truth.
+- Duplicate cleanup keeps one tab and closes extras. Keyboard navigation and
+  batch-close behavior should derive from the same visible set the UI renders.
+- Prefer targeted coverage in `src/__tests__/tab-grouper.test.ts` or
+  `src/__tests__/visible-tabs.test.ts` before the full gate.
+
+For storage and history changes:
+
+- Route persisted mutations through `src/utils/storage.ts`.
+- Keep legacy normalization at the adapter boundary.
+- Validate snapshot caps, local-only behavior, and internal-page filtering.
+
+For review/fix loops:
+
+- Review concrete runtime, accessibility, state, and contract risks first.
+- Fix verified issues directly when asked, then re-review the same behavior class
+  instead of stopping at the first failing line.
+- Do not waive `color-contrast` in `tests/e2e/a11y.spec.ts` unless the user
+  explicitly accepts that regression.
 
 ## Storage Model
 
@@ -140,18 +190,19 @@ Persisted in `chrome.storage.local`:
 - Settings.
 - Product group order.
 - Product-only organizer sections.
-- Product-to-section assignments.
-- Recovery candidate/history snapshots.
-- Legacy schema fields required for migration compatibility.
+- Product-to-group assignments.
+- History candidate/history snapshots.
+- Legacy `sections`, `sectionAssignments`, `recoveryCandidate`, and
+  `recoveryHistory` fields required for migration compatibility.
 
 Storage rules:
 
 - All read-modify-write mutations go through the serial write queue in
   `src/utils/storage.ts`.
 - Normalize legacy storage shapes at the adapter boundary.
-- Prune product assignments when the product is no longer open or the section no
+- Prune product assignments when the product is no longer open or the group no
   longer exists.
-- Recovery snapshots are capped and local-only; do not introduce cloud/session
+- History snapshots are capped and local-only; do not introduce cloud/session
   account semantics.
 
 ## Commands
@@ -191,8 +242,8 @@ Targeted Vitest examples:
 ```bash
 npm test -- src/__tests__/storage.test.ts
 npm test -- src/__tests__/tab-grouper.test.ts
-npm test -- src/__tests__/recovery-snapshots.test.ts
-npm test -- src/__tests__/app-organize-mode.test.tsx
+npm test -- src/__tests__/history-snapshots.test.ts
+npm test -- src/__tests__/tab-store.test.ts
 npm test -- src/__tests__/dashboard-reskin.test.tsx
 npm test -- src/__tests__/visible-tabs.test.ts
 ```
