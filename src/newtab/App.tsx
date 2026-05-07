@@ -288,36 +288,34 @@ export function App(): React.ReactElement {
 
   // ─── Handlers ──────────────────────────────────────────────────────
 
-  const handleCloseProduct = useCallback(
-    (p: TabGroup) => {
-      const urls = p.tabs.map((t) => t.url);
+  const performBatchClose = useCallback(
+    async (urls: string[], toastMessage: string) => {
+      if (urls.length === 0) return;
       playCloseEffects(settings);
-      tabStore.closeTabsExact(urls).then(() => {
-        showToast(`Closed all ${p.tabs.length} ${p.friendlyName || p.domain} tabs`);
-        playCloseEffects(settings, {
-          sound: false,
-          confettiOrigin: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
-        });
+      await tabStore.closeTabsExact(urls);
+      showToast(toastMessage);
+      playCloseEffects(settings, {
+        sound: false,
+        confettiOrigin: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
       });
     },
     [settings, tabStore, showToast],
   );
 
+  const handleCloseProduct = useCallback(
+    (p: TabGroup) => {
+      const urls = p.tabs.map((t) => t.url);
+      performBatchClose(urls, `Closed all ${p.tabs.length} ${p.friendlyName || p.domain} tabs`);
+    },
+    [performBatchClose],
+  );
+
   const handleCloseManualGroup = useCallback(
     (groups: TabGroup[], title: string) => {
       const urls = groups.flatMap((p) => p.tabs.map((t) => t.url));
-      if (urls.length === 0) return;
-
-      playCloseEffects(settings);
-      tabStore.closeTabsExact(urls).then(() => {
-        showToast(`Closed all ${urls.length} tabs in ${title}`);
-        playCloseEffects(settings, {
-          sound: false,
-          confettiOrigin: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
-        });
-      });
+      performBatchClose(urls, `Closed all ${urls.length} tabs in ${title}`);
     },
-    [settings, tabStore, showToast],
+    [performBatchClose],
   );
 
   const handleCloseDuplicates = useCallback(
@@ -440,19 +438,12 @@ export function App(): React.ReactElement {
       message: `This will close all ${tabs.length} open tabs. This cannot be undone.`,
       confirmLabel: 'Close All',
       onConfirm: () => {
-        playCloseEffects(settings);
         const allUrls = tabs.map((t) => t.url);
-        tabStore.closeTabsExact(allUrls).then(() => {
-          showToast(`Closed ${tabs.length} tabs`);
-          playCloseEffects(settings, {
-            sound: false,
-            confettiOrigin: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
-          });
-        });
+        performBatchClose(allUrls, `Closed ${tabs.length} tabs`);
         setConfirmDialog((prev) => ({ ...prev, open: false }));
       },
     });
-  }, [settings, tabs, tabStore, showToast]);
+  }, [tabs, performBatchClose]);
 
   const handleCreateGroup = useCallback(() => {
     const name = window.prompt('Group name', 'Work');
