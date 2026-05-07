@@ -303,6 +303,23 @@ export function App(): React.ReactElement {
     [settings, tabStore, showToast],
   );
 
+  const handleCloseManualGroup = useCallback(
+    (groups: TabGroup[], title: string) => {
+      const urls = groups.flatMap((p) => p.tabs.map((t) => t.url));
+      if (urls.length === 0) return;
+
+      playCloseEffects(settings);
+      tabStore.closeTabsExact(urls).then(() => {
+        showToast(`Closed all ${urls.length} tabs in ${title}`);
+        playCloseEffects(settings, {
+          sound: false,
+          confettiOrigin: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+        });
+      });
+    },
+    [settings, tabStore, showToast],
+  );
+
   const handleCloseDuplicates = useCallback(
     (urls: string[]) => {
       playCloseEffects(settings);
@@ -645,6 +662,7 @@ export function App(): React.ReactElement {
                     onRenameGroup={handleRenameGroup}
                     onDeleteGroup={handleDeleteGroup}
                     onCloseProduct={handleCloseProduct}
+                    onCloseManualGroup={handleCloseManualGroup}
                     onCloseDuplicates={handleCloseDuplicates}
                     onCloseTab={handleCloseTabAnimated}
                     onFocusTab={handleFocusTab}
