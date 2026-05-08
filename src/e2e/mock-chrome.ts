@@ -38,7 +38,35 @@ export const mockChromeApi = (scenario: E2EScenario = 'default') => {
     { id: 10, url: 'https://stackoverflow.com/questions/123', title: 'Test Question - Stack Overflow', favIconUrl: 'https://stackoverflow.com/favicon.ico', windowId: 1, active: false, index: 9, pinned: false, highlighted: false, incognito: false, selected: false, status: 'complete', frozen: false, discarded: false, autoDiscardable: true, groupId: -1 },
   ];
 
-  const scenarioTabs = scenario === 'empty' ? [] : mockTabs;
+  const duplicateTabs: chrome.tabs.Tab[] = [
+    ...mockTabs,
+    { id: 101, url: 'https://github.com/explore', title: 'Explore · GitHub', favIconUrl: 'https://github.githubassets.com/favicons/favicon.png', windowId: 1, active: false, index: 10, pinned: false, highlighted: false, incognito: false, selected: false, status: 'complete', frozen: false, discarded: false, autoDiscardable: true, groupId: -1 },
+    { id: 102, url: 'https://github.com/explore', title: 'Explore · GitHub', favIconUrl: 'https://github.githubassets.com/favicons/favicon.png', windowId: 1, active: false, index: 11, pinned: false, highlighted: false, incognito: false, selected: false, status: 'complete', frozen: false, discarded: false, autoDiscardable: true, groupId: -1 },
+    { id: 103, url: 'https://www.youtube.com/watch?v=test1', title: 'Test Video 1 - YouTube', favIconUrl: 'https://www.youtube.com/favicon.ico', windowId: 1, active: false, index: 12, pinned: false, highlighted: false, incognito: false, selected: false, status: 'complete', frozen: false, discarded: false, autoDiscardable: true, groupId: -1 },
+  ];
+
+  const manyTabs: chrome.tabs.Tab[] = Array.from({ length: 50 }, (_, i) => ({
+    id: i + 1,
+    url: `https://example.com/page${i}`,
+    title: `Example Page ${i}`,
+    favIconUrl: 'https://www.google.com/s2/favicons?domain=example.com',
+    windowId: 1,
+    active: i === 0,
+    index: i,
+    pinned: false,
+    highlighted: false,
+    incognito: false,
+    selected: false,
+    status: 'complete',
+    frozen: false,
+    discarded: false,
+    autoDiscardable: true,
+    groupId: -1,
+  }));
+
+  const scenarioTabs = scenario === 'empty' ? [] :
+                      scenario === 'duplicates' ? duplicateTabs :
+                      scenario === 'many-tabs' ? manyTabs : mockTabs;
 
   const chromeMock = {
     tabs: {
