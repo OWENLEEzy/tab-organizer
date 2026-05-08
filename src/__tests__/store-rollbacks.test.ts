@@ -3,6 +3,7 @@ import { useSettingsStore } from '../stores/settings-store';
 import { useWorkspaceStore } from '../stores/workspace-store';
 import { useTabStore } from '../stores/tab-store';
 import { DEFAULT_SETTINGS } from '../utils/storage';
+import { makeChromeTab, makeSavedTab, makeWorkspace } from './factories';
 
 const chromeStorage = {
   data: {} as Record<string, unknown>,
@@ -20,13 +21,15 @@ const chromeStorage = {
   remove: vi.fn(() => Promise.resolve()),
 };
 
+const chromeTabs = {
+  query: vi.fn<() => Promise<chrome.tabs.Tab[]>>().mockResolvedValue([]),
+  create: vi.fn().mockResolvedValue({}),
+  remove: vi.fn().mockResolvedValue({}),
+};
+
 vi.stubGlobal('chrome', {
   storage: { local: chromeStorage },
-  tabs: { 
-    query: vi.fn().mockResolvedValue([]),
-    create: vi.fn().mockResolvedValue({}),
-    remove: vi.fn().mockResolvedValue({})
-  },
+  tabs: chromeTabs,
   runtime: { getURL: vi.fn((path: string) => `chrome-extension://fake-id/${path}`) }
 });
 
@@ -39,6 +42,7 @@ describe('Store Rollbacks & Errors Final', () => {
         workspaces: [],
         groupOrder: {}
     };
+    chromeTabs.query.mockResolvedValue([]);
     useWorkspaceStore.setState({ workspaces: [], activeWorkspaceId: null });
   });
 
@@ -65,12 +69,13 @@ describe('Store Rollbacks & Errors Final', () => {
     expect(useWorkspaceStore.getState().workspaces[0].name).toBe('A');
 
     // 4. addTabToWorkspace failure (line 105)
+    const savedTab = makeSavedTab({ id: 't1', url: 'u', title: 'T' });
     chromeStorage.set.mockRejectedValueOnce(new Error('fail'));
-    await useWorkspaceStore.getState().addTabToWorkspace(id, { id: 't1', url: 'u', title: 'T' } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+    await useWorkspaceStore.getState().addTabToWorkspace(id, savedTab);
     expect(useWorkspaceStore.getState().workspaces[0].savedTabs).toHaveLength(0);
 
     // 5. removeTabFromWorkspace failure (line 124)
-    useWorkspaceStore.setState({ workspaces: [{ ...ws, savedTabs: [{ id: 't1', url: 'u', title: 'T' }] as any }] }); // eslint-disable-line @typescript-eslint/no-explicit-any
+    useWorkspaceStore.setState({ workspaces: [makeWorkspace({ ...ws, savedTabs: [savedTab] })] });
     chromeStorage.set.mockRejectedValueOnce(new Error('fail'));
     await useWorkspaceStore.getState().removeTabFromWorkspace(id, 't1');
     expect(useWorkspaceStore.getState().workspaces[0].savedTabs).toHaveLength(1);
@@ -103,7 +108,7 @@ describe('Store Rollbacks & Errors Final', () => {
     // Line 127: protectHistoryBeforeClosing catch
     spy.mockClear();
     chromeStorage.set.mockRejectedValueOnce(new Error('fail'));
-    (chrome.tabs.query as any).mockResolvedValueOnce([{ id: 1, url: 'https://a.com' }]); // eslint-disable-line @typescript-eslint/no-explicit-any
+    chromeTabs.query.mockResolvedValueOnce([makeChromeTab({ id: 1, url: 'https://a.com' })]);
     await useTabStore.getState().closeTabByUrl('https://a.com');
     expect(spy).toHaveBeenCalledWith(expect.stringContaining('Failed to protect history before closing tabs'), expect.any(Error));
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTabStore } from '../stores/tab-store';
 import { readStorage } from '../utils/storage';
-import type { TabGroup } from '../types';
+import { makeTabGroup } from './factories';
 
 const chromeTabs = {
   query: vi.fn(),
@@ -91,9 +91,9 @@ describe('TabStore Manual Groups & Reordering', () => {
 
   it('reorders products', async () => {
     const products = [
-        { domain: 'a.com', order: 0, tabs: [], friendlyName: 'A', id: 'a', color: '', hasDuplicates: false, duplicateCount: 0 },
-        { domain: 'b.com', order: 1, tabs: [], friendlyName: 'B', id: 'b', color: '', hasDuplicates: false, duplicateCount: 0 }
-    ] as unknown as TabGroup[];
+        makeTabGroup({ domain: 'a.com', order: 0, friendlyName: 'A', id: 'a' }),
+        makeTabGroup({ domain: 'b.com', order: 1, friendlyName: 'B', id: 'b' }),
+    ];
     useTabStore.setState({ products });
     
     useTabStore.getState().reorderProducts([products[1], products[0]]);

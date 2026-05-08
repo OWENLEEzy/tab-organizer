@@ -6,11 +6,11 @@ import {
   deleteHistorySnapshot,
   promoteHistorySnapshot,
   readHistory,
-  readStorage,
-  updateStorage,
-  writeGroupOrder,
   pruneAssignments,
   pruneStaleStorage,
+  readOrganizerState,
+  writeGroupOrder,
+  writeOrganizerState,
 } from '../utils/storage';
 import { buildHistorySnapshot } from '../lib/history-snapshots';
 import { getTabDomain, isRealTab, isTabOutPage } from '../utils/url';
@@ -132,13 +132,13 @@ export const useTabStore = create<TabStore>((set) => ({
     try {
       const rawTabs = await chrome.tabs.query({});
       const mapped = rawTabs.map(toAppTab).filter((t) => isRealTab(t.url));
-      const storage = await readStorage();
-      const groupOrder = storage.groupOrder;
+      const organizerState = await readOrganizerState();
+      const groupOrder = organizerState.groupOrder;
       const productGroups = groupTabsByDomain(mapped, groupOrder);
-      const manualGroups = orderedGroups(storage.manualGroups);
+      const manualGroups = orderedGroups(organizerState.manualGroups);
       const productDomains = new Set(productGroups.map((g) => g.domain));
       const groupAssignments = pruneAssignments(
-        storage.groupAssignments,
+        organizerState.groupAssignments,
         manualGroups,
         productDomains,
       );
@@ -152,7 +152,7 @@ export const useTabStore = create<TabStore>((set) => ({
         products,
         manualGroups,
         groupAssignments,
-        viewMode: storage.viewMode,
+        viewMode: organizerState.viewMode,
         loading: false,
       });
     } catch (err: unknown) {
@@ -373,7 +373,7 @@ export const useTabStore = create<TabStore>((set) => ({
     };
     const nextGroups = [...current, group];
     set({ manualGroups: nextGroups });
-    await updateStorage((storage) => ({ ...storage, manualGroups: nextGroups }));
+    await writeOrganizerState({ manualGroups: nextGroups });
   },
 
   renameGroup: async (groupId: string, name: string) => {
@@ -383,7 +383,7 @@ export const useTabStore = create<TabStore>((set) => ({
       .manualGroups
       .map((g) => g.id === groupId ? { ...g, name: trimmed } : g);
     set({ manualGroups: nextGroups });
-    await updateStorage((storage) => ({ ...storage, manualGroups: nextGroups }));
+    await writeOrganizerState({ manualGroups: nextGroups });
   },
 
   deleteGroup: async (groupId: string) => {
@@ -398,18 +398,17 @@ export const useTabStore = create<TabStore>((set) => ({
       .filter((assignment) => assignment.groupId !== groupId);
 
     set({ manualGroups: nextGroups, groupAssignments: nextAssignments });
-    await updateStorage((storage) => ({
-      ...storage,
+    await writeOrganizerState({
       manualGroups: nextGroups,
       groupAssignments: nextAssignments,
-    }));
+    });
     await useTabStore.getState().fetchTabs();
   },
 
   reorderGroups: async (groups: ManualGroup[]) => {
     const nextGroups = groups.map((g, index) => ({ ...g, order: index }));
     set({ manualGroups: nextGroups });
-    await updateStorage((storage) => ({ ...storage, manualGroups: nextGroups }));
+    await writeOrganizerState({ manualGroups: nextGroups });
   },
 
   moveProductToGroup: async (productKey: string, groupId: string) => {
@@ -430,7 +429,7 @@ export const useTabStore = create<TabStore>((set) => ({
     ];
 
     set({ groupAssignments: nextAssignments });
-    await updateStorage((storage) => ({ ...storage, groupAssignments: nextAssignments }));
+    await writeOrganizerState({ groupAssignments: nextAssignments });
     await useTabStore.getState().fetchTabs();
   },
 
@@ -440,13 +439,13 @@ export const useTabStore = create<TabStore>((set) => ({
       .groupAssignments
       .filter((assignment) => assignment.productKey !== productKey);
     set({ groupAssignments: nextAssignments });
-    await updateStorage((storage) => ({ ...storage, groupAssignments: nextAssignments }));
+    await writeOrganizerState({ groupAssignments: nextAssignments });
     await useTabStore.getState().fetchTabs();
   },
 
   setViewMode: async (viewMode: ViewMode) => {
     set({ viewMode });
-    await updateStorage((storage) => ({ ...storage, viewMode }));
+    await writeOrganizerState({ viewMode });
   },
 
   fetchHistory: async () => {

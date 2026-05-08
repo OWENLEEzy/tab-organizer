@@ -448,12 +448,14 @@ export async function pruneStaleStorage(currentProductKeys: Set<string>): Promis
 }
 
 export async function readOrganizerState(): Promise<{
+  groupOrder: Record<string, number>;
   manualGroups: ManualGroup[];
   groupAssignments: GroupAssignment[];
   viewMode: ViewMode;
 }> {
   const storage = await readStorage();
   return {
+    groupOrder: storage.groupOrder,
     manualGroups: storage.manualGroups,
     groupAssignments: storage.groupAssignments,
     viewMode: storage.viewMode,
