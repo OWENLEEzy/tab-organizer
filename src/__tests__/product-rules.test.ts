@@ -21,6 +21,12 @@ describe('Product Rules Configuration', () => {
       expect(productForHostname('www.amazon.com').key).toBe('amazon');
     });
 
+    it('does not classify arbitrary dotted suffixes as owned products', () => {
+      expect(productForHostname('google.evil.example').key).not.toBe('google');
+      expect(productForHostname('www.google.attacker.test').key).not.toBe('google');
+      expect(productForHostname('amazon.evil.example').key).not.toBe('amazon');
+    });
+
     it('handles localized Wikipedia domains', () => {
       expect(productForHostname('en.wikipedia.org').key).toBe('wikipedia');
       expect(productForHostname('zh.wikipedia.org').key).toBe('wikipedia');

@@ -137,6 +137,70 @@ export function pruneAssignments(
   });
 }
 
+function reconcileGroupOrder(
+  groupOrder: Record<string, number>,
+  currentProductKeys: Set<string>,
+  legacyKeyMap: Map<string, string>,
+): Record<string, number> {
+  const nextOrder: Record<string, number> = {};
+  const canonicalSources = new Set<string>();
+
+  for (const [productKey, order] of Object.entries(groupOrder)) {
+    const isCanonicalKey = currentProductKeys.has(productKey);
+    const canonicalKey = isCanonicalKey
+      ? productKey
+      : legacyKeyMap.get(productKey) ?? productKey;
+    if (!currentProductKeys.has(canonicalKey)) continue;
+
+    if (isCanonicalKey) {
+      nextOrder[canonicalKey] = order;
+      canonicalSources.add(canonicalKey);
+      continue;
+    }
+
+    if (
+      !canonicalSources.has(canonicalKey) &&
+      (nextOrder[canonicalKey] === undefined || order < nextOrder[canonicalKey])
+    ) {
+      nextOrder[canonicalKey] = order;
+    }
+  }
+
+  return nextOrder;
+}
+
+function reconcileAssignments(
+  assignments: GroupAssignment[],
+  groups: ManualGroup[],
+  currentProductKeys: Set<string>,
+  legacyKeyMap: Map<string, string>,
+): GroupAssignment[] {
+  const groupIds = new Set(groups.map((group) => group.id));
+  const bestByProduct = new Map<string, GroupAssignment & { originalIndex: number }>();
+
+  assignments.forEach((assignment, index) => {
+    if (!groupIds.has(assignment.groupId)) return;
+
+    const productKey = legacyKeyMap.get(assignment.productKey) ?? assignment.productKey;
+    if (!currentProductKeys.has(productKey)) return;
+
+    const candidate = { ...assignment, productKey, originalIndex: index };
+    const existing = bestByProduct.get(productKey);
+
+    if (
+      !existing ||
+      candidate.order < existing.order ||
+      (candidate.order === existing.order && candidate.originalIndex < existing.originalIndex)
+    ) {
+      bestByProduct.set(productKey, candidate);
+    }
+  });
+
+  return [...bestByProduct.values()]
+    .sort((a, b) => a.originalIndex - b.originalIndex)
+    .map(({ originalIndex: _originalIndex, ...assignment }) => assignment);
+}
+
 function normalizeHistorySnapshot(value: unknown): HistorySnapshot | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Partial<HistorySnapshot>;
@@ -445,6 +509,57 @@ export async function pruneStaleStorage(currentProductKeys: Set<string>): Promis
   }).catch((err: unknown) => {
     console.warn('[Tab Out] Failed to prune stale organizer storage:', err);
   });
+}
+
+export async function reconcileOrganizerState(
+  currentProductKeys: Set<string>,
+  legacyKeyMap: Map<string, string>,
+): Promise<{
+  groupOrder: Record<string, number>;
+  manualGroups: ManualGroup[];
+  groupAssignments: GroupAssignment[];
+  viewMode: ViewMode;
+}> {
+  let nextStorage: StorageSchema;
+
+  try {
+    nextStorage = await updateStorage((current) => {
+      const groupOrder = reconcileGroupOrder(
+        current.groupOrder,
+        currentProductKeys,
+        legacyKeyMap,
+      );
+      const groupAssignments = reconcileAssignments(
+        current.groupAssignments,
+        current.manualGroups,
+        currentProductKeys,
+        legacyKeyMap,
+      );
+
+      if (
+        JSON.stringify(groupOrder) === JSON.stringify(current.groupOrder) &&
+        JSON.stringify(groupAssignments) === JSON.stringify(current.groupAssignments)
+      ) {
+        return current;
+      }
+
+      return {
+        ...current,
+        groupOrder,
+        groupAssignments,
+      };
+    });
+  } catch (err: unknown) {
+    console.warn('[Tab Out] Failed to prune stale organizer storage:', err);
+    nextStorage = await readStorage();
+  }
+
+  return {
+    groupOrder: nextStorage.groupOrder,
+    manualGroups: nextStorage.manualGroups,
+    groupAssignments: nextStorage.groupAssignments,
+    viewMode: nextStorage.viewMode,
+  };
 }
 
 export async function readOrganizerState(): Promise<{

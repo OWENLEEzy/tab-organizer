@@ -3,6 +3,8 @@ dist
 dist-zip
 *.local
 *.log
+check_results.txt
+e2e_results.txt
 .DS_Store
 docs/superpowers/
 

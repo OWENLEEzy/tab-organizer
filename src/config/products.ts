@@ -3,7 +3,25 @@ import type { ProductInfo } from '../types';
 interface ProductRule extends ProductInfo {
   hostnames?: string[];
   hostnameSuffixes?: string[];
-  hostnamePatterns?: RegExp[];
+  hostnameMatcher?: (hostname: string) => boolean;
+}
+
+const LOCALIZED_ROOT_SUFFIXES = new Set([
+  'com',
+  'co.uk',
+  'co.jp',
+  'com.hk',
+  'com.tw',
+  'com.sg',
+  'com.br',
+  'com.mx',
+  'de',
+]);
+
+function matchesLocalizedRoot(hostname: string, root: string): boolean {
+  const normalized = stripCommonHostPrefix(hostname);
+  if (!normalized.startsWith(`${root}.`)) return false;
+  return LOCALIZED_ROOT_SUFFIXES.has(normalized.slice(root.length + 1));
 }
 
 const PRODUCT_RULES: ProductRule[] = [
@@ -11,7 +29,7 @@ const PRODUCT_RULES: ProductRule[] = [
     key: 'google',
     label: 'Google',
     iconDomain: 'google.com',
-    hostnamePatterns: [/^google\.[a-z.]+$/, /^(www|m)\.google\.[a-z.]+$/],
+    hostnameMatcher: (hostname) => matchesLocalizedRoot(hostname, 'google'),
   },
   {
     key: 'gmail',
@@ -41,13 +59,14 @@ const PRODUCT_RULES: ProductRule[] = [
     key: 'amazon',
     label: 'Amazon',
     iconDomain: 'amazon.com',
-    hostnamePatterns: [/^amazon\.[a-z.]+$/, /^(www|m)\.amazon\.[a-z.]+$/],
+    hostnameMatcher: (hostname) => matchesLocalizedRoot(hostname, 'amazon'),
   },
   {
     key: 'wikipedia',
     label: 'Wikipedia',
     iconDomain: 'wikipedia.org',
-    hostnamePatterns: [/^[a-z.]+\.wikipedia\.org$/],
+    hostnames: ['wikipedia.org'],
+    hostnameSuffixes: ['.wikipedia.org'],
   },
   {
     key: 'youtube',
@@ -81,8 +100,12 @@ function stripCommonHostPrefix(hostname: string): string {
   return hostname.replace(/^(www|m)\./, '');
 }
 
+export function legacyProductKeyForHostname(hostname: string): string {
+  return stripCommonHostPrefix(hostname.toLowerCase());
+}
+
 export function fallbackProductForHostname(hostname: string): ProductInfo {
-  const normalized = stripCommonHostPrefix(hostname.toLowerCase());
+  const normalized = legacyProductKeyForHostname(hostname);
   // Improved label extraction: handle common localized TLDs like .co.jp, .com.hk
   const labelBase = normalized.replace(/\.(com|org|net|io|co|ai|dev|app|so|me|xyz|info|us|uk|gov|edu|co\.uk|co\.jp|com\.hk|com\.tw|com\.sg|com\.br|com\.mx|net\.cn|org\.cn|gov\.cn)(\.[a-z]{2,3})?$/, '');
   
@@ -125,8 +148,8 @@ export function productForHostname(hostname: string): ProductInfo {
       };
     }
 
-    // 3. Regex pattern match
-    if (rule.hostnamePatterns?.some((pattern) => pattern.test(normalized))) {
+    // 3. Custom matcher for owned localized roots
+    if (rule.hostnameMatcher?.(normalized)) {
       return {
         key: rule.key,
         label: rule.label,

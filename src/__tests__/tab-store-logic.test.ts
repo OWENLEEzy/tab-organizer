@@ -60,6 +60,57 @@ describe('TabStore Internal Logic', () => {
     expect(chromeStorage.data['groupOrder']).toEqual({}); // stale-domain removed
   });
 
+  it('migrates legacy hostname organizer keys to canonical product keys', async () => {
+    chromeStorage.data['manualGroups'] = [{ id: 'g1', name: 'G1', order: 0 }];
+    chromeStorage.data['groupAssignments'] = [
+      { productKey: 'stackoverflow.com', groupId: 'g1', order: 0 },
+    ];
+    chromeStorage.data['groupOrder'] = { 'stackoverflow.com': 1, stackoverflow: 3 };
+
+    chromeTabs.query.mockResolvedValue([
+      { id: 1, url: 'https://stackoverflow.com/questions/123', title: 'SO', windowId: 1, active: false },
+    ]);
+
+    await useTabStore.getState().fetchTabs();
+
+    const state = useTabStore.getState();
+    expect(state.products[0].domain).toBe('stackoverflow');
+    expect(state.groupAssignments).toEqual([
+      { productKey: 'stackoverflow', groupId: 'g1', order: 0 },
+    ]);
+    expect(chromeStorage.data['groupOrder']).toEqual({ stackoverflow: 3 });
+    expect(chromeStorage.data['groupAssignments']).toEqual([
+      { productKey: 'stackoverflow', groupId: 'g1', order: 0 },
+    ]);
+  });
+
+  it('merges multiple legacy localized keys into one canonical assignment', async () => {
+    chromeStorage.data['manualGroups'] = [
+      { id: 'later', name: 'Later', order: 0 },
+      { id: 'research', name: 'Research', order: 1 },
+    ];
+    chromeStorage.data['groupAssignments'] = [
+      { productKey: 'example.com', groupId: 'later', order: 2 },
+      { productKey: 'example.com.hk', groupId: 'research', order: 1 },
+    ];
+    chromeStorage.data['groupOrder'] = { 'example.com': 4, 'example.com.hk': 2 };
+
+    chromeTabs.query.mockResolvedValue([
+      { id: 1, url: 'https://example.com/a', title: 'Example US', windowId: 1, active: false },
+      { id: 2, url: 'https://example.com.hk/b', title: 'Example HK', windowId: 1, active: false },
+    ]);
+
+    await useTabStore.getState().fetchTabs();
+
+    expect(useTabStore.getState().groupAssignments).toEqual([
+      { productKey: 'example', groupId: 'research', order: 1 },
+    ]);
+    expect(chromeStorage.data['groupOrder']).toEqual({ example: 2 });
+    expect(chromeStorage.data['groupAssignments']).toEqual([
+      { productKey: 'example', groupId: 'research', order: 1 },
+    ]);
+  });
+
   it('handles duplicate product assignments by keeping only the first one', async () => {
     chromeStorage.data['manualGroups'] = [{ id: 'g1', name: 'G1', order: 0 }];
     chromeStorage.data['groupAssignments'] = [

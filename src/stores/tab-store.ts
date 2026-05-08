@@ -6,12 +6,11 @@ import {
   deleteHistorySnapshot,
   promoteHistorySnapshot,
   readHistory,
-  pruneAssignments,
-  pruneStaleStorage,
-  readOrganizerState,
+  reconcileOrganizerState,
   writeGroupOrder,
   writeOrganizerState,
 } from '../utils/storage';
+import { legacyProductKeyForHostname, productForHostname } from '../config/products';
 import { buildHistorySnapshot } from '../lib/history-snapshots';
 import { getTabDomain, isRealTab, isTabOutPage } from '../utils/url';
 import { getErrorMessage } from '../utils/error';
@@ -104,6 +103,29 @@ function orderedGroups(groups: ManualGroup[]): ManualGroup[] {
   return [...groups].sort((a, b) => a.order - b.order);
 }
 
+function buildProductKeyCompatibility(tabs: Tab[]): {
+  currentProductKeys: Set<string>;
+  legacyKeyMap: Map<string, string>;
+} {
+  const currentProductKeys = new Set<string>();
+  const legacyKeyMap = new Map<string, string>();
+
+  for (const tab of tabs) {
+    const hostname = getTabDomain(tab.url);
+    if (!hostname) continue;
+
+    const product = productForHostname(hostname);
+    const legacyKey = legacyProductKeyForHostname(hostname);
+
+    currentProductKeys.add(product.key);
+    if (legacyKey !== product.key) {
+      legacyKeyMap.set(legacyKey, product.key);
+    }
+  }
+
+  return { currentProductKeys, legacyKeyMap };
+}
+
 async function protectHistoryBeforeClosing(allTabs: chrome.tabs.Tab[]): Promise<void> {
   try {
     const snapshot = buildHistorySnapshot(allTabs.map(toAppTab));
@@ -132,20 +154,13 @@ export const useTabStore = create<TabStore>((set) => ({
     try {
       const rawTabs = await chrome.tabs.query({});
       const mapped = rawTabs.map(toAppTab).filter((t) => isRealTab(t.url));
-      const organizerState = await readOrganizerState();
+      const { currentProductKeys, legacyKeyMap } = buildProductKeyCompatibility(mapped);
+      const organizerState = await reconcileOrganizerState(currentProductKeys, legacyKeyMap);
       const groupOrder = organizerState.groupOrder;
       const productGroups = groupTabsByDomain(mapped, groupOrder);
       const manualGroups = orderedGroups(organizerState.manualGroups);
-      const productDomains = new Set(productGroups.map((g) => g.domain));
-      const groupAssignments = pruneAssignments(
-        organizerState.groupAssignments,
-        manualGroups,
-        productDomains,
-      );
+      const groupAssignments = organizerState.groupAssignments;
       const products = productGroups;
-
-      // Prune stale groupOrder entries for domains no longer present in background
-      await pruneStaleStorage(productDomains);
 
       set({
         tabs: mapped,
