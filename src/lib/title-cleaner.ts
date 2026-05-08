@@ -8,18 +8,22 @@ import { FRIENDLY_DOMAINS } from '../config/friendly-domains';
  */
 export function friendlyDomain(hostname: string): string {
   if (!hostname) return '';
+  
+  // Normalize hostname by stripping common prefixes (www, m)
+  const normalized = hostname.toLowerCase().replace(/^(www|m)\./, '');
+  
+  if (FRIENDLY_DOMAINS[normalized]) return FRIENDLY_DOMAINS[normalized];
   if (FRIENDLY_DOMAINS[hostname]) return FRIENDLY_DOMAINS[hostname];
 
-  if (hostname.endsWith('.substack.com') && hostname !== 'substack.com') {
-    return capitalize(hostname.replace('.substack.com', '')) + "'s Substack";
+  if (normalized.endsWith('.substack.com') && normalized !== 'substack.com') {
+    return capitalize(normalized.replace('.substack.com', '')) + "'s Substack";
   }
-  if (hostname.endsWith('.github.io')) {
-    return capitalize(hostname.replace('.github.io', '')) + ' (GitHub Pages)';
+  if (normalized.endsWith('.github.io')) {
+    return capitalize(normalized.replace('.github.io', '')) + ' (GitHub Pages)';
   }
 
-  const clean = hostname
-    .replace(/^www\./, '')
-    .replace(/\.(com|org|net|io|co|ai|dev|app|so|me|xyz|info|us|uk|co\.uk|co\.jp)$/, '');
+  const clean = normalized
+    .replace(/\.(com|org|net|io|co|ai|dev|app|so|me|xyz|info|us|uk|gov|edu|co\.uk|co\.jp|com\.hk|com\.tw|com\.sg|com\.br|com\.mx|net\.cn|org\.cn|gov\.cn)(\.[a-z]{2,3})?$/, '');
 
   return clean.split('.').map((part) => capitalize(part)).join(' ');
 }

@@ -16,7 +16,7 @@
     "test:e2e": "node ./scripts/run-a11y-e2e.mjs",
     "check:bundle": "node ./scripts/check-bundle-budget.mjs",
     "check:startup": "node ./scripts/check-startup-budget.mjs",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings=0",
     "lint:css": "stylelint \"src/**/*.css\"",
     "check": "npm run lint && npm run lint:css && npm run test && npm run build && npm run check:bundle && npm run check:startup && npm run test:e2e"
   },
@@ -43,6 +43,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "@vitest/coverage-v8": "^4.1.5",
     "esbuild": "^0.28.0",
     "eslint": "^9.39.4",
     "eslint-plugin-jsx-a11y": "^6.10.2",

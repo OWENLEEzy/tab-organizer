@@ -43,6 +43,19 @@ describe('buildHistorySnapshot', () => {
     expect(snapshot?.products.map((product) => product.productKey).sort()).toEqual(['github', 'youtube']);
   });
 
+  it('does not classify spoofed product-looking hosts as known products', () => {
+    const snapshot = buildHistorySnapshot(
+      [
+        makeTab({ id: 1, url: 'https://google.evil.example/login', title: 'Login' }),
+        makeTab({ id: 2, url: 'https://amazon.evil.example/deal', title: 'Deal' }),
+      ],
+      '2026-05-05T00:00:00.000Z',
+    );
+
+    expect(snapshot?.tabs.map((tab) => tab.productKey)).not.toContain('google');
+    expect(snapshot?.tabs.map((tab) => tab.productKey)).not.toContain('amazon');
+  });
+
   it('returns null when there are no real tabs and caps snapshots at 80 tabs', () => {
     expect(buildHistorySnapshot([
       makeTab({ id: 1, url: 'chrome://newtab/' }),

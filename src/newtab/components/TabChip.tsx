@@ -115,7 +115,7 @@ export function TabChip({
     }
   }, [isFocused]);
 
-  const handleClick = useCallback((e: React.MouseEvent) => {
+  const handleFocusOrSelect = useCallback((e: React.MouseEvent) => {
     if (onChipClick && (selectionMode || e.shiftKey || e.metaKey || e.ctrlKey)) {
       e.stopPropagation();
       onChipClick(url, e);
@@ -158,10 +158,16 @@ export function TabChip({
         className={chipClasses}
         data-tab-url={safeUrl}
         title={displayLabel}
-        onClick={handleClick}
+        onClick={handleFocusOrSelect}
         aria-current={active ? 'page' : undefined}
       >
-        {/* Active indicator dot */}
+        {/* 
+          Active indicator dot 
+          This indicator shows if a tab is the currently active (selected) tab in its window.
+          - In a multi-window setup, each window will have exactly one active tab.
+          - If the user is viewing this Dashboard, the Dashboard tab itself is active (but filtered out),
+            so dots will only appear for active tabs in OTHER windows.
+        */}
         {active && (
           <span
             className="bg-accent-sage h-1.5 w-1.5 shrink-0 rounded-full"

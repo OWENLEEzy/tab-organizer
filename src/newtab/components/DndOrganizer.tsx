@@ -86,6 +86,7 @@ interface DndGroupBoardProps {
   onRenameGroup?: (group: ManualGroup) => void;
   onDeleteGroup?: (group: ManualGroup) => void;
   onCloseProduct: (p: TabGroup) => void;
+  onCloseManualGroup: (groups: TabGroup[], title: string) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onCloseTab: (url: string) => void;
   onFocusTab: (url: string) => void;
@@ -108,6 +109,7 @@ function DndGroupBoard({
   onRenameGroup,
   onDeleteGroup,
   onCloseProduct,
+  onCloseManualGroup,
   onCloseDuplicates,
   onCloseTab,
   onFocusTab,
@@ -147,6 +149,16 @@ function DndGroupBoard({
               </button>
             </div>
           )}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onCloseManualGroup(items, title)}
+              className="text-[10px] font-bold uppercase tracking-widest text-text-secondary hover:text-accent-red transition-colors"
+              title={`Close all ${tabCount} tabs in ${title}`}
+            >
+              Close all
+            </button>
+          </div>
         </div>
       </div>
       <div className="missions">
@@ -192,6 +204,7 @@ interface DndOrganizerProps {
   onRenameGroup?: (group: ManualGroup) => void;
   onDeleteGroup?: (group: ManualGroup) => void;
   onCloseProduct: (p: TabGroup) => void;
+  onCloseManualGroup: (groups: TabGroup[], title: string) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onCloseTab: (url: string) => void;
   onFocusTab: (url: string) => void;
@@ -216,6 +229,7 @@ export function DndOrganizer({
   onRenameGroup,
   onDeleteGroup,
   onCloseProduct,
+  onCloseManualGroup,
   onCloseDuplicates,
   onCloseTab,
   onFocusTab,
@@ -270,6 +284,7 @@ export function DndOrganizer({
     selectedUrls,
     itemIdForProduct,
     onCloseProduct,
+    onCloseManualGroup,
     onCloseDuplicates,
     onCloseTab,
     onFocusTab,

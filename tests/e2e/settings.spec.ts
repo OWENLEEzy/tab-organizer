@@ -132,4 +132,24 @@ test.describe('Settings & Theme', () => {
       await expect(settingsGear).not.toBeFocused();
     }
   });
+
+  test('switching to dark theme applies dark class and persists', async ({ page }) => {
+    const settingsGear = page.getByRole('button', { name: 'Settings', exact: true });
+    await settingsGear.click();
+
+    const darkButton = page.getByRole('button', { name: 'Dark' });
+    await darkButton.click();
+
+    // Verify dark class on html
+    await expect(page.locator('html')).toHaveClass(/dark/);
+
+    // Refresh and verify persistence
+    await page.reload();
+    await expect(page.locator('html')).toHaveClass(/dark/);
+
+    // Switch back to light
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByRole('button', { name: 'Light' }).click();
+    await expect(page.locator('html')).not.toHaveClass(/dark/);
+  });
 });

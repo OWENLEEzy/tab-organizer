@@ -8,7 +8,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'extension', 'playwright-report', 'test-results']),
+  globalIgnores(['dist', 'extension', 'coverage', 'playwright-report', 'test-results']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -110,7 +110,7 @@ export default defineConfig([
         {
           patterns: [
             {
-              group: ['*/utils/storage'],
+              group: ['**/utils/storage'],
               importNames: ['writeStorage'],
               message: 'writeStorage is reserved for migration/import/restore only. Use domain writers (writeSettings, writeGroupOrder, writeWorkspaces) instead.',
             },
@@ -130,7 +130,7 @@ export default defineConfig([
         {
           patterns: [
             {
-              group: ['*/utils/storage'],
+              group: ['**/utils/storage'],
               importNames: ['readStorage', 'updateStorage'],
               message: 'Stores must use domain readers/writers (readSettings, readGroupOrder, readWorkspaces, writeWorkspaces, etc.) instead of readStorage/updateStorage.',
             },
@@ -150,7 +150,7 @@ export default defineConfig([
         {
           patterns: [
             {
-              group: ['*/lib/sound', '*/lib/confetti'],
+              group: ['**/lib/sound', '**/lib/confetti'],
               importNames: ['playCloseSound', 'shootConfetti'],
               message: 'Raw effect primitives (playCloseSound, shootConfetti) must be routed through src/lib/close-effects.ts. UI code should call playCloseEffects() instead.',
             },
@@ -169,7 +169,7 @@ export default defineConfig([
         {
           patterns: [
             {
-              group: ['*/stores/*'],
+              group: ['**/stores/*'],
               message: 'Components must not import stores directly. Pass data and handlers via props from the page orchestrator (App.tsx).',
             },
           ],
@@ -187,7 +187,7 @@ export default defineConfig([
         {
           patterns: [
             {
-              group: ['*/utils/storage'],
+              group: ['**/utils/storage'],
               message: 'Components must not import storage utilities. Data flows through stores and props, not direct storage access.',
             },
           ],
