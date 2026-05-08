@@ -4,6 +4,7 @@ export interface UIState {
   toast: { message: string; visible: boolean };
   searchQuery: string;
   confirmDialog: {
+    id: string;
     open: boolean;
     title: string;
     message: string;
@@ -19,6 +20,7 @@ export interface UIState {
   lastClickedIndex: number | null;
   expandedDomains: Set<string>;
   promptDialog: {
+    id: string;
     open: boolean;
     title: string;
     label: string;
@@ -48,7 +50,7 @@ export type UIAction =
 const initialState: UIState = {
   toast: { message: '', visible: false },
   searchQuery: '',
-  confirmDialog: { open: false, title: '', message: '', confirmLabel: '', onConfirm: () => {} },
+  confirmDialog: { id: '', open: false, title: '', message: '', confirmLabel: '', onConfirm: () => {} },
   settingsOpen: false,
   isSidebarExpanded: false,
   nudgeDismissed: false,
@@ -57,7 +59,7 @@ const initialState: UIState = {
   selectedUrls: new Set(),
   lastClickedIndex: null,
   expandedDomains: new Set(),
-  promptDialog: { open: false, title: '', label: '', initialValue: '', confirmLabel: '', onConfirm: () => {} },
+  promptDialog: { id: '', open: false, title: '', label: '', initialValue: '', confirmLabel: '', onConfirm: () => {} },
 };
 
 function uiReducer(state: UIState, action: UIAction): UIState {

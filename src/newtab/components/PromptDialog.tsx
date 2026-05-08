@@ -16,6 +16,7 @@ export function PromptDialog({
   const [value, setValue] = useState(initialValue);
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = React.useId();
 
 
 
@@ -116,10 +117,14 @@ export function PromptDialog({
         </h3>
         
         <form onSubmit={handleSubmit} className="mt-4">
-          <label className="text-text-secondary block text-xs font-bold uppercase tracking-widest mb-2">
+          <label
+            htmlFor={inputId}
+            className="text-text-secondary block text-xs font-bold uppercase tracking-widest mb-2"
+          >
             {label}
           </label>
           <input
+            id={inputId}
             ref={inputRef}
             type="text"
             className="w-full rounded-sm border-2 border-border-light bg-surface-light px-3 py-2 text-sm text-text-primary-light outline-none focus:border-accent-blue dark:border-border-dark dark:bg-surface-dark dark:text-text-primary-dark dark:focus:border-accent-blue transition-colors"

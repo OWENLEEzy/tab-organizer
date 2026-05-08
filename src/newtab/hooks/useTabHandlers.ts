@@ -45,6 +45,7 @@ export function useTabHandlers({
       dispatch({
         type: 'SET_CONFIRM_DIALOG',
         dialog: {
+          id: crypto.randomUUID(),
           open: true,
           title: `Close all ${p.friendlyName || p.domain} tabs`,
           message: `This will close all ${p.tabs.length} tabs for this product.`,
@@ -66,6 +67,7 @@ export function useTabHandlers({
       dispatch({
         type: 'SET_CONFIRM_DIALOG',
         dialog: {
+          id: crypto.randomUUID(),
           open: true,
           title: `Close all tabs in ${title}`,
           message: `This will close all ${urls.length} tabs in this section.`,
@@ -85,6 +87,7 @@ export function useTabHandlers({
       dispatch({
         type: 'SET_CONFIRM_DIALOG',
         dialog: {
+          id: crypto.randomUUID(),
           open: true,
           title: 'Close duplicates',
           message: `This will close all ${urls.length} duplicate tabs, keeping one of each.`,
@@ -215,6 +218,7 @@ export function useTabHandlers({
       dispatch({
         type: 'SET_CONFIRM_DIALOG',
         dialog: {
+          id: crypto.randomUUID(),
           open: true,
           title: `Close ${count} selected tabs`,
           message: `Are you sure you want to close these ${count} tabs?`,
@@ -235,6 +239,7 @@ export function useTabHandlers({
     dispatch({
       type: 'SET_CONFIRM_DIALOG',
       dialog: {
+        id: crypto.randomUUID(),
         open: true,
         title: 'Close all tabs',
         message: `This will close all ${tabs.length} open tabs. This cannot be undone.`,
@@ -252,6 +257,7 @@ export function useTabHandlers({
     dispatch({
       type: 'SET_PROMPT_DIALOG',
       dialog: {
+        id: crypto.randomUUID(),
         open: true,
         title: 'New Section',
         label: 'Section Name',
@@ -271,6 +277,7 @@ export function useTabHandlers({
     dispatch({
       type: 'SET_PROMPT_DIALOG',
       dialog: {
+        id: crypto.randomUUID(),
         open: true,
         title: 'Rename Section',
         label: 'Section Name',
@@ -290,6 +297,7 @@ export function useTabHandlers({
     dispatch({
       type: 'SET_CONFIRM_DIALOG',
       dialog: {
+        id: crypto.randomUUID(),
         open: true,
         title: `Delete ${group.name}`,
         message: 'Items in this group will return to Unsorted. No tabs will be closed.',

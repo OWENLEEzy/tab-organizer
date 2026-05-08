@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingState } from './components/LoadingState';
 import { DndOrganizer } from './components/DndOrganizer';
@@ -26,7 +26,6 @@ const SettingsPanel = React.lazy(() =>
 
 export function App(): React.ReactElement {
   const { state, stores, derived, handlers, dispatch } = useAppLogic();
-  const [nudgeDismissed, setNudgeDismissed] = useState(false);
 
   const { tabStore, settingsStore } = stores;
   const { settings } = settingsStore;
@@ -49,12 +48,12 @@ export function App(): React.ReactElement {
     });
   }
 
-  if (!nudgeDismissed && state.totalTabs > 15) {
+  if (!state.nudgeDismissed && state.totalTabs > 15) {
     statusAlerts.push({
       id: 'tab-count-nudge',
       label: 'High tab count',
       actionLabel: 'Dismiss',
-      onAction: () => setNudgeDismissed(true),
+      onAction: () => dispatch({ type: 'SET_NUDGE_DISMISSED', dismissed: true }),
     });
   }
 
@@ -165,6 +164,7 @@ export function App(): React.ReactElement {
 
       {/* Confirmation dialog */}
       <ConfirmationDialog
+        key={state.confirmDialog.id || 'confirm-closed'}
         open={state.confirmDialog.open}
         title={state.confirmDialog.title}
         message={state.confirmDialog.message}
@@ -175,7 +175,7 @@ export function App(): React.ReactElement {
 
       {/* Prompt dialog */}
       <PromptDialog
-        key={state.promptDialog.open ? state.promptDialog.title : 'closed'}
+        key={state.promptDialog.open ? `open-${state.promptDialog.title}-${state.promptDialog.initialValue}` : 'closed'}
         open={state.promptDialog.open}
         title={state.promptDialog.title}
         label={state.promptDialog.label}

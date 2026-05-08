@@ -161,12 +161,14 @@ export function useAppLogic() {
     lastClickedIndex,
   });
 
+  const theme = useSettingsStore((s) => s.settings.theme);
+
   // ─── Init: fetch data + dark mode ──────────────────────────────────
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
+
     const applyTheme = () => {
-      const { theme } = useSettingsStore.getState().settings;
       if (theme === 'dark') {
         document.documentElement.classList.add('dark');
       } else if (theme === 'light') {
@@ -179,13 +181,10 @@ export function useAppLogic() {
     applyTheme();
     mq.addEventListener('change', applyTheme);
 
-    const unsub = useSettingsStore.subscribe(applyTheme);
-
     return () => {
       mq.removeEventListener('change', applyTheme);
-      unsub();
     };
-  }, []);
+  }, [theme]);
 
   useEffect(() => {
     async function init() {
