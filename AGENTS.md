@@ -197,6 +197,9 @@ Persisted in `chrome.storage.local`:
 
 Storage rules:
 
+- Use the full registrable domain (minus `www.`/`m.`) as the `productKey` for unknown sites to ensure identity isolation.
+- Decouple technical `productKey` (for grouping/actions) from visual `label` (for display).
+- Localized consolidation (stripping TLDs) is limited to known safe variants in `PRODUCT_RULES` only.
 - All read-modify-write mutations go through the serial write queue in
   `src/utils/storage.ts`.
 - Normalize legacy storage shapes at the adapter boundary.

@@ -37,20 +37,33 @@ describe('Product Rules Configuration', () => {
     it('extracts clean labels from common domains', () => {
       const product = fallbackProductForHostname('stackoverflow.com');
       expect(product.label).toBe('Stackoverflow');
-      expect(product.key).toBe('stackoverflow');
+      expect(product.key).toBe('stackoverflow.com');
     });
 
-    it('handles localized TLDs by consolidating to the base name', () => {
-      // Both should map to 'google' key for consistency
+    it('keeps keys separate for different TLDs to prevent over-consolidation', () => {
+      const com = fallbackProductForHostname('example.com');
+      const org = fallbackProductForHostname('example.org');
+
+      // Labels can be the same
+      expect(com.label).toBe('Example');
+      expect(org.label).toBe('Example');
+
+      // But keys MUST be different for technical identity
+      expect(com.key).toBe('example.com');
+      expect(org.key).toBe('example.org');
+    });
+
+    it('handles localized TLDs while keeping unique keys', () => {
       const hk = fallbackProductForHostname('google.com.hk');
       const tw = fallbackProductForHostname('google.com.tw');
       const uk = fallbackProductForHostname('google.co.uk');
       const jp = fallbackProductForHostname('google.co.jp');
 
-      expect(hk.key).toBe('google');
-      expect(tw.key).toBe('google');
-      expect(uk.key).toBe('google');
-      expect(jp.key).toBe('google');
+      // Each gets its own key in fallback mode
+      expect(hk.key).toBe('google.com.hk');
+      expect(tw.key).toBe('google.com.tw');
+      expect(uk.key).toBe('google.co.uk');
+      expect(jp.key).toBe('google.co.jp');
       
       expect(hk.label).toBe('Google');
     });
@@ -58,19 +71,19 @@ describe('Product Rules Configuration', () => {
     it('handles complex subdomains in unknown products', () => {
       const product = fallbackProductForHostname('sub.deep.example.io');
       expect(product.label).toBe('Sub Deep Example');
-      expect(product.key).toBe('sub.deep.example');
+      expect(product.key).toBe('sub.deep.example.io');
     });
 
     it('strips www and m prefixes from labels and keys', () => {
       const product = fallbackProductForHostname('www.my-site.net');
       expect(product.label).toBe('My Site');
-      expect(product.key).toBe('my-site');
+      expect(product.key).toBe('my-site.net');
     });
 
     it('handles domains with dashes', () => {
       const product = fallbackProductForHostname('my-cool-app.dev');
       expect(product.label).toBe('My Cool App');
-      expect(product.key).toBe('my-cool-app');
+      expect(product.key).toBe('my-cool-app.dev');
     });
   });
 });

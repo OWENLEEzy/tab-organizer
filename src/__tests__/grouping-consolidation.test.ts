@@ -61,7 +61,7 @@ describe('Grouping Consolidation', () => {
     expect(groups[0].tabs).toHaveLength(3);
   });
 
-  it('consolidates unknown products with localized TLDs in fallback', () => {
+  it('keeps unknown products with localized TLDs separate to prevent over-consolidation', () => {
     const tabs = [
       makeTab({ id: 1, url: 'https://example.com/' }),
       makeTab({ id: 2, url: 'https://example.com.hk/' }),
@@ -69,11 +69,11 @@ describe('Grouping Consolidation', () => {
     ];
 
     const groups = groupTabsByDomain(tabs);
-    // All should consolidate to "example" key because of the improved fallback
-    expect(groups).toHaveLength(1);
-    expect(groups[0].domain).toBe('example');
-    expect(groups[0].friendlyName).toBe('Example');
-    expect(groups[0].tabs).toHaveLength(3);
+    // Should NOT consolidate to "example" key; should remain separate
+    expect(groups).toHaveLength(3);
+    expect(groups.map(g => g.domain)).toContain('example.com');
+    expect(groups.map(g => g.domain)).toContain('example.com.hk');
+    expect(groups.map(g => g.domain)).toContain('example.co.jp');
   });
 
   it('still keeps distinct subdomains separate if they are not in rules', () => {
@@ -83,10 +83,9 @@ describe('Grouping Consolidation', () => {
     ];
 
     const groups = groupTabsByDomain(tabs);
-    // Without a specific rule, "app.product" and "blog.product" remain separate keys
-    // because fallback only strips the TLD part.
+    // Without a specific rule, "app.product.com" and "blog.product.com" remain separate keys.
     expect(groups).toHaveLength(2);
-    expect(groups.find(g => g.domain === 'app.product')).toBeDefined();
-    expect(groups.find(g => g.domain === 'blog.product')).toBeDefined();
+    expect(groups.find(g => g.domain === 'app.product.com')).toBeDefined();
+    expect(groups.find(g => g.domain === 'blog.product.com')).toBeDefined();
   });
 });

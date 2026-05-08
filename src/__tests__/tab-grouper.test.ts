@@ -31,7 +31,7 @@ describe('groupTabsByDomain', () => {
 
     const groups = groupTabsByDomain(tabs);
     const youtubeGroup = groups.find((g) => g.domain === 'youtube');
-    const soGroup = groups.find((g) => g.domain === 'stackoverflow');
+    const soGroup = groups.find((g) => g.domain === 'stackoverflow.com');
 
     expect(groups).toHaveLength(2);
     expect(youtubeGroup).toBeDefined();
@@ -190,7 +190,7 @@ describe('groupTabsByDomain', () => {
     ]);
 
     expect(groups).toHaveLength(1);
-    expect(groups[0].domain).toBe('example');
+    expect(groups[0].domain).toBe('example.com');
   });
 
   describe('customOrder', () => {
@@ -215,12 +215,12 @@ describe('groupTabsByDomain', () => {
       ];
 
       const groups = groupTabsByDomain(tabs, {
-        'example': 0,
-        'x': 1,
+        'example.com': 0,
+        'x.com': 1,
         github: 2,
       });
 
-      expect(groups.map((g) => g.domain)).toEqual(['example', 'x', 'github']);
+      expect(groups.map((g) => g.domain)).toEqual(['example.com', 'x.com', 'github']);
     });
 
     it('sorts ordered products before unordered ones', () => {
@@ -231,10 +231,10 @@ describe('groupTabsByDomain', () => {
       ];
 
       const groups = groupTabsByDomain(tabs, {
-        'example': 0,
+        'example.com': 0,
       });
 
-      expect(groups[0].domain).toBe('example');
+      expect(groups[0].domain).toBe('example.com');
       expect(groups).toHaveLength(3);
     });
   });
@@ -264,7 +264,7 @@ describe('groupTabsByDomain', () => {
       const groups = groupTabsByDomain(tabs);
 
       expect(groups).toHaveLength(1);
-      expect(groups[0].productKey).toBe('example');
+      expect(groups[0].productKey).toBe('example.com');
       expect(groups[0].tabs).toHaveLength(3);
     });
   });

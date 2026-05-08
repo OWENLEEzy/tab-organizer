@@ -115,9 +115,11 @@ export function fallbackProductForHostname(hostname: string): ProductInfo {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 
-  // Use the label-base as the key to consolidate localized domains
-  // e.g. "google.com.hk" and "google.com" both become key: "google"
-  const key = labelBase.toLowerCase() || normalized || hostname;
+  // Decouple technical key from visual label.
+  // We use the normalized hostname as the key to prevent unrelated domains
+  // (e.g. example.com vs example.org) from sharing a grouping identity,
+  // while still extracting a pretty label for the UI.
+  const key = normalized || hostname;
 
   return {
     key,
