@@ -95,7 +95,9 @@ describe('Store Rollbacks & Errors Final', () => {
     chromeStorage.set.mockRejectedValueOnce(new Error('fail'));
     
     // Line 392: reorderProducts catch
-    useTabStore.getState().reorderProducts([]);
+    const dummyProduct: any = { productKey: 'google', domain: 'google.com', order: 0, tabs: [] };
+    useTabStore.setState({ products: [dummyProduct] });
+    useTabStore.getState().reorderProducts([{ ...dummyProduct, order: 1 }]);
     await vi.waitFor(() => expect(spy).toHaveBeenCalledWith(expect.stringContaining('Failed to persist product order'), expect.any(Error)));
     
     // Line 177: fetchTabs prune catch

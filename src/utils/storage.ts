@@ -352,9 +352,23 @@ export async function updateStorage(
   let nextState = EMPTY_SCHEMA;
 
   await queuedWrite(async () => {
-    const current = migrate(await readStorageSnapshot());
-    nextState = migrate(await updater(current) as unknown as Record<string, unknown>);
-    await persistStorage(nextState);
+    const raw = await readStorageSnapshot();
+    const current = migrate(raw);
+    const updated = await updater(current);
+    nextState = migrate(updated as unknown as Record<string, unknown>);
+
+    const isVersionCurrent = raw.schemaVersion === CURRENT_SCHEMA_VERSION;
+    const hasLegacyKeys =
+      raw.sections !== undefined ||
+      raw.sectionAssignments !== undefined ||
+      raw.recoveryCandidate !== undefined ||
+      raw.recoveryHistory !== undefined;
+
+    const needsWrite = !isVersionCurrent || hasLegacyKeys || JSON.stringify(nextState) !== JSON.stringify(current);
+
+    if (needsWrite) {
+      await persistStorage(nextState);
+    }
   });
 
   return nextState;
