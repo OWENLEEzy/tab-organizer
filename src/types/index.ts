@@ -12,6 +12,9 @@ export interface Tab {
   isDuplicate: boolean;
   isLandingPage: boolean;
   duplicateCount: number;
+  lastAccessed?: number;
+  pinned?: boolean;
+  audible?: boolean;
 }
 
 // ─── Tab Groups ──────────────────────────────────────────────────

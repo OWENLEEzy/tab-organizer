@@ -28,6 +28,7 @@ interface DraggableDomainCardProps {
   onFocusTab: (url: string) => void;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   onToggleExpanded?: (domain: string) => void;
+  searchQuery?: string;
 }
 
 function DraggableDomainCard({
@@ -44,6 +45,7 @@ function DraggableDomainCard({
   onFocusTab,
   onChipClick,
   onToggleExpanded,
+  searchQuery = '',
 }: DraggableDomainCardProps): React.ReactElement {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: draggableId });
   const label = group.friendlyName || group.domain;
@@ -64,6 +66,7 @@ function DraggableDomainCard({
         selectedUrls={selectedUrls}
         onChipClick={onChipClick}
         onToggleExpanded={onToggleExpanded}
+        searchQuery={searchQuery}
       />
     </div>
   );
@@ -92,6 +95,7 @@ interface DndGroupBoardProps {
   onFocusTab: (url: string) => void;
   onChipClick: (url: string, event: React.MouseEvent) => void;
   onToggleExpanded: (domain: string) => void;
+  searchQuery?: string;
 }
 
 function DndGroupBoard({
@@ -115,6 +119,7 @@ function DndGroupBoard({
   onFocusTab,
   onChipClick,
   onToggleExpanded,
+  searchQuery = '',
 }: DndGroupBoardProps): React.ReactElement {
   const { setNodeRef, isOver } = useDroppable({ id });
 
@@ -178,6 +183,7 @@ function DndGroupBoard({
             onFocusTab={onFocusTab}
             onChipClick={onChipClick}
             onToggleExpanded={onToggleExpanded}
+            searchQuery={searchQuery}
           />
         ))}
       </div>
@@ -210,6 +216,7 @@ interface DndOrganizerProps {
   onFocusTab: (url: string) => void;
   onChipClick: (url: string, event: React.MouseEvent) => void;
   onToggleExpanded: (domain: string) => void;
+  searchQuery?: string;
 }
 
 export function DndOrganizer({
@@ -235,6 +242,7 @@ export function DndOrganizer({
   onFocusTab,
   onChipClick,
   onToggleExpanded,
+  searchQuery = '',
 }: DndOrganizerProps): React.ReactElement {
   const [activeGroup, setActiveGroup] = useState<TabGroup | null>(null);
 
@@ -290,6 +298,7 @@ export function DndOrganizer({
     onFocusTab,
     onChipClick,
     onToggleExpanded,
+    searchQuery,
   };
 
   return (
@@ -332,6 +341,7 @@ export function DndOrganizer({
             selectedUrls={selectedUrls}
             onChipClick={onChipClick}
             onToggleExpanded={onToggleExpanded}
+            searchQuery={searchQuery}
           />
         ) : null}
       </DragOverlay>

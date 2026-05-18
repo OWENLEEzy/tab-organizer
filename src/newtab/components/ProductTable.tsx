@@ -20,6 +20,7 @@ interface ProductTableProps {
   selectedUrls?: Set<string>;
   closingUrls?: Set<string>;
   focusedUrl?: string | null;
+  searchQuery?: string;
 }
 
 function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
@@ -85,6 +86,7 @@ export function ProductTable({
   selectedUrls = new Set(),
   closingUrls = new Set(),
   focusedUrl = null,
+  searchQuery = '',
 }: ProductTableProps): React.ReactElement {
   const rows = useMemo(() => [...items].sort((a, b) => a.order - b.order), [items]);
 
@@ -182,6 +184,10 @@ export function ProductTable({
                             onFocus={onFocusTab}
                             onClose={onCloseTab}
                             onChipClick={onChipClick}
+                            searchQuery={searchQuery}
+                            lastAccessed={tab.lastAccessed}
+                            pinned={tab.pinned}
+                            audible={tab.audible}
                           />
                         ))}
                       </div>

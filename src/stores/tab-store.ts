@@ -101,6 +101,9 @@ function toAppTab(raw: chrome.tabs.Tab): Tab {
     isDuplicate: false,
     isLandingPage: false,
     duplicateCount: 0,
+    lastAccessed: raw.lastAccessed,
+    pinned: raw.pinned ?? false,
+    audible: raw.audible ?? false,
   };
 }
 

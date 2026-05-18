@@ -346,6 +346,58 @@ export function useTabHandlers({
     });
   }, [tabStore, showToast]);
 
+  const handleSelectStaleTabs = useCallback((days = 3) => {
+    const now = Date.now();
+    const msThreshold = days * 24 * 60 * 60 * 1000;
+    
+    const staleUrls = tabStore.tabs
+      .filter((t) => {
+        if (t.active || t.pinned || t.audible) return false;
+        const lastAccess = t.lastAccessed ?? now;
+        return now - lastAccess > msThreshold;
+      })
+      .map((t) => t.url);
+
+    if (staleUrls.length > 0) {
+      dispatch({
+        type: 'SET_SELECTED_URLS',
+        urls: new Set(staleUrls),
+      });
+      showToast(`Selected ${staleUrls.length} stale tab${staleUrls.length !== 1 ? 's' : ''}. Press close to clear.`);
+    } else {
+      showToast("No stale tabs found 🧹");
+    }
+  }, [tabStore, dispatch, showToast]);
+
+  const handleSelectDuplicateTabs = useCallback(() => {
+    const byUrl = new Map<string, typeof tabStore.tabs>();
+    for (const t of tabStore.tabs) {
+      byUrl.set(t.url, [...(byUrl.get(t.url) || []), t]);
+    }
+    
+    const duplicatesToClose: string[] = [];
+    for (const [, matching] of byUrl.entries()) {
+      if (matching.length > 1) {
+        const keep = matching.find(t => t.active) ?? matching[0];
+        for (const t of matching) {
+          if (t.url !== keep.url || t.id !== keep.id) {
+            duplicatesToClose.push(t.url);
+          }
+        }
+      }
+    }
+
+    if (duplicatesToClose.length > 0) {
+      dispatch({
+        type: 'SET_SELECTED_URLS',
+        urls: new Set(duplicatesToClose),
+      });
+      showToast(`Selected ${duplicatesToClose.length} duplicate tab${duplicatesToClose.length !== 1 ? 's' : ''}. Press close to clear.`);
+    } else {
+      showToast("No duplicate tabs found 🧹");
+    }
+  }, [tabStore, dispatch, showToast]);
+
   return {
     handleCloseProduct,
     handleCloseManualGroup,
@@ -366,5 +418,7 @@ export function useTabHandlers({
     handleMoveTableItem,
     handleMoveProductToMain,
     handleMoveProductToGroup,
+    handleSelectStaleTabs,
+    handleSelectDuplicateTabs,
   };
 }

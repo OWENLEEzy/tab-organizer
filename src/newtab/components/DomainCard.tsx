@@ -20,6 +20,7 @@ interface DomainCardProps {
   selectedUrls?: Set<string>;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   onToggleExpanded?: (domain: string) => void;
+  searchQuery?: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -79,6 +80,7 @@ function TabChipRow({
   onFocus,
   onClose,
   onChipClick,
+  searchQuery,
 }: {
   tab: TabGroup['tabs'][number];
   duplicateCount: number;
@@ -89,6 +91,7 @@ function TabChipRow({
   onFocus: (url: string) => void;
   onClose: (url: string) => void;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
+  searchQuery?: string;
 }): React.ReactElement {
   return (
     <div className="tab-chip-row">
@@ -105,6 +108,10 @@ function TabChipRow({
         onFocus={onFocus}
         onClose={onClose}
         onChipClick={onChipClick}
+        searchQuery={searchQuery}
+        lastAccessed={tab.lastAccessed}
+        pinned={tab.pinned}
+        audible={tab.audible}
       />
     </div>
   );
@@ -126,6 +133,7 @@ export function DomainCard({
   selectedUrls,
   onChipClick,
   onToggleExpanded,
+  searchQuery = '',
 }: DomainCardProps): React.ReactElement {
   const tabs = useMemo(() => group.tabs || [], [group.tabs]);
   const tabCount = tabs.length;
@@ -152,9 +160,11 @@ export function DomainCard({
 
   const hasDupes = dupeUrls.length > 0;
 
+  const isSearching = searchQuery.trim().length > 0;
+
   const { visibleTabs, hiddenTabs } = useMemo(
-    () => getVisibleTabs(tabs, maxChipsVisible, expanded),
-    [tabs, maxChipsVisible, expanded],
+    () => getVisibleTabs(tabs, maxChipsVisible, isSearching ? true : expanded),
+    [tabs, maxChipsVisible, isSearching, expanded],
   );
   const extraCount = hiddenTabs.length;
 
@@ -267,6 +277,7 @@ export function DomainCard({
               onFocus={handleFocusTab}
               onClose={handleCloseTab}
               onChipClick={onChipClick}
+              searchQuery={searchQuery}
             />
           ))}
         </div>

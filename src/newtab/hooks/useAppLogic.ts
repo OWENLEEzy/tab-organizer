@@ -14,6 +14,38 @@ function productKeyForProduct(p: TabGroup): string {
   return p.productKey ?? p.itemKey ?? p.domain;
 }
 
+interface CommandParsed {
+  type: 'dupes' | 'stale' | 'space' | 'text';
+  arg?: string;
+  textQuery: string;
+}
+
+function parseSearchQuery(query: string): CommandParsed {
+  const trimmed = query.trim().toLowerCase();
+  
+  if (trimmed.startsWith('/dupes')) {
+    const textQuery = trimmed.replace('/dupes', '').trim();
+    return { type: 'dupes', textQuery };
+  }
+  
+  if (trimmed.startsWith('/stale')) {
+    const textQuery = trimmed.replace('/stale', '').trim();
+    return { type: 'stale', textQuery };
+  }
+  
+  const spaceMatch = trimmed.match(/^\/space:([^\s]+)/);
+  if (spaceMatch) {
+    const textQuery = trimmed.replace(spaceMatch[0], '').trim();
+    return { 
+      type: 'space', 
+      arg: spaceMatch[1], 
+      textQuery
+    };
+  }
+  
+  return { type: 'text', textQuery: trimmed };
+}
+
 function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void {
   const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tab-url]'));
   const target = direction === 'first' ? chips[0] : chips.at(-1);
@@ -68,6 +100,11 @@ export function useAppLogic() {
     return map;
   }, [groupAssignments]);
 
+  const orderedGroups = useMemo(
+    () => [...manualGroups].sort((a, b) => a.order - b.order),
+    [manualGroups],
+  );
+
   const filteredProducts = useMemo(() => {
     let result = products;
 
@@ -79,7 +116,60 @@ export function useAppLogic() {
     }
 
     if (!searchQuery.trim()) return result;
-    const query = searchQuery.toLowerCase();
+    const parsed = parseSearchQuery(searchQuery);
+
+    // 1. Process /space:SpaceName command
+    if (parsed.type === 'space' && parsed.arg) {
+      const targetSpace = orderedGroups.find(
+        (g) => g.name.toLowerCase().includes(parsed.arg!)
+      );
+      if (targetSpace) {
+        result = products.filter(p => {
+          const itemKey = groupAssignmentKey(p);
+          return assignmentByItemId.get(itemKey) === targetSpace.id;
+        });
+      }
+    }
+
+    // 2. Process /dupes command
+    if (parsed.type === 'dupes') {
+      result = result
+        .filter(p => p.duplicateCount > 0)
+        .map(p => {
+          const counts = p.tabs.reduce((acc, t) => {
+            acc[t.url] = (acc[t.url] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+          
+          return {
+            ...p,
+            tabs: p.tabs.filter(t => counts[t.url] > 1)
+          };
+        })
+        .filter(p => p.tabs.length > 0);
+    }
+
+    // 3. Process /stale command
+    if (parsed.type === 'stale') {
+      // eslint-disable-next-line react-hooks/purity
+      const now = Date.now();
+      const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+      
+      result = result
+        .map(p => ({
+          ...p,
+          tabs: p.tabs.filter(t => {
+            if (t.active || t.pinned) return false;
+            const tLast = t.lastAccessed ?? now;
+            return now - tLast > threeDaysMs;
+          })
+        }))
+        .filter(p => p.tabs.length > 0);
+    }
+
+    // 4. Substring filtering
+    if (!parsed.textQuery) return result;
+    const query = parsed.textQuery.toLowerCase();
     const finalResult: TabGroup[] = [];
     for (const p of result) {
       const filteredTabs = p.tabs.filter(
@@ -94,12 +184,7 @@ export function useAppLogic() {
       }
     }
     return finalResult;
-  }, [products, searchQuery, tabStore.activeSpaceId, assignmentByItemId, groupAssignmentKey]);
-
-  const orderedGroups = useMemo(
-    () => [...manualGroups].sort((a, b) => a.order - b.order),
-    [manualGroups],
-  );
+  }, [products, searchQuery, tabStore.activeSpaceId, assignmentByItemId, groupAssignmentKey, orderedGroups]);
 
   const unassignedProducts = useMemo(
     () => filteredProducts.filter((p) => !assignmentByItemId.has(groupAssignmentKey(p))),
@@ -145,10 +230,15 @@ export function useAppLogic() {
           ...orderedGroups.flatMap((group) => productsByGroup.get(group.id) ?? []),
         ];
 
+    const isSearching = searchQuery.trim().length > 0;
+    const activeExpanded = isSearching
+      ? new Set(visualProducts.map(p => p.domain))
+      : expandedDomains;
+
     return flattenVisibleTabs(
       visualProducts,
       settings.maxChipsVisible,
-      expandedDomains,
+      activeExpanded,
     );
   }, [
     filteredProducts,
@@ -158,6 +248,7 @@ export function useAppLogic() {
     viewMode,
     settings.maxChipsVisible,
     expandedDomains,
+    searchQuery,
   ]);
 
   const focusedUrl = focusedIndex !== null ? flatChips[focusedIndex]?.url ?? null : null;
@@ -228,6 +319,18 @@ export function useAppLogic() {
     const cleanup = tabStore.startListeners();
     return cleanup;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (searchQuery.trim().length > 0) {
+      if (flatChips.length > 0) {
+        dispatch({ type: 'SET_FOCUSED_INDEX', index: 0 });
+      } else {
+        dispatch({ type: 'SET_FOCUSED_INDEX', index: null });
+      }
+    } else {
+      dispatch({ type: 'SET_FOCUSED_INDEX', index: null });
+    }
+  }, [searchQuery, flatChips.length, dispatch]);
 
   useEffect(() => {
     const handleMessage = (message: { type?: string }) => {

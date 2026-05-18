@@ -1,7 +1,6 @@
 import React from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingState } from './components/LoadingState';
-import { DndOrganizer } from './components/DndOrganizer';
 import { ProductTable } from './components/ProductTable';
 import { SelectionBar } from './components/SelectionBar';
 import { EmptyState } from './components/EmptyState';
@@ -21,6 +20,10 @@ import { useAppLogic } from './hooks/useAppLogic';
 
 const SettingsPanel = React.lazy(() =>
   import('./components/SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
+);
+
+const DndOrganizer = React.lazy(() =>
+  import('./components/DndOrganizer').then((module) => ({ default: module.DndOrganizer })),
 );
 
 // ─── Component ────────────────────────────────────────────────────────
@@ -123,6 +126,90 @@ export function App(): React.ReactElement {
           <EmptyState />
         ) : (
           <main id="main-content" tabIndex={-1} className="active-section">
+              {state.searchQuery.trim().toLowerCase().startsWith('/dupes') && (
+                <div
+                  role="alert"
+                  className="rounded-card border-accent-amber/20 from-accent-amber/[0.04] to-accent-amber/[0.09] mb-4 flex animate-[fadeUp_0.5s_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="bg-accent-amber/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="text-accent-amber h-[18px] w-[18px]"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-heading text-sm font-normal text-text-primary-light dark:text-text-primary-dark">
+                        Duplicate Tabs Sweep
+                      </h4>
+                      <p className="text-text-secondary text-xs mt-0.5">
+                        Clean up duplicate tab instances and keep one active copy.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handlers.handleSelectDuplicateTabs()}
+                    className="rounded-chip bg-accent-amber font-body focus-visible:ring-accent-amber/50 min-h-11 cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
+                  >
+                    Select Duplicates for Sweeping
+                  </button>
+                </div>
+              )}
+
+              {state.searchQuery.trim().toLowerCase().startsWith('/stale') && (
+                <div
+                  role="alert"
+                  className="rounded-card border-accent-blue/20 from-accent-blue/[0.04] to-accent-blue/[0.09] mb-4 flex animate-[fadeUp_0.5s_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="bg-accent-blue/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="text-accent-blue h-[18px] w-[18px]"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-heading text-sm font-normal text-text-primary-light dark:text-text-primary-dark">
+                        Stale Tabs Sweep
+                      </h4>
+                      <p className="text-text-secondary text-xs mt-0.5">
+                        Find and select tabs that have been idle for 3+ days. Pinned and active/audible tabs are preserved.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handlers.handleSelectStaleTabs(3)}
+                    className="rounded-chip bg-accent-blue font-body focus-visible:ring-accent-blue/50 min-h-11 cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
+                  >
+                    Select Stale Tabs for Sweeping
+                  </button>
+                </div>
+              )}
+
               {viewMode === 'table' ? (
                 <ProductTable
                   items={derived.filteredProducts}
@@ -139,33 +226,37 @@ export function App(): React.ReactElement {
                   selectedUrls={state.selectedUrls}
                   closingUrls={state.closingUrls}
                   focusedUrl={state.focusedUrl}
+                  searchQuery={state.searchQuery}
                 />
               ) : (
                 <ErrorBoundary>
-                  <DndOrganizer
-                    filteredProducts={derived.filteredProducts}
-                    unassignedProducts={derived.unassignedProducts}
-                    orderedGroups={derived.orderedGroups}
-                    productsByGroup={derived.productsByGroup}
-                    assignmentByItemId={derived.assignmentByItemId}
-                    itemIdForProduct={derived.itemIdForProduct}
-                    expandedDomains={state.expandedDomains}
-                    maxChipsVisible={settings.maxChipsVisible}
-                    focusedUrl={state.focusedUrl}
-                    closingUrls={state.closingUrls}
-                    selectedUrls={state.selectedUrls}
-                    onMoveProductToMain={handlers.handleMoveProductToMain}
-                    onMoveProductToGroup={handlers.handleMoveProductToGroup}
-                    onRenameGroup={handlers.handleRenameGroup}
-                    onDeleteGroup={handlers.handleDeleteGroup}
-                    onCloseProduct={handlers.handleCloseProduct}
-                    onCloseManualGroup={handlers.handleCloseManualGroup}
-                    onCloseDuplicates={handlers.handleCloseDuplicates}
-                    onCloseTab={handlers.handleCloseTabAnimated}
-                    onFocusTab={handlers.handleFocusTab}
-                    onChipClick={handlers.handleChipClick}
-                    onToggleExpanded={handlers.handleToggleExpanded}
-                  />
+                  <React.Suspense fallback={<LoadingState />}>
+                    <DndOrganizer
+                      filteredProducts={derived.filteredProducts}
+                      unassignedProducts={derived.unassignedProducts}
+                      orderedGroups={derived.orderedGroups}
+                      productsByGroup={derived.productsByGroup}
+                      assignmentByItemId={derived.assignmentByItemId}
+                      itemIdForProduct={derived.itemIdForProduct}
+                      expandedDomains={state.expandedDomains}
+                      maxChipsVisible={settings.maxChipsVisible}
+                      focusedUrl={state.focusedUrl}
+                      closingUrls={state.closingUrls}
+                      selectedUrls={state.selectedUrls}
+                      onMoveProductToMain={handlers.handleMoveProductToMain}
+                      onMoveProductToGroup={handlers.handleMoveProductToGroup}
+                      onRenameGroup={handlers.handleRenameGroup}
+                      onDeleteGroup={handlers.handleDeleteGroup}
+                      onCloseProduct={handlers.handleCloseProduct}
+                      onCloseManualGroup={handlers.handleCloseManualGroup}
+                      onCloseDuplicates={handlers.handleCloseDuplicates}
+                      onCloseTab={handlers.handleCloseTabAnimated}
+                      onFocusTab={handlers.handleFocusTab}
+                      onChipClick={handlers.handleChipClick}
+                      onToggleExpanded={handlers.handleToggleExpanded}
+                      searchQuery={state.searchQuery}
+                    />
+                  </React.Suspense>
                 </ErrorBoundary>
               )}
           </main>
