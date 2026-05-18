@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import type { TabGroup } from '../../types';
 import { TabChip } from './TabChip';
 import { getVisibleTabs } from '../lib/visible-tabs';
-import { getFaviconUrl } from '../../utils/favicon';
+import { getGroupFaviconUrl } from '../../lib/tab-utils';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -18,8 +18,10 @@ interface DomainCardProps {
   focusedUrl?: string | null;
   closingUrls?: Set<string>;
   selectedUrls?: Set<string>;
+  selectedTabIds?: Set<number>;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   onToggleExpanded?: (domain: string) => void;
+  searchQuery?: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -75,20 +77,24 @@ function TabChipRow({
   focusedUrl,
   closingUrls,
   selectedUrls,
+  selectedTabIds,
   selectionMode,
   onFocus,
   onClose,
   onChipClick,
+  searchQuery,
 }: {
   tab: TabGroup['tabs'][number];
   duplicateCount: number;
   focusedUrl?: string | null;
   closingUrls?: Set<string>;
   selectedUrls?: Set<string>;
+  selectedTabIds?: Set<number>;
   selectionMode: boolean;
   onFocus: (url: string) => void;
   onClose: (url: string) => void;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
+  searchQuery?: string;
 }): React.ReactElement {
   return (
     <div className="tab-chip-row">
@@ -100,11 +106,15 @@ function TabChipRow({
         active={tab.active}
         isFocused={tab.url === focusedUrl}
         isClosing={closingUrls?.has(tab.url)}
-        isSelected={selectedUrls?.has(tab.url)}
+        isSelected={selectedUrls?.has(tab.url) || (selectedTabIds?.has(tab.id) ?? false)}
         selectionMode={selectionMode}
         onFocus={onFocus}
         onClose={onClose}
         onChipClick={onChipClick}
+        searchQuery={searchQuery}
+        lastAccessed={tab.lastAccessed}
+        pinned={tab.pinned}
+        audible={tab.audible}
       />
     </div>
   );
@@ -124,16 +134,18 @@ export function DomainCard({
   focusedUrl,
   closingUrls,
   selectedUrls,
+  selectedTabIds,
   onChipClick,
   onToggleExpanded,
+  searchQuery = '',
 }: DomainCardProps): React.ReactElement {
   const tabs = useMemo(() => group.tabs || [], [group.tabs]);
   const tabCount = tabs.length;
   const displayName = group.friendlyName || group.domain;
-  const selectionMode = (selectedUrls?.size ?? 0) > 0;
+  const selectionMode = (selectedUrls?.size ?? 0) > 0 || (selectedTabIds?.size ?? 0) > 0;
   const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
   const groupFaviconUrl = useMemo(
-    () => tabs.find((tab) => tab.favIconUrl.trim() !== '')?.favIconUrl.trim() ?? getFaviconUrl(tabs[0]?.url || ''),
+    () => getGroupFaviconUrl(tabs),
     [tabs],
   );
   const iconFailed = groupFaviconUrl !== '' && failedFaviconUrl === groupFaviconUrl;
@@ -152,9 +164,11 @@ export function DomainCard({
 
   const hasDupes = dupeUrls.length > 0;
 
+  const isSearching = searchQuery.trim().length > 0;
+
   const { visibleTabs, hiddenTabs } = useMemo(
-    () => getVisibleTabs(tabs, maxChipsVisible, expanded),
-    [tabs, maxChipsVisible, expanded],
+    () => getVisibleTabs(tabs, maxChipsVisible, isSearching ? true : expanded),
+    [tabs, maxChipsVisible, isSearching, expanded],
   );
   const extraCount = hiddenTabs.length;
 
@@ -263,10 +277,12 @@ export function DomainCard({
               focusedUrl={focusedUrl}
               closingUrls={closingUrls}
               selectedUrls={selectedUrls}
+              selectedTabIds={selectedTabIds}
               selectionMode={selectionMode}
               onFocus={handleFocusTab}
               onClose={handleCloseTab}
               onChipClick={onChipClick}
+              searchQuery={searchQuery}
             />
           ))}
         </div>

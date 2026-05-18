@@ -34,6 +34,10 @@ interface TabChipProps {
   onFocus: (url: string) => void;
   onClose: (url: string, title: string) => void;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
+  searchQuery?: string;
+  lastAccessed?: number;
+  pinned?: boolean;
+  audible?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────
@@ -81,6 +85,38 @@ function CloseIcon(): React.ReactElement {
   );
 }
 
+function HighlightedText({ text, highlight = '' }: { text: string; highlight?: string }): React.ReactElement {
+  let cleanHighlight = (highlight || '').trim();
+  if (cleanHighlight.startsWith('/')) {
+    cleanHighlight = cleanHighlight
+      .replace(/^\/dupes\s*/i, '')
+      .replace(/^\/stale\s*/i, '')
+      .replace(/^\/space:[^\s]*\s*/i, '')
+      .trim();
+  }
+  if (!cleanHighlight) return <>{text}</>;
+
+  const regex = new RegExp(`(${cleanHighlight.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+  const parts = text.split(regex);
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === cleanHighlight.toLowerCase() ? (
+          <mark
+            key={i}
+            className="bg-accent-amber/25 text-text-primary-light dark:text-text-primary-dark rounded-sm px-0.5 font-semibold"
+          >
+            {part}
+          </mark>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────
 
 export function TabChip({
@@ -96,6 +132,10 @@ export function TabChip({
   onFocus,
   onClose,
   onChipClick,
+  searchQuery = '',
+  lastAccessed,
+  pinned = false,
+  audible = false,
 }: TabChipProps): React.ReactElement {
   const faviconUrl = favIconUrl.trim() || getFaviconUrl(url);
   const displayLabel = buildLabel(title, url);
@@ -107,6 +147,12 @@ export function TabChip({
   const [isTouch] = useState(() => isTouchDevice());
   const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
   const faviconFailed = faviconUrl !== '' && failedFaviconUrl === faviconUrl;
+
+  const isStale = React.useMemo(() => {
+    if (active || pinned || audible || !lastAccessed) return false;
+    // eslint-disable-next-line react-hooks/purity
+    return Date.now() - lastAccessed > 3 * 24 * 60 * 60 * 1000;
+  }, [lastAccessed, active, pinned, audible]);
 
   useEffect(() => {
     if (isFocused && chipRef.current) {
@@ -146,6 +192,9 @@ export function TabChip({
     isFocused && !isSelected ? 'ring-2 ring-accent-blue/40 border-border-light bg-surface-light dark:border-border-dark dark:bg-surface-dark' : '',
     isClosing ? 'chip-closing' : '',
     isSelected ? 'ring-2 ring-accent-blue border-accent-blue bg-accent-blue/[0.12]' : '',
+    isStale && !isSelected
+      ? 'opacity-55 saturate-[0.15] bg-[#F7F6F3]/40 border-dashed border-[#E8E7E4] dark:bg-card-dark/30 hover:opacity-100 hover:saturate-100 hover:border-transparent transition-all duration-200'
+      : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -195,7 +244,7 @@ export function TabChip({
 
         {/* Title */}
         <span className={`font-body text-text-primary-light dark:text-text-primary-dark min-w-0 flex-1 truncate text-sm${active ? ' font-semibold' : ''}`}>
-          {displayLabel}
+          <HighlightedText text={displayLabel} highlight={searchQuery} />
         </span>
 
         {/* Duplicate badge */}

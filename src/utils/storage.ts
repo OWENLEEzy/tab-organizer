@@ -9,6 +9,7 @@ import type {
   HistorySnapshot,
 } from '../types';
 import { historyUrlSignature, shouldReplaceHistoryCandidate } from '../lib/history-snapshots';
+import { DEFAULT_SPACES } from '../config/spaces';
 
 const CURRENT_SCHEMA_VERSION = 4;
 const STORAGE_KEYS = [
@@ -19,6 +20,7 @@ const STORAGE_KEYS = [
   'groupOrder',
   'manualGroups',
   'groupAssignments',
+  'unsortedOverrides',
   'viewMode',
   'historyCandidate',
   'history',
@@ -49,6 +51,14 @@ export const DEFAULT_SETTINGS: AppSettings = {
   maxChipsVisible: 8,
   customGroups: [],
   landingPagePatterns: [],
+  keyBindings: {
+    switchSpaceN: 'Meta+{n}',
+    switchSpaceAll: 'Meta+0',
+    cyclePrev: 'ArrowLeft',
+    cycleNext: 'ArrowRight',
+    focusSearch: '/',
+    clearFilter: 'Escape',
+  },
 };
 
 const EMPTY_SCHEMA: StorageSchema = {
@@ -59,6 +69,7 @@ const EMPTY_SCHEMA: StorageSchema = {
   groupOrder: {},
   manualGroups: [],
   groupAssignments: [],
+  unsortedOverrides: [],
   viewMode: 'cards',
   historyCandidate: null,
   history: [],
@@ -80,6 +91,8 @@ function normalizeManualGroups(value: unknown): ManualGroup[] {
       id: group.id,
       name: group.name.trim() || 'Untitled',
       order: Number.isFinite(group.order) ? group.order : index,
+      emoji: typeof group.emoji === 'string' ? group.emoji : undefined,
+      autoRules: Array.isArray(group.autoRules) ? group.autoRules : undefined,
     }))
     .sort((a, b) => a.order - b.order);
 }
@@ -114,6 +127,22 @@ function normalizeAssignments(value: unknown): GroupAssignment[] {
         order: Number.isFinite(assignment.order) ? Number(assignment.order) : index,
       };
     });
+}
+
+function normalizeUnsortedOverrides(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const overrides: string[] = [];
+
+  for (const item of value) {
+    if (typeof item !== 'string') continue;
+    const productKey = item.trim();
+    if (!productKey || seen.has(productKey)) continue;
+    seen.add(productKey);
+    overrides.push(productKey);
+  }
+
+  return overrides;
 }
 
 /**
@@ -201,6 +230,24 @@ function reconcileAssignments(
     .map(({ originalIndex: _originalIndex, ...assignment }) => assignment);
 }
 
+function reconcileUnsortedOverrides(
+  overrides: string[],
+  currentProductKeys: Set<string>,
+  legacyKeyMap: Map<string, string>,
+): string[] {
+  const seen = new Set<string>();
+  const nextOverrides: string[] = [];
+
+  for (const override of overrides) {
+    const productKey = legacyKeyMap.get(override) ?? override;
+    if (!currentProductKeys.has(productKey) || seen.has(productKey)) continue;
+    seen.add(productKey);
+    nextOverrides.push(productKey);
+  }
+
+  return nextOverrides;
+}
+
 function normalizeHistorySnapshot(value: unknown): HistorySnapshot | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Partial<HistorySnapshot>;
@@ -280,6 +327,7 @@ function migrate(data: Record<string, unknown>): StorageSchema {
     groupOrder: (data['groupOrder'] as Record<string, number> | undefined) ?? {},
     manualGroups: normalizeManualGroups(manualGroups),
     groupAssignments: normalizeAssignments(groupAssignments),
+    unsortedOverrides: normalizeUnsortedOverrides(data['unsortedOverrides']),
     viewMode: isViewMode(data['viewMode']) ? data['viewMode'] : 'cards',
     historyCandidate: normalizeHistorySnapshot(historyCandidate),
     history: normalizeHistory(history),
@@ -287,25 +335,11 @@ function migrate(data: Record<string, unknown>): StorageSchema {
 }
 
 async function readStorageSnapshot(): Promise<Record<string, unknown>> {
-  const result = await chrome.storage.local.get([...STORAGE_KEYS, 'sections', 'sectionAssignments', 'recoveryCandidate', 'recoveryHistory']);
+  return chrome.storage.local.get([...STORAGE_KEYS, 'sections', 'sectionAssignments', 'recoveryCandidate', 'recoveryHistory']);
+}
 
-  return {
-    schemaVersion: result.schemaVersion,
-    deferred: result.deferred,
-    workspaces: result.workspaces,
-    settings: result.settings,
-    groupOrder: result.groupOrder,
-    manualGroups: result.manualGroups,
-    groupAssignments: result.groupAssignments,
-    viewMode: result.viewMode,
-    historyCandidate: result.historyCandidate,
-    history: result.history,
-    // Legacy fields for migration
-    sections: result.sections,
-    sectionAssignments: result.sectionAssignments,
-    recoveryCandidate: result.recoveryCandidate,
-    recoveryHistory: result.recoveryHistory,
-  };
+function hasOwnStorageKey(data: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(data, key);
 }
 
 async function persistStorage(data: StorageSchema): Promise<void> {
@@ -317,6 +351,7 @@ async function persistStorage(data: StorageSchema): Promise<void> {
     groupOrder: data.groupOrder,
     manualGroups: data.manualGroups,
     groupAssignments: data.groupAssignments,
+    unsortedOverrides: data.unsortedOverrides,
     viewMode: data.viewMode,
     historyCandidate: data.historyCandidate,
     history: data.history,
@@ -503,8 +538,15 @@ export async function pruneStaleStorage(currentProductKeys: Set<string>): Promis
       current.manualGroups,
       currentProductKeys
     );
+    const nextOverrides = current.unsortedOverrides.filter((productKey) =>
+      currentProductKeys.has(productKey)
+    );
 
-    if (staleKeys.length === 0 && nextAssignments.length === current.groupAssignments.length) {
+    if (
+      staleKeys.length === 0 &&
+      nextAssignments.length === current.groupAssignments.length &&
+      nextOverrides.length === current.unsortedOverrides.length
+    ) {
       return current;
     }
 
@@ -519,6 +561,7 @@ export async function pruneStaleStorage(currentProductKeys: Set<string>): Promis
       ...current,
       groupOrder: cleanedOrder,
       groupAssignments: nextAssignments,
+      unsortedOverrides: nextOverrides,
     };
   }).catch((err: unknown) => {
     console.warn('[Tab Out] Failed to prune stale organizer storage:', err);
@@ -532,12 +575,24 @@ export async function reconcileOrganizerState(
   groupOrder: Record<string, number>;
   manualGroups: ManualGroup[];
   groupAssignments: GroupAssignment[];
+  unsortedOverrides: string[];
   viewMode: ViewMode;
 }> {
   let nextStorage: StorageSchema;
 
   try {
+    const raw = await readStorageSnapshot();
+    const hasSchemaVersion = hasOwnStorageKey(raw, 'schemaVersion');
+    const hasManualGroups = hasOwnStorageKey(raw, 'manualGroups');
+    const hasLegacySections = !hasManualGroups && hasOwnStorageKey(raw, 'sections');
+    const shouldSeedDefaultSpaces = !hasSchemaVersion && !hasManualGroups && !hasLegacySections;
+
     nextStorage = await updateStorage((current) => {
+      let currentGroups = current.manualGroups;
+      if (shouldSeedDefaultSpaces && currentGroups.length === 0) {
+        currentGroups = DEFAULT_SPACES;
+      }
+
       const groupOrder = reconcileGroupOrder(
         current.groupOrder,
         currentProductKeys,
@@ -545,22 +600,31 @@ export async function reconcileOrganizerState(
       );
       const groupAssignments = reconcileAssignments(
         current.groupAssignments,
-        current.manualGroups,
+        currentGroups,
+        currentProductKeys,
+        legacyKeyMap,
+      );
+      const unsortedOverrides = reconcileUnsortedOverrides(
+        current.unsortedOverrides,
         currentProductKeys,
         legacyKeyMap,
       );
 
       if (
+        currentGroups === current.manualGroups &&
         JSON.stringify(groupOrder) === JSON.stringify(current.groupOrder) &&
-        JSON.stringify(groupAssignments) === JSON.stringify(current.groupAssignments)
+        JSON.stringify(groupAssignments) === JSON.stringify(current.groupAssignments) &&
+        JSON.stringify(unsortedOverrides) === JSON.stringify(current.unsortedOverrides)
       ) {
         return current;
       }
 
       return {
         ...current,
+        manualGroups: currentGroups,
         groupOrder,
         groupAssignments,
+        unsortedOverrides,
       };
     });
   } catch (err: unknown) {
@@ -572,6 +636,7 @@ export async function reconcileOrganizerState(
     groupOrder: nextStorage.groupOrder,
     manualGroups: nextStorage.manualGroups,
     groupAssignments: nextStorage.groupAssignments,
+    unsortedOverrides: nextStorage.unsortedOverrides,
     viewMode: nextStorage.viewMode,
   };
 }
@@ -580,6 +645,7 @@ export async function readOrganizerState(): Promise<{
   groupOrder: Record<string, number>;
   manualGroups: ManualGroup[];
   groupAssignments: GroupAssignment[];
+  unsortedOverrides: string[];
   viewMode: ViewMode;
 }> {
   const storage = await readStorage();
@@ -587,6 +653,7 @@ export async function readOrganizerState(): Promise<{
     groupOrder: storage.groupOrder,
     manualGroups: storage.manualGroups,
     groupAssignments: storage.groupAssignments,
+    unsortedOverrides: storage.unsortedOverrides,
     viewMode: storage.viewMode,
   };
 }
@@ -594,12 +661,14 @@ export async function readOrganizerState(): Promise<{
 export async function writeOrganizerState(state: {
   manualGroups?: ManualGroup[];
   groupAssignments?: GroupAssignment[];
+  unsortedOverrides?: string[];
   viewMode?: ViewMode;
 }): Promise<void> {
   await updateStorage((storage) => ({
     ...storage,
     manualGroups: state.manualGroups ?? storage.manualGroups,
     groupAssignments: state.groupAssignments ?? storage.groupAssignments,
+    unsortedOverrides: state.unsortedOverrides ?? storage.unsortedOverrides,
     viewMode: state.viewMode ?? storage.viewMode,
   }));
 }

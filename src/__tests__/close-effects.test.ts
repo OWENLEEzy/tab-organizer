@@ -19,6 +19,14 @@ const BASE_SETTINGS: AppSettings = {
   maxChipsVisible: 8,
   customGroups: [],
   landingPagePatterns: [],
+  keyBindings: {
+    switchSpaceN: 'Meta+{n}',
+    switchSpaceAll: 'Meta+0',
+    cyclePrev: 'ArrowLeft',
+    cycleNext: 'ArrowRight',
+    focusSearch: '/',
+    clearFilter: 'Escape',
+  },
 };
 
 describe('playCloseEffects', () => {

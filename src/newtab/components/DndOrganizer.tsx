@@ -22,12 +22,14 @@ interface DraggableDomainCardProps {
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
+  selectedTabIds: Set<number>;
   onCloseDomain: (group: TabGroup) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onCloseTab: (url: string) => void;
   onFocusTab: (url: string) => void;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   onToggleExpanded?: (domain: string) => void;
+  searchQuery?: string;
 }
 
 function DraggableDomainCard({
@@ -38,12 +40,14 @@ function DraggableDomainCard({
   focusedUrl,
   closingUrls,
   selectedUrls,
+  selectedTabIds,
   onCloseDomain,
   onCloseDuplicates,
   onCloseTab,
   onFocusTab,
   onChipClick,
   onToggleExpanded,
+  searchQuery = '',
 }: DraggableDomainCardProps): React.ReactElement {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: draggableId });
   const label = group.friendlyName || group.domain;
@@ -62,8 +66,10 @@ function DraggableDomainCard({
         focusedUrl={focusedUrl}
         closingUrls={closingUrls}
         selectedUrls={selectedUrls}
+        selectedTabIds={selectedTabIds}
         onChipClick={onChipClick}
         onToggleExpanded={onToggleExpanded}
+        searchQuery={searchQuery}
       />
     </div>
   );
@@ -82,6 +88,7 @@ interface DndGroupBoardProps {
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
+  selectedTabIds: Set<number>;
   itemIdForProduct: (p: TabGroup) => string;
   onRenameGroup?: (group: ManualGroup) => void;
   onDeleteGroup?: (group: ManualGroup) => void;
@@ -92,6 +99,7 @@ interface DndGroupBoardProps {
   onFocusTab: (url: string) => void;
   onChipClick: (url: string, event: React.MouseEvent) => void;
   onToggleExpanded: (domain: string) => void;
+  searchQuery?: string;
 }
 
 function DndGroupBoard({
@@ -105,6 +113,7 @@ function DndGroupBoard({
   focusedUrl,
   closingUrls,
   selectedUrls,
+  selectedTabIds,
   itemIdForProduct,
   onRenameGroup,
   onDeleteGroup,
@@ -115,6 +124,7 @@ function DndGroupBoard({
   onFocusTab,
   onChipClick,
   onToggleExpanded,
+  searchQuery = '',
 }: DndGroupBoardProps): React.ReactElement {
   const { setNodeRef, isOver } = useDroppable({ id });
 
@@ -172,12 +182,14 @@ function DndGroupBoard({
             focusedUrl={focusedUrl}
             closingUrls={closingUrls}
             selectedUrls={selectedUrls}
+            selectedTabIds={selectedTabIds}
             onCloseDomain={onCloseProduct}
             onCloseDuplicates={onCloseDuplicates}
             onCloseTab={onCloseTab}
             onFocusTab={onFocusTab}
             onChipClick={onChipClick}
             onToggleExpanded={onToggleExpanded}
+            searchQuery={searchQuery}
           />
         ))}
       </div>
@@ -199,6 +211,7 @@ interface DndOrganizerProps {
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
+  selectedTabIds: Set<number>;
   onMoveProductToMain: (productKey: string) => void;
   onMoveProductToGroup: (productKey: string, groupId: string) => void;
   onRenameGroup?: (group: ManualGroup) => void;
@@ -210,6 +223,7 @@ interface DndOrganizerProps {
   onFocusTab: (url: string) => void;
   onChipClick: (url: string, event: React.MouseEvent) => void;
   onToggleExpanded: (domain: string) => void;
+  searchQuery?: string;
 }
 
 export function DndOrganizer({
@@ -224,6 +238,7 @@ export function DndOrganizer({
   focusedUrl,
   closingUrls,
   selectedUrls,
+  selectedTabIds,
   onMoveProductToMain,
   onMoveProductToGroup,
   onRenameGroup,
@@ -235,6 +250,7 @@ export function DndOrganizer({
   onFocusTab,
   onChipClick,
   onToggleExpanded,
+  searchQuery = '',
 }: DndOrganizerProps): React.ReactElement {
   const [activeGroup, setActiveGroup] = useState<TabGroup | null>(null);
 
@@ -282,6 +298,7 @@ export function DndOrganizer({
     focusedUrl,
     closingUrls,
     selectedUrls,
+    selectedTabIds,
     itemIdForProduct,
     onCloseProduct,
     onCloseManualGroup,
@@ -290,6 +307,7 @@ export function DndOrganizer({
     onFocusTab,
     onChipClick,
     onToggleExpanded,
+    searchQuery,
   };
 
   return (
@@ -330,8 +348,10 @@ export function DndOrganizer({
             focusedUrl={focusedUrl}
             closingUrls={closingUrls}
             selectedUrls={selectedUrls}
+            selectedTabIds={selectedTabIds}
             onChipClick={onChipClick}
             onToggleExpanded={onToggleExpanded}
+            searchQuery={searchQuery}
           />
         ) : null}
       </DragOverlay>

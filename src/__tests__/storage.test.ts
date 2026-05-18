@@ -11,6 +11,7 @@ import {
   promoteHistorySnapshot,
   deleteHistorySnapshot,
   clearHistory,
+  reconcileOrganizerState,
 } from '../utils/storage';
 import type { HistorySnapshot } from '../types';
 
@@ -76,6 +77,7 @@ describe('readStorage', () => {
     expect(result.groupOrder).toEqual({});
     expect(result.manualGroups).toEqual([]);
     expect(result.groupAssignments).toEqual([]);
+    expect(result.unsortedOverrides).toEqual([]);
     expect(result.viewMode).toBe('cards');
     expect(result.historyCandidate).toBeNull();
     expect(result.history).toEqual([]);
@@ -89,6 +91,7 @@ describe('readStorage', () => {
     expect(result.groupOrder).toEqual({});
     expect(result.manualGroups).toEqual([]);
     expect(result.groupAssignments).toEqual([]);
+    expect(result.unsortedOverrides).toEqual([]);
     expect(result.viewMode).toBe('cards');
   });
 
@@ -149,6 +152,15 @@ describe('readStorage', () => {
       { productKey: 'github', groupId: 'later', order: 1 },
     ]);
     expect(result.viewMode).toBe('table');
+  });
+
+  it('normalizes unsorted overrides', async () => {
+    storage['schemaVersion'] = 4;
+    storage['unsortedOverrides'] = ['github', '', 'github', 123, ' google.com '];
+
+    const result = await readStorage();
+
+    expect(result.unsortedOverrides).toEqual(['github', 'google.com']);
   });
 });
 
@@ -356,5 +368,51 @@ describe('writeGroupOrder', () => {
     const result = await readStorage();
     expect(result.settings.soundEnabled).toBe(false);
     expect(result.groupOrder).toEqual({ 'github.com': 0 });
+  });
+});
+
+describe('reconcileOrganizerState', () => {
+  it('seeds default spaces when manualGroups has never been persisted', async () => {
+    const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
+    expect(state.manualGroups.length).toBeGreaterThan(0);
+    // Check if the default Dev space is present
+    const devSpace = state.manualGroups.find(g => g.id === 'space-dev');
+    expect(devSpace).toBeDefined();
+    expect(devSpace?.emoji).toBe('🛠');
+  });
+
+  it('preserves an intentionally persisted empty manualGroups list', async () => {
+    storage['schemaVersion'] = 4;
+    storage['manualGroups'] = [];
+
+    const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
+    const result = await readStorage();
+
+    expect(state.manualGroups).toEqual([]);
+    expect(result.manualGroups).toEqual([]);
+  });
+
+  it('keeps existing manualGroups if not empty', async () => {
+    // Let's seed a custom group in storage first
+    const customGroup = { id: 'custom-id', name: 'My Space', order: 0 };
+    storage['manualGroups'] = [customGroup];
+
+    const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
+    expect(state.manualGroups).toEqual([customGroup]);
+  });
+
+  it('canonicalizes and prunes unsorted overrides during organizer reconcile', async () => {
+    storage['schemaVersion'] = 4;
+    storage['manualGroups'] = [{ id: 'g1', name: 'G1', order: 0 }];
+    storage['unsortedOverrides'] = ['google.com', 'missing-product', 'github'];
+
+    const state = await reconcileOrganizerState(
+      new Set(['google', 'github']),
+      new Map([['google.com', 'google']]),
+    );
+    const result = await readStorage();
+
+    expect(state.unsortedOverrides).toEqual(['google', 'github']);
+    expect(result.unsortedOverrides).toEqual(['google', 'github']);
   });
 });

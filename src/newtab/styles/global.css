@@ -366,15 +366,13 @@ body, html {
 
 .section-actions button,
 .view-toggle button,
-.product-table select,
-.table-actions button {
+.product-table select {
   border-radius: var(--radius-chip);
   min-height: 36px;
 }
 
 .section-actions button,
-.view-toggle button,
-.table-actions button {
+.view-toggle button {
   cursor: pointer;
   padding: 6px 10px;
   color: var(--color-text-secondary);
@@ -382,15 +380,13 @@ body, html {
 }
 
 .section-actions button:hover,
-.view-toggle button:hover,
-.table-actions button:hover {
+.view-toggle button:hover {
   background: var(--color-surface-light);
   color: var(--color-text-primary-light);
 }
 
 .dark .section-actions button:hover,
-.dark .view-toggle button:hover,
-.dark .table-actions button:hover {
+.dark .view-toggle button:hover {
   background: var(--color-surface-dark);
   color: var(--color-text-primary-dark);
 }
@@ -673,3 +669,15 @@ body, html {
 .cursor-grab:active {
   cursor: grabbing;
 }
+
+/* ─── WebKit Native Search Cancel Button Overrides ────────────────── */
+/* stylelint-disable property-no-vendor-prefix */
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+/* stylelint-enable property-no-vendor-prefix */
+

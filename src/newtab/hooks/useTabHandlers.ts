@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 import type { Dispatch } from 'react';
 import { useTabStore } from '../../stores/tab-store';
+import { duplicateTabIdsToClose } from '../../lib/duplicate-tabs';
+import { isTabStale, getProductKey } from '../../lib/tab-utils';
 import { clearGroupOrder } from '../../utils/storage';
 import { playCloseEffects } from '../../lib/close-effects';
 import { getChipCloseDelay, userPrefersReducedMotion } from '../lib/motion';
@@ -13,6 +15,7 @@ interface HandlerDeps {
   showToast: (msg: string) => void;
   flatChips: { url: string }[];
   selectedUrls: Set<string>;
+  selectedTabIds: Set<number>;
   lastClickedIndex: number | null;
 }
 
@@ -22,6 +25,7 @@ export function useTabHandlers({
   showToast,
   flatChips,
   selectedUrls,
+  selectedTabIds,
   lastClickedIndex,
 }: HandlerDeps) {
   const tabStore = useTabStore();
@@ -162,6 +166,7 @@ export function useTabHandlers({
           type: 'SET_SELECTED_URLS',
           urls: (prev) => new Set([...prev, ...rangeUrls]),
         });
+        dispatch({ type: 'SET_SELECTED_TAB_IDS', tabIds: new Set() });
       } else if (event.metaKey || event.ctrlKey || selectedUrls.size > 0) {
         dispatch({
           type: 'SET_SELECTED_URLS',
@@ -175,6 +180,7 @@ export function useTabHandlers({
             return next;
           },
         });
+        dispatch({ type: 'SET_SELECTED_TAB_IDS', tabIds: new Set() });
       }
       dispatch({ type: 'SET_LAST_CLICKED_INDEX', index: chipIndex });
     },
@@ -183,6 +189,7 @@ export function useTabHandlers({
 
   const handleClearSelection = useCallback(() => {
     dispatch({ type: 'SET_SELECTED_URLS', urls: new Set() });
+    dispatch({ type: 'SET_SELECTED_TAB_IDS', tabIds: new Set() });
     dispatch({ type: 'SET_LAST_CLICKED_INDEX', index: null });
   }, [dispatch]);
 
@@ -203,13 +210,19 @@ export function useTabHandlers({
 
   const handleCloseSelected = useCallback(() => {
     const urls = [...selectedUrls];
-    const count = urls.length;
+    const tabIds = [...selectedTabIds];
+    const count = tabIds.length > 0 ? tabIds.length : urls.length;
     
     const performClose = () => {
       playCloseEffects(settings);
-      tabStore.closeOneTabPerUrl(urls).then(() => {
+      const closePromise = tabIds.length > 0
+        ? tabStore.closeTabsByIds(tabIds)
+        : tabStore.closeOneTabPerUrl(urls);
+
+      closePromise.then(() => {
         showToast(`Closed ${count} tab${count !== 1 ? 's' : ''}`);
         dispatch({ type: 'SET_SELECTED_URLS', urls: new Set() });
+        dispatch({ type: 'SET_SELECTED_TAB_IDS', tabIds: new Set() });
         dispatch({ type: 'SET_LAST_CLICKED_INDEX', index: null });
       });
     };
@@ -232,7 +245,7 @@ export function useTabHandlers({
     } else {
       performClose();
     }
-  }, [dispatch, selectedUrls, settings, tabStore, showToast]);
+  }, [dispatch, selectedTabIds, selectedUrls, settings, tabStore, showToast]);
 
   const handleCloseAll = useCallback(() => {
     const tabs = tabStore.tabs;
@@ -324,7 +337,7 @@ export function useTabHandlers({
   }, [tabStore, showToast]);
 
   const handleMoveTableItem = useCallback((p: TabGroup, groupId: string) => {
-    const productKey = p.productKey ?? p.itemKey ?? p.domain;
+    const productKey = getProductKey(p);
     const move = groupId
       ? tabStore.moveProductToGroup(productKey, groupId)
       : tabStore.moveProductToMain(productKey);
@@ -346,6 +359,43 @@ export function useTabHandlers({
     });
   }, [tabStore, showToast]);
 
+  const handleSelectStaleTabs = useCallback((days = 3) => {
+    const now = Date.now();
+    
+    const staleUrls = tabStore.tabs
+      .filter((t) => isTabStale(t, now, days))
+      .map((t) => t.url);
+
+    if (staleUrls.length > 0) {
+      dispatch({
+        type: 'SET_SELECTED_URLS',
+        urls: new Set(staleUrls),
+      });
+      dispatch({ type: 'SET_SELECTED_TAB_IDS', tabIds: new Set() });
+      showToast(`Selected ${staleUrls.length} stale tab${staleUrls.length !== 1 ? 's' : ''}. Press close to clear.`);
+    } else {
+      showToast("No stale tabs found 🧹");
+    }
+  }, [tabStore, dispatch, showToast]);
+
+  const handleSelectDuplicateTabs = useCallback(() => {
+    const duplicateTabIds = duplicateTabIdsToClose(tabStore.tabs);
+
+    if (duplicateTabIds.length > 0) {
+      dispatch({
+        type: 'SET_SELECTED_URLS',
+        urls: new Set(),
+      });
+      dispatch({
+        type: 'SET_SELECTED_TAB_IDS',
+        tabIds: new Set(duplicateTabIds),
+      });
+      showToast(`Selected ${duplicateTabIds.length} duplicate tab${duplicateTabIds.length !== 1 ? 's' : ''}. Press close to clear.`);
+    } else {
+      showToast("No duplicate tabs found 🧹");
+    }
+  }, [tabStore, dispatch, showToast]);
+
   return {
     handleCloseProduct,
     handleCloseManualGroup,
@@ -366,5 +416,7 @@ export function useTabHandlers({
     handleMoveTableItem,
     handleMoveProductToMain,
     handleMoveProductToGroup,
+    handleSelectStaleTabs,
+    handleSelectDuplicateTabs,
   };
 }

@@ -17,6 +17,10 @@ interface SettingsActions {
   addCustomGroup: (group: CustomGroup) => Promise<void>;
   /** Remove a custom group rule by its groupKey. */
   removeCustomGroup: (groupKey: string) => Promise<void>;
+  /** Update a specific shortcut keybinding. */
+  updateKeyBinding: (key: keyof AppSettings['keyBindings'], binding: string) => Promise<void>;
+  /** Reset all key bindings to their defaults. */
+  resetKeyBindings: () => Promise<void>;
 }
 
 export type SettingsStore = {
@@ -96,6 +100,44 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     set({ settings: updated });
     try {
       await writeSettings({ customGroups: updated.customGroups });
+    } catch {
+      set({ settings: prev });
+    }
+  },
+
+  updateKeyBinding: async (key: keyof AppSettings['keyBindings'], binding: string) => {
+    const { settings: prev } = get();
+    const updated: AppSettings = {
+      ...prev,
+      keyBindings: {
+        ...prev.keyBindings,
+        [key]: binding,
+      },
+    };
+    set({ settings: updated });
+    try {
+      await writeSettings({ keyBindings: updated.keyBindings });
+    } catch {
+      set({ settings: prev });
+    }
+  },
+
+  resetKeyBindings: async () => {
+    const { settings: prev } = get();
+    const updated: AppSettings = {
+      ...prev,
+      keyBindings: {
+        switchSpaceN: 'Meta+{n}',
+        switchSpaceAll: 'Meta+0',
+        cyclePrev: 'ArrowLeft',
+        cycleNext: 'ArrowRight',
+        focusSearch: '/',
+        clearFilter: 'Escape',
+      },
+    };
+    set({ settings: updated });
+    try {
+      await writeSettings({ keyBindings: updated.keyBindings });
     } catch {
       set({ settings: prev });
     }

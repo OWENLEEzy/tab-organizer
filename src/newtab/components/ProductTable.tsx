@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import type { ManualGroup, TabGroup } from '../../types';
 import { TabChip } from './TabChip';
-import { getFaviconUrl } from '../../utils/favicon';
-import { getDuplicateUrls } from '../../lib/tab-utils';
+import { getDuplicateUrls, getGroupFaviconUrl, getProductKey } from '../../lib/tab-utils';
+import { ActionButton } from './ui/ActionButton';
 
 interface ProductTableProps {
   items: TabGroup[];
@@ -17,8 +17,10 @@ interface ProductTableProps {
   onCloseTab?: (url: string) => void;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   selectedUrls?: Set<string>;
+  selectedTabIds?: Set<number>;
   closingUrls?: Set<string>;
   focusedUrl?: string | null;
+  searchQuery?: string;
 }
 
 function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
@@ -38,7 +40,7 @@ function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
 }
 
 function itemId(p: TabGroup): string {
-  return `product:${p.itemKey ?? p.productKey ?? p.domain}`;
+  return `product:${getProductKey(p)}`;
 }
 
 function RowIcon({ group }: { group: TabGroup }): React.ReactElement {
@@ -46,7 +48,7 @@ function RowIcon({ group }: { group: TabGroup }): React.ReactElement {
   const label = group.friendlyName || group.domain;
   const initial = label.trim().charAt(0).toUpperCase() || '?';
   const faviconUrl = useMemo(
-    () => group.tabs.find((tab) => tab.favIconUrl.trim() !== '')?.favIconUrl.trim() ?? getFaviconUrl(group.tabs[0]?.url || ''),
+    () => getGroupFaviconUrl(group.tabs),
     [group.tabs],
   );
   const failed = faviconUrl !== '' && failedFaviconUrl === faviconUrl;
@@ -82,8 +84,10 @@ export function ProductTable({
   onCloseTab = () => {},
   onChipClick = () => {},
   selectedUrls = new Set(),
+  selectedTabIds = new Set(),
   closingUrls = new Set(),
   focusedUrl = null,
+  searchQuery = '',
 }: ProductTableProps): React.ReactElement {
   const rows = useMemo(() => [...items].sort((a, b) => a.order - b.order), [items]);
 
@@ -106,7 +110,7 @@ export function ProductTable({
             const groupId = assignmentByItemId.get(id) ?? '';
             const dupes = getDuplicateUrls(p.tabs);
             const isExpanded = expandedDomains.has(p.domain);
-            const selectionMode = (selectedUrls?.size ?? 0) > 0;
+            const selectionMode = (selectedUrls?.size ?? 0) > 0 || (selectedTabIds?.size ?? 0) > 0;
 
             return (
               <React.Fragment key={p.id}>
@@ -150,14 +154,14 @@ export function ProductTable({
                   <td className="col-tabs text-center">{p.tabs.length}</td>
                   <td className="col-dupes text-center">{p.duplicateCount}</td>
                   <td className="col-actions text-right pr-4">
-                    <div className="table-actions justify-end">
-                      <button type="button" onClick={() => onCloseProduct(p)}>
+                    <div className="table-actions flex items-center justify-end gap-2">
+                      <ActionButton variant="default" onClick={() => onCloseProduct(p)}>
                         Close
-                      </button>
+                      </ActionButton>
                       {dupes.length > 0 && (
-                        <button type="button" onClick={() => onCloseDuplicates(dupes)}>
+                        <ActionButton variant="default" onClick={() => onCloseDuplicates(dupes)}>
                           Dedupe
-                        </button>
+                        </ActionButton>
                       )}
                     </div>
                   </td>
@@ -176,11 +180,15 @@ export function ProductTable({
                             active={tab.active}
                             isFocused={tab.url === focusedUrl}
                             isClosing={closingUrls?.has(tab.url)}
-                            isSelected={selectedUrls?.has(tab.url)}
+                            isSelected={selectedUrls?.has(tab.url) || (selectedTabIds?.has(tab.id) ?? false)}
                             selectionMode={selectionMode}
                             onFocus={onFocusTab}
                             onClose={onCloseTab}
                             onChipClick={onChipClick}
+                            searchQuery={searchQuery}
+                            lastAccessed={tab.lastAccessed}
+                            pinned={tab.pinned}
+                            audible={tab.audible}
                           />
                         ))}
                       </div>

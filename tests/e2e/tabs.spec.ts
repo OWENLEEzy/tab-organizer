@@ -30,7 +30,7 @@ test.describe('Tab Management', () => {
 
   test('domain card shows correct tab count', async ({ page }) => {
     // Wait for cards to render
-    await page.waitForSelector('[class*="missions"]');
+    await page.waitForSelector('[class*="rounded-card"]');
 
     const cards = page.locator('[class*="rounded-card"]');
     const count = await cards.count();

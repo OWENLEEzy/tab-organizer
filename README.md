@@ -42,6 +42,8 @@
 ## ✨ Vision & Philosophy
 **Tab Organizer** is built for the "Tab Hoarder" who values a clean, aesthetic, and distraction-free workspace. Inspired by the minimalist elegance of **Notion**, it aims to solve "Tab Fatigue" by shifting the focus from a horizontal list of icons to a structured, product-centric dashboard.
 
+📖 **Interactive Guide**: A beautifully animated step-by-step tutorial is available at [owenleezy.github.io/tab-organizer/](https://owenleezy.github.io/tab-organizer/).
+
 ## 🚀 Installation
 1. **Download**: Visit the [Releases](https://github.com/OWENLEEzy/tab-organizer/releases) page.
    - **⚠️ IMPORTANT**: Download the file named **`tab-organizer-latest.zip`**.

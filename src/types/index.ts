@@ -12,6 +12,9 @@ export interface Tab {
   isDuplicate: boolean;
   isLandingPage: boolean;
   duplicateCount: number;
+  lastAccessed?: number;
+  pinned?: boolean;
+  audible?: boolean;
 }
 
 // ─── Tab Groups ──────────────────────────────────────────────────
@@ -88,10 +91,17 @@ export interface LandingPagePattern {
 
 export type ViewMode = 'cards' | 'table';
 
+export interface SpaceAutoRule {
+  pattern: string;
+  type: 'hostname';
+}
+
 export interface ManualGroup {
   id: string;
   name: string;
   order: number;
+  emoji?: string;
+  autoRules?: SpaceAutoRule[];
 }
 
 export interface GroupAssignment {
@@ -137,6 +147,14 @@ export interface AppSettings {
   maxChipsVisible: number;
   customGroups: CustomGroup[];
   landingPagePatterns: LandingPagePattern[];
+  keyBindings: {
+    switchSpaceN: string;
+    switchSpaceAll: string;
+    cyclePrev: string;
+    cycleNext: string;
+    focusSearch: string;
+    clearFilter: string;
+  };
 }
 
 // ─── Storage Schema ──────────────────────────────────────────────
@@ -149,6 +167,8 @@ export interface StorageSchema {
   groupOrder: Record<string, number>;
   manualGroups: ManualGroup[];
   groupAssignments: GroupAssignment[];
+  /** Product keys explicitly moved to Unsorted by the user — immune to auto-assignment. */
+  unsortedOverrides: string[];
   viewMode: ViewMode;
   historyCandidate: HistorySnapshot | null;
   history: HistorySnapshot[];

@@ -1,4 +1,4 @@
-import type { Tab, TabGroup } from '../types';
+import type { Tab, TabGroup, ManualGroup } from '../types';
 import { productForHostname } from '../config/products';
 import { friendlyDomain } from './title-cleaner';
 import { countDuplicates } from './tab-utils';
@@ -115,4 +115,24 @@ export function groupTabsByDomain(
   }
 
   return groups;
+}
+
+/**
+ * Auto-assign a product to a space based on its hostname rules.
+ */
+export function autoAssignProductToSpace(
+  hostnames: readonly string[],
+  spaces: ManualGroup[]
+): string | null {
+  for (const space of spaces) {
+    for (const rule of space.autoRules ?? []) {
+      try {
+        const re = new RegExp(rule.pattern, 'i');
+        if (hostnames.some((hostname) => re.test(hostname))) return space.id;
+      } catch {
+        // Skip invalid regex patterns
+      }
+    }
+  }
+  return null;
 }
