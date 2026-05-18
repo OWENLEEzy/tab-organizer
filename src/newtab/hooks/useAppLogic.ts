@@ -46,37 +46,17 @@ export function useAppLogic() {
   const tabStore = useTabStore();
   const settingsStore = useSettingsStore();
 
-  const { tabs, products, loading: tabsLoading } = tabStore;
+  const { tabs, products, loading: tabsLoading, viewMode } = tabStore;
   const { manualGroups, groupAssignments } = tabStore;
   const { settings } = settingsStore;
 
   // ─── Derived state ──────────────────────────────────────────────────
 
-  const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) return products;
-    const query = searchQuery.toLowerCase();
-    const result: TabGroup[] = [];
-    for (const p of products) {
-      const filteredTabs = p.tabs.filter(
-        (tab) =>
-          (tab.title || '').toLowerCase().includes(query) ||
-          tab.url.toLowerCase().includes(query) ||
-          p.domain.toLowerCase().includes(query) ||
-          (p.friendlyName || '').toLowerCase().includes(query),
-      );
-      if (filteredTabs.length > 0) {
-        result.push({ ...p, tabs: filteredTabs });
-      }
-    }
-    return result;
-  }, [products, searchQuery]);
-
-  const filteredTabCount = useMemo(
-    () => filteredProducts.reduce((sum, p) => sum + p.tabs.length, 0),
-    [filteredProducts],
-  );
-
   const itemIdForProduct = useCallback((p: TabGroup) => {
+    return `product:${productKeyForProduct(p)}`;
+  }, []);
+
+  const groupAssignmentKey = useCallback((p: TabGroup) => {
     return `product:${productKeyForProduct(p)}`;
   }, []);
 
@@ -88,9 +68,33 @@ export function useAppLogic() {
     return map;
   }, [groupAssignments]);
 
-  const groupAssignmentKey = useCallback((p: TabGroup) => {
-    return `product:${productKeyForProduct(p)}`;
-  }, []);
+  const filteredProducts = useMemo(() => {
+    let result = products;
+
+    if (tabStore.activeSpaceId) {
+      result = result.filter(p => {
+        const itemKey = groupAssignmentKey(p);
+        return assignmentByItemId.get(itemKey) === tabStore.activeSpaceId;
+      });
+    }
+
+    if (!searchQuery.trim()) return result;
+    const query = searchQuery.toLowerCase();
+    const finalResult: TabGroup[] = [];
+    for (const p of result) {
+      const filteredTabs = p.tabs.filter(
+        (tab) =>
+          (tab.title || '').toLowerCase().includes(query) ||
+          tab.url.toLowerCase().includes(query) ||
+          p.domain.toLowerCase().includes(query) ||
+          (p.friendlyName || '').toLowerCase().includes(query),
+      );
+      if (filteredTabs.length > 0) {
+        finalResult.push({ ...p, tabs: filteredTabs });
+      }
+    }
+    return finalResult;
+  }, [products, searchQuery, tabStore.activeSpaceId, assignmentByItemId, groupAssignmentKey]);
 
   const orderedGroups = useMemo(
     () => [...manualGroups].sort((a, b) => a.order - b.order),
@@ -133,13 +137,35 @@ export function useAppLogic() {
     return result;
   }, [assignmentByItemId, filteredProducts, groupAssignmentKey, orderedGroups, groupAssignments]);
 
-  const flatChips = useMemo(() => flattenVisibleTabs(
+  const flatChips = useMemo(() => {
+    const visualProducts = viewMode === 'table'
+      ? [...filteredProducts].sort((a, b) => a.order - b.order)
+      : [
+          ...unassignedProducts,
+          ...orderedGroups.flatMap((group) => productsByGroup.get(group.id) ?? []),
+        ];
+
+    return flattenVisibleTabs(
+      visualProducts,
+      settings.maxChipsVisible,
+      expandedDomains,
+    );
+  }, [
     filteredProducts,
+    unassignedProducts,
+    orderedGroups,
+    productsByGroup,
+    viewMode,
     settings.maxChipsVisible,
     expandedDomains,
-  ), [filteredProducts, settings.maxChipsVisible, expandedDomains]);
+  ]);
 
   const focusedUrl = focusedIndex !== null ? flatChips[focusedIndex]?.url ?? null : null;
+
+  const filteredTabCount = useMemo(
+    () => filteredProducts.reduce((sum, p) => sum + p.tabs.length, 0),
+    [filteredProducts],
+  );
 
   const tabOutCount = useMemo(
     () => tabs.filter((t) => isTabOutPage(t.url)).length,
@@ -203,6 +229,21 @@ export function useAppLogic() {
     return cleanup;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const handleMessage = (message: { type?: string }) => {
+      if (message.type === 'FOCUS_SPACE_SWITCHER') {
+        dispatch({ type: 'SET_SPACE_SWITCHER_FOCUSED', focused: true });
+        setTimeout(() => {
+          dispatch({ type: 'SET_SPACE_SWITCHER_FOCUSED', focused: false });
+        }, 100);
+      }
+    };
+    chrome.runtime?.onMessage?.addListener(handleMessage);
+    return () => {
+      chrome.runtime?.onMessage?.removeListener(handleMessage);
+    };
+  }, [dispatch]);
+
   // ─── Keyboard shortcuts ────────────────────────────────────────────
 
   useKeyboard({
@@ -211,8 +252,25 @@ export function useAppLogic() {
       input?.focus();
     },
     onEscape: () => {
-      dispatch({ type: 'RESET_INTERACTION' });
-      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      let handled = false;
+      if (state.searchQuery) {
+        dispatch({ type: 'SET_SEARCH_QUERY', query: '' });
+        handled = true;
+      }
+      if (state.focusedIndex !== null) {
+        dispatch({ type: 'SET_FOCUSED_INDEX', index: null });
+        handled = true;
+      }
+      if (state.selectedUrls.size > 0) {
+        dispatch({ type: 'SET_SELECTED_URLS', urls: new Set() });
+        handled = true;
+      }
+      const active = document.activeElement;
+      if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+        active.blur();
+        handled = true;
+      }
+      return handled;
     },
     onArrowUp: () => {
       if (flatChips.length === 0) {
@@ -246,7 +304,30 @@ export function useAppLogic() {
         handlers.handleCloseTabAnimated(flatChips[focusedIndex].url);
       }
     },
-  });
+    onSwitchSpaceN: (n) => {
+      if (n > 0 && n <= orderedGroups.length) {
+        tabStore.setActiveSpace(orderedGroups[n - 1].id);
+      }
+    },
+    onSwitchSpaceAll: () => {
+      tabStore.setActiveSpace(null);
+    },
+    onCycleSpacePrev: () => {
+      const ids = [null, ...orderedGroups.map((g) => g.id)];
+      const currentIndex = ids.indexOf(tabStore.activeSpaceId);
+      const nextIndex = (currentIndex - 1 + ids.length) % ids.length;
+      tabStore.setActiveSpace(ids[nextIndex]);
+    },
+    onCycleSpaceNext: () => {
+      const ids = [null, ...orderedGroups.map((g) => g.id)];
+      const currentIndex = ids.indexOf(tabStore.activeSpaceId);
+      const nextIndex = (currentIndex + 1) % ids.length;
+      tabStore.setActiveSpace(ids[nextIndex]);
+    },
+    onClearFilter: () => {
+      tabStore.setActiveSpace(null);
+    },
+  }, settings.keyBindings, state.settingsOpen || state.confirmDialog.open || state.promptDialog.open);
 
   return {
     state: {

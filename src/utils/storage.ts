@@ -9,6 +9,7 @@ import type {
   HistorySnapshot,
 } from '../types';
 import { historyUrlSignature, shouldReplaceHistoryCandidate } from '../lib/history-snapshots';
+import { DEFAULT_SPACES } from '../config/spaces';
 
 const CURRENT_SCHEMA_VERSION = 4;
 const STORAGE_KEYS = [
@@ -49,6 +50,14 @@ export const DEFAULT_SETTINGS: AppSettings = {
   maxChipsVisible: 8,
   customGroups: [],
   landingPagePatterns: [],
+  keyBindings: {
+    switchSpaceN: 'Meta+{n}',
+    switchSpaceAll: 'Meta+0',
+    cyclePrev: 'ArrowLeft',
+    cycleNext: 'ArrowRight',
+    focusSearch: '/',
+    clearFilter: 'Escape',
+  },
 };
 
 const EMPTY_SCHEMA: StorageSchema = {
@@ -80,6 +89,8 @@ function normalizeManualGroups(value: unknown): ManualGroup[] {
       id: group.id,
       name: group.name.trim() || 'Untitled',
       order: Number.isFinite(group.order) ? group.order : index,
+      emoji: typeof group.emoji === 'string' ? group.emoji : undefined,
+      autoRules: Array.isArray(group.autoRules) ? group.autoRules : undefined,
     }))
     .sort((a, b) => a.order - b.order);
 }
@@ -538,6 +549,11 @@ export async function reconcileOrganizerState(
 
   try {
     nextStorage = await updateStorage((current) => {
+      let currentGroups = current.manualGroups;
+      if (!currentGroups || currentGroups.length === 0) {
+        currentGroups = DEFAULT_SPACES;
+      }
+
       const groupOrder = reconcileGroupOrder(
         current.groupOrder,
         currentProductKeys,
@@ -545,12 +561,13 @@ export async function reconcileOrganizerState(
       );
       const groupAssignments = reconcileAssignments(
         current.groupAssignments,
-        current.manualGroups,
+        currentGroups,
         currentProductKeys,
         legacyKeyMap,
       );
 
       if (
+        currentGroups === current.manualGroups &&
         JSON.stringify(groupOrder) === JSON.stringify(current.groupOrder) &&
         JSON.stringify(groupAssignments) === JSON.stringify(current.groupAssignments)
       ) {
@@ -559,6 +576,7 @@ export async function reconcileOrganizerState(
 
       return {
         ...current,
+        manualGroups: currentGroups,
         groupOrder,
         groupAssignments,
       };

@@ -17,7 +17,7 @@ function KeyboardHarness(): React.ReactElement {
 
   useKeyboard({
     onSearch: () => {},
-    onEscape: () => {},
+    onEscape: () => false,
     onArrowUp: () => setArrowUpCount((count) => count + 1),
     onArrowDown: () => setArrowDownCount((count) => count + 1),
     onEnter: () => setEnterCount((count) => count + 1),

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { groupTabsByDomain } from '../lib/tab-grouper';
-import type { Tab } from '../types';
+import { groupTabsByDomain, autoAssignProductToSpace } from '../lib/tab-grouper';
+import type { Tab, ManualGroup } from '../types';
 
 function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
   return {
@@ -269,3 +269,44 @@ describe('groupTabsByDomain', () => {
     });
   });
 });
+
+describe('autoAssignProductToSpace', () => {
+  const mockSpaces: ManualGroup[] = [
+    {
+      id: 'dev',
+      name: 'Dev',
+      order: 0,
+      autoRules: [{ pattern: 'github|vercel|localhost', type: 'hostname' }],
+    },
+    {
+      id: 'media',
+      name: 'Media',
+      order: 1,
+      autoRules: [{ pattern: 'youtube|bilibili', type: 'hostname' }],
+    },
+  ];
+
+  it('matches hostname against regex rules', () => {
+    expect(autoAssignProductToSpace('github.com', mockSpaces)).toBe('dev');
+    expect(autoAssignProductToSpace('vercel', mockSpaces)).toBe('dev');
+    expect(autoAssignProductToSpace('youtube.com', mockSpaces)).toBe('media');
+  });
+
+  it('returns null if no rule matches', () => {
+    expect(autoAssignProductToSpace('google.com', mockSpaces)).toBeNull();
+  });
+
+  it('safely ignores invalid regex patterns', () => {
+    const spacesWithInvalidRegex: ManualGroup[] = [
+      {
+        id: 'bad-regex',
+        name: 'Bad',
+        order: 0,
+        autoRules: [{ pattern: '[invalid', type: 'hostname' }],
+      },
+      ...mockSpaces,
+    ];
+    expect(autoAssignProductToSpace('github', spacesWithInvalidRegex)).toBe('dev');
+  });
+});
+

@@ -11,6 +11,7 @@ import {
   promoteHistorySnapshot,
   deleteHistorySnapshot,
   clearHistory,
+  reconcileOrganizerState,
 } from '../utils/storage';
 import type { HistorySnapshot } from '../types';
 
@@ -358,3 +359,25 @@ describe('writeGroupOrder', () => {
     expect(result.groupOrder).toEqual({ 'github.com': 0 });
   });
 });
+
+describe('reconcileOrganizerState', () => {
+  it('seeds default spaces when manualGroups is empty', async () => {
+    // Starting with empty manualGroups in storage
+    const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
+    expect(state.manualGroups.length).toBeGreaterThan(0);
+    // Check if the default Dev space is present
+    const devSpace = state.manualGroups.find(g => g.id === 'space-dev');
+    expect(devSpace).toBeDefined();
+    expect(devSpace?.emoji).toBe('🛠');
+  });
+
+  it('keeps existing manualGroups if not empty', async () => {
+    // Let's seed a custom group in storage first
+    const customGroup = { id: 'custom-id', name: 'My Space', order: 0 };
+    storage['manualGroups'] = [customGroup];
+
+    const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
+    expect(state.manualGroups).toEqual([customGroup]);
+  });
+});
+

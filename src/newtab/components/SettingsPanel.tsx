@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import type { CustomGroup } from '../../types';
+import type { CustomGroup, AppSettings, ManualGroup } from '../../types';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -16,6 +16,14 @@ interface SettingsPanelProps {
   onResetSortOrder: () => void;
   onAddCustomGroup: (group: CustomGroup) => void;
   onRemoveCustomGroup: (groupKey: string) => void;
+  // Spaces & Rules props
+  manualGroups?: ManualGroup[];
+  onUpdateGroup?: (id: string, updates: Partial<Omit<ManualGroup, 'id'>>) => void;
+  onDeleteGroup?: (id: string) => void;
+  // Keyboard Bindings props
+  keyBindings?: AppSettings['keyBindings'];
+  onUpdateKeyBinding?: (key: keyof AppSettings['keyBindings'], binding: string) => void;
+  onResetKeyBindings?: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────
@@ -33,6 +41,12 @@ export function SettingsPanel({
   onResetSortOrder,
   onAddCustomGroup,
   onRemoveCustomGroup,
+  manualGroups = [],
+  onUpdateGroup = () => {},
+  onDeleteGroup = () => {},
+  keyBindings,
+  onUpdateKeyBinding = () => {},
+  onResetKeyBindings = () => {},
 }: SettingsPanelProps): React.ReactElement | null {
   const panelRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -186,6 +200,30 @@ export function SettingsPanel({
             onAdd={onAddCustomGroup}
             onRemove={onRemoveCustomGroup}
           />
+
+          {/* Divider */}
+          {manualGroups.length > 0 && (
+            <>
+              <hr className="border-border-light dark:border-border-dark" />
+              <SpacesSection
+                spaces={manualGroups}
+                onUpdateGroup={onUpdateGroup}
+                onDeleteGroup={onDeleteGroup}
+              />
+            </>
+          )}
+
+          {/* Divider */}
+          {keyBindings && (
+            <>
+              <hr className="border-border-light dark:border-border-dark" />
+              <KeyboardSection
+                keyBindings={keyBindings}
+                onUpdateKeyBinding={onUpdateKeyBinding}
+                onResetKeyBindings={onResetKeyBindings}
+              />
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -381,6 +419,168 @@ function CustomGroupsSection({
         >
           Add rule
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Spaces Section sub-component ─────────────────────────────────────
+
+interface SpacesSectionProps {
+  spaces: ManualGroup[];
+  onUpdateGroup: (id: string, updates: Partial<Omit<ManualGroup, 'id'>>) => void;
+  onDeleteGroup: (id: string) => void;
+}
+
+function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup }: SpacesSectionProps): React.ReactElement {
+  return (
+    <div className="flex flex-col gap-4">
+      <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm font-medium">
+        Spaces & Rules
+      </span>
+      <div className="flex flex-col gap-4">
+        {spaces.map((space) => {
+          const rulesText = (space.autoRules ?? []).map(r => r.pattern).join('\n');
+          return (
+            <div key={space.id} className="border border-border-light dark:border-border-dark rounded-md p-3 bg-surface-light dark:bg-surface-dark flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  maxLength={2}
+                  value={space.emoji ?? ''}
+                  placeholder="✨"
+                  onChange={(e) => onUpdateGroup(space.id, { emoji: e.target.value })}
+                  className="w-10 text-center font-body text-text-primary-light dark:text-text-primary-dark bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded px-1.5 py-1 text-sm focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
+                />
+                <input
+                  type="text"
+                  value={space.name}
+                  onChange={(e) => onUpdateGroup(space.id, { name: e.target.value })}
+                  className="flex-1 font-body text-text-primary-light dark:text-text-primary-dark bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded px-2 py-1 text-sm focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => onDeleteGroup(space.id)}
+                  className="text-accent-red hover:bg-accent-red/10 rounded p-1 flex items-center justify-center cursor-pointer shrink-0"
+                  title="Delete Space"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.34 12m-4.72 0-.34-12M4.75 6.75h14.5M3.375 5.25h17.25m-1.5 0-.825 15.6a2.25 2.25 0 0 1-2.247 2.13H7.43a2.25 2.25 0 0 1-2.247-2.13L4.35 5.25" />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="font-body text-text-secondary text-[11px]">Auto-assignment rules (one pattern per line)</span>
+                <textarea
+                  value={rulesText}
+                  placeholder="e.g. github&#10;vercel"
+                  onChange={(e) => {
+                    const patterns = e.target.value.split('\n').filter(Boolean);
+                    onUpdateGroup(space.id, {
+                      autoRules: patterns.map(p => ({ pattern: p, type: 'hostname' }))
+                    });
+                  }}
+                  className="font-body text-xs text-text-primary-light dark:text-text-primary-dark placeholder:text-text-secondary bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded px-2 py-1.5 focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none w-full h-16 resize-none"
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Keyboard Shortcuts Section sub-component ─────────────────────────
+
+interface KeyboardSectionProps {
+  keyBindings: AppSettings['keyBindings'];
+  onUpdateKeyBinding: (key: keyof AppSettings['keyBindings'], binding: string) => void;
+  onResetKeyBindings: () => void;
+}
+
+const SHORTCUT_LABELS: Record<string, string> = {
+  switchSpaceN: 'Switch to Space 1-9',
+  switchSpaceAll: 'Switch to "All"',
+  cyclePrev: 'Cycle Space Left',
+  cycleNext: 'Cycle Space Right',
+  focusSearch: 'Focus Search',
+  clearFilter: 'Clear Space Filter',
+};
+
+function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }: KeyboardSectionProps): React.ReactElement {
+  const [recordingKey, setRecordingKey] = useState<keyof AppSettings['keyBindings'] | null>(null);
+
+  useEffect(() => {
+    if (!recordingKey) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (e.key === 'Escape') {
+        setRecordingKey(null);
+        return;
+      }
+
+      const parts: string[] = [];
+      if (e.metaKey) parts.push('Meta');
+      if (e.ctrlKey) parts.push('Control');
+      if (e.altKey) parts.push('Alt');
+      if (e.shiftKey) parts.push('Shift');
+
+      let mainKey = e.key;
+      if (mainKey === ' ') mainKey = 'Space';
+      if (mainKey.length === 1) mainKey = mainKey.toUpperCase();
+
+      if (!['Meta', 'Control', 'Alt', 'Shift'].includes(e.key)) {
+        parts.push(mainKey);
+        const formatted = parts.join('+');
+        onUpdateKeyBinding(recordingKey, formatted);
+        setRecordingKey(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [recordingKey, onUpdateKeyBinding]);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm font-medium">
+          Keyboard Shortcuts
+        </span>
+        <button
+          type="button"
+          onClick={onResetKeyBindings}
+          className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 px-2 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none min-h-11"
+        >
+          Reset keys
+        </button>
+      </div>
+      <div className="flex flex-col gap-2">
+        {Object.entries(SHORTCUT_LABELS).map(([key, label]) => {
+          const binding = keyBindings[key as keyof typeof keyBindings] || 'None';
+          const isRecording = recordingKey === key;
+
+          return (
+            <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-surface-light dark:bg-surface-dark border border-border-light/50 dark:border-border-dark/50 min-h-11">
+              <span className="font-body text-xs text-text-primary-light dark:text-text-primary-dark">{label}</span>
+              <button
+                type="button"
+                onClick={() => setRecordingKey(isRecording ? null : (key as keyof AppSettings['keyBindings']))}
+                className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-8 min-w-[70px] ${
+                  isRecording
+                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 animate-pulse'
+                    : 'bg-white dark:bg-card-dark text-text-secondary border-border-light dark:border-border-dark hover:border-gray-400 dark:hover:border-gray-600'
+                }`}
+              >
+                {isRecording ? 'Press key...' : binding}
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import type { ManualGroup, TabGroup } from '../../types';
 import { TabChip } from './TabChip';
 import { getFaviconUrl } from '../../utils/favicon';
 import { getDuplicateUrls } from '../../lib/tab-utils';
+import { ActionButton } from './ui/ActionButton';
 
 interface ProductTableProps {
   items: TabGroup[];
@@ -150,14 +151,14 @@ export function ProductTable({
                   <td className="col-tabs text-center">{p.tabs.length}</td>
                   <td className="col-dupes text-center">{p.duplicateCount}</td>
                   <td className="col-actions text-right pr-4">
-                    <div className="table-actions justify-end">
-                      <button type="button" onClick={() => onCloseProduct(p)}>
+                    <div className="table-actions flex items-center justify-end gap-2">
+                      <ActionButton variant="default" onClick={() => onCloseProduct(p)}>
                         Close
-                      </button>
+                      </ActionButton>
                       {dupes.length > 0 && (
-                        <button type="button" onClick={() => onCloseDuplicates(dupes)}>
+                        <ActionButton variant="default" onClick={() => onCloseDuplicates(dupes)}>
                           Dedupe
-                        </button>
+                        </ActionButton>
                       )}
                     </div>
                   </td>

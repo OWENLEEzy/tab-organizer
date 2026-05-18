@@ -4,6 +4,7 @@ import { useWorkspaceStore } from '../stores/workspace-store';
 import { useTabStore } from '../stores/tab-store';
 import { DEFAULT_SETTINGS } from '../utils/storage';
 import { makeChromeTab, makeSavedTab, makeWorkspace } from './factories';
+import type { TabGroup } from '../types';
 
 const chromeStorage = {
   data: {} as Record<string, unknown>,
@@ -95,7 +96,7 @@ describe('Store Rollbacks & Errors Final', () => {
     chromeStorage.set.mockRejectedValueOnce(new Error('fail'));
     
     // Line 392: reorderProducts catch
-    const dummyProduct: any = { productKey: 'google', domain: 'google.com', order: 0, tabs: [] };
+    const dummyProduct = { productKey: 'google', domain: 'google.com', order: 0, tabs: [] } as unknown as TabGroup;
     useTabStore.setState({ products: [dummyProduct] });
     useTabStore.getState().reorderProducts([{ ...dummyProduct, order: 1 }]);
     await vi.waitFor(() => expect(spy).toHaveBeenCalledWith(expect.stringContaining('Failed to persist product order'), expect.any(Error)));

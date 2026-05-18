@@ -124,3 +124,21 @@ chrome.action.onClicked.addListener(() => {
 // Initial run when service worker loads
 refreshBadge();
 void captureHistoryCandidate();
+
+chrome.commands.onCommand.addListener((command) => {
+  if (command === 'open-space-switcher') {
+    void openTabOutDashboard().then(async () => {
+      // Give the dashboard a moment to render if it was just created
+      setTimeout(async () => {
+        const tabOutUrl = getDashboardUrl(chrome.runtime.getURL);
+        const tabs = await chrome.tabs.query({});
+        const dashboardTabs = tabs.filter((t) => t.url === tabOutUrl);
+        for (const t of dashboardTabs) {
+          if (t.id != null) {
+            chrome.tabs.sendMessage(t.id, { type: 'FOCUS_SPACE_SWITCHER' }).catch(() => {});
+          }
+        }
+      }, 100);
+    });
+  }
+});

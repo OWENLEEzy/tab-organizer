@@ -14,6 +14,7 @@ import { StatusStrip } from './components/layout/StatusStrip';
 import type { StatusStripAlert } from './components/layout/StatusStrip';
 import { DashboardHeader } from './components/layout/DashboardHeader';
 import { HistoryPanel } from './components/HistoryPanel';
+import { SpaceSwitcher } from './components/SpaceSwitcher';
 import { useAppLogic } from './hooks/useAppLogic';
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -77,12 +78,20 @@ export function App(): React.ReactElement {
           />
         }
         header={
-          <DashboardHeader
-            title="Open Tabs by Product"
-            hasGroups={!state.showEmptyState}
-            groupCount={state.visibleGroupCount}
-            searchQuery={state.searchQuery}
-            onSearchChange={(q) => dispatch({ type: 'SET_SEARCH_QUERY', query: q })}
+          <>
+            <SpaceSwitcher
+              spaces={derived.orderedGroups}
+              activeSpaceId={tabStore.activeSpaceId}
+              onChange={tabStore.setActiveSpace}
+              onCreateSpace={handlers.handleCreateGroup}
+              isFocused={state.spaceSwitcherFocused}
+            />
+            <DashboardHeader
+              title="Open Tabs by Product"
+              hasGroups={!state.showEmptyState}
+              groupCount={state.visibleGroupCount}
+              searchQuery={state.searchQuery}
+              onSearchChange={(q) => dispatch({ type: 'SET_SEARCH_QUERY', query: q })}
             resultCount={state.filteredTabCount}
             totalCount={state.totalTabs}
             viewMode={viewMode}
@@ -94,6 +103,7 @@ export function App(): React.ReactElement {
             isSidebarExpanded={state.isSidebarExpanded}
             onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
           />
+          </>
         }
         isSidebarExpanded={state.isSidebarExpanded}
         onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
@@ -201,6 +211,12 @@ export function App(): React.ReactElement {
             onResetSortOrder={handlers.handleResetSortOrder}
             onAddCustomGroup={settingsStore.addCustomGroup}
             onRemoveCustomGroup={settingsStore.removeCustomGroup}
+            manualGroups={tabStore.manualGroups}
+            onUpdateGroup={tabStore.updateGroup}
+            onDeleteGroup={tabStore.deleteGroup}
+            keyBindings={settings.keyBindings}
+            onUpdateKeyBinding={settingsStore.updateKeyBinding}
+            onResetKeyBindings={settingsStore.resetKeyBindings}
           />
         </React.Suspense>
       )}

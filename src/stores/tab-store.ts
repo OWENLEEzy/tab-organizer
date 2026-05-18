@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { ManualGroup, HistorySnapshot, GroupAssignment, Tab, TabGroup, ViewMode } from '../types';
-import { groupTabsByDomain } from '../lib/tab-grouper';
+import { groupTabsByDomain, autoAssignProductToSpace } from '../lib/tab-grouper';
 import {
   clearHistory,
   deleteHistorySnapshot,
@@ -42,6 +42,8 @@ interface TabActions {
   renameGroup: (groupId: string, name: string) => Promise<void>;
   /** Delete a group and return its items to the main area. */
   deleteGroup: (groupId: string) => Promise<void>;
+  /** Update a manual group (such as name, emoji, autoRules). */
+  updateGroup: (groupId: string, updates: Partial<Omit<ManualGroup, 'id'>>) => Promise<void>;
   /** Reorder manual groups and persist the new order. */
   reorderGroups: (groups: ManualGroup[]) => Promise<void>;
   /** Assign a product to a group. */
@@ -64,6 +66,8 @@ interface TabActions {
   clearHistory: () => Promise<void>;
   /** Find and close all other open dashboard tabs except the current one. */
   closeExtraDashboards: () => Promise<void>;
+  /** Set the currently active space to filter the dashboard. */
+  setActiveSpace: (id: string | null) => void;
 }
 
 export type TabStore = {
@@ -75,6 +79,7 @@ export type TabStore = {
   viewMode: ViewMode;
   loading: boolean;
   error: string | null;
+  activeSpaceId: string | null;
 } & TabActions;
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -146,6 +151,9 @@ export const useTabStore = create<TabStore>((set) => ({
   viewMode: 'cards',
   loading: false,
   error: null,
+  activeSpaceId: null,
+
+  setActiveSpace: (id) => set({ activeSpaceId: id }),
 
   clearError: () => set({ error: null }),
 
@@ -159,7 +167,34 @@ export const useTabStore = create<TabStore>((set) => ({
       const groupOrder = organizerState.groupOrder;
       const productGroups = groupTabsByDomain(mapped, groupOrder);
       const manualGroups = orderedGroups(organizerState.manualGroups);
-      const groupAssignments = organizerState.groupAssignments;
+      
+      let groupAssignments = organizerState.groupAssignments;
+      let hasNewAssignments = false;
+      const assignedKeys = new Set(groupAssignments.map((a) => a.productKey));
+
+      for (const product of productGroups) {
+        const productKey = product.productKey ?? product.domain;
+        if (!assignedKeys.has(productKey)) {
+          const spaceId = autoAssignProductToSpace(productKey, manualGroups);
+          if (spaceId) {
+            const existingInGroup = groupAssignments.filter((a) => a.groupId === spaceId);
+            groupAssignments = [
+              ...groupAssignments,
+              { productKey, groupId: spaceId, order: existingInGroup.length }
+            ];
+            hasNewAssignments = true;
+            assignedKeys.add(productKey);
+          }
+        }
+      }
+
+      if (hasNewAssignments) {
+        // Run in background to persist
+        writeOrganizerState({ groupAssignments }).catch(err => {
+          console.warn('[Tab Out] Failed to persist auto-assignments:', err);
+        });
+      }
+
       const products = productGroups;
 
       set({
@@ -399,6 +434,17 @@ export const useTabStore = create<TabStore>((set) => ({
       .map((g) => g.id === groupId ? { ...g, name: trimmed } : g);
     set({ manualGroups: nextGroups });
     await writeOrganizerState({ manualGroups: nextGroups });
+  },
+
+  updateGroup: async (groupId: string, updates: Partial<Omit<ManualGroup, 'id'>>) => {
+    const nextGroups = useTabStore
+      .getState()
+      .manualGroups
+      .map((g) => g.id === groupId ? { ...g, ...updates } : g);
+    set({ manualGroups: nextGroups });
+    await writeOrganizerState({ manualGroups: nextGroups });
+    // Refetch to apply auto-rules updates immediately
+    await useTabStore.getState().fetchTabs();
   },
 
   deleteGroup: async (groupId: string) => {
