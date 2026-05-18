@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { ManualGroup, TabGroup } from '../../types';
 import { TabChip } from './TabChip';
-import { getFaviconUrl } from '../../utils/favicon';
-import { getDuplicateUrls } from '../../lib/tab-utils';
+import { getDuplicateUrls, getGroupFaviconUrl, getProductKey } from '../../lib/tab-utils';
 import { ActionButton } from './ui/ActionButton';
 
 interface ProductTableProps {
@@ -41,7 +40,7 @@ function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
 }
 
 function itemId(p: TabGroup): string {
-  return `product:${p.itemKey ?? p.productKey ?? p.domain}`;
+  return `product:${getProductKey(p)}`;
 }
 
 function RowIcon({ group }: { group: TabGroup }): React.ReactElement {
@@ -49,7 +48,7 @@ function RowIcon({ group }: { group: TabGroup }): React.ReactElement {
   const label = group.friendlyName || group.domain;
   const initial = label.trim().charAt(0).toUpperCase() || '?';
   const faviconUrl = useMemo(
-    () => group.tabs.find((tab) => tab.favIconUrl.trim() !== '')?.favIconUrl.trim() ?? getFaviconUrl(group.tabs[0]?.url || ''),
+    () => getGroupFaviconUrl(group.tabs),
     [group.tabs],
   );
   const failed = faviconUrl !== '' && failedFaviconUrl === faviconUrl;

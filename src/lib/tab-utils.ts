@@ -1,4 +1,5 @@
 import type { Tab } from '../types';
+import { getFaviconUrl } from '../utils/favicon';
 
 /**
  * Count how many tabs in the array are duplicates (same URL appears
@@ -71,4 +72,24 @@ export function filterDuplicateTabs(tabs: readonly Tab[]): Tab[] {
     counts.set(tab.url, (counts.get(tab.url) ?? 0) + 1);
   }
   return tabs.filter((tab) => (counts.get(tab.url) ?? 0) > 1);
+}
+
+/**
+ * Resolves the representative favicon for a list of tabs.
+ * Finds the first tab with a valid non-empty favicon URL, or falls back to using the first tab's URL.
+ */
+export function getGroupFaviconUrl(tabs: readonly Tab[]): string {
+  const firstWithFavicon = tabs.find((tab) => tab.favIconUrl.trim() !== '');
+  if (firstWithFavicon) {
+    return firstWithFavicon.favIconUrl.trim();
+  }
+  return getFaviconUrl(tabs[0]?.url || '');
+}
+
+/**
+ * Resolves the primary unique identifier (productKey) for a tab group.
+ * Follows the standard priority: productKey ?? itemKey ?? domain.
+ */
+export function getProductKey(group: Pick<TabGroup, 'productKey' | 'itemKey' | 'domain'>): string {
+  return group.productKey ?? group.itemKey ?? group.domain;
 }

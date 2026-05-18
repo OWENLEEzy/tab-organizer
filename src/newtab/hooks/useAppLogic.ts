@@ -8,13 +8,10 @@ import type { TabGroup } from '../../types';
 import { useUIState } from './useUIState';
 import { useTabHandlers } from './useTabHandlers';
 import { DASHBOARD_SPACE_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
-import { isTabStale, filterDuplicateTabs } from '../../lib/tab-utils';
+import { isTabStale, filterDuplicateTabs, getProductKey } from '../../lib/tab-utils';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
-function productKeyForProduct(p: TabGroup): string {
-  return p.productKey ?? p.itemKey ?? p.domain;
-}
 
 interface CommandParsed {
   type: 'dupes' | 'stale' | 'space' | 'text';
@@ -94,11 +91,11 @@ export function useAppLogic() {
   // ─── Derived state ──────────────────────────────────────────────────
 
   const itemIdForProduct = useCallback((p: TabGroup) => {
-    return `product:${productKeyForProduct(p)}`;
+    return `product:${getProductKey(p)}`;
   }, []);
 
   const groupAssignmentKey = useCallback((p: TabGroup) => {
-    return `product:${productKeyForProduct(p)}`;
+    return `product:${getProductKey(p)}`;
   }, []);
 
   const assignmentByItemId = useMemo(() => {

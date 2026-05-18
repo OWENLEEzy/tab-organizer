@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import type { Dispatch } from 'react';
 import { useTabStore } from '../../stores/tab-store';
 import { duplicateTabIdsToClose } from '../../lib/duplicate-tabs';
-import { isTabStale } from '../../lib/tab-utils';
+import { isTabStale, getProductKey } from '../../lib/tab-utils';
 import { clearGroupOrder } from '../../utils/storage';
 import { playCloseEffects } from '../../lib/close-effects';
 import { getChipCloseDelay, userPrefersReducedMotion } from '../lib/motion';
@@ -337,7 +337,7 @@ export function useTabHandlers({
   }, [tabStore, showToast]);
 
   const handleMoveTableItem = useCallback((p: TabGroup, groupId: string) => {
-    const productKey = p.productKey ?? p.itemKey ?? p.domain;
+    const productKey = getProductKey(p);
     const move = groupId
       ? tabStore.moveProductToGroup(productKey, groupId)
       : tabStore.moveProductToMain(productKey);

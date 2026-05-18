@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import type { TabGroup } from '../../types';
 import { TabChip } from './TabChip';
 import { getVisibleTabs } from '../lib/visible-tabs';
-import { getFaviconUrl } from '../../utils/favicon';
+import { getGroupFaviconUrl } from '../../lib/tab-utils';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -145,7 +145,7 @@ export function DomainCard({
   const selectionMode = (selectedUrls?.size ?? 0) > 0 || (selectedTabIds?.size ?? 0) > 0;
   const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
   const groupFaviconUrl = useMemo(
-    () => tabs.find((tab) => tab.favIconUrl.trim() !== '')?.favIconUrl.trim() ?? getFaviconUrl(tabs[0]?.url || ''),
+    () => getGroupFaviconUrl(tabs),
     [tabs],
   );
   const iconFailed = groupFaviconUrl !== '' && failedFaviconUrl === groupFaviconUrl;
