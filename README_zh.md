@@ -37,6 +37,8 @@
 ## ✨ 愿景与哲学
 **Tab Organizer** 专为那些追求整洁、美观且无干扰工作区的“标签囤积者”而生。受 **Notion** 极简优雅风格的启发，它旨在通过将注意力从水平排列的图标转向结构化、以产品为中心的控制面板，从而解决“标签疲劳”问题。
 
+📖 **交互式图文教程**：已上线精美动效的交互式安装教程，小白也可以无痛一分钟上手：[owenleezy.github.io/tab-organizer/](https://owenleezy.github.io/tab-organizer/)。
+
 ## 🚀 安装指南
 1. **下载**：访问 [Releases](https://github.com/OWENLEEzy/tab-organizer/releases) 页面。
    - **⚠️ 重要**：请下载名为 **`tab-organizer-latest.zip`** 的文件。
