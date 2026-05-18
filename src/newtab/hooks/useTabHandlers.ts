@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 import type { Dispatch } from 'react';
 import { useTabStore } from '../../stores/tab-store';
+import { duplicateTabIdsToClose } from '../../lib/duplicate-tabs';
+import { isTabStale } from '../../lib/tab-utils';
 import { clearGroupOrder } from '../../utils/storage';
 import { playCloseEffects } from '../../lib/close-effects';
 import { getChipCloseDelay, userPrefersReducedMotion } from '../lib/motion';
@@ -13,6 +15,7 @@ interface HandlerDeps {
   showToast: (msg: string) => void;
   flatChips: { url: string }[];
   selectedUrls: Set<string>;
+  selectedTabIds: Set<number>;
   lastClickedIndex: number | null;
 }
 
@@ -22,6 +25,7 @@ export function useTabHandlers({
   showToast,
   flatChips,
   selectedUrls,
+  selectedTabIds,
   lastClickedIndex,
 }: HandlerDeps) {
   const tabStore = useTabStore();
@@ -162,6 +166,7 @@ export function useTabHandlers({
           type: 'SET_SELECTED_URLS',
           urls: (prev) => new Set([...prev, ...rangeUrls]),
         });
+        dispatch({ type: 'SET_SELECTED_TAB_IDS', tabIds: new Set() });
       } else if (event.metaKey || event.ctrlKey || selectedUrls.size > 0) {
         dispatch({
           type: 'SET_SELECTED_URLS',
@@ -175,6 +180,7 @@ export function useTabHandlers({
             return next;
           },
         });
+        dispatch({ type: 'SET_SELECTED_TAB_IDS', tabIds: new Set() });
       }
       dispatch({ type: 'SET_LAST_CLICKED_INDEX', index: chipIndex });
     },
@@ -183,6 +189,7 @@ export function useTabHandlers({
 
   const handleClearSelection = useCallback(() => {
     dispatch({ type: 'SET_SELECTED_URLS', urls: new Set() });
+    dispatch({ type: 'SET_SELECTED_TAB_IDS', tabIds: new Set() });
     dispatch({ type: 'SET_LAST_CLICKED_INDEX', index: null });
   }, [dispatch]);
 
@@ -203,13 +210,19 @@ export function useTabHandlers({
 
   const handleCloseSelected = useCallback(() => {
     const urls = [...selectedUrls];
-    const count = urls.length;
+    const tabIds = [...selectedTabIds];
+    const count = tabIds.length > 0 ? tabIds.length : urls.length;
     
     const performClose = () => {
       playCloseEffects(settings);
-      tabStore.closeOneTabPerUrl(urls).then(() => {
+      const closePromise = tabIds.length > 0
+        ? tabStore.closeTabsByIds(tabIds)
+        : tabStore.closeOneTabPerUrl(urls);
+
+      closePromise.then(() => {
         showToast(`Closed ${count} tab${count !== 1 ? 's' : ''}`);
         dispatch({ type: 'SET_SELECTED_URLS', urls: new Set() });
+        dispatch({ type: 'SET_SELECTED_TAB_IDS', tabIds: new Set() });
         dispatch({ type: 'SET_LAST_CLICKED_INDEX', index: null });
       });
     };
@@ -232,7 +245,7 @@ export function useTabHandlers({
     } else {
       performClose();
     }
-  }, [dispatch, selectedUrls, settings, tabStore, showToast]);
+  }, [dispatch, selectedTabIds, selectedUrls, settings, tabStore, showToast]);
 
   const handleCloseAll = useCallback(() => {
     const tabs = tabStore.tabs;
@@ -348,14 +361,9 @@ export function useTabHandlers({
 
   const handleSelectStaleTabs = useCallback((days = 3) => {
     const now = Date.now();
-    const msThreshold = days * 24 * 60 * 60 * 1000;
     
     const staleUrls = tabStore.tabs
-      .filter((t) => {
-        if (t.active || t.pinned || t.audible) return false;
-        const lastAccess = t.lastAccessed ?? now;
-        return now - lastAccess > msThreshold;
-      })
+      .filter((t) => isTabStale(t, now, days))
       .map((t) => t.url);
 
     if (staleUrls.length > 0) {
@@ -363,6 +371,7 @@ export function useTabHandlers({
         type: 'SET_SELECTED_URLS',
         urls: new Set(staleUrls),
       });
+      dispatch({ type: 'SET_SELECTED_TAB_IDS', tabIds: new Set() });
       showToast(`Selected ${staleUrls.length} stale tab${staleUrls.length !== 1 ? 's' : ''}. Press close to clear.`);
     } else {
       showToast("No stale tabs found 🧹");
@@ -370,29 +379,18 @@ export function useTabHandlers({
   }, [tabStore, dispatch, showToast]);
 
   const handleSelectDuplicateTabs = useCallback(() => {
-    const byUrl = new Map<string, typeof tabStore.tabs>();
-    for (const t of tabStore.tabs) {
-      byUrl.set(t.url, [...(byUrl.get(t.url) || []), t]);
-    }
-    
-    const duplicatesToClose: string[] = [];
-    for (const [, matching] of byUrl.entries()) {
-      if (matching.length > 1) {
-        const keep = matching.find(t => t.active) ?? matching[0];
-        for (const t of matching) {
-          if (t.url !== keep.url || t.id !== keep.id) {
-            duplicatesToClose.push(t.url);
-          }
-        }
-      }
-    }
+    const duplicateTabIds = duplicateTabIdsToClose(tabStore.tabs);
 
-    if (duplicatesToClose.length > 0) {
+    if (duplicateTabIds.length > 0) {
       dispatch({
         type: 'SET_SELECTED_URLS',
-        urls: new Set(duplicatesToClose),
+        urls: new Set(),
       });
-      showToast(`Selected ${duplicatesToClose.length} duplicate tab${duplicatesToClose.length !== 1 ? 's' : ''}. Press close to clear.`);
+      dispatch({
+        type: 'SET_SELECTED_TAB_IDS',
+        tabIds: new Set(duplicateTabIds),
+      });
+      showToast(`Selected ${duplicateTabIds.length} duplicate tab${duplicateTabIds.length !== 1 ? 's' : ''}. Press close to clear.`);
     } else {
       showToast("No duplicate tabs found 🧹");
     }

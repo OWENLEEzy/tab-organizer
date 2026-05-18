@@ -12,6 +12,7 @@ import {
 } from '../utils/storage';
 import { legacyProductKeyForHostname, productForHostname } from '../config/products';
 import { buildHistorySnapshot } from '../lib/history-snapshots';
+import { duplicateTabIdsToClose } from '../lib/duplicate-tabs';
 import { getTabDomain, isRealTab, isTabOutPage } from '../utils/url';
 import { getErrorMessage } from '../utils/error';
 
@@ -28,6 +29,8 @@ interface TabActions {
   closeTabsByUrls: (urls: string[]) => Promise<void>;
   /** Close tabs matching exact URLs (used for landing pages). */
   closeTabsExact: (urls: string[]) => Promise<void>;
+  /** Close exact tab ids. */
+  closeTabsByIds: (tabIds: number[]) => Promise<void>;
   /** Close duplicate tabs, optionally keeping one copy (prefer active tab). */
   closeDuplicates: (urls: string[], keepOne: boolean) => Promise<void>;
   /** Focus (activate) the tab matching the given URL, switching window if needed. */
@@ -318,36 +321,32 @@ export const useTabStore = create<TabStore>((set) => ({
     await useTabStore.getState().fetchTabs();
   },
 
+  closeTabsByIds: async (tabIds: number[]) => {
+    if (!tabIds || tabIds.length === 0) return;
+
+    const ids = [...new Set(tabIds)].filter((id) => Number.isInteger(id));
+    if (ids.length === 0) return;
+
+    const allTabs = await chrome.tabs.query({});
+    const openIds = new Set(
+      allTabs
+        .map((tab) => tab.id)
+        .filter((id): id is number => id != null),
+    );
+    const toClose = ids.filter((id) => openIds.has(id));
+
+    if (toClose.length > 0) {
+      await protectHistoryBeforeClosing(allTabs);
+      await chrome.tabs.remove(toClose);
+    }
+
+    await useTabStore.getState().fetchTabs();
+  },
+
   closeDuplicates: async (urls: string[], keepOne: boolean) => {
     if (!urls || urls.length === 0) return;
     const allTabs = await chrome.tabs.query({});
-
-    // Single-pass: index all tabs by URL
-    const byUrl = new Map<string, chrome.tabs.Tab[]>();
-    for (const tab of allTabs) {
-      if (tab.url == null) continue;
-      const arr = byUrl.get(tab.url);
-      if (arr) { arr.push(tab); } else { byUrl.set(tab.url, [tab]); }
-    }
-
-    const toClose: number[] = [];
-    for (const url of urls) {
-      const matching = byUrl.get(url);
-      if (!matching) continue;
-      if (keepOne) {
-        // Prefer the active tab; fall back to the first match
-        const keep = matching.find((t) => t.active) ?? matching[0];
-        for (const tab of matching) {
-          if (tab.id != null && tab.id !== keep?.id) {
-            toClose.push(tab.id);
-          }
-        }
-      } else {
-        for (const tab of matching) {
-          if (tab.id != null) toClose.push(tab.id);
-        }
-      }
-    }
+    const toClose = duplicateTabIdsToClose(allTabs, new Set(urls), keepOne);
 
     if (toClose.length > 0) {
       await protectHistoryBeforeClosing(allTabs);

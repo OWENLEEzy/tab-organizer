@@ -64,6 +64,11 @@ describe('TabStore Guard Clauses & Error Paths', () => {
     expect(chromeTabs.query).not.toHaveBeenCalled();
   });
 
+  it('closeTabsByIds handles empty tab ids', async () => {
+    await useTabStore.getState().closeTabsByIds([]);
+    expect(chromeTabs.query).not.toHaveBeenCalled();
+  });
+
   it('closeDuplicates handles empty urls', async () => {
     await useTabStore.getState().closeDuplicates([], true);
     expect(chromeTabs.query).not.toHaveBeenCalled();

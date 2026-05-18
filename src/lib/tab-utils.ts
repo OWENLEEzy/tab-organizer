@@ -50,3 +50,25 @@ export function dedupeTabsByUrl(tabs: readonly Tab[]): Tab[] {
     return true;
   });
 }
+
+/**
+ * Determines if a tab is considered stale (idle for more than a threshold).
+ * Active, pinned, and audible tabs are never considered stale.
+ */
+export function isTabStale(tab: Tab, now: number, thresholdDays = 3): boolean {
+  if (tab.active || tab.pinned || tab.audible) return false;
+  const msThreshold = thresholdDays * 24 * 60 * 60 * 1000;
+  const lastAccess = tab.lastAccessed ?? now;
+  return now - lastAccess > msThreshold;
+}
+
+/**
+ * Filter a tab list to only include duplicate tabs (whose URLs appear more than once).
+ */
+export function filterDuplicateTabs(tabs: readonly Tab[]): Tab[] {
+  const counts = new Map<string, number>();
+  for (const tab of tabs) {
+    counts.set(tab.url, (counts.get(tab.url) ?? 0) + 1);
+  }
+  return tabs.filter((tab) => (counts.get(tab.url) ?? 0) > 1);
+}

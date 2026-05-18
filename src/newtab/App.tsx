@@ -224,6 +224,7 @@ export function App(): React.ReactElement {
                   onCloseTab={handlers.handleCloseTabAnimated}
                   onChipClick={handlers.handleChipClick}
                   selectedUrls={state.selectedUrls}
+                  selectedTabIds={state.selectedTabIds}
                   closingUrls={state.closingUrls}
                   focusedUrl={state.focusedUrl}
                   searchQuery={state.searchQuery}
@@ -243,6 +244,7 @@ export function App(): React.ReactElement {
                       focusedUrl={state.focusedUrl}
                       closingUrls={state.closingUrls}
                       selectedUrls={state.selectedUrls}
+                      selectedTabIds={state.selectedTabIds}
                       onMoveProductToMain={handlers.handleMoveProductToMain}
                       onMoveProductToGroup={handlers.handleMoveProductToGroup}
                       onRenameGroup={handlers.handleRenameGroup}
@@ -316,9 +318,9 @@ export function App(): React.ReactElement {
       <Toast message={state.toast.message} visible={state.toast.visible} />
 
       {/* Batch selection bar */}
-      {state.selectedUrls.size > 0 && (
+      {(state.selectedUrls.size > 0 || state.selectedTabIds.size > 0) && (
         <SelectionBar
-          count={state.selectedUrls.size}
+          count={state.selectedTabIds.size > 0 ? state.selectedTabIds.size : state.selectedUrls.size}
           onClose={handlers.handleCloseSelected}
           onClear={handlers.handleClearSelection}
         />

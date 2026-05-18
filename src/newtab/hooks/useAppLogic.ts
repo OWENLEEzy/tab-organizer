@@ -8,6 +8,7 @@ import type { TabGroup } from '../../types';
 import { useUIState } from './useUIState';
 import { useTabHandlers } from './useTabHandlers';
 import { DASHBOARD_SPACE_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
+import { isTabStale, filterDuplicateTabs } from '../../lib/tab-utils';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -143,34 +144,22 @@ export function useAppLogic() {
     if (parsed.type === 'dupes') {
       result = result
         .filter(p => p.duplicateCount > 0)
-        .map(p => {
-          const counts = p.tabs.reduce((acc, t) => {
-            acc[t.url] = (acc[t.url] || 0) + 1;
-            return acc;
-          }, {} as Record<string, number>);
-          
-          return {
-            ...p,
-            tabs: p.tabs.filter(t => counts[t.url] > 1)
-          };
-        })
+        .map(p => ({
+          ...p,
+          tabs: filterDuplicateTabs(p.tabs)
+        }))
         .filter(p => p.tabs.length > 0);
     }
 
     // 3. Process /stale command
     if (parsed.type === 'stale') {
       // eslint-disable-next-line react-hooks/purity
-      const now = Date.now();
-      const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+      const stableNow = Math.floor(Date.now() / 1000) * 1000;
       
       result = result
         .map(p => ({
           ...p,
-          tabs: p.tabs.filter(t => {
-            if (t.active || t.pinned) return false;
-            const tLast = t.lastAccessed ?? now;
-            return now - tLast > threeDaysMs;
-          })
+          tabs: p.tabs.filter(t => isTabStale(t, stableNow, 3))
         }))
         .filter(p => p.tabs.length > 0);
     }
@@ -283,6 +272,7 @@ export function useAppLogic() {
     showToast,
     flatChips,
     selectedUrls,
+    selectedTabIds: state.selectedTabIds,
     lastClickedIndex,
   });
 

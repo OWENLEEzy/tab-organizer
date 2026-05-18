@@ -176,6 +176,11 @@ describe('useTabStore', () => {
       expectedRemoveArg: [11, 12],
     },
     {
+      name: 'closeTabsByIds',
+      act: () => useTabStore.getState().closeTabsByIds([12]),
+      expectedRemoveArg: [12],
+    },
+    {
       name: 'closeDuplicates',
       act: () => useTabStore.getState().closeDuplicates([
         'https://github.com/OWENLEEzy/tab-out',

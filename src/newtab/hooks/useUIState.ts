@@ -17,6 +17,7 @@ export interface UIState {
   focusedIndex: number | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
+  selectedTabIds: Set<number>;
   lastClickedIndex: number | null;
   expandedDomains: Set<string>;
   promptDialog: {
@@ -42,6 +43,7 @@ export type UIAction =
   | { type: 'SET_FOCUSED_INDEX'; index: number | null | ((prev: number | null) => number | null) }
   | { type: 'SET_CLOSING_URLS'; urls: Set<string> | ((prev: Set<string>) => Set<string>) }
   | { type: 'SET_SELECTED_URLS'; urls: Set<string> | ((prev: Set<string>) => Set<string>) }
+  | { type: 'SET_SELECTED_TAB_IDS'; tabIds: Set<number> | ((prev: Set<number>) => Set<number>) }
   | { type: 'SET_LAST_CLICKED_INDEX'; index: number | null }
   | { type: 'SET_EXPANDED_DOMAINS'; domains: Set<string> | ((prev: Set<string>) => Set<string>) }
   | { type: 'SET_PROMPT_DIALOG'; dialog: UIState['promptDialog'] }
@@ -59,6 +61,7 @@ const initialState: UIState = {
   focusedIndex: null,
   closingUrls: new Set(),
   selectedUrls: new Set(),
+  selectedTabIds: new Set(),
   lastClickedIndex: null,
   expandedDomains: new Set(),
   promptDialog: { id: '', open: false, title: '', label: '', initialValue: '', confirmLabel: '', onConfirm: () => {} },
@@ -87,6 +90,8 @@ function uiReducer(state: UIState, action: UIAction): UIState {
       return { ...state, closingUrls: typeof action.urls === 'function' ? action.urls(state.closingUrls) : action.urls };
     case 'SET_SELECTED_URLS':
       return { ...state, selectedUrls: typeof action.urls === 'function' ? action.urls(state.selectedUrls) : action.urls };
+    case 'SET_SELECTED_TAB_IDS':
+      return { ...state, selectedTabIds: typeof action.tabIds === 'function' ? action.tabIds(state.selectedTabIds) : action.tabIds };
     case 'SET_LAST_CLICKED_INDEX':
       return { ...state, lastClickedIndex: action.index };
     case 'SET_EXPANDED_DOMAINS':
@@ -96,7 +101,7 @@ function uiReducer(state: UIState, action: UIAction): UIState {
     case 'CLOSE_PROMPT_DIALOG':
       return { ...state, promptDialog: { ...state.promptDialog, open: false } };
     case 'RESET_INTERACTION':
-      return { ...state, searchQuery: '', settingsOpen: false, focusedIndex: null, selectedUrls: new Set(), lastClickedIndex: null, spaceSwitcherFocused: false };
+      return { ...state, searchQuery: '', settingsOpen: false, focusedIndex: null, selectedUrls: new Set(), selectedTabIds: new Set(), lastClickedIndex: null, spaceSwitcherFocused: false };
     case 'SET_SPACE_SWITCHER_FOCUSED':
       return { ...state, spaceSwitcherFocused: action.focused };
     default:
