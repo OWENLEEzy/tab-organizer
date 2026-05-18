@@ -18,6 +18,7 @@ interface ProductTableProps {
   onCloseTab?: (url: string) => void;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   selectedUrls?: Set<string>;
+  selectedTabIds?: Set<number>;
   closingUrls?: Set<string>;
   focusedUrl?: string | null;
   searchQuery?: string;
@@ -84,6 +85,7 @@ export function ProductTable({
   onCloseTab = () => {},
   onChipClick = () => {},
   selectedUrls = new Set(),
+  selectedTabIds = new Set(),
   closingUrls = new Set(),
   focusedUrl = null,
   searchQuery = '',
@@ -109,7 +111,7 @@ export function ProductTable({
             const groupId = assignmentByItemId.get(id) ?? '';
             const dupes = getDuplicateUrls(p.tabs);
             const isExpanded = expandedDomains.has(p.domain);
-            const selectionMode = (selectedUrls?.size ?? 0) > 0;
+            const selectionMode = (selectedUrls?.size ?? 0) > 0 || (selectedTabIds?.size ?? 0) > 0;
 
             return (
               <React.Fragment key={p.id}>
@@ -179,7 +181,7 @@ export function ProductTable({
                             active={tab.active}
                             isFocused={tab.url === focusedUrl}
                             isClosing={closingUrls?.has(tab.url)}
-                            isSelected={selectedUrls?.has(tab.url)}
+                            isSelected={selectedUrls?.has(tab.url) || (selectedTabIds?.has(tab.id) ?? false)}
                             selectionMode={selectionMode}
                             onFocus={onFocusTab}
                             onClose={onCloseTab}

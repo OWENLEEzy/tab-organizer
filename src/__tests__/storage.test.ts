@@ -372,14 +372,24 @@ describe('writeGroupOrder', () => {
 });
 
 describe('reconcileOrganizerState', () => {
-  it('seeds default spaces when manualGroups is empty', async () => {
-    // Starting with empty manualGroups in storage
+  it('seeds default spaces when manualGroups has never been persisted', async () => {
     const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
     expect(state.manualGroups.length).toBeGreaterThan(0);
     // Check if the default Dev space is present
     const devSpace = state.manualGroups.find(g => g.id === 'space-dev');
     expect(devSpace).toBeDefined();
     expect(devSpace?.emoji).toBe('🛠');
+  });
+
+  it('preserves an intentionally persisted empty manualGroups list', async () => {
+    storage['schemaVersion'] = 4;
+    storage['manualGroups'] = [];
+
+    const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
+    const result = await readStorage();
+
+    expect(state.manualGroups).toEqual([]);
+    expect(result.manualGroups).toEqual([]);
   });
 
   it('keeps existing manualGroups if not empty', async () => {

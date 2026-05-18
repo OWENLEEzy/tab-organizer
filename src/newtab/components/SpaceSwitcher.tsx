@@ -14,28 +14,42 @@ export function SpaceSwitcher({
   activeSpaceId,
   onChange,
   onCreateSpace,
-  isFocused
+  isFocused,
 }: SpaceSwitcherProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isFocused && containerRef.current) {
-      containerRef.current.focus();
+      const activeBtn = containerRef.current.querySelector<HTMLButtonElement>('[tabindex="0"]');
+      activeBtn?.focus();
     }
   }, [isFocused]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-      const ids = [null, ...spaces.map(s => s.id)];
-      const currentIndex = ids.indexOf(activeSpaceId);
-      let nextIndex = currentIndex;
+      const buttons = Array.from(
+        containerRef.current?.querySelectorAll<HTMLButtonElement>(
+          'button:not([title="Create new Space"])',
+        ) || [],
+      );
+      const activeElement = document.activeElement as HTMLButtonElement;
+      let currentIndex = buttons.indexOf(activeElement);
 
-      if (e.key === 'ArrowRight') {
-        nextIndex = (currentIndex + 1) % ids.length;
-      } else {
-        nextIndex = (currentIndex - 1 + ids.length) % ids.length;
+      if (currentIndex === -1) {
+        const ids = [null, ...spaces.map((s) => s.id)];
+        currentIndex = ids.indexOf(activeSpaceId);
       }
 
+      let nextIndex = currentIndex;
+      if (e.key === 'ArrowRight') {
+        nextIndex = (currentIndex + 1) % buttons.length;
+      } else {
+        nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+      }
+
+      buttons[nextIndex]?.focus();
+
+      const ids = [null, ...spaces.map((s) => s.id)];
       onChange(ids[nextIndex]);
       e.preventDefault();
     }
@@ -44,15 +58,15 @@ export function SpaceSwitcher({
   return (
     <div
       ref={containerRef}
-      className="flex flex-wrap gap-2 items-center mb-6 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-md"
-      tabIndex={0}
+      className="flex flex-wrap gap-2 items-center mb-6 outline-none"
       onKeyDown={handleKeyDown}
       role="toolbar"
       aria-label="Space Switcher"
     >
       <button
         onClick={() => onChange(null)}
-        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+        tabIndex={activeSpaceId === null ? 0 : -1}
+        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 outline-none ${
           activeSpaceId === null
             ? 'bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-200 shadow-sm border border-blue-200 dark:border-blue-800'
             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
@@ -65,7 +79,8 @@ export function SpaceSwitcher({
         <button
           key={space.id}
           onClick={() => onChange(space.id)}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
+          tabIndex={activeSpaceId === space.id ? 0 : -1}
+          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 outline-none flex items-center gap-1.5 ${
             activeSpaceId === space.id
               ? 'bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-200 shadow-sm border border-blue-200 dark:border-blue-800'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
@@ -78,11 +93,22 @@ export function SpaceSwitcher({
 
       <button
         onClick={onCreateSpace}
-        className="px-3 py-1.5 rounded-full text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors border border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 flex items-center justify-center"
+        tabIndex={-1}
+        className="px-3 py-1.5 rounded-full text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors border border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-blue-500 outline-none"
         aria-label="Create new Space"
         title="Create new Space"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <line x1="12" y1="5" x2="12" y2="19"></line>
           <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>

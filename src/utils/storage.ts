@@ -335,26 +335,11 @@ function migrate(data: Record<string, unknown>): StorageSchema {
 }
 
 async function readStorageSnapshot(): Promise<Record<string, unknown>> {
-  const result = await chrome.storage.local.get([...STORAGE_KEYS, 'sections', 'sectionAssignments', 'recoveryCandidate', 'recoveryHistory']);
+  return chrome.storage.local.get([...STORAGE_KEYS, 'sections', 'sectionAssignments', 'recoveryCandidate', 'recoveryHistory']);
+}
 
-  return {
-    schemaVersion: result.schemaVersion,
-    deferred: result.deferred,
-    workspaces: result.workspaces,
-    settings: result.settings,
-    groupOrder: result.groupOrder,
-    manualGroups: result.manualGroups,
-    groupAssignments: result.groupAssignments,
-    unsortedOverrides: result.unsortedOverrides,
-    viewMode: result.viewMode,
-    historyCandidate: result.historyCandidate,
-    history: result.history,
-    // Legacy fields for migration
-    sections: result.sections,
-    sectionAssignments: result.sectionAssignments,
-    recoveryCandidate: result.recoveryCandidate,
-    recoveryHistory: result.recoveryHistory,
-  };
+function hasOwnStorageKey(data: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(data, key);
 }
 
 async function persistStorage(data: StorageSchema): Promise<void> {
@@ -596,9 +581,15 @@ export async function reconcileOrganizerState(
   let nextStorage: StorageSchema;
 
   try {
+    const raw = await readStorageSnapshot();
+    const hasSchemaVersion = hasOwnStorageKey(raw, 'schemaVersion');
+    const hasManualGroups = hasOwnStorageKey(raw, 'manualGroups');
+    const hasLegacySections = !hasManualGroups && hasOwnStorageKey(raw, 'sections');
+    const shouldSeedDefaultSpaces = !hasSchemaVersion && !hasManualGroups && !hasLegacySections;
+
     nextStorage = await updateStorage((current) => {
       let currentGroups = current.manualGroups;
-      if (!currentGroups || currentGroups.length === 0) {
+      if (shouldSeedDefaultSpaces && currentGroups.length === 0) {
         currentGroups = DEFAULT_SPACES;
       }
 

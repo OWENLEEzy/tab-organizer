@@ -18,6 +18,7 @@ interface DomainCardProps {
   focusedUrl?: string | null;
   closingUrls?: Set<string>;
   selectedUrls?: Set<string>;
+  selectedTabIds?: Set<number>;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   onToggleExpanded?: (domain: string) => void;
   searchQuery?: string;
@@ -76,6 +77,7 @@ function TabChipRow({
   focusedUrl,
   closingUrls,
   selectedUrls,
+  selectedTabIds,
   selectionMode,
   onFocus,
   onClose,
@@ -87,6 +89,7 @@ function TabChipRow({
   focusedUrl?: string | null;
   closingUrls?: Set<string>;
   selectedUrls?: Set<string>;
+  selectedTabIds?: Set<number>;
   selectionMode: boolean;
   onFocus: (url: string) => void;
   onClose: (url: string) => void;
@@ -103,7 +106,7 @@ function TabChipRow({
         active={tab.active}
         isFocused={tab.url === focusedUrl}
         isClosing={closingUrls?.has(tab.url)}
-        isSelected={selectedUrls?.has(tab.url)}
+        isSelected={selectedUrls?.has(tab.url) || (selectedTabIds?.has(tab.id) ?? false)}
         selectionMode={selectionMode}
         onFocus={onFocus}
         onClose={onClose}
@@ -131,6 +134,7 @@ export function DomainCard({
   focusedUrl,
   closingUrls,
   selectedUrls,
+  selectedTabIds,
   onChipClick,
   onToggleExpanded,
   searchQuery = '',
@@ -138,7 +142,7 @@ export function DomainCard({
   const tabs = useMemo(() => group.tabs || [], [group.tabs]);
   const tabCount = tabs.length;
   const displayName = group.friendlyName || group.domain;
-  const selectionMode = (selectedUrls?.size ?? 0) > 0;
+  const selectionMode = (selectedUrls?.size ?? 0) > 0 || (selectedTabIds?.size ?? 0) > 0;
   const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
   const groupFaviconUrl = useMemo(
     () => tabs.find((tab) => tab.favIconUrl.trim() !== '')?.favIconUrl.trim() ?? getFaviconUrl(tabs[0]?.url || ''),
@@ -273,6 +277,7 @@ export function DomainCard({
               focusedUrl={focusedUrl}
               closingUrls={closingUrls}
               selectedUrls={selectedUrls}
+              selectedTabIds={selectedTabIds}
               selectionMode={selectionMode}
               onFocus={handleFocusTab}
               onClose={handleCloseTab}

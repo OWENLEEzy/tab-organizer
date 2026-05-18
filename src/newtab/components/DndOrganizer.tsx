@@ -22,6 +22,7 @@ interface DraggableDomainCardProps {
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
+  selectedTabIds: Set<number>;
   onCloseDomain: (group: TabGroup) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onCloseTab: (url: string) => void;
@@ -39,6 +40,7 @@ function DraggableDomainCard({
   focusedUrl,
   closingUrls,
   selectedUrls,
+  selectedTabIds,
   onCloseDomain,
   onCloseDuplicates,
   onCloseTab,
@@ -64,6 +66,7 @@ function DraggableDomainCard({
         focusedUrl={focusedUrl}
         closingUrls={closingUrls}
         selectedUrls={selectedUrls}
+        selectedTabIds={selectedTabIds}
         onChipClick={onChipClick}
         onToggleExpanded={onToggleExpanded}
         searchQuery={searchQuery}
@@ -85,6 +88,7 @@ interface DndGroupBoardProps {
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
+  selectedTabIds: Set<number>;
   itemIdForProduct: (p: TabGroup) => string;
   onRenameGroup?: (group: ManualGroup) => void;
   onDeleteGroup?: (group: ManualGroup) => void;
@@ -109,6 +113,7 @@ function DndGroupBoard({
   focusedUrl,
   closingUrls,
   selectedUrls,
+  selectedTabIds,
   itemIdForProduct,
   onRenameGroup,
   onDeleteGroup,
@@ -177,6 +182,7 @@ function DndGroupBoard({
             focusedUrl={focusedUrl}
             closingUrls={closingUrls}
             selectedUrls={selectedUrls}
+            selectedTabIds={selectedTabIds}
             onCloseDomain={onCloseProduct}
             onCloseDuplicates={onCloseDuplicates}
             onCloseTab={onCloseTab}
@@ -205,6 +211,7 @@ interface DndOrganizerProps {
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
+  selectedTabIds: Set<number>;
   onMoveProductToMain: (productKey: string) => void;
   onMoveProductToGroup: (productKey: string, groupId: string) => void;
   onRenameGroup?: (group: ManualGroup) => void;
@@ -231,6 +238,7 @@ export function DndOrganizer({
   focusedUrl,
   closingUrls,
   selectedUrls,
+  selectedTabIds,
   onMoveProductToMain,
   onMoveProductToGroup,
   onRenameGroup,
@@ -290,6 +298,7 @@ export function DndOrganizer({
     focusedUrl,
     closingUrls,
     selectedUrls,
+    selectedTabIds,
     itemIdForProduct,
     onCloseProduct,
     onCloseManualGroup,
@@ -339,6 +348,7 @@ export function DndOrganizer({
             focusedUrl={focusedUrl}
             closingUrls={closingUrls}
             selectedUrls={selectedUrls}
+            selectedTabIds={selectedTabIds}
             onChipClick={onChipClick}
             onToggleExpanded={onToggleExpanded}
             searchQuery={searchQuery}
