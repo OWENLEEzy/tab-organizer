@@ -7,6 +7,7 @@ import { isTabOutPage } from '../../utils/url';
 import type { TabGroup } from '../../types';
 import { useUIState } from './useUIState';
 import { useTabHandlers } from './useTabHandlers';
+import { DASHBOARD_SPACE_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -73,6 +74,13 @@ export function useAppLogic() {
     selectedUrls,
     lastClickedIndex,
   } = state;
+
+  const focusSpaceSwitcher = useCallback(() => {
+    dispatch({ type: 'SET_SPACE_SWITCHER_FOCUSED', focused: true });
+    window.setTimeout(() => {
+      dispatch({ type: 'SET_SPACE_SWITCHER_FOCUSED', focused: false });
+    }, 100);
+  }, [dispatch]);
 
   // ─── Stores ────────────────────────────────────────────────────────
   const tabStore = useTabStore();
@@ -335,17 +343,25 @@ export function useAppLogic() {
   useEffect(() => {
     const handleMessage = (message: { type?: string }) => {
       if (message.type === 'FOCUS_SPACE_SWITCHER') {
-        dispatch({ type: 'SET_SPACE_SWITCHER_FOCUSED', focused: true });
-        setTimeout(() => {
-          dispatch({ type: 'SET_SPACE_SWITCHER_FOCUSED', focused: false });
-        }, 100);
+        focusSpaceSwitcher();
       }
     };
     chrome.runtime?.onMessage?.addListener(handleMessage);
     return () => {
       chrome.runtime?.onMessage?.removeListener(handleMessage);
     };
-  }, [dispatch]);
+  }, [focusSpaceSwitcher]);
+
+  useEffect(() => {
+    if (window.location.hash !== DASHBOARD_SPACE_SWITCHER_FOCUS_HASH) {
+      return;
+    }
+
+    focusSpaceSwitcher();
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.hash = '';
+    window.history.replaceState(null, '', cleanUrl.toString());
+  }, [focusSpaceSwitcher]);
 
   // ─── Keyboard shortcuts ────────────────────────────────────────────
 

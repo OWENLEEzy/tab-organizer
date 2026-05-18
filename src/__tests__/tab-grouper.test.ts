@@ -287,13 +287,27 @@ describe('autoAssignProductToSpace', () => {
   ];
 
   it('matches hostname against regex rules', () => {
-    expect(autoAssignProductToSpace('github.com', mockSpaces)).toBe('dev');
-    expect(autoAssignProductToSpace('vercel', mockSpaces)).toBe('dev');
-    expect(autoAssignProductToSpace('youtube.com', mockSpaces)).toBe('media');
+    expect(autoAssignProductToSpace(['github.com'], mockSpaces)).toBe('dev');
+    expect(autoAssignProductToSpace(['vercel.com'], mockSpaces)).toBe('dev');
+    expect(autoAssignProductToSpace(['youtube.com'], mockSpaces)).toBe('media');
+  });
+
+  it('matches canonical Google products through their source hostnames', () => {
+    const spaces: ManualGroup[] = [
+      {
+        id: 'work',
+        name: 'Work',
+        order: 0,
+        autoRules: [{ pattern: 'google\\.com', type: 'hostname' }],
+      },
+    ];
+
+    expect(autoAssignProductToSpace(['mail.google.com'], spaces)).toBe('work');
+    expect(autoAssignProductToSpace(['docs.google.com'], spaces)).toBe('work');
   });
 
   it('returns null if no rule matches', () => {
-    expect(autoAssignProductToSpace('google.com', mockSpaces)).toBeNull();
+    expect(autoAssignProductToSpace(['google.com'], mockSpaces)).toBeNull();
   });
 
   it('safely ignores invalid regex patterns', () => {
@@ -306,7 +320,6 @@ describe('autoAssignProductToSpace', () => {
       },
       ...mockSpaces,
     ];
-    expect(autoAssignProductToSpace('github', spacesWithInvalidRegex)).toBe('dev');
+    expect(autoAssignProductToSpace(['github.com'], spacesWithInvalidRegex)).toBe('dev');
   });
 });
-

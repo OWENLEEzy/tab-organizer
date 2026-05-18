@@ -26,8 +26,7 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
   }, [tabCount]);
 
   const GITHUB_URL = 'https://github.com/OWENLEEzy/tab-organizer';
-  const extensionVersion = chrome.runtime?.getManifest()?.version || '1.0.0';
-  const FEEDBACK_URL = `https://docs.google.com/forms/d/e/1FAIpQLSfXJ6osy2J84TLpyLE-DYA-NcWMcjRAZbcTHBOZV9RnQ7WEfA/viewform?entry.53352078=${tabCount}&entry.104442420=${extensionVersion}`;
+  const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfXJ6osy2J84TLpyLE-DYA-NcWMcjRAZbcTHBOZV9RnQ7WEfA/viewform';
 
   return (
     <footer className="pt-8 pb-12" aria-label="Dashboard footer">

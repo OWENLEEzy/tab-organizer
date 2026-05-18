@@ -20,6 +20,7 @@ const STORAGE_KEYS = [
   'groupOrder',
   'manualGroups',
   'groupAssignments',
+  'unsortedOverrides',
   'viewMode',
   'historyCandidate',
   'history',
@@ -68,6 +69,7 @@ const EMPTY_SCHEMA: StorageSchema = {
   groupOrder: {},
   manualGroups: [],
   groupAssignments: [],
+  unsortedOverrides: [],
   viewMode: 'cards',
   historyCandidate: null,
   history: [],
@@ -125,6 +127,22 @@ function normalizeAssignments(value: unknown): GroupAssignment[] {
         order: Number.isFinite(assignment.order) ? Number(assignment.order) : index,
       };
     });
+}
+
+function normalizeUnsortedOverrides(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const overrides: string[] = [];
+
+  for (const item of value) {
+    if (typeof item !== 'string') continue;
+    const productKey = item.trim();
+    if (!productKey || seen.has(productKey)) continue;
+    seen.add(productKey);
+    overrides.push(productKey);
+  }
+
+  return overrides;
 }
 
 /**
@@ -212,6 +230,24 @@ function reconcileAssignments(
     .map(({ originalIndex: _originalIndex, ...assignment }) => assignment);
 }
 
+function reconcileUnsortedOverrides(
+  overrides: string[],
+  currentProductKeys: Set<string>,
+  legacyKeyMap: Map<string, string>,
+): string[] {
+  const seen = new Set<string>();
+  const nextOverrides: string[] = [];
+
+  for (const override of overrides) {
+    const productKey = legacyKeyMap.get(override) ?? override;
+    if (!currentProductKeys.has(productKey) || seen.has(productKey)) continue;
+    seen.add(productKey);
+    nextOverrides.push(productKey);
+  }
+
+  return nextOverrides;
+}
+
 function normalizeHistorySnapshot(value: unknown): HistorySnapshot | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Partial<HistorySnapshot>;
@@ -291,6 +327,7 @@ function migrate(data: Record<string, unknown>): StorageSchema {
     groupOrder: (data['groupOrder'] as Record<string, number> | undefined) ?? {},
     manualGroups: normalizeManualGroups(manualGroups),
     groupAssignments: normalizeAssignments(groupAssignments),
+    unsortedOverrides: normalizeUnsortedOverrides(data['unsortedOverrides']),
     viewMode: isViewMode(data['viewMode']) ? data['viewMode'] : 'cards',
     historyCandidate: normalizeHistorySnapshot(historyCandidate),
     history: normalizeHistory(history),
@@ -308,6 +345,7 @@ async function readStorageSnapshot(): Promise<Record<string, unknown>> {
     groupOrder: result.groupOrder,
     manualGroups: result.manualGroups,
     groupAssignments: result.groupAssignments,
+    unsortedOverrides: result.unsortedOverrides,
     viewMode: result.viewMode,
     historyCandidate: result.historyCandidate,
     history: result.history,
@@ -328,6 +366,7 @@ async function persistStorage(data: StorageSchema): Promise<void> {
     groupOrder: data.groupOrder,
     manualGroups: data.manualGroups,
     groupAssignments: data.groupAssignments,
+    unsortedOverrides: data.unsortedOverrides,
     viewMode: data.viewMode,
     historyCandidate: data.historyCandidate,
     history: data.history,
@@ -514,8 +553,15 @@ export async function pruneStaleStorage(currentProductKeys: Set<string>): Promis
       current.manualGroups,
       currentProductKeys
     );
+    const nextOverrides = current.unsortedOverrides.filter((productKey) =>
+      currentProductKeys.has(productKey)
+    );
 
-    if (staleKeys.length === 0 && nextAssignments.length === current.groupAssignments.length) {
+    if (
+      staleKeys.length === 0 &&
+      nextAssignments.length === current.groupAssignments.length &&
+      nextOverrides.length === current.unsortedOverrides.length
+    ) {
       return current;
     }
 
@@ -530,6 +576,7 @@ export async function pruneStaleStorage(currentProductKeys: Set<string>): Promis
       ...current,
       groupOrder: cleanedOrder,
       groupAssignments: nextAssignments,
+      unsortedOverrides: nextOverrides,
     };
   }).catch((err: unknown) => {
     console.warn('[Tab Out] Failed to prune stale organizer storage:', err);
@@ -543,6 +590,7 @@ export async function reconcileOrganizerState(
   groupOrder: Record<string, number>;
   manualGroups: ManualGroup[];
   groupAssignments: GroupAssignment[];
+  unsortedOverrides: string[];
   viewMode: ViewMode;
 }> {
   let nextStorage: StorageSchema;
@@ -565,11 +613,17 @@ export async function reconcileOrganizerState(
         currentProductKeys,
         legacyKeyMap,
       );
+      const unsortedOverrides = reconcileUnsortedOverrides(
+        current.unsortedOverrides,
+        currentProductKeys,
+        legacyKeyMap,
+      );
 
       if (
         currentGroups === current.manualGroups &&
         JSON.stringify(groupOrder) === JSON.stringify(current.groupOrder) &&
-        JSON.stringify(groupAssignments) === JSON.stringify(current.groupAssignments)
+        JSON.stringify(groupAssignments) === JSON.stringify(current.groupAssignments) &&
+        JSON.stringify(unsortedOverrides) === JSON.stringify(current.unsortedOverrides)
       ) {
         return current;
       }
@@ -579,6 +633,7 @@ export async function reconcileOrganizerState(
         manualGroups: currentGroups,
         groupOrder,
         groupAssignments,
+        unsortedOverrides,
       };
     });
   } catch (err: unknown) {
@@ -590,6 +645,7 @@ export async function reconcileOrganizerState(
     groupOrder: nextStorage.groupOrder,
     manualGroups: nextStorage.manualGroups,
     groupAssignments: nextStorage.groupAssignments,
+    unsortedOverrides: nextStorage.unsortedOverrides,
     viewMode: nextStorage.viewMode,
   };
 }
@@ -598,6 +654,7 @@ export async function readOrganizerState(): Promise<{
   groupOrder: Record<string, number>;
   manualGroups: ManualGroup[];
   groupAssignments: GroupAssignment[];
+  unsortedOverrides: string[];
   viewMode: ViewMode;
 }> {
   const storage = await readStorage();
@@ -605,6 +662,7 @@ export async function readOrganizerState(): Promise<{
     groupOrder: storage.groupOrder,
     manualGroups: storage.manualGroups,
     groupAssignments: storage.groupAssignments,
+    unsortedOverrides: storage.unsortedOverrides,
     viewMode: storage.viewMode,
   };
 }
@@ -612,12 +670,14 @@ export async function readOrganizerState(): Promise<{
 export async function writeOrganizerState(state: {
   manualGroups?: ManualGroup[];
   groupAssignments?: GroupAssignment[];
+  unsortedOverrides?: string[];
   viewMode?: ViewMode;
 }): Promise<void> {
   await updateStorage((storage) => ({
     ...storage,
     manualGroups: state.manualGroups ?? storage.manualGroups,
     groupAssignments: state.groupAssignments ?? storage.groupAssignments,
+    unsortedOverrides: state.unsortedOverrides ?? storage.unsortedOverrides,
     viewMode: state.viewMode ?? storage.viewMode,
   }));
 }

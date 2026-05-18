@@ -1,6 +1,6 @@
 import { updateBadge } from '../utils/badge';
 import { getTabDomain, isRealTab } from '../utils/url';
-import { getDashboardUrl } from './dashboard';
+import { getDashboardFocusUrl, getDashboardUrl, isDashboardUrl } from './dashboard';
 import { buildHistorySnapshot } from '../lib/history-snapshots';
 import { promoteHistoryCandidate, updateHistoryCandidate } from '../utils/storage';
 import type { Tab } from '../types';
@@ -88,13 +88,30 @@ chrome.tabs.onUpdated.addListener(() => {
   scheduleHistoryCapture();
 });
 
+async function sendFocusSpaceSwitcher(tabId: number): Promise<void> {
+  const maxAttempts = 8;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      await chrome.tabs.sendMessage(tabId, { type: 'FOCUS_SPACE_SWITCHER' });
+      return;
+    } catch {
+      if (attempt === maxAttempts - 1) return;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+}
+
 // Open Tab Out dashboard when toolbar icon is clicked.
-async function openTabOutDashboard(): Promise<void> {
+async function openTabOutDashboard(options: { focusSpaceSwitcher?: boolean } = {}): Promise<void> {
   const tabOutUrl = getDashboardUrl(chrome.runtime.getURL);
+  const createUrl = options.focusSpaceSwitcher
+    ? getDashboardFocusUrl(chrome.runtime.getURL)
+    : tabOutUrl;
 
   try {
     const tabs = await chrome.tabs.query({});
-    const candidates = tabs.filter((tab) => tab.url === tabOutUrl);
+    const candidates = tabs.filter((tab) => isDashboardUrl(tab.url, tabOutUrl));
 
     if (candidates.length > 0) {
       const currentWindow = await chrome.windows.getCurrent();
@@ -103,14 +120,17 @@ async function openTabOutDashboard(): Promise<void> {
       if (currentTab.id != null) {
         await chrome.tabs.update(currentTab.id, { active: true });
         await chrome.windows.update(currentTab.windowId, { focused: true });
+        if (options.focusSpaceSwitcher) {
+          void sendFocusSpaceSwitcher(currentTab.id);
+        }
         return;
       }
     }
 
-    await chrome.tabs.create({ url: tabOutUrl });
+    await chrome.tabs.create({ url: createUrl });
   } catch {
     try {
-      await chrome.tabs.create({ url: tabOutUrl });
+      await chrome.tabs.create({ url: createUrl });
     } catch {
       // Ignore if the dashboard cannot be opened.
     }
@@ -127,18 +147,6 @@ void captureHistoryCandidate();
 
 chrome.commands.onCommand.addListener((command) => {
   if (command === 'open-space-switcher') {
-    void openTabOutDashboard().then(async () => {
-      // Give the dashboard a moment to render if it was just created
-      setTimeout(async () => {
-        const tabOutUrl = getDashboardUrl(chrome.runtime.getURL);
-        const tabs = await chrome.tabs.query({});
-        const dashboardTabs = tabs.filter((t) => t.url === tabOutUrl);
-        for (const t of dashboardTabs) {
-          if (t.id != null) {
-            chrome.tabs.sendMessage(t.id, { type: 'FOCUS_SPACE_SWITCHER' }).catch(() => {});
-          }
-        }
-      }, 100);
-    });
+    void openTabOutDashboard({ focusSpaceSwitcher: true });
   }
 });

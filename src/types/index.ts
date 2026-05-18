@@ -167,6 +167,8 @@ export interface StorageSchema {
   groupOrder: Record<string, number>;
   manualGroups: ManualGroup[];
   groupAssignments: GroupAssignment[];
+  /** Product keys explicitly moved to Unsorted by the user — immune to auto-assignment. */
+  unsortedOverrides: string[];
   viewMode: ViewMode;
   historyCandidate: HistorySnapshot | null;
   history: HistorySnapshot[];

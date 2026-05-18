@@ -126,6 +126,7 @@ export function useKeyboard(
       const targetIsInput = isInputField(target);
       const targetIsTabChip = isTabChipElement(target);
       const targetIsBlockedInteractive = isBlockedInteractiveElement(target);
+      const canUseGlobalNavigation = !targetIsInput && !targetIsBlockedInteractive;
 
       if (isInsideDialog(target)) {
         return;
@@ -144,35 +145,40 @@ export function useKeyboard(
       // Custom bindings
       if (keyBindings) {
         // switchSpaceN
-        if (e.key >= '1' && e.key <= '9' && matchesKeyBinding(e, keyBindings.switchSpaceN, e.key)) {
+        if (
+          canUseGlobalNavigation &&
+          e.key >= '1' &&
+          e.key <= '9' &&
+          matchesKeyBinding(e, keyBindings.switchSpaceN, e.key)
+        ) {
           e.preventDefault();
           callbackRef.current.onSwitchSpaceN?.(Number(e.key));
           return;
         }
 
         // switchSpaceAll
-        if (matchesKeyBinding(e, keyBindings.switchSpaceAll)) {
+        if (canUseGlobalNavigation && matchesKeyBinding(e, keyBindings.switchSpaceAll)) {
           e.preventDefault();
           callbackRef.current.onSwitchSpaceAll?.();
           return;
         }
 
         // cyclePrev
-        if (matchesKeyBinding(e, keyBindings.cyclePrev)) {
+        if (canUseGlobalNavigation && matchesKeyBinding(e, keyBindings.cyclePrev)) {
           e.preventDefault();
           callbackRef.current.onCycleSpacePrev?.();
           return;
         }
 
         // cycleNext
-        if (matchesKeyBinding(e, keyBindings.cycleNext)) {
+        if (canUseGlobalNavigation && matchesKeyBinding(e, keyBindings.cycleNext)) {
           e.preventDefault();
           callbackRef.current.onCycleSpaceNext?.();
           return;
         }
 
         // focusSearch
-        if (matchesKeyBinding(e, keyBindings.focusSearch) && !targetIsInput && !targetIsBlockedInteractive) {
+        if (matchesKeyBinding(e, keyBindings.focusSearch) && canUseGlobalNavigation) {
           e.preventDefault();
           callbackRef.current.onSearch();
           return;

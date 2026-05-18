@@ -77,6 +77,7 @@ describe('readStorage', () => {
     expect(result.groupOrder).toEqual({});
     expect(result.manualGroups).toEqual([]);
     expect(result.groupAssignments).toEqual([]);
+    expect(result.unsortedOverrides).toEqual([]);
     expect(result.viewMode).toBe('cards');
     expect(result.historyCandidate).toBeNull();
     expect(result.history).toEqual([]);
@@ -90,6 +91,7 @@ describe('readStorage', () => {
     expect(result.groupOrder).toEqual({});
     expect(result.manualGroups).toEqual([]);
     expect(result.groupAssignments).toEqual([]);
+    expect(result.unsortedOverrides).toEqual([]);
     expect(result.viewMode).toBe('cards');
   });
 
@@ -150,6 +152,15 @@ describe('readStorage', () => {
       { productKey: 'github', groupId: 'later', order: 1 },
     ]);
     expect(result.viewMode).toBe('table');
+  });
+
+  it('normalizes unsorted overrides', async () => {
+    storage['schemaVersion'] = 4;
+    storage['unsortedOverrides'] = ['github', '', 'github', 123, ' google.com '];
+
+    const result = await readStorage();
+
+    expect(result.unsortedOverrides).toEqual(['github', 'google.com']);
   });
 });
 
@@ -379,5 +390,19 @@ describe('reconcileOrganizerState', () => {
     const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
     expect(state.manualGroups).toEqual([customGroup]);
   });
-});
 
+  it('canonicalizes and prunes unsorted overrides during organizer reconcile', async () => {
+    storage['schemaVersion'] = 4;
+    storage['manualGroups'] = [{ id: 'g1', name: 'G1', order: 0 }];
+    storage['unsortedOverrides'] = ['google.com', 'missing-product', 'github'];
+
+    const state = await reconcileOrganizerState(
+      new Set(['google', 'github']),
+      new Map([['google.com', 'google']]),
+    );
+    const result = await readStorage();
+
+    expect(state.unsortedOverrides).toEqual(['google', 'github']);
+    expect(result.unsortedOverrides).toEqual(['google', 'github']);
+  });
+});

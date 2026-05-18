@@ -75,6 +75,7 @@ export type TabStore = {
   products: TabGroup[];
   manualGroups: ManualGroup[];
   groupAssignments: GroupAssignment[];
+  unsortedOverrides: string[];
   history: HistorySnapshot[];
   viewMode: ViewMode;
   loading: boolean;
@@ -114,9 +115,11 @@ function orderedGroups(groups: ManualGroup[]): ManualGroup[] {
 function buildProductKeyCompatibility(tabs: Tab[]): {
   currentProductKeys: Set<string>;
   legacyKeyMap: Map<string, string>;
+  hostnamesByProductKey: Map<string, string[]>;
 } {
   const currentProductKeys = new Set<string>();
   const legacyKeyMap = new Map<string, string>();
+  const hostnamesByProductKey = new Map<string, Set<string>>();
 
   for (const tab of tabs) {
     const hostname = getTabDomain(tab.url);
@@ -126,12 +129,24 @@ function buildProductKeyCompatibility(tabs: Tab[]): {
     const legacyKey = legacyProductKeyForHostname(hostname);
 
     currentProductKeys.add(product.key);
+    const hostnames = hostnamesByProductKey.get(product.key) ?? new Set<string>();
+    hostnames.add(hostname);
+    hostnamesByProductKey.set(product.key, hostnames);
     if (legacyKey !== product.key) {
       legacyKeyMap.set(legacyKey, product.key);
     }
   }
 
-  return { currentProductKeys, legacyKeyMap };
+  return {
+    currentProductKeys,
+    legacyKeyMap,
+    hostnamesByProductKey: new Map(
+      [...hostnamesByProductKey.entries()].map(([productKey, hostnames]) => [
+        productKey,
+        [...hostnames],
+      ]),
+    ),
+  };
 }
 
 async function protectHistoryBeforeClosing(allTabs: chrome.tabs.Tab[]): Promise<void> {
@@ -150,6 +165,7 @@ export const useTabStore = create<TabStore>((set) => ({
   products: [],
   manualGroups: [],
   groupAssignments: [],
+  unsortedOverrides: [],
   history: [],
   viewMode: 'cards',
   loading: false,
@@ -165,11 +181,13 @@ export const useTabStore = create<TabStore>((set) => ({
     try {
       const rawTabs = await chrome.tabs.query({});
       const mapped = rawTabs.map(toAppTab).filter((t) => isRealTab(t.url));
-      const { currentProductKeys, legacyKeyMap } = buildProductKeyCompatibility(mapped);
+      const { currentProductKeys, legacyKeyMap, hostnamesByProductKey } =
+        buildProductKeyCompatibility(mapped);
       const organizerState = await reconcileOrganizerState(currentProductKeys, legacyKeyMap);
       const groupOrder = organizerState.groupOrder;
       const productGroups = groupTabsByDomain(mapped, groupOrder);
       const manualGroups = orderedGroups(organizerState.manualGroups);
+      const unsortedOverrideSet = new Set(organizerState.unsortedOverrides);
       
       let groupAssignments = organizerState.groupAssignments;
       let hasNewAssignments = false;
@@ -177,8 +195,11 @@ export const useTabStore = create<TabStore>((set) => ({
 
       for (const product of productGroups) {
         const productKey = product.productKey ?? product.domain;
-        if (!assignedKeys.has(productKey)) {
-          const spaceId = autoAssignProductToSpace(productKey, manualGroups);
+        if (!assignedKeys.has(productKey) && !unsortedOverrideSet.has(productKey)) {
+          const spaceId = autoAssignProductToSpace(
+            hostnamesByProductKey.get(productKey) ?? [productKey],
+            manualGroups,
+          );
           if (spaceId) {
             const existingInGroup = groupAssignments.filter((a) => a.groupId === spaceId);
             groupAssignments = [
@@ -192,8 +213,7 @@ export const useTabStore = create<TabStore>((set) => ({
       }
 
       if (hasNewAssignments) {
-        // Run in background to persist
-        writeOrganizerState({ groupAssignments }).catch(err => {
+        await writeOrganizerState({ groupAssignments }).catch(err => {
           console.warn('[Tab Out] Failed to persist auto-assignments:', err);
         });
       }
@@ -205,6 +225,7 @@ export const useTabStore = create<TabStore>((set) => ({
         products,
         manualGroups,
         groupAssignments,
+        unsortedOverrides: organizerState.unsortedOverrides,
         viewMode: organizerState.viewMode,
         loading: false,
       });
@@ -491,19 +512,28 @@ export const useTabStore = create<TabStore>((set) => ({
       ),
       nextAssignment,
     ];
+    const nextOverrides = current.unsortedOverrides.filter((key) => key !== productKey);
 
-    set({ groupAssignments: nextAssignments });
-    await writeOrganizerState({ groupAssignments: nextAssignments });
+    set({ groupAssignments: nextAssignments, unsortedOverrides: nextOverrides });
+    await writeOrganizerState({
+      groupAssignments: nextAssignments,
+      unsortedOverrides: nextOverrides,
+    });
     await useTabStore.getState().fetchTabs();
   },
 
   moveProductToMain: async (productKey: string) => {
-    const nextAssignments = useTabStore
-      .getState()
-      .groupAssignments
+    const current = useTabStore.getState();
+    const nextAssignments = current.groupAssignments
       .filter((assignment) => assignment.productKey !== productKey);
-    set({ groupAssignments: nextAssignments });
-    await writeOrganizerState({ groupAssignments: nextAssignments });
+    const nextOverrides = current.unsortedOverrides.includes(productKey)
+      ? current.unsortedOverrides
+      : [...current.unsortedOverrides, productKey];
+    set({ groupAssignments: nextAssignments, unsortedOverrides: nextOverrides });
+    await writeOrganizerState({
+      groupAssignments: nextAssignments,
+      unsortedOverrides: nextOverrides,
+    });
     await useTabStore.getState().fetchTabs();
   },
 

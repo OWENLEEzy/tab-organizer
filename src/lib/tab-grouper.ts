@@ -121,14 +121,14 @@ export function groupTabsByDomain(
  * Auto-assign a product to a space based on its hostname rules.
  */
 export function autoAssignProductToSpace(
-  productKey: string,
+  hostnames: readonly string[],
   spaces: ManualGroup[]
 ): string | null {
   for (const space of spaces) {
     for (const rule of space.autoRules ?? []) {
       try {
         const re = new RegExp(rule.pattern, 'i');
-        if (re.test(productKey)) return space.id;
+        if (hostnames.some((hostname) => re.test(hostname))) return space.id;
       } catch {
         // Skip invalid regex patterns
       }

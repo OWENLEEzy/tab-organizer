@@ -123,6 +123,7 @@ describe('useTabStore', () => {
       products: [],
       manualGroups: [],
       groupAssignments: [],
+      unsortedOverrides: [],
       viewMode: 'cards',
       loading: false,
       error: null,
@@ -264,6 +265,50 @@ describe('useTabStore', () => {
     expect(chromeStorage.data['groupOrder']).toEqual({ youtube: 0 });
   });
 
+  it('auto-assigns Google workspace products from their real hostnames', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+    });
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(31, 'https://mail.google.com/mail/u/0/#inbox'),
+      makeChromeTab(32, 'https://docs.google.com/document/d/1/edit'),
+    ]);
+
+    await useTabStore.getState().fetchTabs();
+
+    expect(useTabStore.getState().groupAssignments).toEqual([
+      { productKey: 'gmail', groupId: 'space-work', order: 0 },
+      { productKey: 'google-docs', groupId: 'space-work', order: 1 },
+    ]);
+    expect(chromeStorage.data['groupAssignments']).toEqual([
+      { productKey: 'gmail', groupId: 'space-work', order: 0 },
+      { productKey: 'google-docs', groupId: 'space-work', order: 1 },
+    ]);
+  });
+
+  it('keeps a product in Unsorted after the user moves it out of an auto-matched space', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+    });
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(41, 'https://mail.google.com/mail/u/0/#inbox'),
+    ]);
+
+    await useTabStore.getState().fetchTabs();
+    expect(useTabStore.getState().groupAssignments).toEqual([
+      { productKey: 'gmail', groupId: 'space-work', order: 0 },
+    ]);
+
+    await useTabStore.getState().moveProductToMain('gmail');
+
+    expect(useTabStore.getState().groupAssignments).toEqual([]);
+    expect(chromeStorage.data['unsortedOverrides']).toEqual(['gmail']);
+
+    await useTabStore.getState().fetchTabs();
+
+    expect(useTabStore.getState().groupAssignments).toEqual([]);
+  });
+
   it('moves product groups into manual groups', async () => {
     useTabStore.setState({
       fetchTabs: vi.fn().mockResolvedValue(undefined),
@@ -295,10 +340,19 @@ describe('useTabStore', () => {
     expect(chromeStorage.data['groupAssignments']).toEqual([
       { productKey: 'github', groupId: 'later', order: 0 },
     ]);
+    expect(chromeStorage.data['unsortedOverrides']).toEqual([]);
 
     await useTabStore.getState().moveProductToMain('github');
 
     expect(useTabStore.getState().groupAssignments).toEqual([]);
+    expect(chromeStorage.data['unsortedOverrides']).toEqual(['github']);
+
+    await useTabStore.getState().moveProductToGroup('github', 'later');
+
+    expect(useTabStore.getState().groupAssignments).toEqual([
+      { productKey: 'github', groupId: 'later', order: 0 },
+    ]);
+    expect(chromeStorage.data['unsortedOverrides']).toEqual([]);
   });
 
   it('closes exact rendered product URLs instead of every tab on the same host', async () => {
