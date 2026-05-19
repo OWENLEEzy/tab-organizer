@@ -126,7 +126,7 @@ export function App(): React.ReactElement {
           <EmptyState />
         ) : (
           <main id="main-content" tabIndex={-1} className="active-section">
-              {state.searchQuery.trim().toLowerCase().startsWith('/dupes') && (
+              {state.parsedQuery.type === 'dupes' && (
                 <div
                   role="alert"
                   className="rounded-card border-accent-amber/20 from-accent-amber/[0.04] to-accent-amber/[0.09] mb-4 flex animate-[fadeUp_0.5s_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
@@ -168,7 +168,7 @@ export function App(): React.ReactElement {
                 </div>
               )}
 
-              {state.searchQuery.trim().toLowerCase().startsWith('/stale') && (
+              {state.parsedQuery.type === 'stale' && (
                 <div
                   role="alert"
                   className="rounded-card border-accent-blue/20 from-accent-blue/[0.04] to-accent-blue/[0.09] mb-4 flex animate-[fadeUp_0.5s_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
@@ -210,7 +210,37 @@ export function App(): React.ReactElement {
                 </div>
               )}
 
-              {viewMode === 'table' ? (
+              {derived.filteredProducts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center animate-[fadeIn_0.3s_ease]">
+                  <div className="bg-surface-light dark:bg-surface-dark mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-border-light dark:border-border-dark text-text-secondary">
+                    {state.parsedQuery.type === 'stale' ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8 text-accent-blue"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                    ) : state.parsedQuery.type === 'dupes' ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8 text-accent-amber"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.602 10.602Z" /></svg>
+                    )}
+                  </div>
+                  <h3 className="font-heading text-lg font-normal text-text-primary-light dark:text-text-primary-dark">
+                    {state.parsedQuery.type === 'stale' 
+                      ? "No stale tabs found" 
+                      : state.parsedQuery.type === 'dupes' 
+                      ? "No duplicate tabs found" 
+                      : state.parsedQuery.type === 'space'
+                      ? "No space matches found"
+                      : "No tabs match your search"}
+                  </h3>
+                  <p className="text-text-secondary text-sm mt-1 max-w-sm px-4">
+                    {state.parsedQuery.type === 'stale'
+                      ? "All your tabs have been active recently (within the last 3 days)."
+                      : state.parsedQuery.type === 'dupes'
+                      ? "Your workspace is perfectly clean. There are no duplicate URLs!"
+                      : state.parsedQuery.type === 'space'
+                      ? `Could not find any space named "${state.parsedQuery.arg}" or the space has no tabs.`
+                      : `We couldn't find any open tabs matching "${state.searchQuery}".`}
+                  </p>
+                </div>
+              ) : viewMode === 'table' ? (
                 <ProductTable
                   items={derived.filteredProducts}
                   groups={derived.orderedGroups}

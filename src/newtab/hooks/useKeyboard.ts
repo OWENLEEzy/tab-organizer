@@ -203,6 +203,8 @@ export function useKeyboard(
 
       }
 
+      if (e.defaultPrevented) return;
+
       // ArrowUp -> onArrowUp
       if (e.key === 'ArrowUp') {
         if (targetIsInput || targetIsBlockedInteractive) return;
@@ -213,8 +215,11 @@ export function useKeyboard(
 
       // ArrowDown -> onArrowDown
       if (e.key === 'ArrowDown') {
-        if (targetIsInput || targetIsBlockedInteractive) return;
+        if (targetIsBlockedInteractive && !targetIsInput) return;
         e.preventDefault();
+        if (targetIsInput) {
+          target?.blur();
+        }
         callbackRef.current.onArrowDown();
         return;
       }

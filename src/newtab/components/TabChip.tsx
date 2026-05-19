@@ -87,11 +87,20 @@ function CloseIcon(): React.ReactElement {
 
 function HighlightedText({ text, highlight = '' }: { text: string; highlight?: string }): React.ReactElement {
   let cleanHighlight = (highlight || '').trim();
-  if (cleanHighlight.startsWith('/')) {
+  const trimmedLower = cleanHighlight.toLowerCase();
+  const isCommand = 
+    trimmedLower.startsWith('/') ||
+    trimmedLower.startsWith('space:') ||
+    trimmedLower === 'stale' || trimmedLower === 'stales' ||
+    trimmedLower === 'dupe' || trimmedLower === 'dupes' ||
+    trimmedLower.startsWith('stale ') || trimmedLower.startsWith('stales ') ||
+    trimmedLower.startsWith('dupe ') || trimmedLower.startsWith('dupes ');
+
+  if (isCommand) {
     cleanHighlight = cleanHighlight
-      .replace(/^\/dupes\s*/i, '')
-      .replace(/^\/stale\s*/i, '')
-      .replace(/^\/space:[^\s]*\s*/i, '')
+      .replace(/^\/?dupes?\s*/i, '')
+      .replace(/^\/?stales?\s*/i, '')
+      .replace(/^\/?space:[^\s]*\s*/i, '')
       .trim();
   }
   if (!cleanHighlight) return <>{text}</>;
@@ -156,8 +165,18 @@ export function TabChip({
 
   useEffect(() => {
     if (isFocused && chipRef.current) {
-      chipRef.current.focus({ preventScroll: false });
-      chipRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      const active = document.activeElement;
+      const isInputFocused =
+        active instanceof HTMLInputElement ||
+        active instanceof HTMLTextAreaElement ||
+        (active instanceof HTMLElement && active.isContentEditable === true);
+
+      if (!isInputFocused) {
+        chipRef.current.focus({ preventScroll: false });
+      }
+      if (typeof chipRef.current.scrollIntoView === 'function') {
+        chipRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
     }
   }, [isFocused]);
 

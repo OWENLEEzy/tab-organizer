@@ -77,9 +77,9 @@ export function DashboardHeader({
   const groupLabel = `${groupCount} Group${groupCount === 1 ? '' : 's'}`;
 
   return (
-    <header className="pb-6 pt-8" aria-label="Dashboard controls">
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-4 border-b-2 border-border-light pb-5 dark:border-border-dark lg:flex-row lg:items-center lg:justify-between">
+    <header className="pb-3 pt-2" aria-label="Dashboard controls">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 border-b-2 border-border-light pb-3 dark:border-border-dark lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <p className="font-body text-xs font-semibold tracking-normal text-text-secondary uppercase">
               {dateLabel}
@@ -114,7 +114,7 @@ export function DashboardHeader({
         </div>
 
         {hasGroups ? (
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <div className="min-w-0 flex-1 md:min-w-[24rem]">
               <SearchBar
                 value={searchQuery}

@@ -19,26 +19,34 @@ interface CommandParsed {
   textQuery: string;
 }
 
-function parseSearchQuery(query: string): CommandParsed {
+export function parseSearchQuery(query: string): CommandParsed {
   const trimmed = query.trim().toLowerCase();
   
-  if (trimmed.startsWith('/dupes')) {
-    const textQuery = trimmed.replace('/dupes', '').trim();
-    return { type: 'dupes', textQuery };
+  // 1. Match /dupe, /dupes, dupe, or dupes
+  const dupeMatch = trimmed.match(/^(\/?dupes?)(?:\s+(.*))?$/);
+  if (dupeMatch) {
+    const term = dupeMatch[1];
+    if (term.startsWith('/') || term === 'dupe' || term === 'dupes') {
+      return { type: 'dupes', textQuery: (dupeMatch[2] || '').trim() };
+    }
   }
   
-  if (trimmed.startsWith('/stale')) {
-    const textQuery = trimmed.replace('/stale', '').trim();
-    return { type: 'stale', textQuery };
+  // 2. Match /stale, /stales, stale, or stales
+  const staleMatch = trimmed.match(/^(\/?stales?)(?:\s+(.*))?$/);
+  if (staleMatch) {
+    const term = staleMatch[1];
+    if (term.startsWith('/') || term === 'stale' || term === 'stales') {
+      return { type: 'stale', textQuery: (staleMatch[2] || '').trim() };
+    }
   }
   
-  const spaceMatch = trimmed.match(/^\/space:([^\s]+)/);
+  // 3. Match /space:SpaceName or space:SpaceName (with or without slash)
+  const spaceMatch = trimmed.match(/^(\/?space:)([^\s]*)(?:\s+(.*))?$/);
   if (spaceMatch) {
-    const textQuery = trimmed.replace(spaceMatch[0], '').trim();
-    return { 
-      type: 'space', 
-      arg: spaceMatch[1], 
-      textQuery
+    return {
+      type: 'space',
+      arg: spaceMatch[2] || '',
+      textQuery: (spaceMatch[3] || '').trim()
     };
   }
   
@@ -125,15 +133,22 @@ export function useAppLogic() {
     const parsed = parseSearchQuery(searchQuery);
 
     // 1. Process /space:SpaceName command
-    if (parsed.type === 'space' && parsed.arg) {
-      const targetSpace = orderedGroups.find(
-        (g) => g.name.toLowerCase().includes(parsed.arg!)
-      );
-      if (targetSpace) {
-        result = products.filter(p => {
-          const itemKey = groupAssignmentKey(p);
-          return assignmentByItemId.get(itemKey) === targetSpace.id;
-        });
+    if (parsed.type === 'space') {
+      const arg = parsed.arg || '';
+      if (arg) {
+        const targetSpace = orderedGroups.find(
+          (g) => g.name.toLowerCase().includes(arg)
+        );
+        if (targetSpace) {
+          result = products.filter(p => {
+            const itemKey = groupAssignmentKey(p);
+            return assignmentByItemId.get(itemKey) === targetSpace.id;
+          });
+        } else {
+          result = [];
+        }
+      } else {
+        result = [];
       }
     }
 
@@ -448,6 +463,7 @@ export function useAppLogic() {
       visibleGroupCount: orderedGroups.length + (products.length === 0 ? 0 : 1),
       focusedUrl,
       filteredTabCount,
+      parsedQuery: parseSearchQuery(searchQuery),
     },
     stores: {
       tabStore,

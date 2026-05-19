@@ -58,7 +58,7 @@ export function SpaceSwitcher({
   return (
     <div
       ref={containerRef}
-      className="flex flex-wrap gap-2 items-center mb-6 outline-none"
+      className="flex flex-wrap gap-2 items-center pt-3 pb-1 mb-2 outline-none"
       onKeyDown={handleKeyDown}
       role="toolbar"
       aria-label="Space Switcher"
@@ -66,7 +66,7 @@ export function SpaceSwitcher({
       <button
         onClick={() => onChange(null)}
         tabIndex={activeSpaceId === null ? 0 : -1}
-        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 outline-none ${
+        className={`px-4 py-1.5 rounded-chip text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 outline-none ${
           activeSpaceId === null
             ? 'bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-200 shadow-sm border border-blue-200 dark:border-blue-800'
             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
@@ -80,7 +80,7 @@ export function SpaceSwitcher({
           key={space.id}
           onClick={() => onChange(space.id)}
           tabIndex={activeSpaceId === space.id ? 0 : -1}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 outline-none flex items-center gap-1.5 ${
+          className={`px-4 py-1.5 rounded-chip text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 outline-none flex items-center gap-1.5 ${
             activeSpaceId === space.id
               ? 'bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-200 shadow-sm border border-blue-200 dark:border-blue-800'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
@@ -94,7 +94,7 @@ export function SpaceSwitcher({
       <button
         onClick={onCreateSpace}
         tabIndex={-1}
-        className="px-3 py-1.5 rounded-full text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors border border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-blue-500 outline-none"
+        className="px-3 py-1.5 rounded-chip text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors border border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-blue-500 outline-none"
         aria-label="Create new Space"
         title="Create new Space"
       >

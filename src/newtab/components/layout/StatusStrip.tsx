@@ -27,7 +27,7 @@ export function StatusStrip({
   ];
 
   return (
-    <section className="py-3" aria-label="Tab status summary">
+    <section className="py-2" aria-label="Tab status summary">
       <div className="flex flex-wrap items-center justify-between gap-4 font-body text-xs font-semibold text-text-primary-light dark:text-text-primary-dark">
         <div className="flex items-center gap-6">
           {parts.map((part, i) => (

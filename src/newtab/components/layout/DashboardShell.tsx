@@ -31,7 +31,7 @@ export function DashboardShell({
       <div className="dashboard-full-width border-b-2 border-border-light bg-accent-amber/10 dark:border-border-dark dark:bg-accent-amber/5">
         <div className={baseGridClass}>{top}</div>
       </div>
-      <div className="dashboard-full-width border-b-2 border-border-light bg-card-light/50 backdrop-blur-md dark:border-border-dark dark:bg-card-dark/50">
+      <div className="dashboard-full-width border-b-2 border-border-light bg-card-light/50 backdrop-blur-md dark:border-border-dark dark:bg-card-dark/50 z-20">
         <div className={baseGridClass}>{header}</div>
       </div>
       <div className="dashboard-full-width border-b-2 border-border-light">
