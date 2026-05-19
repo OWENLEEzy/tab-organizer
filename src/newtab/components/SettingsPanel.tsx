@@ -80,7 +80,7 @@ export function SettingsPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('general');
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
 
   // Close on Escape key
   useEffect(() => {
@@ -187,23 +187,23 @@ export function SettingsPanel({
   ];
 
   const MAX_CHIPS_OPTIONS = [
-    { value: 4, label: locale === 'zh' ? '4 个标签' : '4 chips' },
-    { value: 6, label: locale === 'zh' ? '6 个标签' : '6 chips' },
-    { value: 8, label: locale === 'zh' ? '8 个标签 (默认)' : '8 chips (Default)' },
-    { value: 12, label: locale === 'zh' ? '12 个标签' : '12 chips' },
-    { value: 16, label: locale === 'zh' ? '16 个标签' : '16 chips' },
-    { value: 20, label: locale === 'zh' ? '20 个标签' : '20 chips' },
-    { value: 24, label: locale === 'zh' ? '24 个标签' : '24 chips' },
+    { value: 4, label: t('settingsOptionChipsCount', { count: 4 }) },
+    { value: 6, label: t('settingsOptionChipsCount', { count: 6 }) },
+    { value: 8, label: t('settingsOptionChipsCountDefault', { count: 8 }) },
+    { value: 12, label: t('settingsOptionChipsCount', { count: 12 }) },
+    { value: 16, label: t('settingsOptionChipsCount', { count: 16 }) },
+    { value: 20, label: t('settingsOptionChipsCount', { count: 20 }) },
+    { value: 24, label: t('settingsOptionChipsCount', { count: 24 }) },
   ];
 
   const STALE_THRESHOLD_OPTIONS = [
-    { value: 1, label: locale === 'zh' ? '1 天' : '1 day' },
-    { value: 2, label: locale === 'zh' ? '2 天' : '2 days' },
-    { value: 3, label: locale === 'zh' ? '3 天 (默认)' : '3 days (Default)' },
-    { value: 5, label: locale === 'zh' ? '5 天' : '5 days' },
-    { value: 7, label: locale === 'zh' ? '7 天' : '7 days' },
-    { value: 14, label: locale === 'zh' ? '14 天' : '14 days' },
-    { value: 30, label: locale === 'zh' ? '30 天' : '30 days' },
+    { value: 1, label: t('settingsOptionDaysCount', { count: 1 }) },
+    { value: 2, label: t('settingsOptionDaysCount', { count: 2 }) },
+    { value: 3, label: t('settingsOptionDaysCountDefault', { count: 3 }) },
+    { value: 5, label: t('settingsOptionDaysCount', { count: 5 }) },
+    { value: 7, label: t('settingsOptionDaysCount', { count: 7 }) },
+    { value: 14, label: t('settingsOptionDaysCount', { count: 14 }) },
+    { value: 30, label: t('settingsOptionDaysCount', { count: 30 }) },
   ];
 
   const LANGUAGE_OPTIONS = [
@@ -569,7 +569,7 @@ function CustomGroupsSection({
   onAdd,
   onRemove,
 }: CustomGroupsSectionProps): React.ReactElement {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const [hostname, setHostname] = useState('');
   const [label, setLabel] = useState('');
   const [error, setError] = useState('');
@@ -577,11 +577,11 @@ function CustomGroupsSection({
   const handleAdd = () => {
     const h = hostname.trim().toLowerCase();
     const l = label.trim();
-    if (!h) { setError(locale === 'zh' ? '必须输入域名' : 'Hostname is required'); return; }
-    if (!l) { setError(locale === 'zh' ? '必须输入标签' : 'Label is required'); return; }
+    if (!h) { setError(t('settingsRuleRequiredHostname')); return; }
+    if (!l) { setError(t('settingsRuleRequiredLabel')); return; }
     const key = h.replace(/[^a-z0-9]/g, '-');
     if (groups.some((g) => g.groupKey === key || g.hostname === h)) {
-      setError(locale === 'zh' ? '该域名的规则已存在' : 'A rule for this hostname already exists');
+      setError(t('settingsRuleDuplicateHostname'));
       return;
     }
     onAdd({ hostname: h, groupKey: key, groupLabel: l });
@@ -606,13 +606,10 @@ function CustomGroupsSection({
         </svg>
         <div>
           <strong className="text-text-primary-light dark:text-text-primary-dark block mb-0.5">
-            {locale === 'zh' ? '什么是自定义分类规则？' : 'What are Custom Grouping Rules?'}
+            {t('settingsCustomRulesExplanationTitle')}
           </strong>
           <p>
-            {locale === 'zh' 
-              ? '自定义规则允许您强制将特定域名的标签页归类到您指定的卡片中。例如，将 dev.company.com 强制命名为 "公司开发环境" 卡片，从而覆盖自动提取的域名分组。' 
-              : 'They define how open tabs are grouped into product cards. For example, matching hostname dev.company.com with label Company Dev forces tabs of that host into a custom "Company Dev" card, overriding auto-extracted domain cards.'
-            }
+            {t('settingsCustomRulesExplanationDesc')}
           </p>
         </div>
       </div>
@@ -652,7 +649,7 @@ function CustomGroupsSection({
       <div className="flex flex-col gap-2">
         <input
           type="text"
-          placeholder={locale === 'zh' ? '主机名/域名 (例如 notion.so)' : 'Hostname (e.g. notion.so)'}
+          placeholder={t('settingsPlaceholderHostname')}
           value={hostname}
           onChange={(e) => { setHostname(e.target.value); setError(''); }}
           onKeyDown={handleKeyDown}
@@ -660,7 +657,7 @@ function CustomGroupsSection({
         />
         <input
           type="text"
-          placeholder={locale === 'zh' ? '分类标签 (例如 Notion)' : 'Label (e.g. Notion)'}
+          placeholder={t('settingsPlaceholderLabel')}
           value={label}
           onChange={(e) => { setLabel(e.target.value); setError(''); }}
           onKeyDown={handleKeyDown}
@@ -674,7 +671,7 @@ function CustomGroupsSection({
           onClick={handleAdd}
           className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 rounded-chip px-3 py-1.5 self-end transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-11"
         >
-          {locale === 'zh' ? '添加规则' : 'Add rule'}
+          {t('settingsBtnAddRule')}
         </button>
       </div>
     </div>
@@ -691,7 +688,7 @@ interface SpacesSectionProps {
 }
 
 function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: SpacesSectionProps): React.ReactElement {
-  const { locale } = useI18n();
+  const { t } = useI18n();
   const [newSpaceName, setNewSpaceName] = useState('');
 
   const handleAddSpace = () => {
@@ -704,7 +701,7 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
   return (
     <div className="flex flex-col gap-4">
       <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm font-medium">
-        {locale === 'zh' ? '分区空间与匹配规则' : 'Spaces & Rules'}
+        {t('settingsSpacesTitle')}
       </span>
 
       <div className="rounded-md border border-accent-blue/15 bg-accent-blue/[0.03] p-3 text-xs text-text-secondary leading-relaxed font-body mb-1 flex gap-2">
@@ -713,13 +710,10 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
         </svg>
         <div>
           <strong className="text-text-primary-light dark:text-text-primary-dark block mb-0.5">
-            {locale === 'zh' ? '什么是空间与路由规则？' : 'What are Spaces & Rules?'}
+            {t('settingsSpacesExplanationTitle')}
           </strong>
           <p>
-            {locale === 'zh'
-              ? '分区空间允许您分类整理不同任务的分组（例如工作、个人）。您可以编写路由规则关键字，匹配这些关键字的域名分组会被自动路由至该空间，无需手动拖拽。'
-              : 'They define where product cards are routed and displayed. You create workspaces (e.g. Work, Personal) and write pattern rules. Any product card matching your rule keywords will be automatically routed into that space, avoiding manual card drag-and-drop.'
-            }
+            {t('settingsSpacesExplanationDesc')}
           </p>
         </div>
       </div>
@@ -728,7 +722,7 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
       <div className="flex gap-2">
         <input
           type="text"
-          placeholder={locale === 'zh' ? '新空间名称 (例如 工作, 个人)' : 'New space name (e.g. Work, Personal)'}
+          placeholder={t('settingsPlaceholderSpaceName')}
           value={newSpaceName}
           onChange={(e) => setNewSpaceName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAddSpace()}
@@ -739,14 +733,14 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
           onClick={handleAddSpace}
           className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 rounded-chip px-3 py-1.5 transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-11 font-medium"
         >
-          {locale === 'zh' ? '添加空间' : 'Add Space'}
+          {t('settingsBtnAddSpace')}
         </button>
       </div>
 
       <div className="flex flex-col gap-4 max-h-[300px] overflow-y-auto pr-1">
         {spaces.length === 0 ? (
           <span className="text-text-secondary text-xs font-body italic py-4 text-center">
-            {locale === 'zh' ? '暂无分区空间。在上方输入名称并创建！' : 'No spaces created yet. Add one above!'}
+            {t('settingsNoSpacesCreated')}
           </span>
         ) : (
           spaces.map((space) => {
@@ -772,7 +766,7 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
                     type="button"
                     onClick={() => onDeleteGroup(space.id)}
                     className="text-accent-red hover:bg-accent-red/10 rounded p-1 flex items-center justify-center cursor-pointer shrink-0"
-                    title={locale === 'zh' ? '删除空间' : 'Delete Space'}
+                    title={t('settingsBtnDeleteSpace')}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.34 12m-4.72 0-.34-12M4.75 6.75h14.5M3.375 5.25h17.25m-1.5 0-.825 15.6a2.25 2.25 0 0 1-2.247 2.13H7.43a2.25 2.25 0 0 1-2.247-2.13L4.35 5.25" />
@@ -781,7 +775,7 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
                 </div>
                 <div className="flex flex-col gap-1">
                   <span className="font-body text-text-secondary text-[11px]">
-                    {locale === 'zh' ? '自动匹配规则 (每行输入一个关键字)' : 'Auto-assignment rules (one pattern per line)'}
+                    {t('settingsLabelAutoRules')}
                   </span>
                   <textarea
                     value={rulesText}
@@ -813,16 +807,16 @@ interface KeyboardSectionProps {
 }
 
 function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }: KeyboardSectionProps): React.ReactElement {
-  const { locale } = useI18n();
+  const { t } = useI18n();
   const [recordingKey, setRecordingKey] = useState<keyof AppSettings['keyBindings'] | null>(null);
 
   const SHORTCUT_LABELS: Record<string, string> = {
-    switchSpaceN: locale === 'zh' ? '切换到空间 1-9' : 'Switch to Space 1-9',
-    switchSpaceAll: locale === 'zh' ? '切换到 "全部"' : 'Switch to "All"',
-    cyclePrev: locale === 'zh' ? '循环切回上个空间' : 'Cycle Space Left',
-    cycleNext: locale === 'zh' ? '循环切至下个空间' : 'Cycle Space Right',
-    focusSearch: locale === 'zh' ? '聚焦搜索框' : 'Focus Search',
-    clearFilter: locale === 'zh' ? '清除空间筛选' : 'Clear Space Filter',
+    switchSpaceN: t('settingsShortcutLabelSwitchSpaceN'),
+    switchSpaceAll: t('settingsShortcutLabelSwitchSpaceAll'),
+    cyclePrev: t('settingsShortcutLabelCyclePrev'),
+    cycleNext: t('settingsShortcutLabelCycleNext'),
+    focusSearch: t('settingsShortcutLabelFocusSearch'),
+    clearFilter: t('settingsShortcutLabelClearFilter'),
   };
 
   useEffect(() => {
@@ -863,14 +857,14 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm font-medium">
-          {locale === 'zh' ? '键盘快捷键' : 'Keyboard Shortcuts'}
+          {t('settingsShortcutsTitle')}
         </span>
         <button
           type="button"
           onClick={onResetKeyBindings}
           className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 px-2 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none min-h-11"
         >
-          {locale === 'zh' ? '重置快捷键' : 'Reset keys'}
+          {t('settingsShortcutsResetBtn')}
         </button>
       </div>
       <div className="flex flex-col gap-2">
@@ -890,7 +884,7 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
                     : 'bg-white dark:bg-card-dark text-text-secondary border-border-light dark:border-border-dark hover:border-gray-400 dark:hover:border-gray-600'
                 }`}
               >
-                {isRecording ? (locale === 'zh' ? '按下按键...' : 'Press key...') : binding}
+                {isRecording ? t('settingsShortcutRecording') : binding}
               </button>
             </div>
           );
