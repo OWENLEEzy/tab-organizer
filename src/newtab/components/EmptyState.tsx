@@ -1,13 +1,16 @@
 import React from 'react';
+import { useI18n } from '../hooks/useI18n';
 
 export function EmptyState(): React.ReactElement {
+  const { t } = useI18n();
+
   return (
     <div className="py-20 text-center">
       <h2 className="font-heading text-2xl font-light text-text-primary-light dark:text-text-primary-dark">
-        No tabs to organize
+        {t('emptyStateTitle')}
       </h2>
       <p className="mt-4 font-body text-base text-text-secondary">
-        Open a few web pages, then come back to see them organized into groups.
+        {t('emptyStateText')}
       </p>
     </div>
   );

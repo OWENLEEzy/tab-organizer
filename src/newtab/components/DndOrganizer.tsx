@@ -3,6 +3,7 @@ import { closestCenter, DndContext, DragOverlay, useDraggable, useDroppable } fr
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import type { ManualGroup, TabGroup } from '../../types';
 import { DomainCard } from './DomainCard';
+import { useI18n } from '../hooks/useI18n';
 
 const UNASSIGNED_GROUP_ID = 'group:unassigned';
 
@@ -127,10 +128,11 @@ function DndGroupBoard({
   searchQuery = '',
 }: DndGroupBoardProps): React.ReactElement {
   const { setNodeRef, isOver } = useDroppable({ id });
+  const { t } = useI18n();
 
   return (
     <section ref={setNodeRef} className={`organizer-group ${isOver ? 'is-over' : ''}`}>
-      <div className="group-header border-b-2 border-border-light pb-2 mb-5 dark:border-border-dark">
+      <div className="group-header border-b border-border-light pb-2 mb-5 dark:border-border-dark">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h2 className="font-body text-xs font-bold uppercase tracking-wider text-text-primary-light dark:text-text-primary-dark">
@@ -145,17 +147,17 @@ function DndGroupBoard({
               <button
                 type="button"
                 onClick={() => onRenameGroup?.(manualGroup)}
-                className="text-[10px] font-bold uppercase tracking-widest text-text-secondary hover:text-accent-blue transition-colors"
+                className="text-[10px] font-semibold tracking-wider text-text-secondary hover:text-accent-blue transition-colors"
               >
-                Rename
+                {t('organizerBtnRename')}
               </button>
               <div className="h-3 w-px bg-border-light dark:bg-border-dark mx-1" />
               <button
                 type="button"
                 onClick={() => onDeleteGroup?.(manualGroup)}
-                className="text-[10px] font-bold uppercase tracking-widest text-text-secondary hover:text-accent-red transition-colors"
+                className="text-[10px] font-semibold tracking-wider text-text-secondary hover:text-accent-red transition-colors"
               >
-                Delete
+                {t('organizerBtnDelete')}
               </button>
             </div>
           )}
@@ -163,10 +165,10 @@ function DndGroupBoard({
             <button
               type="button"
               onClick={() => onCloseManualGroup(items, title)}
-              className="text-[10px] font-bold uppercase tracking-widest text-text-secondary hover:text-accent-red transition-colors"
+              className="text-[10px] font-semibold tracking-wider text-text-secondary hover:text-accent-red transition-colors"
               title={`Close all ${tabCount} tabs in ${title}`}
             >
-              Close all
+              {t('organizerBtnCloseAll')}
             </button>
           </div>
         </div>
@@ -252,6 +254,7 @@ export function DndOrganizer({
   onToggleExpanded,
   searchQuery = '',
 }: DndOrganizerProps): React.ReactElement {
+  const { t } = useI18n();
   const [activeGroup, setActiveGroup] = useState<TabGroup | null>(null);
 
   const handleDragStart = useCallback(
@@ -314,7 +317,7 @@ export function DndOrganizer({
     <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <DndGroupBoard
         id={UNASSIGNED_GROUP_ID}
-        title="Unsorted"
+        title={t('organizerUnsorted')}
         items={unassignedProducts}
         tabCount={unassignedProducts.reduce((sum, p) => sum + p.tabs.length, 0)}
         {...sharedProps}

@@ -3,6 +3,7 @@ import type { TabGroup } from '../../types';
 import { TabChip } from './TabChip';
 import { getVisibleTabs } from '../lib/visible-tabs';
 import { getGroupFaviconUrl } from '../../lib/tab-utils';
+import { useI18n } from '../hooks/useI18n';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -139,6 +140,7 @@ export function DomainCard({
   onToggleExpanded,
   searchQuery = '',
 }: DomainCardProps): React.ReactElement {
+  const { t } = useI18n();
   const tabs = useMemo(() => group.tabs || [], [group.tabs]);
   const tabCount = tabs.length;
   const displayName = group.friendlyName || group.domain;
@@ -151,15 +153,15 @@ export function DomainCard({
   const iconFailed = groupFaviconUrl !== '' && failedFaviconUrl === groupFaviconUrl;
   const initial = displayName.trim().charAt(0).toUpperCase() || '?';
 
-  // Count URL occurrences to detect duplicates
-  const { urlCounts, dupeUrls, totalExtras } = useMemo(() => {
-    const counts: Record<string, number> = {};
+  // Count URL occurrences to detect duplicates (Map is faster than plain object)
+  const { tabUrlCounts, dupeUrls, totalExtras } = useMemo(() => {
+    const counts = new Map<string, number>();
     for (const tab of tabs) {
-      counts[tab.url] = (counts[tab.url] || 0) + 1;
+      counts.set(tab.url, (counts.get(tab.url) ?? 0) + 1);
     }
-    const dupes = Object.entries(counts).filter(([, c]) => c > 1);
+    const dupes = [...counts.entries()].filter(([, c]) => c > 1);
     const extras = dupes.reduce((sum, [, c]) => sum + c - 1, 0);
-    return { urlCounts: counts, dupeUrls: dupes, totalExtras: extras };
+    return { tabUrlCounts: counts, dupeUrls: dupes, totalExtras: extras };
   }, [tabs]);
 
   const hasDupes = dupeUrls.length > 0;
@@ -206,10 +208,10 @@ export function DomainCard({
   const statusBarColor = hasDupes ? 'bg-accent-amber/30' : 'bg-accent-sage/80';
 
   return (
-    <div className="overflow-hidden rounded-card border-2 border-border-light bg-card-light shadow-none transition-colors duration-150 dark:border-border-dark dark:bg-card-dark">
-      <div className={`h-2 border-b-2 border-border-light dark:border-border-dark ${statusBarColor}`} />
+    <div className="overflow-hidden rounded-card border border-border-light bg-card-light shadow-none transition-colors duration-150 dark:border-border-dark dark:bg-card-dark">
+      <div className={`h-2 border-b border-border-light dark:border-border-dark ${statusBarColor}`} />
 
-      <div className="border-b-2 border-border-light p-4 dark:border-border-dark">
+      <div className="border-b border-border-light p-4 dark:border-border-dark">
         {/* Header: domain name + badges — drag handle when DnD is active */}
         <div
           className={`flex flex-wrap items-center gap-2${dragHandleProps ? ' cursor-grab active:cursor-grabbing' : ''}`}
@@ -253,9 +255,9 @@ export function DomainCard({
             {hasDupes && (
               <button
                 type="button"
-                className="flex h-7 items-center gap-1 rounded-sm bg-accent-amber px-2 text-[10px] font-bold uppercase tracking-widest text-white transition-opacity hover:opacity-90"
+                className="flex h-7 items-center gap-1 rounded-sm bg-accent-amber px-2 text-[10px] font-semibold tracking-wider text-white transition-opacity hover:opacity-90"
                 onClick={handleCloseDuplicates}
-                title="Close duplicate tabs"
+                title={t('cardCloseDupesTitle')}
               >
                 <DedupIcon />
                 <span>{totalExtras}</span>
@@ -273,7 +275,7 @@ export function DomainCard({
             <TabChipRow
               key={tab.url}
               tab={tab}
-              duplicateCount={urlCounts[tab.url] ?? 1}
+              duplicateCount={tabUrlCounts.get(tab.url) ?? 1}
               focusedUrl={focusedUrl}
               closingUrls={closingUrls}
               selectedUrls={selectedUrls}
@@ -296,25 +298,25 @@ export function DomainCard({
             aria-expanded={expanded}
             aria-label={
               expanded
-                ? `Collapse ${extraCount} more tabs`
-                : `Show ${extraCount} more tabs`
+                ? t('cardCollapseMoreLabel', { count: extraCount })
+                : t('cardShowMoreLabel', { count: extraCount })
             }
           >
             {expanded
-              ? 'Show less'
-              : `+${extraCount} more`}
+              ? t('cardBtnShowLess')
+              : t('cardBtnShowMore', { count: extraCount })}
           </button>
         )}
 
         {/* Footer actions */}
-        <div className="mt-3 flex flex-wrap gap-2 border-t-2 border-border-light pt-3 dark:border-border-dark">
+        <div className="mt-3 flex flex-wrap gap-2 border-t border-border-light pt-3 dark:border-border-dark">
           <button
             type="button"
             className="rounded-chip text-text-secondary font-body hover:bg-surface-light hover:text-accent-red dark:hover:bg-surface-dark focus-visible:ring-accent-blue/40 inline-flex min-h-11 cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
             onClick={handleCloseDomain}
           >
             <CloseAllIcon />
-            Close all {tabCount} tab{tabCount !== 1 ? 's' : ''}
+            {tabCount === 1 ? t('cardBtnCloseAllSingle') : t('cardBtnCloseAllPlural', { count: tabCount })}
           </button>
 
           {hasDupes && (
@@ -324,7 +326,7 @@ export function DomainCard({
               onClick={handleCloseDuplicates}
             >
               <DedupIcon />
-              Close {totalExtras} duplicate{totalExtras !== 1 ? 's' : ''}
+              {totalExtras === 1 ? t('cardBtnCloseDupesSingle') : t('cardBtnCloseDupesPlural', { count: totalExtras })}
             </button>
           )}
         </div>
@@ -332,3 +334,5 @@ export function DomainCard({
     </div>
   );
 }
+
+export const DomainCardMemo = React.memo(DomainCard);

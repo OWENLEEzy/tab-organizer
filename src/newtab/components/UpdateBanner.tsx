@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '../hooks/useI18n';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -13,6 +14,8 @@ export function UpdateBanner({
   version,
   onDismiss,
 }: UpdateBannerProps): React.ReactElement {
+  const { t } = useI18n();
+
   return (
     <div
       role="status"
@@ -37,14 +40,14 @@ export function UpdateBanner({
           </svg>
         </div>
         <p className="text-text-primary-light dark:text-text-primary-dark text-sm leading-relaxed">
-          Tab Out updated to <strong className="font-semibold">v{version}</strong> &mdash; What&apos;s new?
+          {t('updateBannerText', { version })}
         </p>
       </div>
       <button
         type="button"
         onClick={onDismiss}
         className="rounded-chip text-text-secondary hover:bg-accent-sage/10 hover:text-accent-sage focus-visible:ring-accent-blue/40 ml-4 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
-        aria-label="Dismiss update notice"
+        aria-label={t('updateBannerDismiss')}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

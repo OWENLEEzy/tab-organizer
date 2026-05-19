@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '../../hooks/useI18n';
 
 export interface StatusStripAlert {
   id: string;
@@ -20,10 +21,12 @@ export function StatusStrip({
   totalGroups,
   alerts,
 }: StatusStripProps): React.ReactElement {
+  const { t } = useI18n();
+
   const parts = [
-    `${totalTabs} Tab${totalTabs === 1 ? '' : 's'}`,
-    `${totalDupes} Duplicate${totalDupes === 1 ? '' : 's'}`,
-    `${totalGroups} Group${totalGroups === 1 ? '' : 's'}`,
+    `${totalTabs} ${t('metricTabs')}`,
+    `${totalDupes} ${t('metricDuplicates')}`,
+    `${totalGroups} ${t('metricGroups')}`,
   ];
 
   return (
@@ -44,7 +47,7 @@ export function StatusStrip({
               {alert.actionLabel && alert.onAction ? (
                 <button
                   type="button"
-                  className="text-[10px] font-bold uppercase tracking-wider text-accent-blue hover:underline"
+                  className="text-[10px] font-semibold tracking-wide text-accent-blue hover:underline"
                   onClick={alert.onAction}
                 >
                   {alert.actionLabel}

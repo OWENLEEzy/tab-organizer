@@ -1,7 +1,7 @@
 import React from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingState } from './components/LoadingState';
-import { ProductTable } from './components/ProductTable';
+import { ProductTableMemo as ProductTable } from './components/ProductTable';
 import { SelectionBar } from './components/SelectionBar';
 import { EmptyState } from './components/EmptyState';
 import { Footer } from './components/Footer';
@@ -15,6 +15,7 @@ import { DashboardHeader } from './components/layout/DashboardHeader';
 import { HistoryPanel } from './components/HistoryPanel';
 import { SpaceSwitcher } from './components/SpaceSwitcher';
 import { useAppLogic } from './hooks/useAppLogic';
+import { useI18n } from './hooks/useI18n';
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -30,10 +31,78 @@ const DndOrganizer = React.lazy(() =>
 
 export function App(): React.ReactElement {
   const { state, stores, derived, handlers, dispatch } = useAppLogic();
+  const { t } = useI18n();
 
   const { tabStore, settingsStore } = stores;
   const { settings } = settingsStore;
   const { history, viewMode } = tabStore;
+
+  const handleExportConfig = () => {
+    const config = {
+      version: '1.0',
+      settings: settingsStore.settings,
+      manualGroups: tabStore.manualGroups,
+      groupAssignments: tabStore.groupAssignments,
+    };
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tab-out-settings-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    handlers.showToast(t('toastSettingsExported'));
+  };
+
+  const handleImportConfig = async (jsonText: string) => {
+    try {
+      const parsed = JSON.parse(jsonText);
+      if (!parsed || typeof parsed !== 'object') {
+        throw new Error('Invalid JSON');
+      }
+
+      // Restore preferences
+      if (parsed.settings && typeof parsed.settings === 'object') {
+        const s = parsed.settings;
+        if (typeof s.theme === 'string') await settingsStore.setTheme(s.theme);
+        if (typeof s.soundEnabled === 'boolean' && s.soundEnabled !== settingsStore.settings.soundEnabled) await settingsStore.toggleSound();
+        if (typeof s.confettiEnabled === 'boolean' && s.confettiEnabled !== settingsStore.settings.confettiEnabled) await settingsStore.toggleConfetti();
+        if (typeof s.maxChipsVisible === 'number') await settingsStore.setMaxChipsVisible(s.maxChipsVisible);
+        if (typeof s.staleThresholdDays === 'number') await settingsStore.setStaleThresholdDays(s.staleThresholdDays);
+
+        if (Array.isArray(s.customGroups)) {
+          // Clear all existing custom groups
+          for (const cg of settingsStore.settings.customGroups) {
+            await settingsStore.removeCustomGroup(cg.groupKey);
+          }
+          // Add imported custom groups
+          for (const cg of s.customGroups) {
+            await settingsStore.addCustomGroup(cg);
+          }
+        }
+
+        if (s.keyBindings && typeof s.keyBindings === 'object') {
+          for (const [key, binding] of Object.entries(s.keyBindings)) {
+            if (typeof binding === 'string') {
+              await settingsStore.updateKeyBinding(key as keyof typeof settings.keyBindings, binding);
+            }
+          }
+        }
+      }
+
+      // Restore spaces and assignments
+      if (Array.isArray(parsed.manualGroups)) {
+        const manualGroups = parsed.manualGroups;
+        const groupAssignments = Array.isArray(parsed.groupAssignments) ? parsed.groupAssignments : [];
+        await tabStore.importBackup(manualGroups, groupAssignments);
+      }
+
+      handlers.showToast(t('toastSettingsImported'));
+    } catch (err) {
+      console.error('[Tab Out] Failed to import settings:', err);
+      handlers.showToast(t('toastImportFailed'));
+    }
+  };
 
   if (state.loading || state.tabsLoading) {
     return <LoadingState />;
@@ -44,8 +113,10 @@ export function App(): React.ReactElement {
   if (state.tabOutCount > 1) {
     statusAlerts.push({
       id: 'extra-tab-out-pages',
-      label: `${state.tabOutCount - 1} extra dashboard tab${state.tabOutCount - 1 === 1 ? '' : 's'}`,
-      actionLabel: 'Close extras',
+      label: state.tabOutCount - 1 === 1
+        ? t('alertExtraTabOutSingle')
+        : t('alertExtraTabOutPlural', { count: state.tabOutCount - 1 }),
+      actionLabel: t('actionCloseExtras'),
       onAction: () => {
         tabStore.closeExtraDashboards();
       },
@@ -55,8 +126,8 @@ export function App(): React.ReactElement {
   if (!state.nudgeDismissed && state.totalTabs > 15) {
     statusAlerts.push({
       id: 'tab-count-nudge',
-      label: 'High tab count',
-      actionLabel: 'Dismiss',
+      label: t('alertHighTabCount'),
+      actionLabel: t('actionDismiss'),
       onAction: () => dispatch({ type: 'SET_NUDGE_DISMISSED', dismissed: true }),
     });
   }
@@ -69,7 +140,7 @@ export function App(): React.ReactElement {
         className="focus:rounded-chip focus:bg-accent-blue sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:text-sm focus:text-white focus:outline-none"
         style={{ zIndex: 60 }}
       >
-        Skip to main content
+        {t('skipToContent')}
       </a>
       <DashboardShell
         top={
@@ -90,7 +161,7 @@ export function App(): React.ReactElement {
               isFocused={state.spaceSwitcherFocused}
             />
             <DashboardHeader
-              title="Open Tabs by Product"
+              title={t('titleOpenTabs')}
               hasGroups={!state.showEmptyState}
               groupCount={state.visibleGroupCount}
               searchQuery={state.searchQuery}
@@ -151,10 +222,10 @@ export function App(): React.ReactElement {
                     </div>
                     <div>
                       <h4 className="font-heading text-sm font-normal text-text-primary-light dark:text-text-primary-dark">
-                        Duplicate Tabs Sweep
+                        {t('sweepDupeTitle')}
                       </h4>
                       <p className="text-text-secondary text-xs mt-0.5">
-                        Clean up duplicate tab instances and keep one active copy.
+                        {t('sweepDupeDesc')}
                       </p>
                     </div>
                   </div>
@@ -163,7 +234,7 @@ export function App(): React.ReactElement {
                     onClick={() => handlers.handleSelectDuplicateTabs()}
                     className="rounded-chip bg-accent-amber font-body focus-visible:ring-accent-amber/50 min-h-11 cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
                   >
-                    Select Duplicates for Sweeping
+                    {t('sweepDupeBtn')}
                   </button>
                 </div>
               )}
@@ -193,19 +264,19 @@ export function App(): React.ReactElement {
                     </div>
                     <div>
                       <h4 className="font-heading text-sm font-normal text-text-primary-light dark:text-text-primary-dark">
-                        Stale Tabs Sweep
+                        {t('sweepStaleTitle')}
                       </h4>
                       <p className="text-text-secondary text-xs mt-0.5">
-                        Find and select tabs that have been idle for 3+ days. Pinned and active/audible tabs are preserved.
+                        {t('sweepStaleDesc', { days: settings.staleThresholdDays ?? 3 })}
                       </p>
                     </div>
                   </div>
                   <button
                     type="button"
-                    onClick={() => handlers.handleSelectStaleTabs(3)}
+                    onClick={() => handlers.handleSelectStaleTabs(settings.staleThresholdDays ?? 3)}
                     className="rounded-chip bg-accent-blue font-body focus-visible:ring-accent-blue/50 min-h-11 cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
                   >
-                    Select Stale Tabs for Sweeping
+                    {t('sweepStaleBtn')}
                   </button>
                 </div>
               )}
@@ -232,7 +303,7 @@ export function App(): React.ReactElement {
                   </h3>
                   <p className="text-text-secondary text-sm mt-1 max-w-sm px-4">
                     {state.parsedQuery.type === 'stale'
-                      ? "All your tabs have been active recently (within the last 3 days)."
+                      ? `All your tabs have been active recently (within the last ${settings.staleThresholdDays ?? 3} days).`
                       : state.parsedQuery.type === 'dupes'
                       ? "Your workspace is perfectly clean. There are no duplicate URLs!"
                       : state.parsedQuery.type === 'space'
@@ -325,18 +396,33 @@ export function App(): React.ReactElement {
             open={state.settingsOpen}
             onClose={() => dispatch({ type: 'SET_SETTINGS_OPEN', open: false })}
             theme={settings.theme}
+            language={settings.language || 'system'}
             soundEnabled={settings.soundEnabled}
             confettiEnabled={settings.confettiEnabled}
             customGroups={settings.customGroups}
             onSetTheme={settingsStore.setTheme}
+            onSetLanguage={settingsStore.setLanguage}
             onToggleSound={settingsStore.toggleSound}
             onToggleConfetti={settingsStore.toggleConfetti}
             onResetSortOrder={handlers.handleResetSortOrder}
-            onAddCustomGroup={settingsStore.addCustomGroup}
-            onRemoveCustomGroup={settingsStore.removeCustomGroup}
+            onAddCustomGroup={async (group) => {
+              await settingsStore.addCustomGroup(group);
+              await tabStore.fetchTabs();
+            }}
+            onRemoveCustomGroup={async (groupKey) => {
+              await settingsStore.removeCustomGroup(groupKey);
+              await tabStore.fetchTabs();
+            }}
+            maxChipsVisible={settings.maxChipsVisible}
+            staleThresholdDays={settings.staleThresholdDays}
+            onSetMaxChipsVisible={settingsStore.setMaxChipsVisible}
+            onSetStaleThresholdDays={settingsStore.setStaleThresholdDays}
+            onExportSettings={handleExportConfig}
+            onImportSettings={handleImportConfig}
             manualGroups={tabStore.manualGroups}
             onUpdateGroup={tabStore.updateGroup}
             onDeleteGroup={tabStore.deleteGroup}
+            onCreateGroup={tabStore.createGroup}
             keyBindings={settings.keyBindings}
             onUpdateKeyBinding={settingsStore.updateKeyBinding}
             onResetKeyBindings={settingsStore.resetKeyBindings}

@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import type { ConfirmDialogProps } from '../../types';
+import { ActionButton } from './ui/ActionButton';
+import { useI18n } from '../hooks/useI18n';
 
 // ─── Component ────────────────────────────────────────────────────────
 
@@ -12,6 +14,7 @@ export function ConfirmationDialog({
   onCancel,
 }: ConfirmDialogProps): React.ReactElement | null {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
 
   // Close on Escape key
   useEffect(() => {
@@ -85,7 +88,7 @@ export function ConfirmationDialog({
       <button
         type="button"
         tabIndex={-1}
-        aria-label="Dismiss backdrop"
+        aria-label="Dismiss dialog"
         className="absolute inset-0 bg-black/30"
         onClick={onCancel}
       />
@@ -95,7 +98,7 @@ export function ConfirmationDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
-        className="border-2 border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] p-6"
+        className="border border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] p-6 rounded-card"
       >
         <h3
           id="confirm-dialog-title"
@@ -110,20 +113,18 @@ export function ConfirmationDialog({
           {message}
         </p>
         <div className="mt-5 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            className="rounded-chip font-body text-text-secondary hover:bg-surface-light focus-visible:ring-accent-blue/40 dark:hover:bg-surface-dark min-h-11 cursor-pointer px-4 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          <ActionButton
+            variant="quiet"
             onClick={onCancel}
           >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="rounded-chip bg-accent-red font-body focus-visible:ring-accent-red/50 min-h-11 cursor-pointer px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
+            {t('dialogCancel')}
+          </ActionButton>
+          <ActionButton
+            variant="danger"
             onClick={onConfirm}
           >
             {confirmLabel}
-          </button>
+          </ActionButton>
         </div>
       </div>
     </div>

@@ -17,15 +17,24 @@ function SettingsHarness(): React.ReactElement {
         open={open}
         onClose={() => setOpen(false)}
         theme="system"
+        language="system"
         soundEnabled
         confettiEnabled
         customGroups={[]}
         onSetTheme={() => {}}
+        onSetLanguage={() => {}}
         onToggleSound={() => {}}
         onToggleConfetti={() => {}}
         onResetSortOrder={() => {}}
         onAddCustomGroup={() => {}}
         onRemoveCustomGroup={() => {}}
+        maxChipsVisible={8}
+        staleThresholdDays={3}
+        onSetMaxChipsVisible={() => {}}
+        onSetStaleThresholdDays={() => {}}
+        onExportSettings={() => {}}
+        onImportSettings={async () => {}}
+        onCreateGroup={() => {}}
       />
     </>
   );
@@ -42,15 +51,15 @@ describe('SettingsPanel accessibility', () => {
 
     await user.click(openButton);
 
-    const closeButton = screen.getByRole('button', { name: 'Close settings' });
-    expect(closeButton).toHaveFocus();
+    const generalTabButton = screen.getByRole('button', { name: 'General' });
+    expect(generalTabButton).toHaveFocus();
 
     await user.keyboard('{Shift>}{Tab}{/Shift}');
-    // The last focusable is the 'Add rule' button (after hostname input, label input)
-    expect(screen.getByRole('button', { name: 'Add rule' })).toHaveFocus();
+    // The last focusable in General tab (default active tab) is the 'Reset Order' button
+    expect(screen.getByRole('button', { name: 'Reset Order' })).toHaveFocus();
 
     await user.keyboard('{Tab}');
-    expect(closeButton).toHaveFocus();
+    expect(generalTabButton).toHaveFocus();
 
     await user.keyboard('{Escape}');
     expect(openButton).toHaveFocus();
@@ -62,15 +71,24 @@ describe('SettingsPanel accessibility', () => {
         open
         onClose={() => {}}
         theme="system"
+        language="system"
         soundEnabled
         confettiEnabled
         customGroups={[]}
         onSetTheme={() => {}}
+        onSetLanguage={() => {}}
         onToggleSound={() => {}}
         onToggleConfetti={() => {}}
         onResetSortOrder={() => {}}
         onAddCustomGroup={() => {}}
         onRemoveCustomGroup={() => {}}
+        maxChipsVisible={8}
+        staleThresholdDays={3}
+        onSetMaxChipsVisible={() => {}}
+        onSetStaleThresholdDays={() => {}}
+        onExportSettings={() => {}}
+        onImportSettings={async () => {}}
+        onCreateGroup={() => {}}
       />,
     );
 

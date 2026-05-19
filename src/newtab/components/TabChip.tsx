@@ -202,7 +202,7 @@ export function TabChip({
   }, [faviconUrl]);
 
   const chipClasses = [
-    'flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-chip border-2 border-transparent px-2.5 py-1.5 text-left',
+    'flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-chip border border-transparent px-2.5 py-1.5 text-left',
     'cursor-pointer bg-transparent transition-colors duration-150',
     isSelected ? '' : 'hover:border-border-light hover:bg-surface-light dark:hover:border-border-dark dark:hover:bg-surface-dark',
     'focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none',
@@ -291,3 +291,5 @@ export function TabChip({
     </div>
   );
 }
+
+export const TabChipMemo = React.memo(TabChip);

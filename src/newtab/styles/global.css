@@ -28,8 +28,8 @@
   --color-to-border-inverse: #ffffff;
   --color-to-border-dark: #444444;
 
-  --radius-to-card: 2px;
-  --radius-to-button: 2px;
+  --radius-to-card: 6px;
+  --radius-to-button: 4px;
   --color-to-border-width: 1px;
   --color-to-border-width-strong: 2px;
   --shadow-to-none: none;

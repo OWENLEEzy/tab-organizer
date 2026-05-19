@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '../hooks/useI18n';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -15,6 +16,8 @@ export function NudgeBanner({
   threshold = 15,
   onDismiss,
 }: NudgeBannerProps): React.ReactElement | null {
+  const { t } = useI18n();
+
   if (tabCount <= threshold) {
     return null;
   }
@@ -43,14 +46,14 @@ export function NudgeBanner({
           </svg>
         </div>
         <p className="text-text-primary-light dark:text-text-primary-dark text-sm leading-relaxed">
-          You have <strong className="font-semibold">{tabCount}</strong> tabs open. Consider closing the ones you&apos;re not using.
+          {t('alertHighTabCountDesc', { count: tabCount })}
         </p>
       </div>
       <button
         type="button"
         onClick={onDismiss}
         className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-blue/40 ml-4 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
-        aria-label="Dismiss tab count warning"
+        aria-label={t('actionDismiss')}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

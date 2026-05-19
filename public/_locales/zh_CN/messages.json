@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Tab Out 标签页整理",
+    "description": "The name of the extension."
+  },
+  "extDesc": {
+    "message": "极简高效的本地标签整理面板。按域名域名自动聚合标签，支持批量清理重复项与闲置页，让您的浏览器重回清爽。",
+    "description": "The description of the extension."
+  },
+  "extCommandDesc": {
+    "message": "打开 Tab Out 空间分区面板",
+    "description": "Shortcut command description."
+  }
+}

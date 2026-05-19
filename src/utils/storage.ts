@@ -46,9 +46,11 @@ function queuedWrite(fn: () => Promise<void>): Promise<void> {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'system',
+  language: 'system',
   soundEnabled: true,
   confettiEnabled: true,
   maxChipsVisible: 8,
+  staleThresholdDays: 3,
   customGroups: [],
   landingPagePatterns: [],
   keyBindings: {

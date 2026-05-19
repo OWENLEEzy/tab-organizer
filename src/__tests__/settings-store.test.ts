@@ -109,4 +109,20 @@ describe('useSettingsStore', () => {
     // Should have updated then rolled back
     expect(useSettingsStore.getState().settings.theme).toBe(initialTheme);
   });
+
+  it('sets maxChipsVisible and persists to storage', async () => {
+    await useSettingsStore.getState().setMaxChipsVisible(12);
+
+    expect(useSettingsStore.getState().settings.maxChipsVisible).toBe(12);
+    const stored = chromeStorage.data['settings'] as AppSettings;
+    expect(stored.maxChipsVisible).toBe(12);
+  });
+
+  it('sets staleThresholdDays and persists to storage', async () => {
+    await useSettingsStore.getState().setStaleThresholdDays(7);
+
+    expect(useSettingsStore.getState().settings.staleThresholdDays).toBe(7);
+    const stored = chromeStorage.data['settings'] as AppSettings;
+    expect(stored.staleThresholdDays).toBe(7);
+  });
 });

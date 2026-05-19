@@ -66,6 +66,6 @@ test.describe('History Panel', () => {
     const clearButton = page.getByRole('button', { name: 'Clear' });
     await clearButton.click();
 
-    await expect(page.getByText('No history yet')).toBeVisible();
+    await expect(page.getByText('No snapshots yet')).toBeVisible();
   });
 });

@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Tab Out",
+    "description": "The name of the extension."
+  },
+  "extDesc": {
+    "message": "Keep tabs on your tabs. Open a dashboard that groups your tabs by domain and lets you close them with style.",
+    "description": "The description of the extension."
+  },
+  "extCommandDesc": {
+    "message": "Open Tab Out Space Switcher",
+    "description": "Shortcut command description."
+  }
+}

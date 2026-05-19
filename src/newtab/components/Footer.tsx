@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useI18n } from '../hooks/useI18n';
 
 interface FooterProps {
   tabCount: number;
@@ -9,6 +10,7 @@ const POP_DURATION = 300;
 export function Footer({ tabCount }: FooterProps): React.ReactElement {
   const [popping, setPopping] = useState(false);
   const prevCount = useRef(tabCount);
+  const { t } = useI18n();
 
   /* eslint-disable react-hooks/set-state-in-effect */
   // One-shot animation: trigger pop when tab count decreases.
@@ -37,7 +39,7 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
           >
             {tabCount}
           </span>
-          <span className="opacity-70">open tabs</span>
+          <span className="opacity-70">{t('metricTabs')}</span>
         </div>
         <div className="flex items-center gap-4">
           <a
@@ -68,6 +70,5 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
         </div>
       </div>
     </footer>
-
   );
 }

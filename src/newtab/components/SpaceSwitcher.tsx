@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import type { ManualGroup } from '../../types';
+import { useI18n } from '../hooks/useI18n';
 
 interface SpaceSwitcherProps {
   spaces: ManualGroup[];
@@ -17,6 +18,7 @@ export function SpaceSwitcher({
   isFocused,
 }: SpaceSwitcherProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     if (isFocused && containerRef.current) {
@@ -29,7 +31,7 @@ export function SpaceSwitcher({
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       const buttons = Array.from(
         containerRef.current?.querySelectorAll<HTMLButtonElement>(
-          'button:not([title="Create new Space"])',
+          'button:not([title="' + t('spaceSwitcherNew') + '"])',
         ) || [],
       );
       const activeElement = document.activeElement as HTMLButtonElement;
@@ -72,7 +74,7 @@ export function SpaceSwitcher({
             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
         }`}
       >
-        All
+        {t('spaceSwitcherAll')}
       </button>
 
       {spaces.map((space) => (
@@ -95,8 +97,8 @@ export function SpaceSwitcher({
         onClick={onCreateSpace}
         tabIndex={-1}
         className="px-3 py-1.5 rounded-chip text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors border border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-blue-500 outline-none"
-        aria-label="Create new Space"
-        title="Create new Space"
+        aria-label={t('spaceSwitcherNew')}
+        title={t('spaceSwitcherNew')}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
