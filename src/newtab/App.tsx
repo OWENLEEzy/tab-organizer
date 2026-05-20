@@ -46,11 +46,14 @@ export function App(): React.ReactElement {
     };
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tab-out-settings-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tab-out-settings-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+    } finally {
+      URL.revokeObjectURL(url);
+    }
     handlers.showToast(t('toastSettingsExported'));
   };
 
@@ -293,22 +296,22 @@ export function App(): React.ReactElement {
                     )}
                   </div>
                   <h3 className="font-heading text-lg font-normal text-text-primary-light dark:text-text-primary-dark">
-                    {state.parsedQuery.type === 'stale' 
-                      ? "No stale tabs found" 
-                      : state.parsedQuery.type === 'dupes' 
-                      ? "No duplicate tabs found" 
+                    {state.parsedQuery.type === 'stale'
+                      ? t('emptySweepStaleTitle')
+                      : state.parsedQuery.type === 'dupes'
+                      ? t('emptySweepDupeTitle')
                       : state.parsedQuery.type === 'space'
-                      ? "No space matches found"
-                      : "No tabs match your search"}
+                      ? t('emptySweepSpaceTitle')
+                      : t('emptySweepSearchTitle')}
                   </h3>
                   <p className="text-text-secondary text-sm mt-1 max-w-sm px-4">
                     {state.parsedQuery.type === 'stale'
-                      ? `All your tabs have been active recently (within the last ${settings.staleThresholdDays ?? 3} days).`
+                      ? t('emptySweepStaleDesc', { days: settings.staleThresholdDays ?? 3 })
                       : state.parsedQuery.type === 'dupes'
-                      ? "Your workspace is perfectly clean. There are no duplicate URLs!"
+                      ? t('emptySweepDupeDesc')
                       : state.parsedQuery.type === 'space'
-                      ? `Could not find any space named "${state.parsedQuery.arg}" or the space has no tabs.`
-                      : `We couldn't find any open tabs matching "${state.searchQuery}".`}
+                      ? t('emptySweepSpaceDesc', { name: state.parsedQuery.arg || '' })
+                      : t('emptySweepSearchDesc', { query: state.searchQuery })}
                   </p>
                 </div>
               ) : viewMode === 'table' ? (
