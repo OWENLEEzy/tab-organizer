@@ -28,7 +28,7 @@ export function NudgeBanner({
       className="rounded-card border-accent-red/20 from-accent-red/[0.04] to-accent-red/[0.09] mb-4 flex animate-[fadeUp_0.5s_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
     >
       <div className="flex items-center gap-4">
-        <div className="bg-accent-red/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+        <div className="bg-accent-red/10 flex size-9 shrink-0 items-center justify-center rounded-full">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
@@ -52,7 +52,7 @@ export function NudgeBanner({
       <button
         type="button"
         onClick={onDismiss}
-        className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-blue/40 ml-4 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-blue/40 ml-4 flex size-11 shrink-0 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
         aria-label={t('actionDismiss')}
       >
         <svg
@@ -61,7 +61,7 @@ export function NudgeBanner({
           viewBox="0 0 24 24"
           strokeWidth={2}
           stroke="currentColor"
-          className="h-4 w-4"
+          className="size-4"
           aria-hidden="true"
         >
           <path

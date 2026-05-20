@@ -8,11 +8,11 @@ import { TabChip } from '../newtab/components/TabChip';
 import { ActionButton } from '../newtab/components/ui/ActionButton';
 
 function expectTouchHeight(element: HTMLElement): void {
-  expect(element.className).toMatch(/\b(?:h-11|min-h-11)\b/);
+  expect(element.className).toMatch(/\b(?:h-11|min-h-11|size-11)\b/);
 }
 
 function expectTouchWidth(element: HTMLElement): void {
-  expect(element.className).toMatch(/\b(?:w-11|min-w-11)\b/);
+  expect(element.className).toMatch(/\b(?:w-11|min-w-11|size-11)\b/);
 }
 
 describe('touch target regressions', () => {

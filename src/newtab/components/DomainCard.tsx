@@ -40,7 +40,7 @@ function CloseAllIcon(): React.ReactElement {
       viewBox="0 0 24 24"
       strokeWidth={2}
       stroke="currentColor"
-      className="h-4 w-4"
+      className="size-4"
       aria-hidden="true"
     >
       <path
@@ -60,7 +60,7 @@ function DedupIcon(): React.ReactElement {
       viewBox="0 0 24 24"
       strokeWidth={2}
       stroke="currentColor"
-      className="h-4 w-4"
+      className="size-4"
       aria-hidden="true"
     >
       <path
@@ -224,7 +224,7 @@ export function DomainCard({
               viewBox="0 0 24 24"
               strokeWidth={1.5}
               stroke="currentColor"
-              className="text-text-secondary h-4 w-4 shrink-0"
+              className="text-text-secondary size-4 shrink-0"
               aria-hidden="true"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -232,7 +232,7 @@ export function DomainCard({
           )}
           {iconFailed || !groupFaviconUrl ? (
             <span
-              className="bg-surface-light dark:bg-surface-dark text-text-secondary flex h-5 w-5 shrink-0 items-center justify-center rounded-[3px] text-xs font-semibold"
+              className="bg-surface-light dark:bg-surface-dark text-text-secondary flex size-5 shrink-0 items-center justify-center rounded-[3px] text-xs font-semibold"
               aria-hidden="true"
             >
               {initial}
@@ -243,7 +243,7 @@ export function DomainCard({
               alt=""
               width={20}
               height={20}
-              className="favicon h-5 w-5 shrink-0 rounded-[3px]"
+              className="favicon size-5 shrink-0 rounded-[3px]"
               onError={() => setFailedFaviconUrl(groupFaviconUrl)}
             />
           )}

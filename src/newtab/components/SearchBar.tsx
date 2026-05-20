@@ -43,11 +43,11 @@ export function SearchBar({
     inputRef.current?.focus();
   }, [onChange]);
 
-  const handleFocus = useCallback((): void => {
+  const handleSearchFocus = useCallback((): void => {
     setFocused(true);
   }, []);
 
-  const handleBlur = useCallback((): void => {
+  const handleSearchBlur = useCallback((): void => {
     // Small delay to let onMouseDown trigger choice
     setTimeout(() => setFocused(false), 150);
   }, []);
@@ -107,7 +107,7 @@ export function SearchBar({
           viewBox="0 0 24 24"
           strokeWidth={1.5}
           stroke="currentColor"
-          className="text-text-secondary pointer-events-none absolute left-3 h-4 w-4"
+          className="text-text-secondary pointer-events-none absolute left-3 size-4"
           aria-hidden="true"
         >
           <path
@@ -126,8 +126,8 @@ export function SearchBar({
           placeholder={t('searchPlaceholderTabs')}
           value={value}
           onChange={handleInputChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
+          onFocus={handleSearchFocus}
+          onBlur={handleSearchBlur}
           onKeyDown={handleKeyDown}
           aria-label="Search tabs"
         />
@@ -146,7 +146,7 @@ export function SearchBar({
             <button
               type="button"
               onClick={handleClear}
-              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark focus-visible:ring-accent-blue/40 flex h-11 w-11 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark focus-visible:ring-accent-blue/40 flex size-11 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
               aria-label="Clear search"
             >
               <svg
@@ -155,7 +155,7 @@ export function SearchBar({
                 viewBox="0 0 24 24"
                 strokeWidth={2}
                 stroke="currentColor"
-                className="h-3.5 w-3.5"
+                className="size-3.5"
                 aria-hidden="true"
               >
                 <path

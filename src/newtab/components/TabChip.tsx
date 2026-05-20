@@ -73,7 +73,7 @@ function CloseIcon(): React.ReactElement {
       viewBox="0 0 24 24"
       strokeWidth={2.5}
       stroke="currentColor"
-      className="h-3.5 w-3.5"
+      className="size-3.5"
       aria-hidden="true"
     >
       <path
@@ -113,7 +113,7 @@ function HighlightedText({ text, highlight = '' }: { text: string; highlight?: s
       {parts.map((part, i) =>
         part.toLowerCase() === cleanHighlight.toLowerCase() ? (
           <mark
-            key={i}
+            key={`${part}-${i}`}
             className="bg-accent-amber/25 text-text-primary-light dark:text-text-primary-dark rounded-sm px-0.5 font-semibold"
           >
             {part}
@@ -247,14 +247,14 @@ export function TabChip({
         {/* Favicon */}
         {faviconUrl && !faviconFailed ? (
           <img
-            className="favicon h-4 w-4 shrink-0"
+            className="favicon size-4 shrink-0"
             src={faviconUrl}
             alt=""
             onError={handleImageError}
           />
         ) : (
           <span
-            className="bg-surface-light dark:bg-surface-dark text-text-secondary flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] text-[10px] font-semibold"
+            className="bg-surface-light dark:bg-surface-dark text-text-secondary flex size-4 shrink-0 items-center justify-center rounded-[3px] text-[10px] font-semibold"
             aria-hidden="true"
           >
             {initial}
@@ -279,7 +279,7 @@ export function TabChip({
         <div className={`ml-auto flex shrink-0 items-center gap-1 transition-opacity duration-150 ${isTouch ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`}>
           <button
             type="button"
-            className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-red/40 flex h-11 w-11 cursor-pointer items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
+            className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-red/40 flex size-11 cursor-pointer items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
             onClick={handleClose}
             title="Close this tab"
             aria-label={`Close ${displayLabel}`}
