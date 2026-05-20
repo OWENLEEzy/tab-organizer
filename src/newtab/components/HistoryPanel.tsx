@@ -89,7 +89,7 @@ export function HistoryPanel({
                       type="button"
                       className="history-product-button"
                       onClick={() => onRestoreProduct(snapshot.id, product.productKey)}
-                      aria-label={`Restore ${product.label}`}
+                      aria-label={t('historyRestoreProduct', { product: product.label })}
                     >
                       <span>{product.label}</span>
                       <span>{product.tabCount}</span>

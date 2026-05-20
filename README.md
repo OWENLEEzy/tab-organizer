@@ -45,6 +45,8 @@
 📖 **Interactive Guide**: A beautifully animated step-by-step tutorial is available at [owenleezy.github.io/tab-organizer/](https://owenleezy.github.io/tab-organizer/).
 
 ## 🚀 Installation
+> ⚠️ **Compatibility**: Tab Organizer is only compatible with **Google Chrome**. Firefox, Microsoft Edge, Safari, and other browsers are not supported.
+
 1. **Download**: Visit the [Releases](https://github.com/OWENLEEzy/tab-organizer/releases) page.
    - **⚠️ IMPORTANT**: Download the file named **`tab-organizer-latest.zip`**.
    - **DO NOT** download the "Source code (zip)" at the bottom; it is uncompiled and won't work as an extension directly.
@@ -58,13 +60,13 @@
 ## 💎 Core Features
 - **Smart Product Grouping**: Uses a proprietary mapping logic to group tabs by "Product" (e.g., all Google Docs together, all GitHub repos together) rather than just raw domains.
 - **Visual Cleanup**:
-  - **Swoosh & Confetti**: Closing tabs feels rewarding with high-quality micro-interactions.
+  - **Confetti**: Closing tabs feels rewarding with high-quality micro-interactions.
   - **Duplicate Badges**: Amber badges highlight redundant tabs; one click closes all extras.
 - **Multiple Views**:
   - **Cards View**: A spacious, tactile layout for visual scanning.
   - **Table View**: A dense, high-efficiency list for power users.
 - **Recovery System**: Automatically takes local "snapshots" of your open sessions. If you accidentally close a window, restore it in seconds.
-- **Developer Mode Intelligence**: Recognizes `localhost` and `127.0.0.1` projects, grouping them by port number automatically.
+- **Developer Mode Intelligence**: Automatically recognizes `localhost` and `127.0.0.1` URLs, displaying the port number as part of the label to distinguish between different local projects (e.g. `3000`, `5173`).
 
 ## ⌨️ Usage & Shortcuts
 - **Open Dashboard**: Click the extension icon or use `Cmd+Shift+K` (customizable in Chrome shortcuts).
@@ -74,6 +76,7 @@
 
 ## 🔒 Privacy & Security
 Tab Organizer is **Local-First**. 
+- **No Incognito**: Does not run in incognito mode, providing an additional privacy boundary.
 - **No Cloud**: Your tab data never leaves your machine.
 - **No Tracking**: No analytics, no telemetry, no tracking pixels.
 - **No Permissions Bloat**: Only uses `tabs` and `storage` permissions.
