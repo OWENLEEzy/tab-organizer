@@ -13,6 +13,7 @@ describe('DashboardHeader', () => {
     const onCreateGroup = vi.fn();
     const onCloseAll = vi.fn();
     const onOpenSettings = vi.fn();
+    const onGroupSortByChange = vi.fn();
 
     render(
       <DashboardHeader
@@ -26,6 +27,8 @@ describe('DashboardHeader', () => {
         totalCount={12}
         viewMode="cards"
         onViewModeChange={onViewModeChange}
+        groupSortBy="default"
+        onGroupSortByChange={onGroupSortByChange}
         onRefresh={() => {}}
         onCreateGroup={onCreateGroup}
         onCloseAll={onCloseAll}
@@ -52,6 +55,7 @@ describe('DashboardHeader', () => {
 
   it('keeps settings available without showing group-only actions in the empty state', () => {
     const onOpenSettings = vi.fn();
+    const onGroupSortByChange = vi.fn();
 
     render(
       <DashboardHeader
@@ -65,6 +69,8 @@ describe('DashboardHeader', () => {
         totalCount={0}
         viewMode="cards"
         onViewModeChange={() => {}}
+        groupSortBy="default"
+        onGroupSortByChange={onGroupSortByChange}
         onRefresh={() => {}}
         onCreateGroup={() => {}}
         onCloseAll={() => {}}

@@ -60,6 +60,8 @@ describe('MotherDuck-inspired layout components', () => {
         totalCount={8}
         viewMode="cards"
         onViewModeChange={() => {}}
+        groupSortBy="default"
+        onGroupSortByChange={() => {}}
         onRefresh={() => {}}
         onCreateGroup={() => {}}
         onCloseAll={() => {}}
@@ -90,6 +92,8 @@ describe('MotherDuck-inspired layout components', () => {
             totalCount={1}
             viewMode="cards"
             onViewModeChange={() => {}}
+            groupSortBy="default"
+            onGroupSortByChange={() => {}}
             onRefresh={() => {}}
             onCreateGroup={() => {}}
             onCloseAll={() => {}}
