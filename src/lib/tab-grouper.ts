@@ -1,4 +1,4 @@
-import type { Tab, TabGroup, ManualGroup, CustomGroup } from '../types';
+import type { Tab, TabGroup, ManualGroup, CustomGroup, GroupSortOption } from '../types';
 import { productForHostname } from '../config/products';
 import { friendlyDomain } from './title-cleaner';
 import { countDuplicates } from './tab-utils';
@@ -23,6 +23,47 @@ function defaultSortComparator(
     if (countDiff !== 0) return countDiff;
     return a.localeCompare(b);
   };
+}
+
+/**
+ * Get the most recent lastAccessed timestamp from a list of tabs.
+ */
+function getGroupLastAccessed(tabs: Tab[]): number | undefined {
+  let max = 0;
+  for (const tab of tabs) {
+    if (tab.lastAccessed && tab.lastAccessed > max) {
+      max = tab.lastAccessed;
+    }
+  }
+  return max > 0 ? max : undefined;
+}
+
+/**
+ * Create a sort comparator for TabGroup array based on the given sort option.
+ */
+export function createSortComparator(
+  sortBy: GroupSortOption,
+): (a: TabGroup, b: TabGroup) => number {
+  switch (sortBy) {
+    case 'name':
+      return (a, b) => a.friendlyName.localeCompare(b.friendlyName);
+    case 'lastAccessed':
+      return (a, b) => {
+        const aTime = a.lastAccessed ?? 0;
+        const bTime = b.lastAccessed ?? 0;
+        if (bTime !== aTime) return bTime - aTime;
+        return a.friendlyName.localeCompare(b.friendlyName);
+      };
+    case 'default':
+    default:
+      return (a, b) => {
+        // For default sort, use tab count descending, then alphabet
+        const bCount = b.tabs.length;
+        const aCount = a.tabs.length;
+        if (bCount !== aCount) return bCount - aCount;
+        return a.friendlyName.localeCompare(b.friendlyName);
+      };
+  }
 }
 
 /**
@@ -127,6 +168,7 @@ export function groupTabsByDomain(
       color: hasDuplicates ? DUPLICATE_COLOR : DEFAULT_COLOR,
       hasDuplicates,
       duplicateCount,
+      lastAccessed: getGroupLastAccessed(groupTabs),
     });
   }
 

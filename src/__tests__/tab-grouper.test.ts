@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { groupTabsByDomain, autoAssignProductToSpace } from '../lib/tab-grouper';
-import type { Tab, ManualGroup } from '../types';
+import { groupTabsByDomain, autoAssignProductToSpace, createSortComparator } from '../lib/tab-grouper';
+import type { Tab, ManualGroup, TabGroup } from '../types';
 
 function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
   return {
@@ -321,5 +321,94 @@ describe('autoAssignProductToSpace', () => {
       ...mockSpaces,
     ];
     expect(autoAssignProductToSpace(['github.com'], spacesWithInvalidRegex)).toBe('dev');
+  });
+});
+
+describe('createSortComparator', () => {
+  function makeGroup(overrides: Partial<TabGroup> & { domain: string; friendlyName: string; tabs: Tab[] }): TabGroup {
+    const { domain, friendlyName, tabs } = overrides;
+    return {
+      id: domain,
+      domain,
+      friendlyName,
+      itemType: 'product',
+      itemKey: domain,
+      productKey: domain,
+      iconDomain: domain,
+      tabs,
+      collapsed: false,
+      order: 0,
+      color: '#4DAB9A',
+      hasDuplicates: false,
+      duplicateCount: 0,
+      lastAccessed: overrides.lastAccessed,
+    };
+  }
+
+  function makeTabWithLastAccessed(url: string, lastAccessed: number): Tab {
+    return makeTab({ id: Math.random(), url, lastAccessed });
+  }
+
+  it('sorts by tab count desc then alphabet when sortBy is "default"', () => {
+    const groups: TabGroup[] = [
+      makeGroup({ domain: 'z.com', friendlyName: 'Zee', tabs: [makeTab({ id: 1, url: 'https://z.com/1' })] }),
+      makeGroup({ domain: 'a.com', friendlyName: 'Aee', tabs: [makeTab({ id: 2, url: 'https://a.com/1' }), makeTab({ id: 3, url: 'https://a.com/2' }), makeTab({ id: 4, url: 'https://a.com/3' })] }),
+      makeGroup({ domain: 'm.com', friendlyName: 'Mee', tabs: [makeTab({ id: 5, url: 'https://m.com/1' }), makeTab({ id: 6, url: 'https://m.com/2' })] }),
+    ];
+
+    const sorted = [...groups].sort(createSortComparator('default'));
+
+    expect(sorted.map((g) => g.domain)).toEqual(['a.com', 'm.com', 'z.com']);
+  });
+
+  it('sorts by name A→Z when sortBy is "name"', () => {
+    const groups: TabGroup[] = [
+      makeGroup({ domain: 'z.com', friendlyName: 'Zee', tabs: [makeTab({ id: 1, url: 'https://z.com/1' })] }),
+      makeGroup({ domain: 'a.com', friendlyName: 'Aee', tabs: [makeTab({ id: 2, url: 'https://a.com/1' })] }),
+      makeGroup({ domain: 'm.com', friendlyName: 'Mee', tabs: [makeTab({ id: 3, url: 'https://m.com/1' })] }),
+    ];
+
+    const sorted = [...groups].sort(createSortComparator('name'));
+
+    expect(sorted.map((g) => g.domain)).toEqual(['a.com', 'm.com', 'z.com']);
+  });
+
+  it('sorts by lastAccessed descending when sortBy is "lastAccessed"', () => {
+    const now = Date.now();
+    const groups: TabGroup[] = [
+      makeGroup({ domain: 'old.com', friendlyName: 'Old', tabs: [makeTabWithLastAccessed('https://old.com/', now - 10000)], lastAccessed: now - 10000 }),
+      makeGroup({ domain: 'new.com', friendlyName: 'New', tabs: [makeTabWithLastAccessed('https://new.com/', now), makeTabWithLastAccessed('https://new.com/2', now - 5000)], lastAccessed: now }),
+      makeGroup({ domain: 'mid.com', friendlyName: 'Mid', tabs: [makeTabWithLastAccessed('https://mid.com/', now - 5000)], lastAccessed: now - 5000 }),
+    ];
+
+    const sorted = [...groups].sort(createSortComparator('lastAccessed'));
+
+    expect(sorted.map((g) => g.domain)).toEqual(['new.com', 'mid.com', 'old.com']);
+  });
+
+  it('sorts groups without lastAccessed after those with it when sortBy is "lastAccessed"', () => {
+    const now = Date.now();
+    const groups: TabGroup[] = [
+      makeGroup({ domain: 'no-time.com', friendlyName: 'No Time', tabs: [makeTab({ id: 1, url: 'https://no-time.com/' })] }),
+      makeGroup({ domain: 'has-time.com', friendlyName: 'Has Time', tabs: [makeTabWithLastAccessed('https://has-time.com/', now)], lastAccessed: now }),
+    ];
+
+    const sorted = [...groups].sort(createSortComparator('lastAccessed'));
+
+    expect(sorted[0].domain).toBe('has-time.com');
+    expect(sorted[1].domain).toBe('no-time.com');
+  });
+
+  it('uses alphabetical tie-breaker when lastAccessed values are equal', () => {
+    const now = Date.now();
+    const groups: TabGroup[] = [
+      makeGroup({ domain: 'zebra.com', friendlyName: 'Zebra', tabs: [makeTabWithLastAccessed('https://zebra.com/', now)], lastAccessed: now }),
+      makeGroup({ domain: 'apple.com', friendlyName: 'Apple', tabs: [makeTabWithLastAccessed('https://apple.com/', now)], lastAccessed: now }),
+      makeGroup({ domain: 'middle.com', friendlyName: 'Middle', tabs: [makeTabWithLastAccessed('https://middle.com/', now)], lastAccessed: now }),
+    ];
+
+    const sorted = [...groups].sort(createSortComparator('lastAccessed'));
+
+    expect(sorted.map((g) => g.domain)).toEqual(['apple.com', 'middle.com', 'zebra.com']);
   });
 });

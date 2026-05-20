@@ -64,6 +64,12 @@ export function App(): React.ReactElement {
         throw new Error('Invalid JSON');
       }
 
+      // Version validation for migration support
+      const configVersion = parsed.version;
+      if (typeof configVersion !== 'string' || !/^\d+\.\d+$/.test(configVersion)) {
+        throw new Error('Invalid or missing config version');
+      }
+
       // Restore preferences
       if (parsed.settings && typeof parsed.settings === 'object') {
         const s = parsed.settings;
@@ -173,6 +179,8 @@ export function App(): React.ReactElement {
             totalCount={state.totalTabs}
             viewMode={viewMode}
             onViewModeChange={handlers.handleSetViewMode}
+            groupSortBy={settings.groupSortBy}
+            onGroupSortByChange={settingsStore.setGroupSortBy}
             onRefresh={handlers.handleRefresh}
             onCreateGroup={handlers.handleCreateGroup}
             onCloseAll={handlers.handleCloseAll}
@@ -301,7 +309,7 @@ export function App(): React.ReactElement {
                       : state.parsedQuery.type === 'dupes'
                       ? t('emptySweepDupeTitle')
                       : state.parsedQuery.type === 'space'
-                      ? t('emptySweepSpaceTitle')
+                      ? (state.parsedQuery.arg ? t('emptySweepSpaceTitle') : t('emptySweepSpaceNoArg'))
                       : t('emptySweepSearchTitle')}
                   </h3>
                   <p className="text-text-secondary text-sm mt-1 max-w-sm px-4">
@@ -310,7 +318,9 @@ export function App(): React.ReactElement {
                       : state.parsedQuery.type === 'dupes'
                       ? t('emptySweepDupeDesc')
                       : state.parsedQuery.type === 'space'
-                      ? t('emptySweepSpaceDesc', { name: state.parsedQuery.arg || '' })
+                      ? (state.parsedQuery.arg
+                          ? t('emptySweepSpaceDesc', { name: state.parsedQuery.arg })
+                          : t('emptySweepSpaceNoArg'))
                       : t('emptySweepSearchDesc', { query: state.searchQuery })}
                   </p>
                 </div>

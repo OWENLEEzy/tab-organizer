@@ -19,6 +19,8 @@ export interface Tab {
 
 // ─── Tab Groups ──────────────────────────────────────────────────
 
+export type GroupSortOption = 'default' | 'name' | 'lastAccessed';
+
 export interface TabGroup {
   id: string;
   domain: string;
@@ -34,6 +36,7 @@ export interface TabGroup {
   color: string;
   hasDuplicates: boolean;
   duplicateCount: number;
+  lastAccessed?: number;
 }
 
 export interface ProductInfo {
@@ -157,6 +160,7 @@ export interface AppSettings {
     focusSearch: string;
     clearFilter: string;
   };
+  groupSortBy: GroupSortOption;
 }
 
 // ─── Storage Schema ──────────────────────────────────────────────

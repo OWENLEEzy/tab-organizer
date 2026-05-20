@@ -21,6 +21,11 @@ export const locales = {
     newGroup: 'New Group',
     closeAll: 'Close All',
 
+    // Sort Options
+    sortDefault: 'Default',
+    sortByName: 'By Name',
+    sortByLastAccessed: 'By Last Used',
+
     // Status Strip Metrics
     metricTabs: 'tabs',
     metricDuplicates: 'duplicates',
@@ -112,6 +117,7 @@ export const locales = {
     historyTitle: 'History',
     historyClear: 'Clear',
     historyRestoreAll: 'Restore all',
+    historyRestoreProduct: 'Restore {product}',
     historyShowDetails: 'Show details',
     historyHideDetails: 'Hide details',
     historyDelete: 'Delete',
@@ -264,6 +270,7 @@ export const locales = {
     emptySweepDupeDesc: 'Your workspace is perfectly clean. There are no duplicate URLs!',
     emptySweepSpaceTitle: 'No space matches found',
     emptySweepSpaceDesc: 'Could not find any space named "{name}" or the space has no tabs.',
+    emptySweepSpaceNoArg: 'Please specify a space name (e.g., /space:work)',
     emptySweepSearchTitle: 'No tabs match your search',
     emptySweepSearchDesc: 'We couldn\'t find any open tabs matching "{query}".',
 
@@ -316,6 +323,11 @@ export const locales = {
     refresh: '刷新同步',
     newGroup: '新建分组',
     closeAll: '关闭全部',
+
+    // Sort Options
+    sortDefault: '默认顺序',
+    sortByName: '按名称',
+    sortByLastAccessed: '按最近使用',
 
     // Status Strip Metrics
     metricTabs: '标签页',
@@ -408,6 +420,7 @@ export const locales = {
     historyTitle: '历史备份',
     historyClear: '清空历史',
     historyRestoreAll: '恢复全部',
+    historyRestoreProduct: '恢复 {product}',
     historyShowDetails: '显示详情',
     historyHideDetails: '隐藏详情',
     historyDelete: '删除记录',
@@ -560,6 +573,7 @@ export const locales = {
     emptySweepDupeDesc: '您的工作区非常干净，没有重复打开的网址！',
     emptySweepSpaceTitle: '未匹配到该空间的分区',
     emptySweepSpaceDesc: '找不到名为 “{name}” 的空间，或者该空间下目前没有处于打开状态的标签页。',
+    emptySweepSpaceNoArg: '请指定空间名称（如 /space:工作）',
     emptySweepSearchTitle: '没有找到匹配的标签页',
     emptySweepSearchDesc: '未找到任何匹配搜索条件 “{query}” 的标签页。',
 

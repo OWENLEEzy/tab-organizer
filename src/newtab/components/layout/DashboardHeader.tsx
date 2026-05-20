@@ -1,8 +1,10 @@
 import React from 'react';
 import { SearchBar } from '../SearchBar';
 import { ViewToggle } from '../ViewToggle';
+import { SortDropdown } from '../SortDropdown';
 import { ActionButton } from '../ui/ActionButton';
 import { useI18n } from '../../hooks/useI18n';
+import type { GroupSortOption } from '../../../types';
 
 interface DashboardHeaderProps {
   title: string;
@@ -15,6 +17,8 @@ interface DashboardHeaderProps {
   totalCount: number;
   viewMode: 'cards' | 'table';
   onViewModeChange: (mode: 'cards' | 'table') => void;
+  groupSortBy: GroupSortOption;
+  onGroupSortByChange: (sortBy: GroupSortOption) => void;
   onRefresh: () => void;
   onCreateGroup: () => void;
   onCloseAll: () => void;
@@ -59,6 +63,8 @@ export function DashboardHeader({
   totalCount,
   viewMode,
   onViewModeChange,
+  groupSortBy,
+  onGroupSortByChange,
   onRefresh,
   onCreateGroup,
   onCloseAll,
@@ -99,6 +105,7 @@ export function DashboardHeader({
                   {groupLabel}
                 </span>
                 <ViewToggle value={viewMode} onChange={onViewModeChange} />
+                <SortDropdown value={groupSortBy} onChange={onGroupSortByChange} />
               </>
             ) : null}
             <div className="h-6 w-px bg-border-light dark:bg-border-dark mx-2" />

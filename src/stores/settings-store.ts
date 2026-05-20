@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AppSettings, CustomGroup } from '../types';
+import type { AppSettings, CustomGroup, GroupSortOption } from '../types';
 import { readSettings, writeSettings, DEFAULT_SETTINGS } from '../utils/storage';
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -27,6 +27,8 @@ interface SettingsActions {
   setMaxChipsVisible: (count: number) => Promise<void>;
   /** Change the tab staleness idle threshold in days. */
   setStaleThresholdDays: (days: number) => Promise<void>;
+  /** Change the group sort order preference. */
+  setGroupSortBy: (sortBy: GroupSortOption) => Promise<void>;
 }
 
 export type SettingsStore = {
@@ -177,6 +179,17 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     set({ settings: updated });
     try {
       await writeSettings({ language });
+    } catch {
+      set({ settings: prev });
+    }
+  },
+
+  setGroupSortBy: async (groupSortBy: GroupSortOption) => {
+    const { settings: prev } = get();
+    const updated: AppSettings = { ...prev, groupSortBy };
+    set({ settings: updated });
+    try {
+      await writeSettings({ groupSortBy });
     } catch {
       set({ settings: prev });
     }
