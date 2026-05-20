@@ -22,7 +22,7 @@ export function Toast({ message, visible }: ToastProps): React.ReactElement {
         viewBox="0 0 24 24"
         strokeWidth={2}
         stroke="currentColor"
-        className="text-accent-sage h-4 w-4"
+        className="text-accent-sage size-4"
         aria-hidden="true"
       >
         <path

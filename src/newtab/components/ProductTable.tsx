@@ -32,7 +32,7 @@ function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
       viewBox="0 0 24 24"
       strokeWidth={2}
       stroke="currentColor"
-      className={`h-4 w-4 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`}
+      className={`size-4 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`}
       aria-hidden="true"
     >
       <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
@@ -91,7 +91,7 @@ export function ProductTable({
   searchQuery = '',
 }: ProductTableProps): React.ReactElement {
   const { t } = useI18n();
-  const rows = useMemo(() => [...items].sort((a, b) => a.order - b.order), [items]);
+  const rows = useMemo(() => items.toSorted((a, b) => a.order - b.order), [items]);
 
   // Pre-compute duplicate URLs once per items array instead of once per rendered row.
   const dupeUrlsByProductId = useMemo(() => {

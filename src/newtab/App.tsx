@@ -1,4 +1,5 @@
 import React from 'react';
+import type { CustomGroup } from '../types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingState } from './components/LoadingState';
 import { ProductTableMemo as ProductTable } from './components/ProductTable';
@@ -64,6 +65,12 @@ export function App(): React.ReactElement {
         throw new Error('Invalid JSON');
       }
 
+      // Version validation for migration support
+      const configVersion = parsed.version;
+      if (typeof configVersion !== 'string' || !/^\d+\.\d+$/.test(configVersion)) {
+        throw new Error('Invalid or missing config version');
+      }
+
       // Restore preferences
       if (parsed.settings && typeof parsed.settings === 'object') {
         const s = parsed.settings;
@@ -74,22 +81,23 @@ export function App(): React.ReactElement {
         if (typeof s.staleThresholdDays === 'number') await settingsStore.setStaleThresholdDays(s.staleThresholdDays);
 
         if (Array.isArray(s.customGroups)) {
-          // Clear all existing custom groups
-          for (const cg of settingsStore.settings.customGroups) {
-            await settingsStore.removeCustomGroup(cg.groupKey);
-          }
-          // Add imported custom groups
-          for (const cg of s.customGroups) {
-            await settingsStore.addCustomGroup(cg);
-          }
+          // Clear all existing custom groups (parallel)
+          await Promise.all(settingsStore.settings.customGroups.map(cg =>
+            settingsStore.removeCustomGroup(cg.groupKey)
+          ));
+          // Add imported custom groups (parallel)
+          await Promise.all(s.customGroups.map((cg: CustomGroup) =>
+            settingsStore.addCustomGroup(cg)
+          ));
         }
 
         if (s.keyBindings && typeof s.keyBindings === 'object') {
-          for (const [key, binding] of Object.entries(s.keyBindings)) {
-            if (typeof binding === 'string') {
-              await settingsStore.updateKeyBinding(key as keyof typeof settings.keyBindings, binding);
-            }
-          }
+          const updates = Object.entries(s.keyBindings)
+            .filter(([, binding]) => typeof binding === 'string')
+            .map(([key, binding]) =>
+              settingsStore.updateKeyBinding(key as keyof typeof settings.keyBindings, binding as string)
+            );
+          await Promise.all(updates);
         }
       }
 
@@ -173,6 +181,8 @@ export function App(): React.ReactElement {
             totalCount={state.totalTabs}
             viewMode={viewMode}
             onViewModeChange={handlers.handleSetViewMode}
+            groupSortBy={settings.groupSortBy}
+            onGroupSortByChange={settingsStore.setGroupSortBy}
             onRefresh={handlers.handleRefresh}
             onCreateGroup={handlers.handleCreateGroup}
             onCloseAll={handlers.handleCloseAll}
@@ -206,7 +216,7 @@ export function App(): React.ReactElement {
                   className="rounded-card border-accent-amber/20 from-accent-amber/[0.04] to-accent-amber/[0.09] mb-4 flex animate-[fadeUp_0.5s_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="bg-accent-amber/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+                    <div className="bg-accent-amber/10 flex size-9 shrink-0 items-center justify-center rounded-full">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -248,7 +258,7 @@ export function App(): React.ReactElement {
                   className="rounded-card border-accent-blue/20 from-accent-blue/[0.04] to-accent-blue/[0.09] mb-4 flex animate-[fadeUp_0.5s_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="bg-accent-blue/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+                    <div className="bg-accent-blue/10 flex size-9 shrink-0 items-center justify-center rounded-full">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -286,7 +296,7 @@ export function App(): React.ReactElement {
 
               {derived.filteredProducts.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center animate-[fadeIn_0.3s_ease]">
-                  <div className="bg-surface-light dark:bg-surface-dark mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-border-light dark:border-border-dark text-text-secondary">
+                  <div className="bg-surface-light dark:bg-surface-dark mb-4 flex size-16 items-center justify-center rounded-full border border-dashed border-border-light dark:border-border-dark text-text-secondary">
                     {state.parsedQuery.type === 'stale' ? (
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8 text-accent-blue"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                     ) : state.parsedQuery.type === 'dupes' ? (
@@ -301,7 +311,7 @@ export function App(): React.ReactElement {
                       : state.parsedQuery.type === 'dupes'
                       ? t('emptySweepDupeTitle')
                       : state.parsedQuery.type === 'space'
-                      ? t('emptySweepSpaceTitle')
+                      ? (state.parsedQuery.arg ? t('emptySweepSpaceTitle') : t('emptySweepSpaceNoArg'))
                       : t('emptySweepSearchTitle')}
                   </h3>
                   <p className="text-text-secondary text-sm mt-1 max-w-sm px-4">
@@ -310,7 +320,9 @@ export function App(): React.ReactElement {
                       : state.parsedQuery.type === 'dupes'
                       ? t('emptySweepDupeDesc')
                       : state.parsedQuery.type === 'space'
-                      ? t('emptySweepSpaceDesc', { name: state.parsedQuery.arg || '' })
+                      ? (state.parsedQuery.arg
+                          ? t('emptySweepSpaceDesc', { name: state.parsedQuery.arg })
+                          : t('emptySweepSpaceNoArg'))
                       : t('emptySweepSearchDesc', { query: state.searchQuery })}
                   </p>
                 </div>

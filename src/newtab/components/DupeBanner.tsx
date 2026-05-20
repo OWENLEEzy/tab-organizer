@@ -19,7 +19,7 @@ export function DupeBanner({ count, onClose }: DupeBannerProps): React.ReactElem
       className="rounded-card border-accent-amber/20 from-accent-amber/[0.04] to-accent-amber/[0.09] mb-4 flex animate-[fadeUp_0.5s_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
     >
       <div className="flex items-center gap-4">
-        <div className="bg-accent-amber/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+        <div className="bg-accent-amber/10 flex size-9 shrink-0 items-center justify-center rounded-full">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"

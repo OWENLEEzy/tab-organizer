@@ -10,6 +10,17 @@ const HistorySnapshotDetails = React.lazy(() =>
   })),
 );
 
+// ─── Helpers ──────────────────────────────────────────────────────────
+
+function createSnapshotDateFormatter(locale: string): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 interface HistoryPanelProps {
   snapshots: HistorySnapshot[];
   onRestoreSnapshot: (snapshotId: string) => void;
@@ -34,12 +45,7 @@ export function HistoryPanel({
 
   const formatCapturedAt = (value: string): string => {
     try {
-      return new Intl.DateTimeFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      }).format(new Date(value));
+      return createSnapshotDateFormatter(locale).format(new Date(value));
     } catch {
       return value;
     }
@@ -89,7 +95,7 @@ export function HistoryPanel({
                       type="button"
                       className="history-product-button"
                       onClick={() => onRestoreProduct(snapshot.id, product.productKey)}
-                      aria-label={`Restore ${product.label}`}
+                      aria-label={t('historyRestoreProduct', { product: product.label })}
                     >
                       <span>{product.label}</span>
                       <span>{product.tabCount}</span>

@@ -15,13 +15,13 @@ export function PromptDialog({
   onConfirm,
   onCancel,
 }: PromptDialogProps): React.ReactElement | null {
-  const [value, setValue] = useState(initialValue);
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = React.useId();
   const { t } = useI18n();
 
-
+  // Local state for user input - component remounts when initialValue changes (via parent key)
+  const [inputValue, setInputValue] = useState(initialValue ?? '');
 
   // Close on Escape key
   useEffect(() => {
@@ -89,7 +89,7 @@ export function PromptDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onConfirm(value);
+    onConfirm(inputValue);
   };
 
   if (!open) {
@@ -118,7 +118,7 @@ export function PromptDialog({
         >
           {title}
         </h3>
-        
+
         <form onSubmit={handleSubmit} className="mt-4">
           <label
             htmlFor={inputId}
@@ -131,11 +131,11 @@ export function PromptDialog({
             ref={inputRef}
             type="text"
             className="w-full rounded-sm border border-border-light bg-surface-light px-3 py-2 text-sm text-text-primary-light outline-none focus:border-accent-blue dark:border-border-dark dark:bg-surface-dark dark:text-text-primary-dark dark:focus:border-accent-blue transition-colors"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             placeholder={placeholder}
           />
-          
+
           <div className="mt-6 flex items-center justify-end gap-3">
             <ActionButton
               variant="quiet"
@@ -146,7 +146,7 @@ export function PromptDialog({
             <ActionButton
               type="submit"
               variant="primary"
-              disabled={!value.trim()}
+              disabled={!inputValue.trim()}
             >
               {confirmLabel}
             </ActionButton>

@@ -10,6 +10,7 @@ import { useTabHandlers } from './useTabHandlers';
 import { useI18n } from './useI18n';
 import { DASHBOARD_SPACE_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
 import { isTabStale, filterDuplicateTabs, getProductKey } from '../../lib/tab-utils';
+import { createSortComparator } from '../../lib/tab-grouper';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -145,6 +146,10 @@ export function useAppLogic() {
       });
     }
 
+    // Apply sort order
+    const sortComparator = createSortComparator(settings.groupSortBy ?? 'default');
+    result = [...result].sort(sortComparator);
+
     if (!debouncedSearchQuery.trim()) return result;
 
     // 1. Process /space:SpaceName command
@@ -207,7 +212,7 @@ export function useAppLogic() {
       }
     }
     return finalResult;
-  }, [products, debouncedSearchQuery, parsedQuery, tabStore.activeSpaceId, assignmentByItemId, orderedGroups, settings.staleThresholdDays]);
+  }, [products, debouncedSearchQuery, parsedQuery, tabStore.activeSpaceId, assignmentByItemId, orderedGroups, settings.staleThresholdDays, settings.groupSortBy]);
 
   const unassignedProducts = useMemo(
     () => filteredProducts.filter((p) => !assignmentByItemId.has(groupAssignmentKey(p))),

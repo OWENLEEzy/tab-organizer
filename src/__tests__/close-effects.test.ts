@@ -28,6 +28,7 @@ const BASE_SETTINGS: AppSettings = {
     focusSearch: '/',
     clearFilter: 'Escape',
   },
+  groupSortBy: 'default',
 };
 
 describe('playCloseEffects', () => {
