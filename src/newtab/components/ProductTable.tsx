@@ -3,6 +3,7 @@ import type { ManualGroup, TabGroup } from '../../types';
 import { TabChip } from './TabChip';
 import { getDuplicateUrls, getGroupFaviconUrl, getProductKey } from '../../lib/tab-utils';
 import { ActionButton } from './ui/ActionButton';
+import { useI18n } from '../hooks/useI18n';
 
 interface ProductTableProps {
   items: TabGroup[];
@@ -89,7 +90,17 @@ export function ProductTable({
   focusedUrl = null,
   searchQuery = '',
 }: ProductTableProps): React.ReactElement {
+  const { t } = useI18n();
   const rows = useMemo(() => [...items].sort((a, b) => a.order - b.order), [items]);
+
+  // Pre-compute duplicate URLs once per items array instead of once per rendered row.
+  const dupeUrlsByProductId = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const p of items) {
+      map.set(p.id, getDuplicateUrls(p.tabs));
+    }
+    return map;
+  }, [items]);
 
   return (
     <div className="product-table-wrap overflow-x-auto">
@@ -97,18 +108,18 @@ export function ProductTable({
         <thead>
           <tr>
             <th className="w-10"></th>
-            <th className="col-name">Name</th>
-            <th className="col-group w-32">Group</th>
-            <th className="col-tabs w-20 text-center">Tabs</th>
-            <th className="col-dupes w-24 text-center">Duplicates</th>
-            <th className="col-actions text-right pr-4">Actions</th>
+            <th className="col-name">{t('tableHeaderName')}</th>
+            <th className="col-group w-32">{t('tableHeaderGroup')}</th>
+            <th className="col-tabs w-20 text-center">{t('tableHeaderTabs')}</th>
+            <th className="col-dupes w-24 text-center">{t('tableHeaderDuplicates')}</th>
+            <th className="col-actions text-right pr-4">{t('tableHeaderActions')}</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((p) => {
             const id = itemId(p);
             const groupId = assignmentByItemId.get(id) ?? '';
-            const dupes = getDuplicateUrls(p.tabs);
+            const dupes = dupeUrlsByProductId.get(p.id) ?? [];
             const isExpanded = expandedDomains.has(p.domain);
             const selectionMode = (selectedUrls?.size ?? 0) > 0 || (selectedTabIds?.size ?? 0) > 0;
 
@@ -121,7 +132,7 @@ export function ProductTable({
                       className="product-table-expand-toggle"
                       onClick={() => onToggleExpanded(p.domain)}
                       aria-expanded={isExpanded}
-                      aria-label={isExpanded ? `Collapse ${p.friendlyName || p.domain}` : `Expand ${p.friendlyName || p.domain}`}
+                      aria-label={isExpanded ? t('tableCollapseLabel', { name: p.friendlyName || p.domain }) : t('tableExpandLabel', { name: p.friendlyName || p.domain })}
                     >
                       <ChevronIcon expanded={isExpanded} />
                     </button>
@@ -143,7 +154,7 @@ export function ProductTable({
                       aria-label={`Move ${p.friendlyName || p.domain}`}
                       className="w-full"
                     >
-                      <option value="">Unsorted</option>
+                      <option value="">{t('tableUnsorted')}</option>
                       {groups.map((g) => (
                         <option key={g.id} value={g.id}>
                           {g.name}
@@ -156,11 +167,11 @@ export function ProductTable({
                   <td className="col-actions text-right pr-4">
                     <div className="table-actions flex items-center justify-end gap-2">
                       <ActionButton variant="default" onClick={() => onCloseProduct(p)}>
-                        Close
+                        {t('tableBtnClose')}
                       </ActionButton>
                       {dupes.length > 0 && (
                         <ActionButton variant="default" onClick={() => onCloseDuplicates(dupes)}>
-                          Dedupe
+                          {t('tableBtnDedupe')}
                         </ActionButton>
                       )}
                     </div>
@@ -203,3 +214,5 @@ export function ProductTable({
     </div>
   );
 }
+
+export const ProductTableMemo = React.memo(ProductTable);

@@ -1,4 +1,4 @@
-import type { Tab, TabGroup, ManualGroup } from '../types';
+import type { Tab, TabGroup, ManualGroup, CustomGroup } from '../types';
 import { productForHostname } from '../config/products';
 import { friendlyDomain } from './title-cleaner';
 import { countDuplicates } from './tab-utils';
@@ -40,6 +40,7 @@ function defaultSortComparator(
 export function groupTabsByDomain(
   tabs: readonly Tab[],
   customOrder?: Record<string, number>,
+  customGroups?: CustomGroup[],
 ): TabGroup[] {
   if (tabs.length === 0) return [];
 
@@ -53,7 +54,22 @@ export function groupTabsByDomain(
 
       if (!hostname) continue;
 
-      const product = productForHostname(hostname);
+      // 1. Check custom overrides first
+      const normalizedHost = hostname.toLowerCase();
+      const customOverride = customGroups?.find(
+        (cg) =>
+          cg.hostname?.toLowerCase() === normalizedHost ||
+          (cg.hostnameEndsWith && normalizedHost.endsWith(cg.hostnameEndsWith.toLowerCase())),
+      );
+
+      const product = customOverride
+        ? {
+            key: customOverride.groupKey,
+            label: customOverride.groupLabel,
+            iconDomain: hostname,
+          }
+        : productForHostname(hostname);
+
       productLabels.set(product.key, product.label);
       productIconDomains.set(product.key, product.iconDomain);
 

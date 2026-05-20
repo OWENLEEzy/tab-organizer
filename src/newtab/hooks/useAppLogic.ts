@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTabStore } from '../../stores/tab-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { useKeyboard } from './useKeyboard';
@@ -7,6 +7,7 @@ import { isTabOutPage } from '../../utils/url';
 import type { TabGroup } from '../../types';
 import { useUIState } from './useUIState';
 import { useTabHandlers } from './useTabHandlers';
+import { useI18n } from './useI18n';
 import { DASHBOARD_SPACE_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
 import { isTabStale, filterDuplicateTabs, getProductKey } from '../../lib/tab-utils';
 
@@ -19,26 +20,34 @@ interface CommandParsed {
   textQuery: string;
 }
 
-function parseSearchQuery(query: string): CommandParsed {
+export function parseSearchQuery(query: string): CommandParsed {
   const trimmed = query.trim().toLowerCase();
   
-  if (trimmed.startsWith('/dupes')) {
-    const textQuery = trimmed.replace('/dupes', '').trim();
-    return { type: 'dupes', textQuery };
+  // 1. Match /dupe, /dupes, dupe, or dupes
+  const dupeMatch = trimmed.match(/^(\/?dupes?)(?:\s+(.*))?$/);
+  if (dupeMatch) {
+    const term = dupeMatch[1];
+    if (term.startsWith('/') || term === 'dupe' || term === 'dupes') {
+      return { type: 'dupes', textQuery: (dupeMatch[2] || '').trim() };
+    }
   }
   
-  if (trimmed.startsWith('/stale')) {
-    const textQuery = trimmed.replace('/stale', '').trim();
-    return { type: 'stale', textQuery };
+  // 2. Match /stale, /stales, stale, or stales
+  const staleMatch = trimmed.match(/^(\/?stales?)(?:\s+(.*))?$/);
+  if (staleMatch) {
+    const term = staleMatch[1];
+    if (term.startsWith('/') || term === 'stale' || term === 'stales') {
+      return { type: 'stale', textQuery: (staleMatch[2] || '').trim() };
+    }
   }
   
-  const spaceMatch = trimmed.match(/^\/space:([^\s]+)/);
+  // 3. Match /space:SpaceName or space:SpaceName (with or without slash)
+  const spaceMatch = trimmed.match(/^(\/?space:)([^\s]*)(?:\s+(.*))?$/);
   if (spaceMatch) {
-    const textQuery = trimmed.replace(spaceMatch[0], '').trim();
-    return { 
-      type: 'space', 
-      arg: spaceMatch[1], 
-      textQuery
+    return {
+      type: 'space',
+      arg: spaceMatch[2] || '',
+      textQuery: (spaceMatch[3] || '').trim()
     };
   }
   
@@ -94,9 +103,9 @@ export function useAppLogic() {
     return `product:${getProductKey(p)}`;
   }, []);
 
-  const groupAssignmentKey = useCallback((p: TabGroup) => {
-    return `product:${getProductKey(p)}`;
-  }, []);
+  // Inline helper — avoids an extra useCallback allocation per render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const groupAssignmentKey = (p: TabGroup) => `product:${getProductKey(p)}`;
 
   const assignmentByItemId = useMemo(() => {
     const map = new Map<string, string>();
@@ -111,6 +120,21 @@ export function useAppLogic() {
     [manualGroups],
   );
 
+  // Debounce searchQuery for derived memos — avoids cascading recomputes on every keystroke.
+  const searchQueryRef = useRef(searchQuery);
+  searchQueryRef.current = searchQuery;
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebouncedSearchQuery(searchQueryRef.current), 150);
+    return () => window.clearTimeout(id);
+  }, [searchQuery]);
+
+  // Memoize the parsed query once — reused by filteredProducts and the returned state.
+  const parsedQuery = useMemo(
+    () => parseSearchQuery(debouncedSearchQuery),
+    [debouncedSearchQuery],
+  );
+
   const filteredProducts = useMemo(() => {
     let result = products;
 
@@ -121,24 +145,30 @@ export function useAppLogic() {
       });
     }
 
-    if (!searchQuery.trim()) return result;
-    const parsed = parseSearchQuery(searchQuery);
+    if (!debouncedSearchQuery.trim()) return result;
 
     // 1. Process /space:SpaceName command
-    if (parsed.type === 'space' && parsed.arg) {
-      const targetSpace = orderedGroups.find(
-        (g) => g.name.toLowerCase().includes(parsed.arg!)
-      );
-      if (targetSpace) {
-        result = products.filter(p => {
-          const itemKey = groupAssignmentKey(p);
-          return assignmentByItemId.get(itemKey) === targetSpace.id;
-        });
+    if (parsedQuery.type === 'space') {
+      const arg = parsedQuery.arg || '';
+      if (arg) {
+        const targetSpace = orderedGroups.find(
+          (g) => g.name.toLowerCase().includes(arg)
+        );
+        if (targetSpace) {
+          result = products.filter(p => {
+            const itemKey = groupAssignmentKey(p);
+            return assignmentByItemId.get(itemKey) === targetSpace.id;
+          });
+        } else {
+          result = [];
+        }
+      } else {
+        result = [];
       }
     }
 
     // 2. Process /dupes command
-    if (parsed.type === 'dupes') {
+    if (parsedQuery.type === 'dupes') {
       result = result
         .filter(p => p.duplicateCount > 0)
         .map(p => ({
@@ -149,21 +179,20 @@ export function useAppLogic() {
     }
 
     // 3. Process /stale command
-    if (parsed.type === 'stale') {
-      // eslint-disable-next-line react-hooks/purity
+    if (parsedQuery.type === 'stale') {
       const stableNow = Math.floor(Date.now() / 1000) * 1000;
-      
+
       result = result
         .map(p => ({
           ...p,
-          tabs: p.tabs.filter(t => isTabStale(t, stableNow, 3))
+          tabs: p.tabs.filter(t => isTabStale(t, stableNow, settings.staleThresholdDays ?? 3))
         }))
         .filter(p => p.tabs.length > 0);
     }
 
     // 4. Substring filtering
-    if (!parsed.textQuery) return result;
-    const query = parsed.textQuery.toLowerCase();
+    if (!parsedQuery.textQuery) return result;
+    const query = parsedQuery.textQuery.toLowerCase();
     const finalResult: TabGroup[] = [];
     for (const p of result) {
       const filteredTabs = p.tabs.filter(
@@ -178,7 +207,7 @@ export function useAppLogic() {
       }
     }
     return finalResult;
-  }, [products, searchQuery, tabStore.activeSpaceId, assignmentByItemId, groupAssignmentKey, orderedGroups]);
+  }, [products, debouncedSearchQuery, parsedQuery, tabStore.activeSpaceId, assignmentByItemId, orderedGroups, settings.staleThresholdDays]);
 
   const unassignedProducts = useMemo(
     () => filteredProducts.filter((p) => !assignmentByItemId.has(groupAssignmentKey(p))),
@@ -224,7 +253,7 @@ export function useAppLogic() {
           ...orderedGroups.flatMap((group) => productsByGroup.get(group.id) ?? []),
         ];
 
-    const isSearching = searchQuery.trim().length > 0;
+    const isSearching = debouncedSearchQuery.trim().length > 0;
     const activeExpanded = isSearching
       ? new Set(visualProducts.map(p => p.domain))
       : expandedDomains;
@@ -242,7 +271,7 @@ export function useAppLogic() {
     viewMode,
     settings.maxChipsVisible,
     expandedDomains,
-    searchQuery,
+    debouncedSearchQuery,
   ]);
 
   const focusedUrl = focusedIndex !== null ? flatChips[focusedIndex]?.url ?? null : null;
@@ -263,6 +292,7 @@ export function useAppLogic() {
   );
 
   // ─── Handlers ──────────────────────────────────────────────────────
+  const { t } = useI18n();
   const handlers = useTabHandlers({
     settings,
     dispatch,
@@ -271,6 +301,7 @@ export function useAppLogic() {
     selectedUrls,
     selectedTabIds: state.selectedTabIds,
     lastClickedIndex,
+    t,
   });
 
   const theme = useSettingsStore((s) => s.settings.theme);
@@ -448,6 +479,7 @@ export function useAppLogic() {
       visibleGroupCount: orderedGroups.length + (products.length === 0 ? 0 : 1),
       focusedUrl,
       filteredTabCount,
+      parsedQuery,
     },
     stores: {
       tabStore,

@@ -28,13 +28,13 @@ export function DashboardShell({
 
   return (
     <div className="dashboard-shell">
-      <div className="dashboard-full-width border-b-2 border-border-light bg-accent-amber/10 dark:border-border-dark dark:bg-accent-amber/5">
+      <div className="dashboard-full-width border-b border-border-light bg-accent-amber/10 dark:border-border-dark dark:bg-accent-amber/5">
         <div className={baseGridClass}>{top}</div>
       </div>
-      <div className="dashboard-full-width border-b-2 border-border-light bg-card-light/50 backdrop-blur-md dark:border-border-dark dark:bg-card-dark/50">
+      <div className="dashboard-full-width border-b border-border-light bg-card-light/50 backdrop-blur-md dark:border-border-dark dark:bg-card-dark/50 z-20">
         <div className={baseGridClass}>{header}</div>
       </div>
-      <div className="dashboard-full-width border-b-2 border-border-light">
+      <div className="dashboard-full-width border-b border-border-light">
         <div className={baseGridClass}>{toolbar}</div>
       </div>
       <div className="dashboard-workspace">
@@ -48,7 +48,7 @@ export function DashboardShell({
         </div>
       </div>
       {footer && (
-        <div className="dashboard-full-width border-t-2 border-border-light">
+        <div className="dashboard-full-width border-t border-border-light">
           <div className={baseGridClass}>{footer}</div>
         </div>
       )}

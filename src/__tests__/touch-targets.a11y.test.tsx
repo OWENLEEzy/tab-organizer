@@ -31,7 +31,7 @@ describe('touch target regressions', () => {
       <NudgeBanner tabCount={20} onDismiss={() => {}} />,
     );
 
-    const nudgeDismiss = screen.getByRole('button', { name: 'Dismiss tab count warning' });
+    const nudgeDismiss = screen.getByRole('button', { name: 'Dismiss' });
     expectTouchHeight(nudgeDismiss);
     expectTouchWidth(nudgeDismiss);
 

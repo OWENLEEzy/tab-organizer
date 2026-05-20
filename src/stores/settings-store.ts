@@ -13,6 +13,8 @@ interface SettingsActions {
   toggleConfetti: () => Promise<void>;
   /** Change the theme preference. */
   setTheme: (theme: 'light' | 'dark' | 'system') => Promise<void>;
+  /** Change the language preference. */
+  setLanguage: (language: 'en' | 'zh' | 'system') => Promise<void>;
   /** Add a custom group rule. */
   addCustomGroup: (group: CustomGroup) => Promise<void>;
   /** Remove a custom group rule by its groupKey. */
@@ -21,6 +23,10 @@ interface SettingsActions {
   updateKeyBinding: (key: keyof AppSettings['keyBindings'], binding: string) => Promise<void>;
   /** Reset all key bindings to their defaults. */
   resetKeyBindings: () => Promise<void>;
+  /** Change the maximum number of visible tab chips per group. */
+  setMaxChipsVisible: (count: number) => Promise<void>;
+  /** Change the tab staleness idle threshold in days. */
+  setStaleThresholdDays: (days: number) => Promise<void>;
 }
 
 export type SettingsStore = {
@@ -138,6 +144,39 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     set({ settings: updated });
     try {
       await writeSettings({ keyBindings: updated.keyBindings });
+    } catch {
+      set({ settings: prev });
+    }
+  },
+
+  setMaxChipsVisible: async (count: number) => {
+    const { settings: prev } = get();
+    const updated: AppSettings = { ...prev, maxChipsVisible: count };
+    set({ settings: updated });
+    try {
+      await writeSettings({ maxChipsVisible: count });
+    } catch {
+      set({ settings: prev });
+    }
+  },
+
+  setStaleThresholdDays: async (days: number) => {
+    const { settings: prev } = get();
+    const updated: AppSettings = { ...prev, staleThresholdDays: days };
+    set({ settings: updated });
+    try {
+      await writeSettings({ staleThresholdDays: days });
+    } catch {
+      set({ settings: prev });
+    }
+  },
+
+  setLanguage: async (language: 'en' | 'zh' | 'system') => {
+    const { settings: prev } = get();
+    const updated: AppSettings = { ...prev, language };
+    set({ settings: updated });
+    try {
+      await writeSettings({ language });
     } catch {
       set({ settings: prev });
     }

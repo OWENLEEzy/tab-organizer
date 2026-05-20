@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '../hooks/useI18n';
 
 interface DupeBannerProps {
   count: number;
@@ -6,6 +7,8 @@ interface DupeBannerProps {
 }
 
 export function DupeBanner({ count, onClose }: DupeBannerProps): React.ReactElement | null {
+  const { t } = useI18n();
+
   if (count <= 1) {
     return null;
   }
@@ -34,7 +37,7 @@ export function DupeBanner({ count, onClose }: DupeBannerProps): React.ReactElem
           </svg>
         </div>
         <p className="text-text-primary-light dark:text-text-primary-dark text-sm leading-relaxed">
-          You have <strong className="font-semibold">{count}</strong> Tab Out tabs open. Keep just this one?
+          {t('alertExtraTabOutPlural', { count })}
         </p>
       </div>
       <button
@@ -42,7 +45,7 @@ export function DupeBanner({ count, onClose }: DupeBannerProps): React.ReactElem
         onClick={onClose}
         className="rounded-chip bg-accent-amber font-body focus-visible:ring-accent-amber/50 min-h-11 cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
       >
-        Close extras
+        {t('actionCloseExtras')}
       </button>
     </div>
   );

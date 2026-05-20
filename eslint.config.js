@@ -209,4 +209,30 @@ export default defineConfig([
       ],
     },
   },
+
+  // Rule 8: UI Design Guardrails
+  {
+    files: ['src/newtab/components/**/*.tsx', 'src/newtab/App.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "JSXOpeningElement JSXAttribute[name.name='className'] Literal[value=/\\bborder(?:-[btlr])?-2\\b/]",
+          message: 'Thick borders (e.g. "border-2", "border-b-2", "border-t-2") are restricted workspace-wide. Use standard 1px border ("border", "border-b", "border-t") to maintain the understated Notion warm-paper aesthetic.',
+        },
+        {
+          selector: "JSXOpeningElement[name.name='button'] JSXAttribute[name.name='className'] Literal[value=/\\buppercase\\b/]",
+          message: 'Uppercase text is restricted on buttons. Use standard sentence/title casing to keep the design understated.',
+        },
+        {
+          selector: "JSXOpeningElement[name.name='button'] JSXAttribute[name.name='className'] Literal[value=/\\bfont-bold\\b/]",
+          message: 'Font weight is capped at font-semibold (600) for buttons. Avoid "font-bold" or "font-extrabold".',
+        },
+        {
+          selector: "JSXOpeningElement[name.name='button'] JSXAttribute[name.name='className'] Literal[value=/\\brounded-(?!chip|sm|none|full)\\w+/]",
+          message: 'Custom large border-radius is restricted on buttons. Use "rounded-chip" (4px) as specified in frontend-design.md.',
+        },
+      ],
+    },
+  },
 ])

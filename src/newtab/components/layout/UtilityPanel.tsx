@@ -14,8 +14,8 @@ export function UtilityPanel({
   actions,
 }: UtilityPanelProps): React.ReactElement {
   return (
-    <aside className="border-2 border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark rounded-sm overflow-hidden shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b-2 border-border-light bg-surface-light px-3 py-2 dark:border-border-dark dark:bg-surface-dark">
+    <aside className="border border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark rounded-card overflow-hidden shadow-sm">
+      <div className="flex items-center justify-between gap-3 border-b border-border-light bg-surface-light px-3 py-2 dark:border-border-dark dark:bg-surface-dark">
         <div className="flex items-center gap-2">
           <h2 className="font-body text-[10px] font-bold uppercase tracking-widest text-text-primary-light dark:text-text-primary-dark">
             {title}

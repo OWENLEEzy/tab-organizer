@@ -1,4 +1,5 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { useI18n } from '../hooks/useI18n';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -8,12 +9,6 @@ interface SearchBarProps {
   resultCount: number;
   totalCount: number;
 }
-
-const COMMANDS = [
-  { key: '/dupes', label: 'Filter duplicate tabs', desc: 'Find duplicate tabs and keep the active one' },
-  { key: '/stale', label: 'Filter stale tabs', desc: 'Find tabs idle for more than 3 days' },
-  { key: '/space:', label: 'Switch Space view', desc: 'Filter by manual space name (e.g. /space:work)' },
-];
 
 // ─── Component ────────────────────────────────────────────────────────
 
@@ -26,6 +21,13 @@ export function SearchBar({
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const { t } = useI18n();
+
+  const commands = useMemo(() => [
+    { key: '/dupes', label: t('cmdDupesLabel'), desc: t('cmdDupesDesc') },
+    { key: '/stale', label: t('cmdStaleLabel'), desc: t('cmdStaleDesc') },
+    { key: '/space:', label: t('cmdSpaceLabel'), desc: t('cmdSpaceDesc') },
+  ], [t]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -50,8 +52,20 @@ export function SearchBar({
     setTimeout(() => setFocused(false), 150);
   }, []);
 
-  const showCommands = focused && value.startsWith('/') && !value.includes(' ');
-  const filteredCommands = COMMANDS.filter((cmd) => cmd.key.startsWith(value));
+  // Show commands when focused AND:
+  // 1. Value is empty (great for discoverability!)
+  // 2. Or value starts with '/' and is not already a fully entered command
+  const showCommands =
+    focused &&
+    (value === '' ||
+      (value.startsWith('/') &&
+        !value.includes(' ') &&
+        !commands.some((cmd) => cmd.key === value)));
+
+  // If value is empty, show all commands; otherwise filter by prefix
+  const filteredCommands = commands.filter((cmd) =>
+    value === '' ? true : cmd.key.startsWith(value)
+  );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>): void => {
@@ -72,7 +86,9 @@ export function SearchBar({
       } else if (e.key === 'Enter' || e.key === 'Tab') {
         e.preventDefault();
         const chosenCmd = filteredCommands[selectedIndex].key;
-        onChange(chosenCmd);
+        // Append a space for /dupes and /stale to naturally close the menu and allow typing search term
+        const finalCmd = chosenCmd === '/space:' ? chosenCmd : chosenCmd + ' ';
+        onChange(finalCmd);
         setSelectedIndex(0);
       }
     },
@@ -104,9 +120,10 @@ export function SearchBar({
         {/* Input field */}
         <input
           ref={inputRef}
-          type="search"
+          type="text"
+          role="searchbox"
           className="border-border-light dark:border-border-dark bg-bg-light dark:bg-bg-dark text-text-primary-light dark:text-text-primary-dark rounded-chip placeholder:text-text-secondary focus:border-accent-sage focus-visible:ring-accent-blue/40 min-h-11 w-full border py-2 pr-24 pl-9 text-sm transition-colors outline-none focus-visible:ring-2"
-          placeholder="Search tabs or type / for commands..."
+          placeholder={t('searchPlaceholderTabs')}
           value={value}
           onChange={handleInputChange}
           onFocus={handleFocus}
@@ -120,7 +137,7 @@ export function SearchBar({
           {/* Result count */}
           {showResults && (
             <span className="text-text-secondary text-xs whitespace-nowrap">
-              {resultCount} of {totalCount}
+              {t('searchMatchingOfPlural', { count: resultCount, total: totalCount })}
             </span>
           )}
 
@@ -166,7 +183,7 @@ export function SearchBar({
           style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}
         >
           <div className="px-2.5 py-1 text-[10px] font-bold tracking-wider text-text-secondary uppercase select-none">
-            Quick Commands
+            {value === '' ? t('cmdPanelTitleHint') : t('cmdPanelTitle')}
           </div>
           <div className="flex flex-col gap-0.5 mt-1">
             {filteredCommands.map((cmd, idx) => {
@@ -177,7 +194,9 @@ export function SearchBar({
                   type="button"
                   onMouseDown={(e) => {
                     e.preventDefault(); // Prevents input blur
-                    onChange(cmd.key);
+                    const chosenCmd = cmd.key;
+                    const finalCmd = chosenCmd === '/space:' ? chosenCmd : chosenCmd + ' ';
+                    onChange(finalCmd);
                     setSelectedIndex(0);
                   }}
                   className={`flex items-center justify-between rounded px-2.5 py-2 text-left transition-colors duration-100 cursor-pointer ${
@@ -192,7 +211,7 @@ export function SearchBar({
                   </div>
                   {active && (
                     <span className="text-[10px] opacity-60 text-accent-blue font-medium">
-                      Press Enter / Tab
+                      {t('cmdHintEnter')}
                     </span>
                   )}
                 </button>

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ManualGroup, HistorySnapshot, GroupAssignment, Tab, TabGroup, ViewMode } from '../types';
+import type { ManualGroup, HistorySnapshot, GroupAssignment, Tab, TabGroup, ViewMode, CustomGroup } from '../types';
 import { groupTabsByDomain, autoAssignProductToSpace } from '../lib/tab-grouper';
 import {
   clearHistory,
@@ -15,6 +15,7 @@ import { buildHistorySnapshot } from '../lib/history-snapshots';
 import { duplicateTabIdsToClose } from '../lib/duplicate-tabs';
 import { getTabDomain, isRealTab, isTabOutPage } from '../utils/url';
 import { getErrorMessage } from '../utils/error';
+import { useSettingsStore } from './settings-store';
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -71,6 +72,8 @@ interface TabActions {
   closeExtraDashboards: () => Promise<void>;
   /** Set the currently active space to filter the dashboard. */
   setActiveSpace: (id: string | null) => void;
+  /** Overwrite manualGroups and groupAssignments with imported backup. */
+  importBackup: (manualGroups: ManualGroup[], groupAssignments: GroupAssignment[]) => Promise<void>;
 }
 
 export type TabStore = {
@@ -115,7 +118,10 @@ function orderedGroups(groups: ManualGroup[]): ManualGroup[] {
   return [...groups].sort((a, b) => a.order - b.order);
 }
 
-function buildProductKeyCompatibility(tabs: Tab[]): {
+function buildProductKeyCompatibility(
+  tabs: Tab[],
+  customGroups?: CustomGroup[],
+): {
   currentProductKeys: Set<string>;
   legacyKeyMap: Map<string, string>;
   hostnamesByProductKey: Map<string, string[]>;
@@ -128,7 +134,21 @@ function buildProductKeyCompatibility(tabs: Tab[]): {
     const hostname = getTabDomain(tab.url);
     if (!hostname) continue;
 
-    const product = productForHostname(hostname);
+    const normalizedHost = hostname.toLowerCase();
+    const customOverride = customGroups?.find(
+      (cg) =>
+        cg.hostname?.toLowerCase() === normalizedHost ||
+        (cg.hostnameEndsWith && normalizedHost.endsWith(cg.hostnameEndsWith.toLowerCase())),
+    );
+
+    const product = customOverride
+      ? {
+          key: customOverride.groupKey,
+          label: customOverride.groupLabel,
+          iconDomain: hostname,
+        }
+      : productForHostname(hostname);
+
     const legacyKey = legacyProductKeyForHostname(hostname);
 
     currentProductKeys.add(product.key);
@@ -184,11 +204,12 @@ export const useTabStore = create<TabStore>((set) => ({
     try {
       const rawTabs = await chrome.tabs.query({});
       const mapped = rawTabs.map(toAppTab).filter((t) => isRealTab(t.url));
+      const customGroups = useSettingsStore.getState().settings.customGroups;
       const { currentProductKeys, legacyKeyMap, hostnamesByProductKey } =
-        buildProductKeyCompatibility(mapped);
+        buildProductKeyCompatibility(mapped, customGroups);
       const organizerState = await reconcileOrganizerState(currentProductKeys, legacyKeyMap);
       const groupOrder = organizerState.groupOrder;
-      const productGroups = groupTabsByDomain(mapped, groupOrder);
+      const productGroups = groupTabsByDomain(mapped, groupOrder, customGroups);
       const manualGroups = orderedGroups(organizerState.manualGroups);
       const unsortedOverrideSet = new Set(organizerState.unsortedOverrides);
       
@@ -594,5 +615,14 @@ export const useTabStore = create<TabStore>((set) => ({
     } catch (err: unknown) {
       console.warn('[Tab Out] Failed to close extra dashboards:', err);
     }
+  },
+
+  importBackup: async (manualGroups: ManualGroup[], groupAssignments: GroupAssignment[]) => {
+    set({ manualGroups, groupAssignments });
+    await writeOrganizerState({
+      manualGroups,
+      groupAssignments,
+    });
+    await useTabStore.getState().fetchTabs();
   },
 }));

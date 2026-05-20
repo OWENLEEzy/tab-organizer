@@ -2,6 +2,7 @@ import React from 'react';
 import { SearchBar } from '../SearchBar';
 import { ViewToggle } from '../ViewToggle';
 import { ActionButton } from '../ui/ActionButton';
+import { useI18n } from '../../hooks/useI18n';
 
 interface DashboardHeaderProps {
   title: string;
@@ -47,20 +48,11 @@ function SidebarIcon(): React.ReactElement {
   );
 }
 
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(date);
-}
-
 export function DashboardHeader({
   title,
   hasGroups,
   groupCount,
-  dateLabel = formatDate(new Date()),
+  dateLabel,
   searchQuery,
   onSearchChange,
   resultCount,
@@ -74,15 +66,27 @@ export function DashboardHeader({
   isSidebarExpanded = false,
   onToggleSidebar,
 }: DashboardHeaderProps): React.ReactElement {
-  const groupLabel = `${groupCount} Group${groupCount === 1 ? '' : 's'}`;
+  const { t, locale } = useI18n();
+
+  const formatDate = (date: Date): string => {
+    return new Intl.DateTimeFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date);
+  };
+
+  const activeDateLabel = dateLabel || formatDate(new Date());
+  const groupLabel = groupCount === 1 ? t('groupCountSingle') : t('groupCountPlural', { count: groupCount });
 
   return (
-    <header className="pb-6 pt-8" aria-label="Dashboard controls">
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-4 border-b-2 border-border-light pb-5 dark:border-border-dark lg:flex-row lg:items-center lg:justify-between">
+    <header className="pb-3 pt-2" aria-label="Dashboard controls">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 border-b border-border-light pb-3 dark:border-border-dark lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <p className="font-body text-xs font-semibold tracking-normal text-text-secondary uppercase">
-              {dateLabel}
+              {activeDateLabel}
             </p>
             <h1 className="mt-1 font-heading text-3xl font-normal tracking-tight text-text-primary-light dark:text-text-primary-dark">
               {title}
@@ -98,23 +102,23 @@ export function DashboardHeader({
               </>
             ) : null}
             <div className="h-6 w-px bg-border-light dark:bg-border-dark mx-2" />
-            <ActionButton variant="quiet" icon={<SettingsIcon />} onClick={onOpenSettings} aria-label="Settings">
-              Settings
+            <ActionButton variant="quiet" icon={<SettingsIcon />} onClick={onOpenSettings} aria-label={t('settings')}>
+              {t('settings')}
             </ActionButton>
             <ActionButton 
               variant="quiet" 
               icon={<SidebarIcon />} 
               onClick={onToggleSidebar} 
-              aria-label={isSidebarExpanded ? 'Hide History' : 'Show History'}
+              aria-label={isSidebarExpanded ? t('historyHide') : t('historyShow')}
               className={isSidebarExpanded ? 'text-accent-blue bg-accent-blue/5' : ''}
             >
-              {isSidebarExpanded ? 'Hide History' : 'History'}
+              {isSidebarExpanded ? t('historyHide') : t('historyShow')}
             </ActionButton>
           </div>
         </div>
 
         {hasGroups ? (
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <div className="min-w-0 flex-1 md:min-w-[24rem]">
               <SearchBar
                 value={searchQuery}
@@ -125,10 +129,10 @@ export function DashboardHeader({
             </div>
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
               <ActionButton variant="quiet" icon={<RefreshIcon />} onClick={onRefresh} aria-label="Refresh tabs">
-                Refresh
+                {t('refresh')}
               </ActionButton>
-              <ActionButton onClick={onCreateGroup}>New Group</ActionButton>
-              <ActionButton variant="danger" onClick={onCloseAll}>Close All</ActionButton>
+              <ActionButton onClick={onCreateGroup}>{t('newGroup')}</ActionButton>
+              <ActionButton variant="danger" onClick={onCloseAll}>{t('closeAll')}</ActionButton>
             </div>
           </div>
         ) : null}

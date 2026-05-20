@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { PromptDialogProps } from '../../types';
+import { ActionButton } from './ui/ActionButton';
+import { useI18n } from '../hooks/useI18n';
 
 // ─── Component ────────────────────────────────────────────────────────
 
@@ -17,6 +19,7 @@ export function PromptDialog({
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = React.useId();
+  const { t } = useI18n();
 
 
 
@@ -98,7 +101,7 @@ export function PromptDialog({
       <button
         type="button"
         tabIndex={-1}
-        aria-label="Dismiss backdrop"
+        aria-label="Dismiss dialog"
         className="absolute inset-0 bg-black/30"
         onClick={onCancel}
       />
@@ -107,7 +110,7 @@ export function PromptDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="prompt-dialog-title"
-        className="border-2 border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] p-6 shadow-2xl"
+        className="border border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] p-6 shadow-2xl rounded-card"
       >
         <h3
           id="prompt-dialog-title"
@@ -127,27 +130,26 @@ export function PromptDialog({
             id={inputId}
             ref={inputRef}
             type="text"
-            className="w-full rounded-sm border-2 border-border-light bg-surface-light px-3 py-2 text-sm text-text-primary-light outline-none focus:border-accent-blue dark:border-border-dark dark:bg-surface-dark dark:text-text-primary-dark dark:focus:border-accent-blue transition-colors"
+            className="w-full rounded-sm border border-border-light bg-surface-light px-3 py-2 text-sm text-text-primary-light outline-none focus:border-accent-blue dark:border-border-dark dark:bg-surface-dark dark:text-text-primary-dark dark:focus:border-accent-blue transition-colors"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={placeholder}
           />
           
           <div className="mt-6 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              className="rounded-chip font-body text-text-secondary hover:bg-surface-light focus-visible:ring-accent-blue/40 dark:hover:bg-surface-dark min-h-11 cursor-pointer px-4 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            <ActionButton
+              variant="quiet"
               onClick={onCancel}
             >
-              Cancel
-            </button>
-            <button
+              {t('dialogCancel')}
+            </ActionButton>
+            <ActionButton
               type="submit"
-              className="rounded-chip bg-accent-blue font-body focus-visible:ring-accent-blue/50 min-h-11 cursor-pointer px-6 py-2 text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+              variant="primary"
               disabled={!value.trim()}
             >
               {confirmLabel}
-            </button>
+            </ActionButton>
           </div>
         </form>
       </div>

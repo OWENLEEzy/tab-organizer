@@ -87,11 +87,20 @@ function CloseIcon(): React.ReactElement {
 
 function HighlightedText({ text, highlight = '' }: { text: string; highlight?: string }): React.ReactElement {
   let cleanHighlight = (highlight || '').trim();
-  if (cleanHighlight.startsWith('/')) {
+  const trimmedLower = cleanHighlight.toLowerCase();
+  const isCommand = 
+    trimmedLower.startsWith('/') ||
+    trimmedLower.startsWith('space:') ||
+    trimmedLower === 'stale' || trimmedLower === 'stales' ||
+    trimmedLower === 'dupe' || trimmedLower === 'dupes' ||
+    trimmedLower.startsWith('stale ') || trimmedLower.startsWith('stales ') ||
+    trimmedLower.startsWith('dupe ') || trimmedLower.startsWith('dupes ');
+
+  if (isCommand) {
     cleanHighlight = cleanHighlight
-      .replace(/^\/dupes\s*/i, '')
-      .replace(/^\/stale\s*/i, '')
-      .replace(/^\/space:[^\s]*\s*/i, '')
+      .replace(/^\/?dupes?\s*/i, '')
+      .replace(/^\/?stales?\s*/i, '')
+      .replace(/^\/?space:[^\s]*\s*/i, '')
       .trim();
   }
   if (!cleanHighlight) return <>{text}</>;
@@ -156,8 +165,18 @@ export function TabChip({
 
   useEffect(() => {
     if (isFocused && chipRef.current) {
-      chipRef.current.focus({ preventScroll: false });
-      chipRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      const active = document.activeElement;
+      const isInputFocused =
+        active instanceof HTMLInputElement ||
+        active instanceof HTMLTextAreaElement ||
+        (active instanceof HTMLElement && active.isContentEditable === true);
+
+      if (!isInputFocused) {
+        chipRef.current.focus({ preventScroll: false });
+      }
+      if (typeof chipRef.current.scrollIntoView === 'function') {
+        chipRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
     }
   }, [isFocused]);
 
@@ -183,7 +202,7 @@ export function TabChip({
   }, [faviconUrl]);
 
   const chipClasses = [
-    'flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-chip border-2 border-transparent px-2.5 py-1.5 text-left',
+    'flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-chip border border-transparent px-2.5 py-1.5 text-left',
     'cursor-pointer bg-transparent transition-colors duration-150',
     isSelected ? '' : 'hover:border-border-light hover:bg-surface-light dark:hover:border-border-dark dark:hover:bg-surface-dark',
     'focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none',
@@ -272,3 +291,5 @@ export function TabChip({
     </div>
   );
 }
+
+export const TabChipMemo = React.memo(TabChip);

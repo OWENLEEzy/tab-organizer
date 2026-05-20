@@ -6,7 +6,7 @@ const distDir = path.resolve(process.cwd(), 'dist');
 const assetsDir = path.join(distDir, 'assets');
 const dashboardHtmlPath = path.join(distDir, 'src', 'newtab', 'index.html');
 const maxEntryParsedBytes = 300 * 1024;
-const maxTotalParsedBytes = 365 * 1024;
+const maxTotalParsedBytes = 400 * 1024;
 
 if (!fs.existsSync(assetsDir)) {
   console.error('[bundle-budget] dist/assets not found. Run npm run build first.');

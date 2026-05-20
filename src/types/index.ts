@@ -142,9 +142,11 @@ export interface HistorySnapshot {
 
 export interface AppSettings {
   theme: 'light' | 'dark' | 'system';
+  language?: 'en' | 'zh' | 'system';
   soundEnabled: boolean;
   confettiEnabled: boolean;
   maxChipsVisible: number;
+  staleThresholdDays: number;
   customGroups: CustomGroup[];
   landingPagePatterns: LandingPagePattern[];
   keyBindings: {

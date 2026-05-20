@@ -8,6 +8,7 @@ import { playCloseEffects } from '../../lib/close-effects';
 import { getChipCloseDelay, userPrefersReducedMotion } from '../lib/motion';
 import type { TabGroup, AppSettings } from '../../types';
 import type { UIAction } from './useUIState';
+import type { TranslationKey } from './useI18n';
 
 interface HandlerDeps {
   settings: AppSettings;
@@ -17,6 +18,7 @@ interface HandlerDeps {
   selectedUrls: Set<string>;
   selectedTabIds: Set<number>;
   lastClickedIndex: number | null;
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string;
 }
 
 export function useTabHandlers({
@@ -27,6 +29,7 @@ export function useTabHandlers({
   selectedUrls,
   selectedTabIds,
   lastClickedIndex,
+  t,
 }: HandlerDeps) {
   const tabStore = useTabStore();
 
@@ -46,44 +49,45 @@ export function useTabHandlers({
 
   const handleCloseProduct = useCallback(
     (p: TabGroup) => {
+      const name = p.friendlyName || p.domain;
       dispatch({
         type: 'SET_CONFIRM_DIALOG',
         dialog: {
           id: crypto.randomUUID(),
           open: true,
-          title: `Close all ${p.friendlyName || p.domain} tabs`,
-          message: `This will close all ${p.tabs.length} tabs for this product.`,
-          confirmLabel: 'Close all',
+          title: t('confirmCloseProductTitle', { name }),
+          message: t('confirmCloseProductMsg', { count: p.tabs.length }),
+          confirmLabel: t('confirmCloseProductBtn'),
           onConfirm: () => {
-            const urls = p.tabs.map((t) => t.url);
-            performBatchClose(urls, `Closed all ${p.tabs.length} ${p.friendlyName || p.domain} tabs`);
+            const urls = p.tabs.map((tab) => tab.url);
+            performBatchClose(urls, t('toastClosedProductTabs', { count: p.tabs.length, name }));
             dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
           },
         },
       });
     },
-    [dispatch, performBatchClose],
+    [dispatch, performBatchClose, t],
   );
 
   const handleCloseManualGroup = useCallback(
     (groups: TabGroup[], title: string) => {
-      const urls = groups.flatMap((p) => p.tabs.map((t) => t.url));
+      const urls = groups.flatMap((p) => p.tabs.map((tab) => tab.url));
       dispatch({
         type: 'SET_CONFIRM_DIALOG',
         dialog: {
           id: crypto.randomUUID(),
           open: true,
-          title: `Close all tabs in ${title}`,
-          message: `This will close all ${urls.length} tabs in this section.`,
-          confirmLabel: 'Close all',
+          title: t('confirmCloseSectionTitle', { title }),
+          message: t('confirmCloseSectionMsg', { count: urls.length }),
+          confirmLabel: t('confirmCloseSectionBtn'),
           onConfirm: () => {
-            performBatchClose(urls, `Closed all ${urls.length} tabs in ${title}`);
+            performBatchClose(urls, t('toastClosedSectionTabs', { count: urls.length, title }));
             dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
           },
         },
       });
     },
-    [dispatch, performBatchClose],
+    [dispatch, performBatchClose, t],
   );
 
   const handleCloseDuplicates = useCallback(
@@ -93,20 +97,20 @@ export function useTabHandlers({
         dialog: {
           id: crypto.randomUUID(),
           open: true,
-          title: 'Close duplicates',
-          message: `This will close all ${urls.length} duplicate tabs, keeping one of each.`,
-          confirmLabel: 'Close Duplicates',
+          title: t('confirmCloseDupesTitle'),
+          message: t('confirmCloseDupesMsg', { count: urls.length }),
+          confirmLabel: t('confirmCloseDupesBtn'),
           onConfirm: () => {
             playCloseEffects(settings);
             tabStore.closeDuplicates(urls, true).then(() => {
-              showToast('Duplicates closed');
+              showToast(t('toastDuplicatesClosed'));
             });
             dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
           },
         },
       });
     },
-    [dispatch, settings, tabStore, showToast],
+    [dispatch, settings, tabStore, showToast, t],
   );
 
   const handleCloseTabAnimated = useCallback(
@@ -116,7 +120,7 @@ export function useTabHandlers({
 
       if (closeDelay === 0) {
         tabStore.closeTabByUrl(url).then(() => {
-          showToast('Tab closed');
+          showToast(t('toastTabClosed'));
         });
         return;
       }
@@ -124,7 +128,7 @@ export function useTabHandlers({
       dispatch({ type: 'SET_CLOSING_URLS', urls: (prev) => new Set([...prev, url]) });
       setTimeout(() => {
         tabStore.closeTabByUrl(url).then(() => {
-          showToast('Tab closed');
+          showToast(t('toastTabClosed'));
           dispatch({
             type: 'SET_CLOSING_URLS',
             urls: (prev) => {
@@ -136,7 +140,7 @@ export function useTabHandlers({
         });
       }, closeDelay);
     },
-    [dispatch, settings, tabStore, showToast],
+    [dispatch, settings, tabStore, showToast, t],
   );
 
   const handleFocusTab = useCallback(
@@ -149,9 +153,9 @@ export function useTabHandlers({
   const handleResetSortOrder = useCallback(async () => {
     await clearGroupOrder();
     await tabStore.fetchTabs();
-    showToast('Sort order reset');
+    showToast(t('toastSortOrderReset'));
     dispatch({ type: 'SET_SETTINGS_OPEN', open: false });
-  }, [tabStore, showToast, dispatch]);
+  }, [tabStore, showToast, dispatch, t]);
 
   const handleChipClick = useCallback(
     (url: string, event: React.MouseEvent) => {
@@ -212,7 +216,7 @@ export function useTabHandlers({
     const urls = [...selectedUrls];
     const tabIds = [...selectedTabIds];
     const count = tabIds.length > 0 ? tabIds.length : urls.length;
-    
+
     const performClose = () => {
       playCloseEffects(settings);
       const closePromise = tabIds.length > 0
@@ -220,7 +224,7 @@ export function useTabHandlers({
         : tabStore.closeOneTabPerUrl(urls);
 
       closePromise.then(() => {
-        showToast(`Closed ${count} tab${count !== 1 ? 's' : ''}`);
+        showToast(count === 1 ? t('toastClosedSelectedSingle') : t('toastClosedSelectedPlural', { count }));
         dispatch({ type: 'SET_SELECTED_URLS', urls: new Set() });
         dispatch({ type: 'SET_SELECTED_TAB_IDS', tabIds: new Set() });
         dispatch({ type: 'SET_LAST_CLICKED_INDEX', index: null });
@@ -233,9 +237,9 @@ export function useTabHandlers({
         dialog: {
           id: crypto.randomUUID(),
           open: true,
-          title: `Close ${count} selected tabs`,
-          message: `Are you sure you want to close these ${count} tabs?`,
-          confirmLabel: 'Close Selected',
+          title: t('confirmCloseSelectedTitle', { count }),
+          message: t('confirmCloseSelectedMsg', { count }),
+          confirmLabel: t('confirmCloseSelectedBtn'),
           onConfirm: () => {
             performClose();
             dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
@@ -245,7 +249,7 @@ export function useTabHandlers({
     } else {
       performClose();
     }
-  }, [dispatch, selectedTabIds, selectedUrls, settings, tabStore, showToast]);
+  }, [dispatch, selectedTabIds, selectedUrls, settings, tabStore, showToast, t]);
 
   const handleCloseAll = useCallback(() => {
     const tabs = tabStore.tabs;
@@ -254,17 +258,17 @@ export function useTabHandlers({
       dialog: {
         id: crypto.randomUUID(),
         open: true,
-        title: 'Close all tabs',
-        message: `This will close all ${tabs.length} open tabs. This cannot be undone.`,
-        confirmLabel: 'Close All',
+        title: t('confirmCloseAllTitle'),
+        message: t('confirmCloseAllMsg', { count: tabs.length }),
+        confirmLabel: t('confirmCloseAllBtn'),
         onConfirm: () => {
-          const allUrls = tabs.map((t) => t.url);
-          performBatchClose(allUrls, `Closed ${tabs.length} tabs`);
+          const allUrls = tabs.map((tab) => tab.url);
+          performBatchClose(allUrls, t('toastClosedSelectedPlural', { count: tabs.length }));
           dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
         },
       },
     });
-  }, [dispatch, tabStore.tabs, performBatchClose]);
+  }, [dispatch, tabStore.tabs, performBatchClose, t]);
 
   const handleCreateGroup = useCallback(() => {
     dispatch({
@@ -272,19 +276,19 @@ export function useTabHandlers({
       dialog: {
         id: crypto.randomUUID(),
         open: true,
-        title: 'New Section',
-        label: 'Section Name',
-        initialValue: 'Work',
-        confirmLabel: 'Create Section',
+        title: t('promptCreateGroupTitle'),
+        label: t('promptCreateGroupLabel'),
+        initialValue: t('promptCreateGroupValue'),
+        confirmLabel: t('promptCreateGroupBtn'),
         onConfirm: (name) => {
           tabStore.createGroup(name).then(() => {
-            showToast('Group created');
+            showToast(t('toastGroupCreated'));
           });
           dispatch({ type: 'CLOSE_PROMPT_DIALOG' });
         },
       },
     });
-  }, [dispatch, tabStore, showToast]);
+  }, [dispatch, tabStore, showToast, t]);
 
   const handleRenameGroup = useCallback((group: { id: string; name: string }) => {
     dispatch({
@@ -292,19 +296,19 @@ export function useTabHandlers({
       dialog: {
         id: crypto.randomUUID(),
         open: true,
-        title: 'Rename Section',
-        label: 'Section Name',
+        title: t('promptRenameGroupTitle'),
+        label: t('promptRenameGroupLabel'),
         initialValue: group.name,
-        confirmLabel: 'Save Changes',
+        confirmLabel: t('promptRenameGroupBtn'),
         onConfirm: (name) => {
           tabStore.renameGroup(group.id, name).then(() => {
-            showToast('Group renamed');
+            showToast(t('toastGroupRenamed'));
           });
           dispatch({ type: 'CLOSE_PROMPT_DIALOG' });
         },
       },
     });
-  }, [dispatch, tabStore, showToast]);
+  }, [dispatch, tabStore, showToast, t]);
 
   const handleDeleteGroup = useCallback((group: { id: string; name: string }) => {
     dispatch({
@@ -312,29 +316,29 @@ export function useTabHandlers({
       dialog: {
         id: crypto.randomUUID(),
         open: true,
-        title: `Delete ${group.name}`,
-        message: 'Items in this group will return to Unsorted. No tabs will be closed.',
-        confirmLabel: 'Delete group',
+        title: t('confirmDeleteGroupTitle', { name: group.name }),
+        message: t('confirmDeleteGroupMsg'),
+        confirmLabel: t('confirmDeleteGroupBtn'),
         onConfirm: () => {
           tabStore.deleteGroup(group.id).then(() => {
-            showToast('Group deleted');
+            showToast(t('toastGroupDeleted'));
           });
           dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
         },
       },
     });
-  }, [dispatch, tabStore, showToast]);
+  }, [dispatch, tabStore, showToast, t]);
 
   const handleSetViewMode = useCallback((mode: 'cards' | 'table') => {
     tabStore.setViewMode(mode).then(() => {
-      showToast(mode === 'cards' ? 'Cards view' : 'Table view');
+      showToast(mode === 'cards' ? t('toastViewModeCards') : t('toastViewModeTable'));
     });
-  }, [tabStore, showToast]);
+  }, [tabStore, showToast, t]);
 
   const handleRefresh = useCallback(async () => {
     await tabStore.fetchTabs();
-    showToast('Refreshed');
-  }, [tabStore, showToast]);
+    showToast(t('toastRefreshed'));
+  }, [tabStore, showToast, t]);
 
   const handleMoveTableItem = useCallback((p: TabGroup, groupId: string) => {
     const productKey = getProductKey(p);
@@ -343,28 +347,28 @@ export function useTabHandlers({
       : tabStore.moveProductToMain(productKey);
 
     move.then(() => {
-      showToast(groupId ? 'Moved to group' : 'Moved to Unsorted');
+      showToast(groupId ? t('toastMovedToGroup') : t('toastMovedToUnsorted'));
     });
-  }, [tabStore, showToast]);
+  }, [tabStore, showToast, t]);
 
   const handleMoveProductToMain = useCallback((productKey: string) => {
     tabStore.moveProductToMain(productKey).then(() => {
-      showToast('Moved to Unsorted');
+      showToast(t('toastMovedToUnsorted'));
     });
-  }, [tabStore, showToast]);
+  }, [tabStore, showToast, t]);
 
   const handleMoveProductToGroup = useCallback((productKey: string, groupId: string) => {
     tabStore.moveProductToGroup(productKey, groupId).then(() => {
-      showToast('Moved to group');
+      showToast(t('toastMovedToGroup'));
     });
-  }, [tabStore, showToast]);
+  }, [tabStore, showToast, t]);
 
-  const handleSelectStaleTabs = useCallback((days = 3) => {
+  const handleSelectStaleTabs = useCallback((days = settings.staleThresholdDays ?? 3) => {
     const now = Date.now();
-    
+
     const staleUrls = tabStore.tabs
-      .filter((t) => isTabStale(t, now, days))
-      .map((t) => t.url);
+      .filter((tab) => isTabStale(tab, now, days))
+      .map((tab) => tab.url);
 
     if (staleUrls.length > 0) {
       dispatch({
@@ -372,11 +376,15 @@ export function useTabHandlers({
         urls: new Set(staleUrls),
       });
       dispatch({ type: 'SET_SELECTED_TAB_IDS', tabIds: new Set() });
-      showToast(`Selected ${staleUrls.length} stale tab${staleUrls.length !== 1 ? 's' : ''}. Press close to clear.`);
+      showToast(
+        staleUrls.length === 1
+          ? t('toastSelectedStaleSingle')
+          : t('toastSelectedStalePlural', { count: staleUrls.length })
+      );
     } else {
-      showToast("No stale tabs found 🧹");
+      showToast(t('toastNoStaleTabs'));
     }
-  }, [tabStore, dispatch, showToast]);
+  }, [tabStore, dispatch, showToast, settings.staleThresholdDays, t]);
 
   const handleSelectDuplicateTabs = useCallback(() => {
     const duplicateTabIds = duplicateTabIdsToClose(tabStore.tabs);
@@ -390,11 +398,15 @@ export function useTabHandlers({
         type: 'SET_SELECTED_TAB_IDS',
         tabIds: new Set(duplicateTabIds),
       });
-      showToast(`Selected ${duplicateTabIds.length} duplicate tab${duplicateTabIds.length !== 1 ? 's' : ''}. Press close to clear.`);
+      showToast(
+        duplicateTabIds.length === 1
+          ? t('toastSelectedDuplicatesSingle')
+          : t('toastSelectedDuplicatesPlural', { count: duplicateTabIds.length })
+      );
     } else {
-      showToast("No duplicate tabs found 🧹");
+      showToast(t('toastNoDuplicates'));
     }
-  }, [tabStore, dispatch, showToast]);
+  }, [tabStore, dispatch, showToast, t]);
 
   return {
     handleCloseProduct,

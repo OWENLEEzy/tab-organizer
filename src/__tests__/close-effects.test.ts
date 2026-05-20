@@ -17,6 +17,7 @@ const BASE_SETTINGS: AppSettings = {
   soundEnabled: true,
   confettiEnabled: true,
   maxChipsVisible: 8,
+  staleThresholdDays: 3,
   customGroups: [],
   landingPagePatterns: [],
   keyBindings: {

@@ -40,15 +40,24 @@ export function A11yHarness(): React.ReactElement {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         theme="system"
+        language="system"
         soundEnabled
         confettiEnabled
         customGroups={[]}
         onSetTheme={() => {}}
+        onSetLanguage={() => {}}
         onToggleSound={() => {}}
         onToggleConfetti={() => {}}
         onResetSortOrder={() => {}}
         onAddCustomGroup={() => {}}
         onRemoveCustomGroup={() => {}}
+        maxChipsVisible={8}
+        staleThresholdDays={3}
+        onSetMaxChipsVisible={() => {}}
+        onSetStaleThresholdDays={() => {}}
+        onExportSettings={() => {}}
+        onImportSettings={async () => {}}
+        onCreateGroup={() => {}}
       />
     </main>
   );
