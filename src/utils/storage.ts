@@ -567,7 +567,7 @@ export async function pruneStaleStorage(currentProductKeys: Set<string>): Promis
       unsortedOverrides: nextOverrides,
     };
   }).catch((err: unknown) => {
-    console.warn('[Tab Out] Failed to prune stale organizer storage:', err);
+    console.warn('[Tab Organizer] Failed to prune stale organizer storage:', err);
   });
 }
 
@@ -631,7 +631,7 @@ export async function reconcileOrganizerState(
       };
     });
   } catch (err: unknown) {
-    console.warn('[Tab Out] Failed to prune stale organizer storage:', err);
+    console.warn('[Tab Organizer] Failed to prune stale organizer storage:', err);
     nextStorage = await readStorage();
   }
 

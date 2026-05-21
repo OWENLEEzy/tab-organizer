@@ -177,7 +177,7 @@ async function protectHistoryBeforeClosing(allTabs: chrome.tabs.Tab[]): Promise<
     const snapshot = buildHistorySnapshot(allTabs.map(toAppTab));
     await promoteHistorySnapshot(snapshot);
   } catch (err: unknown) {
-    console.warn('[Tab Out] Failed to protect history before closing tabs:', err);
+    console.warn('[Tab Organizer] Failed to protect history before closing tabs:', err);
   }
 }
 
@@ -238,7 +238,7 @@ export const useTabStore = create<TabStore>((set) => ({
 
       if (hasNewAssignments) {
         await writeOrganizerState({ groupAssignments }).catch(err => {
-          console.warn('[Tab Out] Failed to persist auto-assignments:', err);
+          console.warn('[Tab Organizer] Failed to persist auto-assignments:', err);
         });
       }
 
@@ -453,7 +453,7 @@ export const useTabStore = create<TabStore>((set) => ({
     }
     set({ products: newProducts });
     writeGroupOrder(groupOrder).catch((err: unknown) => {
-      console.warn('[Tab Out] Failed to persist product order:', err);
+      console.warn('[Tab Organizer] Failed to persist product order:', err);
     });
   },
 
@@ -613,7 +613,7 @@ export const useTabStore = create<TabStore>((set) => ({
         await useTabStore.getState().closeTabsExact(extraDashboards);
       }
     } catch (err: unknown) {
-      console.warn('[Tab Out] Failed to close extra dashboards:', err);
+      console.warn('[Tab Organizer] Failed to close extra dashboards:', err);
     }
   },
 

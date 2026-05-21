@@ -19,9 +19,10 @@ export function SortDropdown({ value, onChange }: SortDropdownProps): React.Reac
   return (
     <div className="sort-dropdown" aria-label="Sort order">
       <select
+        aria-label="Sort order"
         value={value}
         onChange={(e) => onChange(e.target.value as GroupSortOption)}
-        className="rounded-chip border border-border-light bg-surface-light px-3 py-2 font-body text-xs text-text-primary-light dark:border-border-dark dark:bg-surface-dark dark:text-text-primary-dark focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue h-[--spacing-button-height]"
+        className="rounded-chip border border-border-light bg-surface-light font-body text-xs text-text-primary-light dark:border-border-dark dark:bg-surface-dark dark:text-text-primary-dark focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -29,6 +30,11 @@ export function SortDropdown({ value, onChange }: SortDropdownProps): React.Reac
           </option>
         ))}
       </select>
+      <span className="pointer-events-none absolute right-3 text-text-secondary" aria-hidden="true">
+        <svg className="size-3" viewBox="0 0 12 12" fill="none">
+          <path d="M3 4.5 6 7.5 9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
     </div>
   );
 }

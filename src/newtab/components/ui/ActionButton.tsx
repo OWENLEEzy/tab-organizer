@@ -26,11 +26,10 @@ export function ActionButton({
     <button
       type={type}
       className={[
-        'inline-flex cursor-pointer items-center justify-center gap-2 rounded-chip border border-border-light px-4 py-2',
+        'action-button inline-flex cursor-pointer items-center justify-center gap-2 rounded-chip border border-border-light',
         'font-body text-xs font-semibold tracking-wide transition-colors duration-150',
         'focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none',
         'disabled:cursor-not-allowed disabled:opacity-50 dark:border-border-dark',
-        'h-[--spacing-button-height]',
         variantClasses[variant],
         className,
       ].filter(Boolean).join(' ')}

@@ -28,6 +28,17 @@ describe('MotherDuck-inspired dashboard token layer', () => {
     expect(globalCss).toContain('.dashboard-workspace');
     expect(globalCss).toContain('.dashboard-utilities');
   });
+
+  it('keeps dashboard control heights managed by global size tokens', () => {
+    expect(globalCss).toContain('.action-button');
+    expect(globalCss).toContain('.view-toggle');
+    expect(globalCss).toContain('.sort-dropdown');
+    expect(globalCss).toContain('height: var(--spacing-button-height)');
+    expect(globalCss).toContain('min-width: calc(var(--spacing-button-height)');
+    expect(globalCss).not.toContain('--spacing-button-min-width');
+    expect(globalCss).not.toContain('--spacing-button-padding-x');
+    expect(globalCss).not.toContain('height: 44px');
+  });
 });
 
 describe('MotherDuck-inspired layout components', () => {

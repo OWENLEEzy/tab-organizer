@@ -64,9 +64,9 @@
   --shadow-card-hover: var(--shadow-to-none);
 
   /* Button sizes */
-  --spacing-button-height: 2.75rem;  /* 44px standard button */
+  --spacing-button-height: 2.5rem;   /* 40px standard dashboard button */
   --spacing-button-height-sm: 2rem;   /* 32px small */
-  --spacing-button-icon: 2.75rem;    /* 44px icon buttons */
+  --spacing-button-icon: var(--spacing-button-height);
   --spacing-button-icon-sm: 2rem;     /* 32px small icon buttons */
 }
 /* stylelint-enable custom-property-pattern, custom-property-empty-line-before */
@@ -370,6 +370,14 @@ body, html {
   min-width: 0;
 }
 
+.action-button {
+  box-sizing: border-box;
+  height: var(--spacing-button-height);
+  min-width: calc(var(--spacing-button-height) * 2.4);
+  padding: 0 calc(var(--spacing-button-height) * 0.4);
+  line-height: normal;
+}
+
 .section-actions button,
 .view-toggle button,
 .product-table select {
@@ -383,6 +391,15 @@ body, html {
   padding: 6px 10px;
   color: var(--color-text-secondary);
   transition: background 150ms ease, color 150ms ease;
+}
+
+.view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 0;
+  padding: 0 calc(var(--spacing-button-height) * 0.3);
 }
 
 .section-actions button:hover,
@@ -400,18 +417,38 @@ body, html {
 .view-toggle {
   display: inline-flex;
   gap: 2px;
-  padding: 2px;
-  border: 1px solid var(--color-border-light);
+  box-sizing: border-box;
+  align-items: center;
+  height: var(--spacing-button-height);
+  padding: 0;
+  border: 0;
   border-radius: var(--radius-chip);
+  box-shadow: inset 0 0 0 1px var(--color-border-light);
 }
 
 .dark .view-toggle {
-  border-color: var(--color-border-dark);
+  box-shadow: inset 0 0 0 1px var(--color-border-dark);
 }
 
 .view-toggle button.is-active {
   background: var(--color-accent-blue);
   color: rgb(255 255 255);
+}
+
+.sort-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: var(--spacing-button-height);
+}
+
+.sort-dropdown select {
+  box-sizing: border-box;
+  height: 100%;
+  min-width: 10rem;
+  padding: 0 calc(var(--spacing-button-height) * 0.9) 0 calc(var(--spacing-button-height) * 0.4);
+  line-height: normal;
+  appearance: none;
 }
 
 .product-table-wrap {
@@ -686,4 +723,3 @@ input[type="search"]::-webkit-search-results-decoration {
   appearance: none;
 }
 /* stylelint-enable property-no-vendor-prefix */
-

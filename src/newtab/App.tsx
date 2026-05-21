@@ -50,7 +50,7 @@ export function App(): React.ReactElement {
     try {
       const a = document.createElement('a');
       a.href = url;
-      a.download = `tab-out-settings-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `tab-organizer-settings-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
     } finally {
       URL.revokeObjectURL(url);
@@ -110,7 +110,7 @@ export function App(): React.ReactElement {
 
       handlers.showToast(t('toastSettingsImported'));
     } catch (err) {
-      console.error('[Tab Out] Failed to import settings:', err);
+      console.error('[Tab Organizer] Failed to import settings:', err);
       handlers.showToast(t('toastImportFailed'));
     }
   };
@@ -123,10 +123,10 @@ export function App(): React.ReactElement {
 
   if (state.tabOutCount > 1) {
     statusAlerts.push({
-      id: 'extra-tab-out-pages',
+      id: 'extra-tab-organizer-pages',
       label: state.tabOutCount - 1 === 1
-        ? t('alertExtraTabOutSingle')
-        : t('alertExtraTabOutPlural', { count: state.tabOutCount - 1 }),
+        ? t('alertExtraTabOrganizerSingle')
+        : t('alertExtraTabOrganizerPlural', { count: state.tabOutCount - 1 }),
       actionLabel: t('actionCloseExtras'),
       onAction: () => {
         tabStore.closeExtraDashboards();

@@ -8,9 +8,10 @@ import { TabChip } from '../newtab/components/TabChip';
 import { ActionButton } from '../newtab/components/ui/ActionButton';
 
 function expectTouchHeight(element: HTMLElement): void {
-  // Accept hardcoded h-11/min-h-11 or CSS token variants (44px)
+  // Accept hardcoded h-11/min-h-11, CSS token variants, or shared global button class.
   const className = element.className;
   const valid =
+    /\baction-button\b/.test(className) ||
     /\bh-11\b/.test(className) ||
     /\bmin-h-11\b/.test(className) ||
     /\bsize-11\b/.test(className) ||

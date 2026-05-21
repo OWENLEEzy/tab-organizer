@@ -11,14 +11,14 @@ export function ViewToggle({ value, onChange }: ViewToggleProps): React.ReactEle
     <div className="view-toggle" aria-label="View mode">
       <button
         type="button"
-        className={`rounded-chip font-body text-xs font-semibold px-3 py-2 h-[--spacing-button-height] transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none ${value === 'cards' ? 'bg-accent-blue text-white is-active' : 'text-text-secondary hover:bg-surface-light dark:hover:bg-surface-dark'}`}
+        className={`rounded-chip font-body text-xs font-semibold transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none ${value === 'cards' ? 'bg-accent-blue text-white is-active' : 'text-text-secondary hover:bg-surface-light dark:hover:bg-surface-dark'}`}
         onClick={() => onChange('cards')}
       >
         Cards
       </button>
       <button
         type="button"
-        className={`rounded-chip font-body text-xs font-semibold px-3 py-2 h-[--spacing-button-height] transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none ${value === 'table' ? 'bg-accent-blue text-white is-active' : 'text-text-secondary hover:bg-surface-light dark:hover:bg-surface-dark'}`}
+        className={`rounded-chip font-body text-xs font-semibold transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none ${value === 'table' ? 'bg-accent-blue text-white is-active' : 'text-text-secondary hover:bg-surface-light dark:hover:bg-surface-dark'}`}
         onClick={() => onChange('table')}
       >
         Table

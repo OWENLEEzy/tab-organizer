@@ -27,7 +27,7 @@ export class ErrorBoundary extends React.Component<
               Something went wrong
             </h1>
             <p className="text-text-secondary mb-4 text-sm">
-              Tab Out encountered an unexpected error.
+              Tab Organizer encountered an unexpected error.
             </p>
             <button
               type="button"
