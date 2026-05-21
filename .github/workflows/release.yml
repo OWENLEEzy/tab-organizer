@@ -7,6 +7,7 @@ on:
     paths-ignore:
       - 'docs/**'
       - 'README.md'
+      - 'README_zh.md'
       - 'LICENSE'
 
 permissions:
@@ -15,9 +16,13 @@ permissions:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    # Skip if this commit was made by this workflow (prevents infinite loop)
+    if: !contains(github.event.head_commit.message, 'chore: bump version')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -28,31 +33,56 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Generate version
+        run: |
+          VERSION="v$(date '+%Y.%m.%d').$GITHUB_RUN_NUMBER"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "ZIP_NAME=tab-organizer-$VERSION.zip" >> $GITHUB_ENV
+
+      - name: Update package.json version
+        run: |
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"${{ env.VERSION }}\"/" package.json
+
       - name: Build project
         run: npm run build
 
       - name: Zip dist folder
         run: |
           cd dist
-          zip -r ../tab-organizer-latest.zip .
+          zip -r ../${{ env.ZIP_NAME }} .
           cd ..
+
+      - name: Commit version change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: bump version to ${{ env.VERSION }}"
+
+      - name: Push changes and tags
+        run: |
+          git push
+          git push origin ${{ env.VERSION }}
 
       - name: Update Latest Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: "Tab Organizer (Latest Build)"
+          name: "Tab Organizer ${{ env.VERSION }}"
           body: |
-            Latest pre-built release of Tab Organizer.
-            
-            **Installation:**
-            1. Download `tab-organizer-latest.zip` (NOT the Source Code).
-            2. Unzip the file.
-            3. Load the folder in `chrome://extensions` (Developer Mode).
-            
+            Version: ${{ env.VERSION }}
             Commit: ${{ github.event.head_commit.message }}
-          files: tab-organizer-latest.zip
+          files: ${{ env.ZIP_NAME }}
           prerelease: false
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clean up old tags
+        run: |
+          git fetch --tags origin
+          TAGS=$(git tag -l --sort=-version:refname)
+          COUNT=$(echo "$TAGS" | wc -l)
+          if [ $COUNT -gt 30 ]; then
+            echo "$TAGS" | tail -n +31 | xargs -r git push origin --delete
+          fi
