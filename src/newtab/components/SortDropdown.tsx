@@ -21,7 +21,7 @@ export function SortDropdown({ value, onChange }: SortDropdownProps): React.Reac
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as GroupSortOption)}
-        className="rounded-sm border border-border-light bg-surface-light px-2 py-1.5 font-body text-xs text-text-primary-light dark:border-border-dark dark:bg-surface-dark dark:text-text-primary-dark focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue"
+        className="rounded-chip border border-border-light bg-surface-light px-3 py-2 font-body text-xs text-text-primary-light dark:border-border-dark dark:bg-surface-dark dark:text-text-primary-dark focus:border-accent-blue focus:outline-none focus:ring-1 focus:ring-accent-blue h-[--spacing-button-height]"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
