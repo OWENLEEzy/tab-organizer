@@ -74,6 +74,21 @@ export default defineConfig([
       'tailwindcss/no-custom-classname': 'off',
       'tailwindcss/no-arbitrary-value': 'off',
       'tailwindcss/migration-from-tailwind-2': 'off',
+
+      // Rule 9: No hardcoded button sizes — use CSS design tokens
+      // Tokens: --spacing-button-height (44px), --spacing-button-height-sm (32px),
+      //         --spacing-button-icon (44px), --spacing-button-icon-sm (32px)
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "JSXAttribute[name.name='className'] JSXExpressionContainer > Literal[value=/\\bmin-h-(8|9|11)\\b/]",
+          message: 'Use min-h-[--spacing-button-icon] or min-h-[--spacing-button-height-sm] instead of hardcoded min-h-8/9/11. See global.css button size tokens.',
+        },
+        {
+          selector: "JSXAttribute[name.name='className'] JSXExpressionContainer > Literal[value=/\\bh-(8|9|11)(?!-)/]",
+          message: 'Use h-[--spacing-button-height] or h-[--spacing-button-height-sm] instead of hardcoded h-8/9/11. See global.css button size tokens.',
+        },
+      ],
     },
   })),
 

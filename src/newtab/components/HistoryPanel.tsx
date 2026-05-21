@@ -56,7 +56,7 @@ export function HistoryPanel({
       title={t('historyTitle')}
       count={visibleSnapshots.length}
       actions={visibleSnapshots.length > 0 ? (
-        <ActionButton variant="quiet" className="min-h-8 px-2 py-1" onClick={onClearSnapshots}>
+        <ActionButton variant="quiet" className="min-h-[--spacing-button-height-sm] px-2 py-1" onClick={onClearSnapshots}>
           {t('historyClear')}
         </ActionButton>
       ) : null}

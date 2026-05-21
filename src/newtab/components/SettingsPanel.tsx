@@ -272,7 +272,7 @@ export function SettingsPanel({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark flex size-8 cursor-pointer items-center justify-center transition-colors focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark flex size-[--spacing-button-icon-sm] cursor-pointer items-center justify-center transition-colors focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
               aria-label="Close settings"
             >
               <svg
@@ -507,7 +507,7 @@ function ThemeRow({ value, onChange }: ThemeRowProps): React.ReactElement {
             key={opt.value}
             type="button"
             onClick={() => onChange(opt.value)}
-            className={`font-body min-h-11 min-w-11 cursor-pointer px-4 text-xs transition-colors ${
+            className={`font-body min-h-[--spacing-button-height] min-w-11 cursor-pointer px-4 text-xs transition-colors ${
               value === opt.value
                 ? 'bg-accent-blue text-white'
                 : 'text-text-secondary hover:bg-surface-light dark:hover:bg-surface-dark'
@@ -545,7 +545,7 @@ function ToggleRow({ id, label, checked, onChange }: ToggleRowProps): React.Reac
         role="switch"
         aria-checked={checked}
         onClick={onChange}
-        className={`focus-visible:ring-accent-blue/40 relative inline-flex h-11 w-14 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
+        className={`focus-visible:ring-accent-blue/40 relative inline-flex h-[--spacing-button-height] w-14 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
           checked
             ? 'bg-accent-blue'
             : 'bg-border-light dark:bg-border-dark'
@@ -675,7 +675,7 @@ function CustomGroupsSection({
         <button
           type="button"
           onClick={handleAdd}
-          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 rounded-chip px-3 py-1.5 self-end transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-11"
+          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 rounded-chip px-3 py-1.5 self-end transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-[--spacing-button-height]"
         >
           {t('settingsBtnAddRule')}
         </button>
@@ -737,7 +737,7 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
         <button
           type="button"
           onClick={handleAddSpace}
-          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 rounded-chip px-3 py-1.5 transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-11 font-medium"
+          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 rounded-chip px-3 py-1.5 transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-[--spacing-button-height] font-medium"
         >
           {t('settingsBtnAddSpace')}
         </button>
@@ -872,7 +872,7 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
         <button
           type="button"
           onClick={onResetKeyBindings}
-          className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 px-2 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none min-h-11"
+          className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 px-2 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none min-h-[--spacing-button-height]"
         >
           {t('settingsShortcutsResetBtn')}
         </button>
@@ -883,12 +883,12 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
           const isRecording = recordingKey === key;
 
           return (
-            <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-surface-light dark:bg-surface-dark border border-border-light/50 dark:border-border-dark/50 min-h-11">
+            <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-surface-light dark:bg-surface-dark border border-border-light/50 dark:border-border-dark/50 min-h-[--spacing-button-height]">
               <span className="font-body text-xs text-text-primary-light dark:text-text-primary-dark">{label}</span>
               <button
                 type="button"
                 onClick={() => setRecordingKey(isRecording ? null : (key as keyof AppSettings['keyBindings']))}
-                className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-8 min-w-[70px] ${
+                className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-[--spacing-button-height-sm] min-w-[70px] ${
                   isRecording
                     ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 animate-pulse'
                     : 'bg-white dark:bg-card-dark text-text-secondary border-border-light dark:border-border-dark hover:border-gray-400 dark:hover:border-gray-600'

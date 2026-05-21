@@ -46,7 +46,7 @@ export function UpdateBanner({
       <button
         type="button"
         onClick={onDismiss}
-        className="rounded-chip text-text-secondary hover:bg-accent-sage/10 hover:text-accent-sage focus-visible:ring-accent-blue/40 ml-4 flex size-11 shrink-0 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="rounded-chip text-text-secondary hover:bg-accent-sage/10 hover:text-accent-sage focus-visible:ring-accent-blue/40 ml-4 flex size-[--spacing-button-icon] shrink-0 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
         aria-label={t('updateBannerDismiss')}
       >
         <svg

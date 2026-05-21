@@ -62,6 +62,12 @@
   --radius-chip: var(--radius-to-button);
   --shadow-card: var(--shadow-to-none);
   --shadow-card-hover: var(--shadow-to-none);
+
+  /* Button sizes */
+  --spacing-button-height: 2.75rem;  /* 44px standard button */
+  --spacing-button-height-sm: 2rem;   /* 32px small */
+  --spacing-button-icon: 2.75rem;    /* 44px icon buttons */
+  --spacing-button-icon-sm: 2rem;     /* 32px small icon buttons */
 }
 /* stylelint-enable custom-property-pattern, custom-property-empty-line-before */
 
