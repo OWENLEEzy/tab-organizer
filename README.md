@@ -49,6 +49,7 @@
 
 1. **Download**: Visit the [Releases](https://github.com/OWENLEEzy/tab-organizer/releases) page.
    - **⚠️ IMPORTANT**: Download the file named **`tab-organizer-latest.zip`**.
+   - Direct download: [tab-organizer-latest.zip](https://github.com/OWENLEEzy/tab-organizer/releases/latest/download/tab-organizer-latest.zip)
    - **DO NOT** download the "Source code (zip)" at the bottom; it is uncompiled and won't work as an extension directly.
 2. **Unpack**: Extract the downloaded `.zip` file to a permanent folder on your computer (e.g., Documents).
 3. **Load**: 
