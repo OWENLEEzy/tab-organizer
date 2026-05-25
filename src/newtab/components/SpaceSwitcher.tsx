@@ -70,8 +70,8 @@ export function SpaceSwitcher({
         tabIndex={activeSpaceId === null ? 0 : -1}
         className={`px-4 py-1.5 rounded-none text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent-terracotta/40 outline-none ${
           activeSpaceId === null
-            ? 'bg-accent-terracotta/10 text-accent-terracotta dark:bg-accent-terracotta/20 dark:text-terracotta-400 shadow-sm border border-accent-terracotta/20 dark:border-accent-terracotta/40'
-            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+            ? 'bg-accent-terracotta/10 text-accent-terracotta dark:bg-accent-terracotta/20 text-[var(--accent-primary)] shadow-sm border border-accent-terracotta/20 dark:border-accent-terracotta/40'
+            : 'text-[var(--text-secondary)] hover:bg-[var(--color-surface-light)] border border-transparent'
         }`}
       >
         {t('spaceSwitcherAll')}
@@ -84,8 +84,8 @@ export function SpaceSwitcher({
           tabIndex={activeSpaceId === space.id ? 0 : -1}
           className={`px-4 py-1.5 rounded-none text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent-terracotta/40 outline-none ${
             activeSpaceId === space.id
-              ? 'bg-accent-terracotta/10 text-accent-terracotta dark:bg-accent-terracotta/20 dark:text-terracotta-400 shadow-sm border border-accent-terracotta/20 dark:border-accent-terracotta/40'
-              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+              ? 'bg-accent-terracotta/10 text-accent-terracotta dark:bg-accent-terracotta/20 text-[var(--accent-primary)] shadow-sm border border-accent-terracotta/20 dark:border-accent-terracotta/40'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--color-surface-light)] border border-transparent'
           }`}
         >
           <span>{space.name}</span>
@@ -95,7 +95,7 @@ export function SpaceSwitcher({
       <button
         onClick={onCreateSpace}
         tabIndex={-1}
-        className="px-3 py-1.5 rounded-none text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors border border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-accent-terracotta/40 outline-none"
+        className="px-3 py-1.5 rounded-none text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--color-surface-light)] transition-colors border border-dashed border-[var(--border-color)] hover:border-[var(--text-secondary)] dark:hover:border-[var(--text-secondary)] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-accent-terracotta/40 outline-none"
         aria-label={t('spaceSwitcherNew')}
         title={t('spaceSwitcherNew')}
       >

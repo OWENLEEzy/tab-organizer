@@ -851,8 +851,8 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
                 onClick={() => setRecordingKey(isRecording ? null : (key as keyof AppSettings['keyBindings']))}
                 className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-[--spacing-button-height-sm] min-w-[var(--width-button-min)] ${
                   isRecording
-                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 animate-pulse'
-                    : 'bg-white dark:bg-card-dark text-text-secondary border-border-light dark:border-border-dark hover:border-gray-400 dark:hover:border-gray-600'
+                    ? 'bg-[var(--accent-amber)]/10 dark:bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] dark:text-[var(--accent-amber)] border-[var(--accent-amber)] dark:border-[var(--accent-amber)] animate-pulse'
+                    : 'bg-[var(--bg-card)] dark:bg-[var(--bg-card)] text-text-secondary border-border-light dark:border-border-dark hover:border-gray-400 dark:hover:border-gray-600'
                 }`}
               >
                 {isRecording ? t('settingsShortcutRecording') : binding}
