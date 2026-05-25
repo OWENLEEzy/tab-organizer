@@ -138,7 +138,7 @@ function DndGroupBoard({
             <h2 className="font-body text-xs font-semibold uppercase tracking-wider text-text-primary">
               {title}
             </h2>
-            <span className="rounded-sm bg-surface-light px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-widest text-text-secondary">
+            <span className="rounded-sm bg-surface-light px-2 py-0.5 font-body text-[var(--text-2xs)] font-bold uppercase tracking-widest text-text-secondary">
               {tabCount}
             </span>
           </div>
@@ -147,7 +147,7 @@ function DndGroupBoard({
               <button
                 type="button"
                 onClick={() => onRenameGroup?.(manualGroup)}
-                className="text-[10px] font-semibold tracking-wider text-text-secondary hover:text-accent-blue transition-colors"
+                className="text-[var(--text-2xs)] font-semibold tracking-wider text-text-secondary hover:text-accent-blue transition-colors"
               >
                 {t('organizerBtnRename')}
               </button>
@@ -155,7 +155,7 @@ function DndGroupBoard({
               <button
                 type="button"
                 onClick={() => onDeleteGroup?.(manualGroup)}
-                className="text-[10px] font-semibold tracking-wider text-text-secondary hover:text-accent-red transition-colors"
+                className="text-[var(--text-2xs)] font-semibold tracking-wider text-text-secondary hover:text-accent-red transition-colors"
               >
                 {t('organizerBtnDelete')}
               </button>
@@ -165,7 +165,7 @@ function DndGroupBoard({
             <button
               type="button"
               onClick={() => onCloseManualGroup(items, title)}
-              className="text-[10px] font-semibold tracking-wider text-text-secondary hover:text-accent-red transition-colors"
+              className="text-[var(--text-2xs)] font-semibold tracking-wider text-text-secondary hover:text-accent-red transition-colors"
               title={`Close all ${tabCount} tabs in ${title}`}
             >
               {t('organizerBtnCloseAll')}

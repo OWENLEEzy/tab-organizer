@@ -214,7 +214,7 @@ export function TabChip({
     isClosing ? 'chip-closing' : '',
     isSelected ? 'ring-2 ring-accent-blue border-accent-blue bg-accent-blue/[0.12]' : '',
     isStale && !isSelected
-      ? 'opacity-55 saturate-[0.15] bg-[#F7F6F3]/40 border-dashed border-[#E8E7E4] hover:opacity-100 hover:saturate-100 hover:border-transparent transition-all duration-200'
+      ? 'opacity-55 saturate-[0.15] bg-[var(--bg-surface)]/40 border-dashed border-[var(--border-color)] hover:opacity-100 hover:saturate-100 hover:border-transparent transition-all duration-200'
       : '',
   ]
     .filter(Boolean)
@@ -241,7 +241,7 @@ export function TabChip({
         {active && (
           <span
             className="bg-accent-sage h-1.5 w-1.5 shrink-0 rounded-full"
-            style={{ boxShadow: '0 0 0 2px rgba(77,171,154,0.2)' }}
+            style={{ boxShadow: 'var(--shadow-focus)' }}
             aria-hidden="true"
           />
         )}
@@ -256,7 +256,7 @@ export function TabChip({
           />
         ) : (
           <span
-            className="bg-surface-light dark:bg-surface-dark text-text-secondary flex size-4 shrink-0 items-center justify-center rounded-[3px] text-[10px] font-semibold"
+            className="bg-surface-light dark:bg-surface-dark text-text-secondary flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-badge)] text-[var(--text-2xs)] font-semibold"
             aria-hidden="true"
           >
             {initial}

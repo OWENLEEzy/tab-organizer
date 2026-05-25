@@ -255,7 +255,7 @@ export function DomainCard({
             {hasDupes && (
               <button
                 type="button"
-                className="flex h-7 items-center gap-1 rounded-sm bg-accent-amber px-2 text-[10px] font-semibold tracking-wider text-white transition-opacity hover:opacity-90"
+                className="flex h-7 items-center gap-1 rounded-sm bg-accent-amber px-2 text-[var(--text-2xs)] font-semibold tracking-wider text-white transition-opacity hover:opacity-90"
                 onClick={handleCloseDuplicates}
                 title={t('cardCloseDupesTitle')}
               >

@@ -204,8 +204,8 @@ export function SearchBar({
       {/* Floating suggestion panel */}
       {showCommands && filteredCommands.length > 0 && (
         <div
-          className="absolute top-12 left-0 z-50 w-full rounded-lg border border-border-light bg-[#FFFDF9]/95 dark:bg-card-dark/95 p-1.5 shadow-lg backdrop-blur-md dark:border-border-dark font-body"
-          style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}
+          className="absolute top-12 left-0 z-50 w-full rounded-lg border border-border-light bg-[var(--bg-card)] dark:bg-card-dark/95 p-1.5 shadow-lg backdrop-blur-md dark:border-border-dark font-body"
+          style={{ boxShadow: 'var(--shadow-dropdown)' }}
         >
           <div className="px-2.5 py-1 text-[10px] font-bold tracking-wider text-text-secondary uppercase select-none">
             {value === '' ? t('cmdPanelTitleHint') : t('cmdPanelTitle')}

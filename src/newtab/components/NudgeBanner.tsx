@@ -35,7 +35,7 @@ export function NudgeBanner({
             viewBox="0 0 24 24"
             strokeWidth={1.5}
             stroke="currentColor"
-            className="text-accent-red h-[18px] w-[18px]"
+            className="text-accent-red h-[var(--icon-size-sm)] w-[var(--icon-size-sm)]"
             aria-hidden="true"
           >
             <path

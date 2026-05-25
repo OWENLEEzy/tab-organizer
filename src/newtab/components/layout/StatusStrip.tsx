@@ -47,7 +47,7 @@ export function StatusStrip({
               {alert.actionLabel && alert.onAction ? (
                 <button
                   type="button"
-                  className="text-[10px] font-semibold tracking-wide text-accent-blue hover:underline"
+                  className="text-[var(--text-2xs)] font-semibold tracking-wide text-accent-blue hover:underline"
                   onClick={alert.onAction}
                 >
                   {alert.actionLabel}

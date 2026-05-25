@@ -741,7 +741,7 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
                   </button>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="font-body text-text-secondary text-[11px]">
+                  <span className="font-body text-text-secondary text-[var(--text-3xs)]">
                     {t('settingsLabelAutoRules')}
                   </span>
                   <textarea
@@ -849,7 +849,7 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
               <button
                 type="button"
                 onClick={() => setRecordingKey(isRecording ? null : (key as keyof AppSettings['keyBindings']))}
-                className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-[--spacing-button-height-sm] min-w-[70px] ${
+                className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-[--spacing-button-height-sm] min-w-[var(--width-button-min)] ${
                   isRecording
                     ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 animate-pulse'
                     : 'bg-white dark:bg-card-dark text-text-secondary border-border-light dark:border-border-dark hover:border-gray-400 dark:hover:border-gray-600'

@@ -65,7 +65,7 @@ export function HistoryPanel({
         {visibleSnapshots.length === 0 ? (
           <div className="history-empty-state text-center py-12 px-6">
             <div className="text-text-secondary text-sm mb-2 opacity-60">{t('historyNoSnapshotsTitle')}</div>
-            <p className="text-text-secondary text-[11px] leading-relaxed opacity-40 max-w-[180px] mx-auto">
+            <p className="text-text-secondary text-[var(--text-3xs)] leading-relaxed opacity-40 max-w-[var(--width-label)] mx-auto">
               {t('historyNoSnapshotsDesc')}
             </p>
           </div>
