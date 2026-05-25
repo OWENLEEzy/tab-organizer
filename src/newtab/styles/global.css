@@ -646,6 +646,47 @@ body, html {
   }
 }
 
+/* ─── Card with corner accents ─────────────────────────────────── */
+.app-card {
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  position: relative;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.app-card::before,
+.app-card::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-color: var(--color-accent-blue);
+  border-style: solid;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.app-card::before {
+  top: -1px;
+  left: -1px;
+  border-width: 1px 0 0 1px;
+}
+
+.app-card::after {
+  bottom: -1px;
+  right: -1px;
+  border-width: 0 1px 1px 0;
+}
+
+.app-card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.app-card:hover::before,
+.app-card:hover::after {
+  opacity: 0.8;
+}
+
 /* ─── Drag and drop ───────────────────────────────────────────── */
 .cursor-grab {
   cursor: grab;
