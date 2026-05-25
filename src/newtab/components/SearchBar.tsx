@@ -8,6 +8,7 @@ interface SearchBarProps {
   onChange: (query: string) => void;
   resultCount: number;
   totalCount: number;
+  spaces?: { id: string; name: string }[];
 }
 
 // ─── Component ────────────────────────────────────────────────────────
@@ -17,6 +18,7 @@ export function SearchBar({
   onChange,
   resultCount,
   totalCount,
+  spaces = [],
 }: SearchBarProps): React.ReactElement {
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
@@ -52,20 +54,44 @@ export function SearchBar({
     setTimeout(() => setFocused(false), 150);
   }, []);
 
+  const spaceMatch = useMemo(() => {
+    return value.match(/^\/?(space|spac|s):([^\s]*)$/i);
+  }, [value]);
+
+  const getFinalCmd = useCallback((chosenCmd: string): string => {
+    const isRawPrefix = chosenCmd === '/space:' || chosenCmd === '/s:' || chosenCmd === '/spac:';
+    return isRawPrefix ? chosenCmd : chosenCmd + ' ';
+  }, []);
+
   // Show commands when focused AND:
   // 1. Value is empty (great for discoverability!)
-  // 2. Or value starts with '/' and is not already a fully entered command
+  // 2. Or space command prefix is matched
+  // 3. Or value starts with '/' and is not already a fully entered command
   const showCommands =
     focused &&
     (value === '' ||
+      spaceMatch !== null ||
       (value.startsWith('/') &&
         !value.includes(' ') &&
         !commands.some((cmd) => cmd.key === value)));
 
-  // If value is empty, show all commands; otherwise filter by prefix
-  const filteredCommands = commands.filter((cmd) =>
-    value === '' ? true : cmd.key.startsWith(value)
-  );
+  // If spaceMatch matches, list matching spaces. Otherwise filter commands by prefix
+  const filteredCommands = useMemo(() => {
+    if (spaceMatch) {
+      const prefix = spaceMatch[1];
+      const arg = spaceMatch[2].toLowerCase();
+      const matchingSpaces = spaces.filter((s) =>
+        s.name.toLowerCase().includes(arg)
+      );
+      return matchingSpaces.map((s) => ({
+        key: `/${prefix}:${s.name}`,
+        desc: `${t('cmdSpaceDesc')} (${s.name})`,
+      }));
+    }
+    return commands.filter((cmd) =>
+      value === '' ? true : cmd.key.startsWith(value)
+    );
+  }, [spaceMatch, spaces, commands, value, t]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>): void => {
@@ -86,13 +112,12 @@ export function SearchBar({
       } else if (e.key === 'Enter' || e.key === 'Tab') {
         e.preventDefault();
         const chosenCmd = filteredCommands[selectedIndex].key;
-        // Append a space for /dupes and /stale to naturally close the menu and allow typing search term
-        const finalCmd = chosenCmd === '/space:' ? chosenCmd : chosenCmd + ' ';
+        const finalCmd = getFinalCmd(chosenCmd);
         onChange(finalCmd);
         setSelectedIndex(0);
       }
     },
-    [showCommands, filteredCommands, selectedIndex, onChange],
+    [showCommands, filteredCommands, selectedIndex, onChange, getFinalCmd],
   );
 
   const showResults = value.length > 0;
@@ -195,7 +220,7 @@ export function SearchBar({
                   onMouseDown={(e) => {
                     e.preventDefault(); // Prevents input blur
                     const chosenCmd = cmd.key;
-                    const finalCmd = chosenCmd === '/space:' ? chosenCmd : chosenCmd + ' ';
+                    const finalCmd = getFinalCmd(chosenCmd);
                     onChange(finalCmd);
                     setSelectedIndex(0);
                   }}

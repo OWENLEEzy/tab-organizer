@@ -73,7 +73,7 @@ describe('readStorage', () => {
     expect(result.schemaVersion).toBe(4);
     expect(result.deferred).toEqual([]);
     expect(result.workspaces).toEqual([]);
-    expect(result.settings.theme).toBe('system');
+    expect(result.settings.theme).toBe('clay');
     expect(result.groupOrder).toEqual({});
     expect(result.manualGroups).toEqual([]);
     expect(result.groupAssignments).toEqual([]);

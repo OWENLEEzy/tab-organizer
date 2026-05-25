@@ -1,8 +1,8 @@
-# Tab Out MotherDuck-Inspired Dashboard Reskin Design
+# Tab Organizer MotherDuck-Inspired Dashboard Reskin Design
 
 ## Summary
 
-Tab Out will migrate from its current Notion-inspired warm notebook interface to a MotherDuck-inspired warm flat dashboard. This is a full visual reskin and first-screen recomposition, but it is not a MotherDuck clone. Tab Out keeps its own product identity, local-only Chrome extension behavior, and existing tab-management flows.
+Tab Organizer will migrate from its current Notion-inspired warm notebook interface to a MotherDuck-inspired warm flat dashboard. This is a full visual reskin and first-screen recomposition, but it is not a MotherDuck clone. Tab Organizer keeps its own product identity, local-only Chrome extension behavior, and existing tab-management flows.
 
 The selected direction is **Warm Flat Canvas** with **Status + Toolbar + Product Grid** dashboard composition.
 
@@ -24,7 +24,7 @@ The selected direction is **Warm Flat Canvas** with **Status + Toolbar + Product
 
 ## Current Code Context
 
-Tab Out is a Manifest V3 Chrome extension built with React, TypeScript, Vite, Tailwind v4, Zustand, and `chrome.storage.local`.
+Tab Organizer is a Manifest V3 Chrome extension built with React, TypeScript, Vite, Tailwind v4, Zustand, and `chrome.storage.local`.
 
 The current dashboard structure is:
 
@@ -61,7 +61,7 @@ Primary style references:
 
 ## CSS Token System
 
-The migration must add Tab Out-owned tokens instead of scattering raw MotherDuck values through components.
+The migration must add Tab Organizer-owned tokens instead of scattering raw MotherDuck values through components.
 
 The preferred token layer lives in `src/newtab/styles/global.css` and maps into Tailwind v4 `@theme` variables where useful.
 
@@ -129,7 +129,7 @@ The dashboard should be recomposed into this structure:
 1. **StatusStrip**
    - Top warm-yellow strip.
    - Shows global metrics such as tab count, duplicate count, and product count.
-   - Can include global alerts such as extra Tab Out tabs or tab-count nudges.
+   - Can include global alerts such as extra Tab Organizer tabs or tab-count nudges.
    - Replaces the feeling of scattered banners.
 
 2. **CommandHeader**
@@ -224,7 +224,7 @@ CSS should remain token-first:
 Data flow stays one-way:
 
 1. `App.tsx` reads `tab-store`, `saved-store`, and `settings-store`.
-2. `App.tsx` computes metrics: total tabs, duplicates, products, filtered count, Tab Out duplicate pages, saved count, and recovery availability.
+2. `App.tsx` computes metrics: total tabs, duplicates, products, filtered count, Tab Organizer duplicate pages, saved count, and recovery availability.
 3. Layout components receive metrics and handlers as props.
 4. Existing action handlers remain in `App.tsx` or existing stores.
 5. Child components do not access `chrome.storage.local` directly.
@@ -314,4 +314,4 @@ Visual verification should cover:
 
 ## Self-Review
 
-This spec has no incomplete requirement markers, no unfinished sections, and no unresolved scope split. The work is a single focused implementation plan: migrate the Tab Out dashboard to a MotherDuck-inspired warm flat visual system while preserving existing behavior and component responsibilities.
+This spec has no incomplete requirement markers, no unfinished sections, and no unresolved scope split. The work is a single focused implementation plan: migrate the Tab Organizer dashboard to a MotherDuck-inspired warm flat visual system while preserving existing behavior and component responsibilities.

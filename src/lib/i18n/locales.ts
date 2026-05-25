@@ -135,7 +135,7 @@ export const locales = {
     selectedCancel: 'Cancel',
 
     // Update Banner
-    updateBannerText: 'Tab Out updated to v{version} — What\'s new?',
+    updateBannerText: 'Tab Organizer updated to v{version} — What\'s new?',
     updateBannerDismiss: 'Dismiss update notice',
 
     // Product Table
@@ -228,7 +228,7 @@ export const locales = {
     settingsShortcutDedupeActive: 'Dedupe Active Product',
     settingsShortcutCloseStale: 'Close Stale Sweep',
     settingsShortcutsResetBtn: 'Reset Shortcuts',
-    settingsShortcutsHint: 'Keyboard shortcuts let you trigger Tab Out workflows quickly. Double click a field to change it.',
+    settingsShortcutsHint: 'Keyboard shortcuts let you trigger Tab Organizer workflows quickly. Double click a field to change it.',
 
     // Settings - Backup & Import
     settingsBackupTitle: 'Backup & Portability',
@@ -438,7 +438,7 @@ export const locales = {
     selectedCancel: '取消选择',
 
     // Update Banner
-    updateBannerText: 'Tab Out 已更新至 v{version} — 了解新功能！',
+    updateBannerText: 'Tab Organizer 已更新至 v{version} — 了解新功能！',
     updateBannerDismiss: '关闭更新通知',
 
     // Product Table
@@ -531,7 +531,7 @@ export const locales = {
     settingsShortcutDedupeActive: '去重当前活跃产品',
     settingsShortcutCloseStale: '一键清理闲置标签',
     settingsShortcutsResetBtn: '重置快捷键',
-    settingsShortcutsHint: '键盘快捷键能帮您迅速触发 Tab Out 整理流程。双击字段即可对其进行修改。',
+    settingsShortcutsHint: '键盘快捷键能帮您迅速触发 Tab Organizer 整理流程。双击字段即可对其进行修改。',
 
     // Settings - Backup & Import
     settingsBackupTitle: '数据备份与迁移',

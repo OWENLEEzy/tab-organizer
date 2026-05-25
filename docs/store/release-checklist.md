@@ -1,4 +1,4 @@
-# Tab Out Release Checklist
+# Tab Organizer Release Checklist
 
 ## Preflight
 - Run `npm install` if dependencies changed.
@@ -10,7 +10,7 @@
 - Open `chrome://extensions`.
 - Enable Developer mode.
 - Load unpacked from `dist/`.
-- Click the Tab Out toolbar icon.
+- Click the Tab Organizer toolbar icon.
 - Confirm tab groups appear.
 - Confirm YouTube Music appears inside YouTube.
 - Confirm `*.vercel.app` appears inside Vercel.

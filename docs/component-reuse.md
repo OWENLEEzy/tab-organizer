@@ -1,6 +1,6 @@
 # Component Reuse Reference
 
-This document defines the current component layering model for the Tab Out Chrome extension. It reflects the V1 dashboard: product/domain grouping, product-only sections, lazy organize mode, and local recovery.
+This document defines the current component layering model for the Tab Organizer Chrome extension. It reflects the V1 dashboard: product/domain grouping, product-only sections, lazy organize mode, and local recovery.
 
 ## Component Layers
 

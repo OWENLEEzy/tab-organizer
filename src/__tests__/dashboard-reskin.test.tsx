@@ -143,14 +143,14 @@ describe('tab title readability', () => {
     render(
       <TabChip
         url="https://github.com/OWENLEEzy/tab-out"
-        title="Tab Out repo"
+        title="Tab Organizer repo"
         duplicateCount={1}
         onFocus={() => {}}
         onClose={() => {}}
       />,
     );
 
-    expect(screen.getByText('Tab Out repo')).toBeInTheDocument();
+    expect(screen.getByText('Tab Organizer repo')).toBeInTheDocument();
     expect(screen.queryByText('TAB OUT REPO')).not.toBeInTheDocument();
   });
 });

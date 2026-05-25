@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getHostname, sanitizeUrl } from '../../utils/url';
 import {
   cleanTitle,
@@ -91,6 +91,8 @@ function HighlightedText({ text, highlight = '' }: { text: string; highlight?: s
   const isCommand = 
     trimmedLower.startsWith('/') ||
     trimmedLower.startsWith('space:') ||
+    trimmedLower.startsWith('spac:') ||
+    trimmedLower.startsWith('s:') ||
     trimmedLower === 'stale' || trimmedLower === 'stales' ||
     trimmedLower === 'dupe' || trimmedLower === 'dupes' ||
     trimmedLower.startsWith('stale ') || trimmedLower.startsWith('stales ') ||
@@ -100,7 +102,7 @@ function HighlightedText({ text, highlight = '' }: { text: string; highlight?: s
     cleanHighlight = cleanHighlight
       .replace(/^\/?dupes?\s*/i, '')
       .replace(/^\/?stales?\s*/i, '')
-      .replace(/^\/?space:[^\s]*\s*/i, '')
+      .replace(/^\/?(?:space|spac|s):[^\s]*\s*/i, '')
       .trim();
   }
   if (!cleanHighlight) return <>{text}</>;
@@ -201,22 +203,22 @@ export function TabChip({
     setFailedFaviconUrl(faviconUrl);
   }, [faviconUrl]);
 
-  const chipClasses = [
+  const chipClasses = useMemo(() => [
     'flex min-h-[--spacing-button-icon] min-w-0 flex-1 items-center gap-2 rounded-chip border border-transparent px-2.5 py-1.5 text-left',
     'cursor-pointer bg-transparent transition-colors duration-150',
-    isSelected ? '' : 'hover:border-border-light hover:bg-surface-light dark:hover:border-border-dark dark:hover:bg-surface-dark',
+    isSelected ? '' : 'hover:border-border-light hover:bg-surface-light',
     'focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none',
     duplicateCount > 1 ? 'border-accent-amber bg-accent-amber/[0.08]' : '',
     active && !isSelected ? 'border-accent-sage bg-accent-sage/[0.08]' : '',
-    isFocused && !isSelected ? 'ring-2 ring-accent-blue/40 border-border-light bg-surface-light dark:border-border-dark dark:bg-surface-dark' : '',
+    isFocused && !isSelected ? 'ring-2 ring-accent-blue/40 border-border-light bg-surface-light' : '',
     isClosing ? 'chip-closing' : '',
     isSelected ? 'ring-2 ring-accent-blue border-accent-blue bg-accent-blue/[0.12]' : '',
     isStale && !isSelected
-      ? 'opacity-55 saturate-[0.15] bg-[#F7F6F3]/40 border-dashed border-[#E8E7E4] dark:bg-card-dark/30 hover:opacity-100 hover:saturate-100 hover:border-transparent transition-all duration-200'
+      ? 'opacity-55 saturate-[0.15] bg-[#F7F6F3]/40 border-dashed border-[#E8E7E4] hover:opacity-100 hover:saturate-100 hover:border-transparent transition-all duration-200'
       : '',
   ]
     .filter(Boolean)
-    .join(' ');
+    .join(' '), [isSelected, isFocused, isClosing, isStale, duplicateCount, active]);
 
   return (
     <div className={`group flex items-center gap-1${isClosing ? ' chip-closing' : ''}`}>

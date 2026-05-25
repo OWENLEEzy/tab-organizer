@@ -45,7 +45,7 @@ function queuedWrite(fn: () => Promise<void>): Promise<void> {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  theme: 'system',
+  theme: 'clay',
   language: 'system',
   soundEnabled: true,
   confettiEnabled: true,
@@ -322,11 +322,19 @@ function migrate(data: Record<string, unknown>): StorageSchema {
     if (data['recoveryHistory']) history = data['recoveryHistory'];
   }
 
+  let settings: AppSettings = { ...DEFAULT_SETTINGS, ...(data['settings'] as Partial<AppSettings> | undefined) };
+
+  // Migrate legacy theme values (AccentKey not available yet — use string literal union)
+  const validAccents = ['clay', 'sage', 'frost', 'ochre', 'obsidian', 'pine', 'amethyst'] as const;
+  if (typeof settings.theme === 'string' && !(validAccents as readonly string[]).includes(settings.theme)) {
+    settings = { ...settings, theme: 'clay' };
+  }
+
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     deferred: Array.isArray(data['deferred']) ? (data['deferred'] as SavedTab[]) : [],
     workspaces: Array.isArray(data['workspaces']) ? (data['workspaces'] as Workspace[]) : [],
-    settings: { ...DEFAULT_SETTINGS, ...(data['settings'] as Partial<AppSettings> | undefined) },
+    settings,
     groupOrder: (data['groupOrder'] as Record<string, number> | undefined) ?? {},
     manualGroups: normalizeManualGroups(manualGroups),
     groupAssignments: normalizeAssignments(groupAssignments),

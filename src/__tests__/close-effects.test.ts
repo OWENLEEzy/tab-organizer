@@ -13,7 +13,7 @@ vi.mock('../lib/confetti', () => ({
 }));
 
 const BASE_SETTINGS: AppSettings = {
-  theme: 'system',
+  theme: 'clay',
   soundEnabled: true,
   confettiEnabled: true,
   maxChipsVisible: 8,

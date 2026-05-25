@@ -208,10 +208,10 @@ export function DomainCard({
   const statusBarColor = hasDupes ? 'bg-accent-amber/30' : 'bg-accent-sage/80';
 
   return (
-    <div className="overflow-hidden rounded-card border border-border-light bg-card-light shadow-none transition-colors duration-150 dark:border-border-dark dark:bg-card-dark">
-      <div className={`h-2 border-b border-border-light dark:border-border-dark ${statusBarColor}`} />
+    <div className="overflow-hidden rounded-card border border-border-light bg-card-light shadow-none transition-colors duration-150">
+      <div className={`h-2 border-b border-border-light ${statusBarColor}`} />
 
-      <div className="border-b border-border-light p-4 dark:border-border-dark">
+      <div className="border-b border-border-light p-4">
         {/* Header: domain name + badges — drag handle when DnD is active */}
         <div
           className={`flex flex-wrap items-center gap-2${dragHandleProps ? ' cursor-grab active:cursor-grabbing' : ''}`}
@@ -232,7 +232,7 @@ export function DomainCard({
           )}
           {iconFailed || !groupFaviconUrl ? (
             <span
-              className="bg-surface-light dark:bg-surface-dark text-text-secondary flex size-5 shrink-0 items-center justify-center rounded-[3px] text-xs font-semibold"
+              className="bg-surface-light text-text-secondary flex size-5 shrink-0 items-center justify-center rounded-[3px] text-xs font-semibold"
               aria-hidden="true"
             >
               {initial}
@@ -247,7 +247,7 @@ export function DomainCard({
               onError={() => setFailedFaviconUrl(groupFaviconUrl)}
             />
           )}
-          <h3 className="min-w-0 flex-1 truncate font-heading text-base font-normal tracking-tight text-text-primary-light dark:text-text-primary-dark">
+          <h3 className="min-w-0 flex-1 truncate font-heading text-base font-normal tracking-tight text-text-primary">
             {displayName}
           </h3>
 
@@ -309,10 +309,10 @@ export function DomainCard({
         )}
 
         {/* Footer actions */}
-        <div className="mt-3 flex flex-wrap gap-2 border-t border-border-light pt-3 dark:border-border-dark">
+        <div className="mt-3 flex flex-wrap gap-2 border-t border-border-light pt-3">
           <button
             type="button"
-            className="rounded-chip text-text-secondary font-body hover:bg-surface-light hover:text-accent-red dark:hover:bg-surface-dark focus-visible:ring-accent-blue/40 inline-flex min-h-[--spacing-button-height] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
+            className="rounded-chip text-text-secondary font-body hover:bg-surface-light hover:text-accent-red focus-visible:ring-accent-blue/40 inline-flex min-h-[--spacing-button-height] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
             onClick={handleCloseDomain}
           >
             <CloseAllIcon />

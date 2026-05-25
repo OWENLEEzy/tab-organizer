@@ -10,7 +10,7 @@
 Google's vertical tabs solves tab *navigation* (easier to scan a long list).  
 It does not solve tab *entropy*: why do you have 60 tabs, and which ones still matter?
 
-Tab Out already groups tabs by product/domain. The missing layer is **context switching** — letting users focus on one working context at a time without closing anything.
+Tab Organizer already groups tabs by product/domain. The missing layer is **context switching** — letting users focus on one working context at a time without closing anything.
 
 ---
 
@@ -37,7 +37,7 @@ Example Spaces a user might have:
 
 Each Space can carry a list of **auto-rules** — simple regex patterns that match against a tab's hostname.
 
-When a product group has no manual assignment, Tab Out runs its hostname against all Space rules and assigns it automatically.
+When a product group has no manual assignment, Tab Organizer runs its hostname against all Space rules and assigns it automatically.
 
 ### Rule Format
 
@@ -77,7 +77,7 @@ Manual always wins over auto.
 
 ### Default Spaces (First Launch)
 
-On first install, Tab Out seeds these Spaces with default rules:
+On first install, Tab Organizer seeds these Spaces with default rules:
 
 | Space | Default Pattern |
 |---|---|
@@ -171,11 +171,11 @@ Chrome **automatically persists** the user's customized binding across extension
 
 | Shortcut | Default | Action | Configurable |
 |---|---|---|---|
-| `⌘⇧K` | open dashboard + focus Space switcher | Opens Tab Out and focuses the pill bar | ✅ via `chrome://extensions/shortcuts` |
+| `⌘⇧K` | open dashboard + focus Space switcher | Opens Tab Organizer and focuses the pill bar | ✅ via `chrome://extensions/shortcuts` |
 
 `⌘1–9` are Chrome-owned globally (switch tabs by position). Cannot register them as global commands.
 
-### Local (inside Tab Out dashboard only)
+### Local (inside Tab Organizer dashboard only)
 
 Standard React keyboard event listeners. Defaults shown; user can rebind all of these in Settings.
 
@@ -219,7 +219,7 @@ Settings panel — "Keyboard" section:
   "commands": {
     "open-space-switcher": {
       "suggested_key": { "default": "Ctrl+Shift+K", "mac": "Command+Shift+K" },
-      "description": "Open Tab Out — Space switcher"
+      "description": "Open Tab Organizer — Space switcher"
     }
   }
   ```

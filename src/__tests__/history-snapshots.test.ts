@@ -25,13 +25,13 @@ function snapshotWithUrls(urls: string[]): HistorySnapshot {
 }
 
 describe('buildHistorySnapshot', () => {
-  it('excludes browser internal and Tab Out pages and keeps product summaries', () => {
+  it('excludes browser internal and Tab Organizer pages and keeps product summaries', () => {
     const snapshot = buildHistorySnapshot(
       [
         makeTab({ id: 1, url: 'https://github.com/OWENLEEzy/tab-out', title: 'Repo' }),
         makeTab({ id: 2, url: 'https://music.youtube.com/watch?v=1', title: 'Song' }),
         makeTab({ id: 3, url: 'chrome://extensions', title: 'Extensions' }),
-        makeTab({ id: 4, url: 'chrome-extension://fake-id/src/newtab/index.html', title: 'Tab Out' }),
+        makeTab({ id: 4, url: 'chrome-extension://fake-id/src/newtab/index.html', title: 'Tab Organizer' }),
       ],
       '2026-05-05T00:00:00.000Z',
     );

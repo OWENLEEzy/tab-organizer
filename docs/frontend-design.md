@@ -1,4 +1,4 @@
-# Tab Out Frontend Design Reference
+# Tab Organizer Frontend Design Reference
 
 > Canonical source of truth for the visual language. Any UI change must stay
 > consistent with the rules below. When in doubt, defer to the tokens defined
@@ -8,7 +8,7 @@
 
 ## 1. Visual Goals and Tone
 
-Tab Out uses a Notion-inspired warm-paper aesthetic. The palette avoids pure
+Tab Organizer uses a Notion-inspired warm-paper aesthetic. The palette avoids pure
 grays in favor of warm undertones (hex values trend toward `F`, not `0`). The
 goal is a calm, readable surface that feels like a well-typeset notebook --
 inviting focus without demanding attention.

@@ -1,8 +1,8 @@
-# Tab Out Frontend Architecture, Storage Guardrails, and Component Reuse Design
+# Tab Organizer Frontend Architecture, Storage Guardrails, and Component Reuse Design
 
 ## Scope
 
-This design defines the next-step target architecture for Tab Out without rewriting the stack. It covers:
+This design defines the next-step target architecture for Tab Organizer without rewriting the stack. It covers:
 
 - Frontend design system documentation
 - Frontend architecture documentation
@@ -19,7 +19,7 @@ This is a gradual architecture cleanup plan, not a large refactor. The project k
 3. Define a target structure that future work must move toward.
 4. Add lightweight, enforceable guardrails instead of relying on convention alone.
 5. Produce documentation that explains both current state and target state.
-6. Document the actual Chrome extension runtime boundaries so the architecture reflects how Tab Out really runs.
+6. Document the actual Chrome extension runtime boundaries so the architecture reflects how Tab Organizer really runs.
 
 ## Non-Goals
 
@@ -64,7 +64,7 @@ This is a gradual architecture cleanup plan, not a large refactor. The project k
 
 ### 0. Runtime Ownership
 
-Tab Out has three first-class runtime slices, and the architecture docs must describe all three:
+Tab Organizer has three first-class runtime slices, and the architecture docs must describe all three:
 
 - `src/newtab/**`: the new tab page runtime
 - `src/background/**`: the service worker runtime
@@ -280,7 +280,7 @@ The existing tokens in `src/newtab/styles/global.css` remain the base system. Th
 
 Purpose:
 
-- explain the visual language of Tab Out
+- explain the visual language of Tab Organizer
 - define layout, token, and interaction rules
 - help future UI changes stay consistent
 

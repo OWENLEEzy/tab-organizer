@@ -52,6 +52,14 @@ describe('parseSearchQuery', () => {
       expect(parseSearchQuery('space:work slack')).toEqual({ type: 'space', arg: 'work', textQuery: 'slack' });
     });
 
+    it('parses shorthand /s: and /spac: aliases', () => {
+      expect(parseSearchQuery('/s:work')).toEqual({ type: 'space', arg: 'work', textQuery: '' });
+      expect(parseSearchQuery('/spac:work')).toEqual({ type: 'space', arg: 'work', textQuery: '' });
+      expect(parseSearchQuery('s:work slack')).toEqual({ type: 'space', arg: 'work', textQuery: 'slack' });
+      expect(parseSearchQuery('spac:personal')).toEqual({ type: 'space', arg: 'personal', textQuery: '' });
+      expect(parseSearchQuery('/s:')).toEqual({ type: 'space', arg: '', textQuery: '' });
+    });
+
     it('handles empty space arguments gracefully', () => {
       expect(parseSearchQuery('/space:')).toEqual({ type: 'space', arg: '', textQuery: '' });
       expect(parseSearchQuery('space: ')).toEqual({ type: 'space', arg: '', textQuery: '' });

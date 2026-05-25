@@ -78,7 +78,7 @@ describe('touch target regressions', () => {
     rerender(
       <TabChip
         url="https://github.com/OWENLEEzy/tab-out"
-        title="Tab Out repo"
+        title="Tab Organizer repo"
         duplicateCount={2}
         active
         onFocus={() => {}}
@@ -90,7 +90,7 @@ describe('touch target regressions', () => {
     expect(primaryButton).not.toBeNull();
     expectTouchHeight(primaryButton!);
 
-    const closeButton = screen.getByRole('button', { name: /Close Tab Out repo/i });
+    const closeButton = screen.getByRole('button', { name: /Close Tab Organizer repo/i });
     expectTouchHeight(closeButton);
     expectTouchWidth(closeButton);
   });

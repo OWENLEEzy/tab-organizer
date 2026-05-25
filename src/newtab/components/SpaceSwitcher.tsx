@@ -68,9 +68,9 @@ export function SpaceSwitcher({
       <button
         onClick={() => onChange(null)}
         tabIndex={activeSpaceId === null ? 0 : -1}
-        className={`px-4 py-1.5 rounded-chip text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 outline-none ${
+        className={`px-4 py-1.5 rounded-none text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent-terracotta/40 outline-none ${
           activeSpaceId === null
-            ? 'bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-200 shadow-sm border border-blue-200 dark:border-blue-800'
+            ? 'bg-accent-terracotta/10 text-accent-terracotta dark:bg-accent-terracotta/20 dark:text-terracotta-400 shadow-sm border border-accent-terracotta/20 dark:border-accent-terracotta/40'
             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
         }`}
       >
@@ -82,13 +82,12 @@ export function SpaceSwitcher({
           key={space.id}
           onClick={() => onChange(space.id)}
           tabIndex={activeSpaceId === space.id ? 0 : -1}
-          className={`px-4 py-1.5 rounded-chip text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 outline-none flex items-center gap-1.5 ${
+          className={`px-4 py-1.5 rounded-none text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent-terracotta/40 outline-none ${
             activeSpaceId === space.id
-              ? 'bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-200 shadow-sm border border-blue-200 dark:border-blue-800'
+              ? 'bg-accent-terracotta/10 text-accent-terracotta dark:bg-accent-terracotta/20 dark:text-terracotta-400 shadow-sm border border-accent-terracotta/20 dark:border-accent-terracotta/40'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
           }`}
         >
-          {space.emoji && <span>{space.emoji}</span>}
           <span>{space.name}</span>
         </button>
       ))}
@@ -96,7 +95,7 @@ export function SpaceSwitcher({
       <button
         onClick={onCreateSpace}
         tabIndex={-1}
-        className="px-3 py-1.5 rounded-chip text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors border border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-blue-500 outline-none"
+        className="px-3 py-1.5 rounded-none text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors border border-dashed border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-accent-terracotta/40 outline-none"
         aria-label={t('spaceSwitcherNew')}
         title={t('spaceSwitcherNew')}
       >

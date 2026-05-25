@@ -3,27 +3,31 @@
 
 /* ─── Warm flat dashboard tokens ────────────────────────────────── */
 /* stylelint-disable custom-property-pattern, custom-property-empty-line-before */
+
+/* NOTE: JS-driven accent themes via useTheme hook override these on :root */
 @theme {
-  --color-to-bg-page: #f4efea;
-  --color-to-bg-surface: #ffffff;
-  --color-to-bg-muted: #f8f8f7;
+  --color-to-bg-page: #FAF7F2;
+  --color-to-bg-surface: #F1EDE4;
+  --color-to-bg-muted: #F1EDE4;
   --color-to-bg-stone: #e4ded7;
   --color-to-bg-yellow: #ffde00;
-  --color-to-bg-blue: #6fc2ff;
+  --color-to-bg-blue: #2563eb;
   --color-to-bg-teal: #16aa98;
   --color-to-bg-coral: #ff7169;
   --color-to-bg-dark: #121212;
+  --color-to-bg-terracotta: #ad5d37;
+  --color-to-bg-terracotta-dark: #e07a5f;
 
-  --color-to-text-primary: #383838;
-  --color-to-text-secondary: #5b5b5b;
-  --color-to-text-muted: #818181;
+  --color-to-text-primary: #332A24;
+  --color-to-text-secondary: #7C6C60;
+  --color-to-text-muted: #9A8A7C;
   --color-to-text-inverse: #ffffff;
 
   --color-to-text-primary-dark: #ffffff;
   --color-to-text-secondary-dark: #cccccc;
   --color-to-text-muted-dark: #999999;
 
-  --color-to-border-strong: #383838;
+  --color-to-border-strong: #DCD3C7;
   --color-to-border-muted: rgba(56, 56, 56, 0.24);
   --color-to-border-inverse: #ffffff;
   --color-to-border-dark: #444444;
@@ -34,78 +38,82 @@
   --color-to-border-width-strong: 2px;
   --shadow-to-none: none;
 
-  --font-family-to-display: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
-  --font-family-to-ui: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
+  /* Custom UI Layout Tokens */
+  --spacing-toggle-width: 36px;
+  --spacing-toggle-height: 20px;
+  --spacing-toggle-dot-size: 16px;
+  --spacing-toggle-translate-x: 16px;
+  --spacing-input-height: 32px;
+
+  --color-to-border-hover: #999999;
+  --color-to-border-hover-dark: #666666;
+  --color-border-hover: var(--color-to-border-hover);
+
+  --font-family-to-display: 'Newsreader', 'Georgia', serif;
+  --font-family-to-ui: 'DM Sans', system-ui, sans-serif;
   --font-family-to-reading: 'DM Sans', system-ui, sans-serif;
 
-  --color-surface-light: var(--color-to-bg-muted);
+  /* Accent color aliases (set by useTheme hook) */
+  --bg-page: #FAF7F2;
+  --bg-surface: #F1EDE4;
+  --bg-card: #FFFCF7;
+  --border-color: #DCD3C7;
+  --text-primary: #332A24;
+  --text-secondary: #7C6C60;
+  --text-muted: #B5A596;
+  --accent-primary: #B25C38;
+  --accent-primary-rgb: 178, 92, 56;
+  --bg-header: rgba(250, 247, 242, 0.95);
+  --accent-amber: #8B6914;
+  --accent-amber-rgb: 139, 105, 20;
+  --bg-duplicate: rgba(197, 133, 20, 0.08);
+  --border-duplicate: rgba(197, 133, 20, 0.25);
+  --accent-stale: #B25C38;
+  --accent-stale-rgb: 178, 92, 56;
+  --bg-stale: rgba(178, 92, 56, 0.05);
+  --border-stale: rgba(178, 92, 56, 0.2);
+  --bg-stale-icon: rgba(178, 92, 56, 0.1);
+  --shadow-card: 0 4px 12px rgba(51, 42, 36, 0.04), 0 1px 3px rgba(51, 42, 36, 0.02);
+  --shadow-card-hover: 0 10px 24px rgba(51, 42, 36, 0.08), 0 3px 8px rgba(51, 42, 36, 0.04);
+
+  /* Aliases referencing dynamic tokens (updated by useTheme) */
+  --color-bg-light: var(--bg-page);
+  --color-card-light: var(--bg-card);
+  --color-surface-light: var(--bg-surface);
+  --color-text-primary-light: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-border-light: var(--border-color);
+  --color-accent-blue: var(--accent-primary);
+  --color-accent-amber: var(--accent-amber);
+
+  /* Dark theme tokens (remain static for now) */
   --color-surface-dark: #1e1e1e;
-  --color-border-light: var(--color-to-border-strong);
   --color-border-dark: var(--color-to-border-dark);
-  --color-text-primary-light: var(--color-to-text-primary);
   --color-text-primary-dark: var(--color-to-text-primary-dark);
-  --color-text-secondary: var(--color-to-text-secondary);
-  --color-text-muted: var(--color-to-text-muted);
-  --color-accent-blue: var(--color-to-bg-blue);
-  --color-accent-amber: #8a5a00;
+  --color-text-secondary-dark: var(--color-to-text-secondary-dark);
+  --color-text-muted-dark: var(--color-to-text-muted-dark);
+  --color-bg-dark: var(--color-to-bg-dark);
+  --color-card-dark: #2a2a2a;
+
+  /* Accent tokens */
   --color-accent-red: var(--color-to-bg-coral);
   --color-accent-sage: var(--color-to-bg-teal);
-  --color-bg-light: var(--color-to-bg-page);
-  --color-bg-dark: var(--color-to-bg-dark);
-  --color-card-light: var(--color-to-bg-surface);
-  --color-card-dark: #2a2a2a;
+  --color-accent-terracotta: var(--color-to-bg-terracotta);
   --color-toast-bg-light: var(--color-to-text-primary);
   --color-toast-bg-dark: var(--color-to-bg-surface);
   --font-family-heading: var(--font-family-to-display);
   --font-family-body: var(--font-family-to-ui);
   --radius-card: var(--radius-to-card);
   --radius-chip: var(--radius-to-button);
-  --shadow-card: var(--shadow-to-none);
-  --shadow-card-hover: var(--shadow-to-none);
 
   /* Button sizes */
-  --spacing-button-height: 2.5rem;   /* 40px standard dashboard button */
+  --spacing-button-height: 2.25rem;   /* 36px standard dashboard button */
   --spacing-button-height-sm: 2rem;   /* 32px small */
   --spacing-button-icon: var(--spacing-button-height);
   --spacing-button-icon-sm: 2rem;     /* 32px small icon buttons */
 }
 /* stylelint-enable custom-property-pattern, custom-property-empty-line-before */
-
-/* ─── Dark mode via class toggle ────────────────────────────────── */
-@variant dark (&:where(.dark, .dark *));
-
-/* stylelint-disable custom-property-pattern, custom-property-empty-line-before */
-.dark {
-  --color-to-bg-dark: #0a0a0a;
-  --color-to-bg-surface: #141414;
-  --color-to-bg-muted: #1a1a1a;
-  
-  --color-bg-light: var(--color-to-bg-dark);
-  --color-text-primary-light: #ffffff;
-  --color-text-secondary: #a3a3a3;
-  --color-text-muted: #737373;
-  --color-border-light: #262626;
-  --color-card-light: #171717;
-  --color-surface-light: #262626;
-
-  --color-accent-blue: #60a5fa;
-  --color-accent-amber: #f59e0b;
-  --color-accent-red: #f87171;
-  --color-accent-sage: #34d399;
-}
-
-/* Ensure text classes work in dark mode */
-.dark .text-text-secondary {
-  color: var(--color-text-secondary) !important;
-}
-
-.dark .text-text-muted {
-  color: var(--color-text-muted) !important;
-}
-
-.dark .favicon {
-  filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.7));
-}
 
 body {
   background: var(--color-bg-light);
@@ -114,7 +122,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-/* stylelint-enable custom-property-pattern, custom-property-empty-line-before */
 
 /* ─── Global focus ring ─────────────────────────────────────────── */
 :focus-visible {
@@ -228,10 +235,6 @@ body, html {
   font-weight: 650;
 }
 
-.dark .history-panel h2 {
-  color: var(--color-text-primary-dark);
-}
-
 .history-button,
 .history-product-button {
   min-height: 36px;
@@ -248,20 +251,10 @@ body, html {
   font-size: 0.8rem;
 }
 
-.dark .history-product-button {
-  background: var(--color-surface-dark);
-}
-
 .history-button:hover,
 .history-product-button:hover {
   background: var(--color-surface-light);
   color: var(--color-text-primary-light);
-}
-
-.dark .history-button:hover,
-.dark .history-product-button:hover {
-  background: var(--color-surface-dark);
-  color: var(--color-text-primary-dark);
 }
 
 .history-list {
@@ -276,19 +269,10 @@ body, html {
   padding: 12px;
 }
 
-.dark .history-card {
-  border-color: var(--color-border-dark);
-  background: var(--color-card-dark);
-}
-
 .history-time {
   color: var(--color-text-primary-light);
   font-size: 0.875rem;
   font-weight: 600;
-}
-
-.dark .history-time {
-  color: var(--color-text-primary-dark);
 }
 
 .history-count,
@@ -326,10 +310,6 @@ body, html {
   font-size: 0.8rem;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.dark .history-tab-title {
-  color: var(--color-text-primary-dark);
 }
 
 .group-header {
@@ -408,12 +388,6 @@ body, html {
   color: var(--color-text-primary-light);
 }
 
-.dark .section-actions button:hover,
-.dark .view-toggle button:hover {
-  background: var(--color-surface-dark);
-  color: var(--color-text-primary-dark);
-}
-
 .view-toggle {
   display: inline-flex;
   gap: 2px;
@@ -424,10 +398,6 @@ body, html {
   border: 0;
   border-radius: var(--radius-chip);
   box-shadow: inset 0 0 0 1px var(--color-border-light);
-}
-
-.dark .view-toggle {
-  box-shadow: inset 0 0 0 1px var(--color-border-dark);
 }
 
 .view-toggle button.is-active {
@@ -514,25 +484,6 @@ body, html {
   width: 100%;
 }
 
-.dark .product-table th,
-.dark .product-table td {
-  border-color: var(--color-border-dark);
-  color: var(--color-text-primary-dark);
-}
-
-.dark .product-table-detail-row td {
-  border-color: var(--color-border-dark);
-}
-
-.dark .product-table-expand-toggle:hover {
-  background: var(--color-surface-dark);
-  color: var(--color-text-primary-dark);
-}
-
-.dark .product-table-tabs-list {
-  background: var(--color-bg-dark);
-}
-
 .product-table-name {
   display: inline-flex;
   align-items: center;
@@ -566,21 +517,12 @@ body, html {
   font-weight: 700;
 }
 
-.dark .table-icon-fallback {
-  background: var(--color-surface-dark);
-}
-
 .product-table select {
   max-width: 180px;
   padding: 4px 8px;
   border: 2px solid var(--color-border-light);
   background: var(--color-card-light);
   color: inherit;
-}
-
-.dark .product-table select {
-  background: var(--color-card-dark);
-  border-color: var(--color-border-dark);
 }
 
 .table-actions {
@@ -688,7 +630,7 @@ body, html {
 }
 
 .chip-closing {
-  animation: chipExit 0.35s cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: chipExit 0.25s cubic-bezier(0.4, 0, 1, 1) forwards;
   pointer-events: none;
 }
 
@@ -723,3 +665,126 @@ input[type="search"]::-webkit-search-results-decoration {
   appearance: none;
 }
 /* stylelint-enable property-no-vendor-prefix */
+
+/* ─── Token-driven Custom Component Styling ──────────────────────── */
+
+/* 1. Toggle Switch Component */
+.settings-toggle {
+  position: relative;
+  display: inline-flex;
+  height: var(--spacing-toggle-height);
+  width: var(--spacing-toggle-width);
+  flex-shrink: 0;
+  cursor: pointer;
+  align-items: center;
+  border-radius: 9999px;
+  background-color: var(--color-border-light);
+  transition: background-color 200ms ease;
+  border: 0;
+  padding: 0;
+}
+
+.settings-toggle.is-checked {
+  background-color: var(--color-accent-blue);
+}
+
+.settings-toggle-thumb {
+  pointer-events: none;
+  display: inline-block;
+  height: var(--spacing-toggle-dot-size);
+  width: var(--spacing-toggle-dot-size);
+  border-radius: 9999px;
+  background-color: var(--color-to-text-inverse);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: transform 200ms ease;
+  transform: translateX(2px);
+}
+
+.settings-toggle.is-checked .settings-toggle-thumb {
+  transform: translateX(var(--spacing-toggle-translate-x));
+}
+
+/* 2. Segmented Control Component */
+.segmented-control {
+  display: inline-flex;
+  padding: 2px;
+  background-color: var(--color-surface-light);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-chip);
+}
+
+.segmented-control-btn {
+  font-family: var(--font-family-body);
+  height: 28px;
+  padding: 0 12px;
+  font-size: 0.75rem;
+  border-radius: calc(var(--radius-chip) - 2px);
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.segmented-control-btn:hover {
+  color: var(--color-text-primary-light);
+}
+
+.segmented-control-btn.is-active {
+  background-color: var(--color-card-light);
+  color: var(--color-text-primary-light);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  font-weight: 500;
+}
+
+/* 3. Settings Select Component */
+.settings-select {
+  box-sizing: border-box;
+  font-family: var(--font-family-body);
+  font-size: 0.75rem;
+  color: var(--color-text-primary-light);
+  background-color: var(--color-card-light);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-chip);
+  padding: 0 10px;
+  min-height: var(--spacing-input-height);
+  min-width: 140px;
+  cursor: pointer;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: border-color 150ms ease;
+}
+
+.settings-select:hover {
+  border-color: var(--color-border-hover);
+}
+
+.settings-select:focus {
+  outline: none;
+  border-color: var(--color-accent-blue);
+  box-shadow: 0 0 0 2px var(--color-accent-blue);
+}
+
+/* 4. Settings Input Component */
+.settings-input {
+  box-sizing: border-box;
+  font-family: var(--font-family-body);
+  font-size: 0.75rem;
+  color: var(--color-text-primary-light);
+  background-color: var(--color-card-light);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-chip);
+  padding: 6px 10px;
+  min-height: var(--spacing-input-height);
+  transition: border-color 150ms ease;
+}
+
+.settings-input:hover {
+  border-color: var(--color-border-hover);
+}
+
+.settings-input:focus {
+  outline: none;
+  border-color: var(--color-accent-blue);
+  box-shadow: 0 0 0 2px var(--color-accent-blue);
+}
+

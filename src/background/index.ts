@@ -102,7 +102,7 @@ async function sendFocusSpaceSwitcher(tabId: number): Promise<void> {
   }
 }
 
-// Open Tab Out dashboard when toolbar icon is clicked.
+// Open Tab Organizer dashboard when toolbar icon is clicked.
 async function openTabOutDashboard(options: { focusSpaceSwitcher?: boolean } = {}): Promise<void> {
   const tabOutUrl = getDashboardUrl(chrome.runtime.getURL);
   const createUrl = options.focusSpaceSwitcher

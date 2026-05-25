@@ -36,7 +36,7 @@ export function DupeBanner({ count, onClose }: DupeBannerProps): React.ReactElem
             />
           </svg>
         </div>
-        <p className="text-text-primary-light dark:text-text-primary-dark text-sm leading-relaxed">
+        <p className="text-text-primary text-sm leading-relaxed">
           {t('alertExtraTabOrganizerPlural', { count })}
         </p>
       </div>

@@ -51,7 +51,7 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
       <div className="text-text-secondary flex items-center justify-between text-xs font-semibold tracking-wider uppercase">
         <div className="flex items-center gap-2">
           <span
-            className={`font-heading text-text-primary-light dark:text-text-primary-dark inline-block text-2xl font-light${state.popping ? ' animate-[countPop_0.3s_ease]' : ''}`}
+            className={`font-heading text-text-primary inline-block text-2xl font-light${state.popping ? ' animate-[countPop_0.3s_ease]' : ''}`}
           >
             {tabCount}
           </span>

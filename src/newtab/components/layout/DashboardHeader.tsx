@@ -36,6 +36,7 @@ interface DashboardHeaderProps {
   onOpenSettings: () => void;
   isSidebarExpanded?: boolean;
   onToggleSidebar?: () => void;
+  spaces?: { id: string; name: string }[];
 }
 
 function RefreshIcon(): React.ReactElement {
@@ -82,6 +83,7 @@ export function DashboardHeader({
   onOpenSettings,
   isSidebarExpanded = false,
   onToggleSidebar,
+  spaces = [],
 }: DashboardHeaderProps): React.ReactElement {
   const { t, locale } = useI18n();
 
@@ -138,6 +140,7 @@ export function DashboardHeader({
                 onChange={onSearchChange}
                 resultCount={resultCount}
                 totalCount={totalCount}
+                spaces={spaces}
               />
             </div>
             <div className="flex flex-wrap items-center gap-2 md:justify-end">

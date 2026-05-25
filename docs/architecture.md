@@ -1,8 +1,8 @@
-# Tab Out Architecture
+# Tab Organizer Architecture
 
 ## System Overview
 
-Tab Out is a local-only Chrome Extension built on Manifest V3. The toolbar action opens a React dashboard page bundled by Vite and CRXJS. The extension uses only `tabs` and `storage` permissions.
+Tab Organizer is a local-only Chrome Extension built on Manifest V3. The toolbar action opens a React dashboard page bundled by Vite and CRXJS. The extension uses only `tabs` and `storage` permissions.
 
 | Entry Point | Runtime | Purpose |
 |---|---|---|
@@ -34,7 +34,7 @@ Owned flows:
 
 - Refresh badge counts on tab lifecycle events.
 - Debounce badge refreshes.
-- Open or focus the Tab Out dashboard from the toolbar action.
+- Open or focus the Tab Organizer dashboard from the toolbar action.
 
 ### Storage Runtime
 
@@ -50,7 +50,7 @@ Persisted domains:
 
 ## Data Model
 
-The dashboard starts from real web tabs returned by `chrome.tabs.query`. Browser-internal URLs, extension pages, and Tab Out dashboard pages are filtered before grouping.
+The dashboard starts from real web tabs returned by `chrome.tabs.query`. Browser-internal URLs, extension pages, and Tab Organizer dashboard pages are filtered before grouping.
 
 Product groups use `TabGroup.productKey` / `TabGroup.itemKey` as the stable product identity. Unknown sites fall back to a conservative hostname-derived product key.
 

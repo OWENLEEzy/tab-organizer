@@ -132,13 +132,13 @@ function DndGroupBoard({
 
   return (
     <section ref={setNodeRef} className={`organizer-group ${isOver ? 'is-over' : ''}`}>
-      <div className="group-header border-b border-border-light pb-2 mb-5 dark:border-border-dark">
+      <div className="group-header border-b border-border-light pb-2 mb-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="font-body text-xs font-semibold uppercase tracking-wider text-text-primary-light dark:text-text-primary-dark">
+            <h2 className="font-body text-xs font-semibold uppercase tracking-wider text-text-primary">
               {title}
             </h2>
-            <span className="rounded-sm bg-surface-light px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-widest text-text-secondary dark:bg-surface-dark">
+            <span className="rounded-sm bg-surface-light px-2 py-0.5 font-body text-[10px] font-bold uppercase tracking-widest text-text-secondary">
               {tabCount}
             </span>
           </div>
@@ -151,7 +151,7 @@ function DndGroupBoard({
               >
                 {t('organizerBtnRename')}
               </button>
-              <div className="h-3 w-px bg-border-light dark:bg-border-dark mx-1" />
+              <div className="h-3 w-px bg-border-light mx-1" />
               <button
                 type="button"
                 onClick={() => onDeleteGroup?.(manualGroup)}

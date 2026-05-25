@@ -15,7 +15,7 @@ The current dashboard presents two adjacent control bars:
 - A title/status-control bar with date, title, section count, view toggle, and settings.
 - A separate toolbar with search, organize, new section, and close all.
 
-This makes the top of the dashboard feel heavier than the amount of work it is doing. The term `Product` is also semantically narrow: Tab Out groups tabs by site, app, domain, or known product, so `Group` is clearer for users.
+This makes the top of the dashboard feel heavier than the amount of work it is doing. The term `Product` is also semantically narrow: Tab Organizer groups tabs by site, app, domain, or known product, so `Group` is clearer for users.
 
 ## Target Layout
 

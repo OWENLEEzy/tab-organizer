@@ -144,7 +144,7 @@ export interface HistorySnapshot {
 // ─── App Settings ────────────────────────────────────────────────
 
 export interface AppSettings {
-  theme: 'light' | 'dark' | 'system';
+  theme: 'clay' | 'sage' | 'frost' | 'ochre' | 'obsidian' | 'pine' | 'amethyst';
   language?: 'en' | 'zh' | 'system';
   soundEnabled: boolean;
   confettiEnabled: boolean;

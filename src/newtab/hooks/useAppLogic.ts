@@ -42,8 +42,8 @@ export function parseSearchQuery(query: string): CommandParsed {
     }
   }
   
-  // 3. Match /space:SpaceName or space:SpaceName (with or without slash)
-  const spaceMatch = trimmed.match(/^(\/?space:)([^\s]*)(?:\s+(.*))?$/);
+  // 3. Match /space:SpaceName, /spac:SpaceName, /s:SpaceName, etc. (with or without slash)
+  const spaceMatch = trimmed.match(/^(\/?(?:space|spac|s):)([^\s]*)(?:\s+(.*))?$/);
   if (spaceMatch) {
     return {
       type: 'space',
@@ -309,30 +309,7 @@ export function useAppLogic() {
     t,
   });
 
-  const theme = useSettingsStore((s) => s.settings.theme);
-
-  // ─── Init: fetch data + dark mode ──────────────────────────────────
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-
-    const applyTheme = () => {
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else if (theme === 'light') {
-        document.documentElement.classList.remove('dark');
-      } else {
-        document.documentElement.classList.toggle('dark', mq.matches);
-      }
-    };
-
-    applyTheme();
-    mq.addEventListener('change', applyTheme);
-
-    return () => {
-      mq.removeEventListener('change', applyTheme);
-    };
-  }, [theme]);
+  // ─── Init: fetch data ────────────────────────────────────────────────
 
   useEffect(() => {
     async function init() {

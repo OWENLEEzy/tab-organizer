@@ -247,6 +247,10 @@ export default defineConfig([
           selector: "JSXOpeningElement[name.name='button'] JSXAttribute[name.name='className'] Literal[value=/\\brounded-(?!chip|sm|none|full)\\w+/]",
           message: 'Custom large border-radius is restricted on buttons. Use "rounded-chip" (4px) as specified in frontend-design.md.',
         },
+        {
+          selector: "JSXText[value=/[\\u{1F300}-\\u{1F9FF}\\u{2600}-\\u{26FF}\\u{2700}-\\u{27BF}]/u]",
+          message: 'No emoji in JSX text. Use SVG icons instead.',
+        },
       ],
     },
   },

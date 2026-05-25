@@ -1,4 +1,4 @@
-# Tab Out Hybrid Organizer Design
+# Tab Organizer Hybrid Organizer Design
 
 > Date: 2026-05-05
 > Status: Approved
@@ -6,9 +6,9 @@
 
 ## Summary
 
-Tab Out should move from hostname cards to a small organizer model. The dashboard will group tabs by product, show recognizable product icons, default to the current card-based experience, and let users switch to a denser table view. Users can create named sections and drag either whole product groups or individual tabs into those sections.
+Tab Organizer should move from hostname cards to a small organizer model. The dashboard will group tabs by product, show recognizable product icons, default to the current card-based experience, and let users switch to a denser table view. Users can create named sections and drag either whole product groups or individual tabs into those sections.
 
-The system will not auto-infer personal sections such as Work, Watch, Later, or Homepages. Tab Out owns product recognition. The user owns sections. A Homepages section can exist, but tabs enter it only when the user puts them there.
+The system will not auto-infer personal sections such as Work, Watch, Later, or Homepages. Tab Organizer owns product recognition. The user owns sections. A Homepages section can exist, but tabs enter it only when the user puts them there.
 
 ## Goals
 
@@ -147,7 +147,7 @@ Existing `groupOrder` is currently keyed by hostname. Product grouping changes t
 - do not guess hostname-to-product mappings during migration
 - prune stale order keys during tab refresh, using the same refresh flow that prunes stale assignments
 
-Stored assignments are temporary organization state, not permanent bookmarks. During tab refresh, Tab Out should compare assignments with the currently open tabs. If no open tab has an assigned URL, that URL assignment should be pruned. If no open tab belongs to an assigned product key, that product assignment should be pruned. Assignments pointing to deleted or invalid section ids should be pruned. Invalid section rows should be ignored or normalized without hiding current tabs. Section names can persist, but item membership only tracks currently open work.
+Stored assignments are temporary organization state, not permanent bookmarks. During tab refresh, Tab Organizer should compare assignments with the currently open tabs. If no open tab has an assigned URL, that URL assignment should be pruned. If no open tab belongs to an assigned product key, that product assignment should be pruned. Assignments pointing to deleted or invalid section ids should be pruned. Invalid section rows should be ignored or normalized without hiding current tabs. Section names can persist, but item membership only tracks currently open work.
 
 ## Cards View
 

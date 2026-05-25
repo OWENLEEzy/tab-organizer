@@ -17,6 +17,7 @@ import { HistoryPanel } from './components/HistoryPanel';
 import { SpaceSwitcher } from './components/SpaceSwitcher';
 import { useAppLogic } from './hooks/useAppLogic';
 import { useI18n } from './hooks/useI18n';
+import { useTheme } from './hooks/useTheme';
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -37,6 +38,8 @@ export function App(): React.ReactElement {
   const { tabStore, settingsStore } = stores;
   const { settings } = settingsStore;
   const { history, viewMode } = tabStore;
+
+  useTheme(settings.theme);
 
   const handleExportConfig = () => {
     const config = {
@@ -149,7 +152,6 @@ export function App(): React.ReactElement {
       <a
         href="#main-content"
         className="focus:rounded-chip focus:bg-accent-blue sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:text-sm focus:text-white focus:outline-none"
-        style={{ zIndex: 60 }}
       >
         {t('skipToContent')}
       </a>
@@ -177,19 +179,20 @@ export function App(): React.ReactElement {
               groupCount={state.visibleGroupCount}
               searchQuery={state.searchQuery}
               onSearchChange={(q) => dispatch({ type: 'SET_SEARCH_QUERY', query: q })}
-            resultCount={state.filteredTabCount}
-            totalCount={state.totalTabs}
-            viewMode={viewMode}
-            onViewModeChange={handlers.handleSetViewMode}
-            groupSortBy={settings.groupSortBy}
-            onGroupSortByChange={settingsStore.setGroupSortBy}
-            onRefresh={handlers.handleRefresh}
-            onCreateGroup={handlers.handleCreateGroup}
-            onCloseAll={handlers.handleCloseAll}
-            onOpenSettings={() => dispatch({ type: 'SET_SETTINGS_OPEN', open: true })}
-            isSidebarExpanded={state.isSidebarExpanded}
-            onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
-          />
+              resultCount={state.filteredTabCount}
+              totalCount={state.totalTabs}
+              viewMode={viewMode}
+              onViewModeChange={handlers.handleSetViewMode}
+              groupSortBy={settings.groupSortBy}
+              onGroupSortByChange={settingsStore.setGroupSortBy}
+              onRefresh={handlers.handleRefresh}
+              onCreateGroup={handlers.handleCreateGroup}
+              onCloseAll={handlers.handleCloseAll}
+              onOpenSettings={() => dispatch({ type: 'SET_SETTINGS_OPEN', open: true })}
+              isSidebarExpanded={state.isSidebarExpanded}
+              onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
+              spaces={derived.orderedGroups}
+            />
           </>
         }
         isSidebarExpanded={state.isSidebarExpanded}
