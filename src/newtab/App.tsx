@@ -148,6 +148,7 @@ export function App(): React.ReactElement {
 
   return (
     <ErrorBoundary>
+      <div className="noise-overlay" aria-hidden="true" />
       {/* Skip to main content — keyboard accessibility */}
       <a
         href="#main-content"
