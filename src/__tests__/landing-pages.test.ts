@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { isLandingPage } from '../lib/landing-pages';
+import { LANDING_PAGE_PATTERNS, isLandingPage } from '../lib/landing-pages';
+import type { LandingPagePattern } from '../types';
 
 // ─── Gmail ────────────────────────────────────────────────────────
 
@@ -103,5 +104,24 @@ describe('isLandingPage — edge cases', () => {
   it('returns false for browser-internal URLs', () => {
     expect(isLandingPage('chrome://newtab/')).toBe(false);
     expect(isLandingPage('about:blank')).toBe(false);
+  });
+
+  it('supports suffix, prefix, and root-only landing page patterns', () => {
+    const patterns = LANDING_PAGE_PATTERNS as unknown as LandingPagePattern[];
+
+    patterns.push(
+      { hostnameEndsWith: '.example.test', pathPrefix: '/home' },
+      { hostname: 'root-only.example.test' },
+    );
+
+    try {
+      expect(isLandingPage('https://app.example.test/home/today')).toBe(true);
+      expect(isLandingPage('https://app.example.test/settings')).toBe(false);
+      expect(isLandingPage('https://root-only.example.test/')).toBe(true);
+      expect(isLandingPage('https://root-only.example.test/not-root')).toBe(false);
+    } finally {
+      patterns.pop();
+      patterns.pop();
+    }
   });
 });

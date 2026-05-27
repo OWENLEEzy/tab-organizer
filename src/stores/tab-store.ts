@@ -4,9 +4,11 @@ import { groupTabsByDomain, autoAssignProductToSpace } from '../lib/tab-grouper'
 import {
   clearHistory,
   deleteHistorySnapshot,
+  assignProductToGroup,
   promoteHistorySnapshot,
   readHistory,
   reconcileOrganizerState,
+  unassignProductFromGroups,
   writeGroupOrder,
   writeOrganizerState,
 } from '../utils/storage';
@@ -260,13 +262,16 @@ export const useTabStore = create<TabStore>((set) => ({
 
   closeTabByUrl: async (url: string) => {
     if (!url) return;
-    const allTabs = await chrome.tabs.query({});
-    const match = allTabs.find((t) => t.url === url);
-    if (match?.id != null) {
-      await protectHistoryBeforeClosing(allTabs);
-      await chrome.tabs.remove(match.id);
+    try {
+      const allTabs = await chrome.tabs.query({});
+      const match = allTabs.find((t) => t.url === url);
+      if (match?.id != null) {
+        await protectHistoryBeforeClosing(allTabs);
+        await chrome.tabs.remove(match.id);
+      }
+    } finally {
+      await useTabStore.getState().fetchTabs();
     }
-    await useTabStore.getState().fetchTabs();
   },
 
   closeOneTabPerUrl: async (urls: string[]) => {
@@ -278,12 +283,14 @@ export const useTabStore = create<TabStore>((set) => ({
       .map((url) => allTabs.find((tab) => tab.url === url)?.id)
       .filter((id): id is number => id != null);
 
-    if (toClose.length > 0) {
-      await protectHistoryBeforeClosing(allTabs);
-      await chrome.tabs.remove(toClose);
+    try {
+      if (toClose.length > 0) {
+        await protectHistoryBeforeClosing(allTabs);
+        await chrome.tabs.remove(toClose);
+      }
+    } finally {
+      await useTabStore.getState().fetchTabs();
     }
-
-    await useTabStore.getState().fetchTabs();
   },
 
   closeTabsByUrls: async (urls: string[]) => {
@@ -320,11 +327,14 @@ export const useTabStore = create<TabStore>((set) => ({
       .map((tab) => tab.id)
       .filter((id): id is number => id != null);
 
-    if (toClose.length > 0) {
-      await protectHistoryBeforeClosing(allTabs);
-      await chrome.tabs.remove(toClose);
+    try {
+      if (toClose.length > 0) {
+        await protectHistoryBeforeClosing(allTabs);
+        await chrome.tabs.remove(toClose);
+      }
+    } finally {
+      await useTabStore.getState().fetchTabs();
     }
-    await useTabStore.getState().fetchTabs();
   },
 
   closeTabsExact: async (urls: string[]) => {
@@ -335,11 +345,14 @@ export const useTabStore = create<TabStore>((set) => ({
       .filter((t) => t.url && urlSet.has(t.url))
       .map((t) => t.id)
       .filter((id): id is number => id != null);
-    if (toClose.length > 0) {
-      await protectHistoryBeforeClosing(allTabs);
-      await chrome.tabs.remove(toClose);
+    try {
+      if (toClose.length > 0) {
+        await protectHistoryBeforeClosing(allTabs);
+        await chrome.tabs.remove(toClose);
+      }
+    } finally {
+      await useTabStore.getState().fetchTabs();
     }
-    await useTabStore.getState().fetchTabs();
   },
 
   closeTabsByIds: async (tabIds: number[]) => {
@@ -356,12 +369,14 @@ export const useTabStore = create<TabStore>((set) => ({
     );
     const toClose = ids.filter((id) => openIds.has(id));
 
-    if (toClose.length > 0) {
-      await protectHistoryBeforeClosing(allTabs);
-      await chrome.tabs.remove(toClose);
+    try {
+      if (toClose.length > 0) {
+        await protectHistoryBeforeClosing(allTabs);
+        await chrome.tabs.remove(toClose);
+      }
+    } finally {
+      await useTabStore.getState().fetchTabs();
     }
-
-    await useTabStore.getState().fetchTabs();
   },
 
   closeDuplicates: async (urls: string[], keepOne: boolean) => {
@@ -369,11 +384,14 @@ export const useTabStore = create<TabStore>((set) => ({
     const allTabs = await chrome.tabs.query({});
     const toClose = duplicateTabIdsToClose(allTabs, new Set(urls), keepOne);
 
-    if (toClose.length > 0) {
-      await protectHistoryBeforeClosing(allTabs);
-      await chrome.tabs.remove(toClose);
+    try {
+      if (toClose.length > 0) {
+        await protectHistoryBeforeClosing(allTabs);
+        await chrome.tabs.remove(toClose);
+      }
+    } finally {
+      await useTabStore.getState().fetchTabs();
     }
-    await useTabStore.getState().fetchTabs();
   },
 
   focusTab: async (url: string) => {
@@ -406,10 +424,14 @@ export const useTabStore = create<TabStore>((set) => ({
     const match =
       matches.find((t) => t.windowId !== currentWindow.id) ?? matches[0];
 
-    if (match.id != null) {
-      await chrome.tabs.update(match.id, { active: true });
+    try {
+      if (match.id != null) {
+        await chrome.tabs.update(match.id, { active: true });
+      }
+      await chrome.windows.update(match.windowId, { focused: true });
+    } finally {
+      await useTabStore.getState().fetchTabs();
     }
-    await chrome.windows.update(match.windowId, { focused: true });
   },
 
   startListeners: () => {
@@ -517,43 +539,14 @@ export const useTabStore = create<TabStore>((set) => ({
   },
 
   moveProductToGroup: async (productKey: string, groupId: string) => {
-    const current = useTabStore.getState();
-    const existingInGroup = current.groupAssignments.filter(
-      (assignment) => assignment.groupId === groupId,
-    );
-    const nextAssignment: GroupAssignment = {
-      productKey,
-      groupId,
-      order: existingInGroup.length,
-    };
-    const nextAssignments = [
-      ...current.groupAssignments.filter(
-        (assignment) => assignment.productKey !== productKey,
-      ),
-      nextAssignment,
-    ];
-    const nextOverrides = current.unsortedOverrides.filter((key) => key !== productKey);
-
-    set({ groupAssignments: nextAssignments, unsortedOverrides: nextOverrides });
-    await writeOrganizerState({
-      groupAssignments: nextAssignments,
-      unsortedOverrides: nextOverrides,
-    });
+    const { groupAssignments, unsortedOverrides } = await assignProductToGroup(productKey, groupId);
+    set({ groupAssignments, unsortedOverrides });
     await useTabStore.getState().fetchTabs();
   },
 
   moveProductToMain: async (productKey: string) => {
-    const current = useTabStore.getState();
-    const nextAssignments = current.groupAssignments
-      .filter((assignment) => assignment.productKey !== productKey);
-    const nextOverrides = current.unsortedOverrides.includes(productKey)
-      ? current.unsortedOverrides
-      : [...current.unsortedOverrides, productKey];
-    set({ groupAssignments: nextAssignments, unsortedOverrides: nextOverrides });
-    await writeOrganizerState({
-      groupAssignments: nextAssignments,
-      unsortedOverrides: nextOverrides,
-    });
+    const { groupAssignments, unsortedOverrides } = await unassignProductFromGroups(productKey);
+    set({ groupAssignments, unsortedOverrides });
     await useTabStore.getState().fetchTabs();
   },
 
@@ -572,10 +565,13 @@ export const useTabStore = create<TabStore>((set) => ({
     const snapshot = snapshots.find((s) => s.id === snapshotId);
     if (!snapshot) return;
 
-    for (const tab of snapshot.tabs) {
-      await chrome.tabs.create({ url: tab.url, active: false });
+    try {
+      for (const tab of snapshot.tabs) {
+        await chrome.tabs.create({ url: tab.url, active: false });
+      }
+    } finally {
+      await useTabStore.getState().fetchTabs();
     }
-    await useTabStore.getState().fetchTabs();
   },
 
   restoreHistoryProduct: async (snapshotId: string, productKey: string) => {
@@ -583,11 +579,14 @@ export const useTabStore = create<TabStore>((set) => ({
     const snapshot = snapshots.find((s) => s.id === snapshotId);
     if (!snapshot) return;
 
-    const productTabs = snapshot.tabs.filter((t) => t.productKey === productKey);
-    for (const tab of productTabs) {
-      await chrome.tabs.create({ url: tab.url, active: false });
+    try {
+      const productTabs = snapshot.tabs.filter((t) => t.productKey === productKey);
+      for (const tab of productTabs) {
+        await chrome.tabs.create({ url: tab.url, active: false });
+      }
+    } finally {
+      await useTabStore.getState().fetchTabs();
     }
-    await useTabStore.getState().fetchTabs();
   },
 
   deleteHistorySnapshot: async (id: string) => {

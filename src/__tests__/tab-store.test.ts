@@ -5,6 +5,26 @@ import type { HistorySnapshot } from '../types';
 const chromeTabs = {
   query: vi.fn(),
   remove: vi.fn(),
+  update: vi.fn(),
+  create: vi.fn(),
+  getCurrent: vi.fn(),
+  onCreated: {
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+  },
+  onRemoved: {
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+  },
+  onUpdated: {
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+  },
+};
+
+const chromeWindows = {
+  getCurrent: vi.fn(),
+  update: vi.fn(),
 };
 
 const chromeStorage = {
@@ -35,8 +55,8 @@ vi.stubGlobal('chrome', {
     getURL: vi.fn((path: string) => `chrome-extension://fake-id/${path}`),
   },
   windows: {
-    getCurrent: vi.fn(),
-    update: vi.fn(),
+    getCurrent: chromeWindows.getCurrent,
+    update: chromeWindows.update,
   },
 });
 
@@ -115,6 +135,17 @@ describe('useTabStore', () => {
   beforeEach(() => {
     chromeTabs.query.mockReset();
     chromeTabs.remove.mockReset();
+    chromeTabs.update.mockReset();
+    chromeTabs.create.mockReset();
+    chromeTabs.getCurrent.mockReset();
+    chromeWindows.getCurrent.mockReset();
+    chromeWindows.update.mockReset();
+    chromeTabs.onCreated.addListener.mockClear();
+    chromeTabs.onCreated.removeListener.mockClear();
+    chromeTabs.onRemoved.addListener.mockClear();
+    chromeTabs.onRemoved.removeListener.mockClear();
+    chromeTabs.onUpdated.addListener.mockClear();
+    chromeTabs.onUpdated.removeListener.mockClear();
     chromeStorage.get.mockClear();
     chromeStorage.set.mockClear();
     chromeStorage.data = {};
@@ -360,6 +391,47 @@ describe('useTabStore', () => {
     expect(chromeStorage.data['unsortedOverrides']).toEqual([]);
   });
 
+  it('preserves concurrent product moves based on the latest organizer storage state', async () => {
+    useTabStore.setState({
+      fetchTabs: vi.fn().mockResolvedValue(undefined),
+      manualGroups: [{ id: 'later', name: 'Later', order: 0 }],
+      groupAssignments: [],
+      unsortedOverrides: [],
+    });
+    chromeStorage.data = {
+      schemaVersion: 4,
+      manualGroups: [{ id: 'later', name: 'Later', order: 0 }],
+      groupAssignments: [],
+      unsortedOverrides: [],
+    };
+
+    await Promise.all([
+      useTabStore.getState().moveProductToGroup('github', 'later'),
+      useTabStore.getState().moveProductToGroup('vercel', 'later'),
+    ]);
+
+    expect(useTabStore.getState().groupAssignments.map((assignment) => assignment.productKey).sort()).toEqual([
+      'github',
+      'vercel',
+    ]);
+    expect((chromeStorage.data['groupAssignments'] as { productKey: string }[])
+      .map((assignment) => assignment.productKey)
+      .sort()).toEqual(['github', 'vercel']);
+  });
+
+  it('refreshes tabs even when a Chrome tab removal races with an already-closed tab', async () => {
+    const fetchTabs = vi.fn().mockResolvedValue(undefined);
+    useTabStore.setState({ fetchTabs });
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(11, 'https://github.com/OWENLEEzy/tab-out'),
+    ]);
+    chromeTabs.remove.mockRejectedValue(new Error('No tab with id: 11'));
+
+    await expect(useTabStore.getState().closeTabByUrl('https://github.com/OWENLEEzy/tab-out')).rejects.toThrow('No tab with id');
+
+    expect(fetchTabs).toHaveBeenCalledTimes(1);
+  });
+
   it('closes exact rendered product URLs instead of every tab on the same host', async () => {
     chromeTabs.query.mockResolvedValue([
       { id: 11, url: 'https://www.youtube.com/watch?v=1' },
@@ -407,5 +479,163 @@ describe('useTabStore', () => {
     const state = useTabStore.getState();
     expect(state.tabs).toHaveLength(1);
     expect(state.tabs[0].active).toBe(false);
+  });
+
+  it('focuses an exact matching tab and falls back to hostname matching', async () => {
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(51, 'https://github.com/a', { windowId: 1 }),
+      makeChromeTab(52, 'https://github.com/b', { windowId: 2 }),
+    ]);
+    chromeWindows.getCurrent.mockResolvedValue({ id: 1 });
+    chromeTabs.update.mockResolvedValue({});
+    chromeWindows.update.mockResolvedValue({});
+
+    await useTabStore.getState().focusTab('https://github.com/missing-path');
+
+    expect(chromeTabs.update).toHaveBeenCalledWith(52, { active: true });
+    expect(chromeWindows.update).toHaveBeenCalledWith(2, { focused: true });
+  });
+
+  it('refreshes tabs when focusing a tab fails', async () => {
+    chromeTabs.query.mockResolvedValue([makeChromeTab(53, 'https://example.com', { windowId: 1 })]);
+    chromeWindows.getCurrent.mockResolvedValue({ id: 1 });
+    chromeTabs.update.mockRejectedValueOnce(new Error('focus failed'));
+    const fetchTabs = vi.fn().mockResolvedValue(undefined);
+    useTabStore.setState({ fetchTabs });
+
+    await expect(useTabStore.getState().focusTab('https://example.com')).rejects.toThrow('focus failed');
+
+    expect(fetchTabs).toHaveBeenCalled();
+  });
+
+  it('refreshes tabs when restoring history fails mid-create', async () => {
+    const snapshot = makeStoredHistorySnapshot('1', ['https://example.com/a', 'https://example.com/b']);
+    chromeStorage.data['history'] = [snapshot];
+    chromeTabs.create.mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('create failed'));
+    const fetchTabs = vi.fn().mockResolvedValue(undefined);
+    useTabStore.setState({ fetchTabs });
+
+    await expect(useTabStore.getState().restoreHistorySnapshot('1')).rejects.toThrow('create failed');
+
+    expect(fetchTabs).toHaveBeenCalled();
+  });
+
+  it('refreshes tabs when restoring a history product fails mid-create', async () => {
+    const snapshot = makeStoredHistorySnapshot('1', ['https://example.com/a']);
+    chromeStorage.data['history'] = [snapshot];
+    chromeTabs.create.mockRejectedValueOnce(new Error('create failed'));
+    const fetchTabs = vi.fn().mockResolvedValue(undefined);
+    useTabStore.setState({ fetchTabs });
+
+    await expect(useTabStore.getState().restoreHistoryProduct('1', 'example.com')).rejects.toThrow(
+      'create failed',
+    );
+
+    expect(fetchTabs).toHaveBeenCalled();
+  });
+
+  it('ignores missing history snapshots during restore', async () => {
+    chromeStorage.data['history'] = [];
+
+    await useTabStore.getState().restoreHistorySnapshot('missing');
+    await useTabStore.getState().restoreHistoryProduct('missing', 'example.com');
+
+    expect(chromeTabs.create).not.toHaveBeenCalled();
+  });
+
+  it('does not focus when there is no matching tab or URL is empty', async () => {
+    chromeTabs.query.mockResolvedValue([makeChromeTab(61, 'https://example.com')]);
+    chromeWindows.getCurrent.mockResolvedValue({ id: 1 });
+
+    await useTabStore.getState().focusTab('');
+    await useTabStore.getState().focusTab('not-a-url');
+
+    expect(chromeTabs.update).not.toHaveBeenCalled();
+  });
+
+  it('registers and cleans up tab listeners', () => {
+    vi.useFakeTimers();
+    const fetchTabs = vi.fn().mockResolvedValue(undefined);
+    useTabStore.setState({ fetchTabs });
+
+    const cleanup = useTabStore.getState().startListeners();
+    const onUpdated = chromeTabs.onUpdated.addListener.mock.calls[0][0];
+    onUpdated(1, { title: 'Changed' });
+    vi.advanceTimersByTime(300);
+    cleanup();
+
+    expect(fetchTabs).toHaveBeenCalledTimes(1);
+    expect(chromeTabs.onCreated.removeListener).toHaveBeenCalled();
+    expect(chromeTabs.onRemoved.removeListener).toHaveBeenCalled();
+    expect(chromeTabs.onUpdated.removeListener).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('creates, renames, updates, reorders, and deletes manual groups', async () => {
+    const fetchTabs = vi.fn().mockResolvedValue(undefined);
+    useTabStore.setState({
+      fetchTabs,
+      manualGroups: [],
+      groupAssignments: [{ productKey: 'github', groupId: 'group-1', order: 0 }],
+    });
+
+    await useTabStore.getState().createGroup('  ');
+    const createdGroup = useTabStore.getState().manualGroups[0];
+    expect(createdGroup.name).toBe('Untitled');
+
+    await useTabStore.getState().renameGroup(createdGroup.id, 'Work');
+    expect(useTabStore.getState().manualGroups[0].name).toBe('Work');
+
+    await useTabStore.getState().updateGroup(createdGroup.id, { emoji: 'W' });
+    expect(fetchTabs).toHaveBeenCalled();
+    expect(useTabStore.getState().manualGroups[0].emoji).toBe('W');
+
+    await useTabStore.getState().reorderGroups([{ ...createdGroup, id: 'group-1', name: 'One', order: 10 }]);
+    expect(useTabStore.getState().manualGroups[0].order).toBe(0);
+
+    await useTabStore.getState().deleteGroup('group-1');
+    expect(useTabStore.getState().groupAssignments).toEqual([]);
+  });
+
+  it('restores and manages history snapshots', async () => {
+    const snapshot = makeStoredHistorySnapshot('1', ['https://example.com/a', 'https://example.com/b']);
+    chromeStorage.data['history'] = [snapshot];
+    chromeTabs.create.mockResolvedValue({});
+    const fetchTabs = vi.fn().mockResolvedValue(undefined);
+    useTabStore.setState({ fetchTabs });
+
+    await useTabStore.getState().fetchHistory();
+    expect(useTabStore.getState().history).toEqual([snapshot]);
+
+    await useTabStore.getState().restoreHistorySnapshot('1');
+    expect(chromeTabs.create).toHaveBeenCalledTimes(2);
+
+    await useTabStore.getState().restoreHistoryProduct('1', 'example.com');
+    expect(chromeTabs.create).toHaveBeenCalledTimes(4);
+
+    await useTabStore.getState().deleteHistorySnapshot('1');
+    expect(useTabStore.getState().history).toEqual([]);
+
+    chromeStorage.data['history'] = [snapshot];
+    await useTabStore.getState().clearHistory();
+    expect(useTabStore.getState().history).toEqual([]);
+  });
+
+  it('closes extra dashboard pages and tolerates cleanup failures', async () => {
+    const closeTabsExact = vi.fn().mockResolvedValue(undefined);
+    chromeTabs.getCurrent.mockResolvedValue({ id: 1 });
+    useTabStore.setState({
+      closeTabsExact,
+      tabs: [
+        { id: 1, url: 'chrome-extension://fake-id/src/newtab/index.html', title: '', favIconUrl: '', domain: '', windowId: 1, active: true, isDashboard: true, isDuplicate: false, isLandingPage: false, duplicateCount: 0 },
+        { id: 2, url: 'chrome-extension://fake-id/src/newtab/index.html?x=1', title: '', favIconUrl: '', domain: '', windowId: 1, active: false, isDashboard: true, isDuplicate: false, isLandingPage: false, duplicateCount: 0 },
+      ],
+    });
+
+    await useTabStore.getState().closeExtraDashboards();
+    expect(closeTabsExact).toHaveBeenCalledWith(['chrome-extension://fake-id/src/newtab/index.html?x=1']);
+
+    chromeTabs.getCurrent.mockRejectedValueOnce(new Error('missing'));
+    await expect(useTabStore.getState().closeExtraDashboards()).resolves.not.toThrow();
   });
 });

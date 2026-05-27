@@ -12,6 +12,9 @@ import {
   deleteHistorySnapshot,
   clearHistory,
   reconcileOrganizerState,
+  pruneStaleStorage,
+  assignProductToGroup,
+  unassignProductFromGroups,
 } from '../utils/storage';
 import type { HistorySnapshot } from '../types';
 
@@ -139,6 +142,64 @@ describe('readStorage', () => {
     expect(result.history[0].id).toBe('snap-1');
   });
 
+  it('filters browser-internal tabs from legacy recovery snapshots during migration', async () => {
+    storage['schemaVersion'] = 3;
+    storage['recoveryHistory'] = [{
+      id: 'snap-legacy',
+      capturedAt: '2026-05-05T00:00:00Z',
+      tabCount: 4,
+      products: [{ productKey: 'example.com', label: 'Example', iconDomain: 'example.com', tabCount: 1 }],
+      tabs: [
+        {
+          url: 'chrome://extensions',
+          title: 'Extensions',
+          domain: 'chrome',
+          productKey: 'chrome',
+          productLabel: 'Chrome',
+          iconDomain: 'chrome',
+          favIconUrl: '',
+          capturedAt: '2026-05-05T00:00:00Z',
+        },
+        {
+          url: 'chrome-extension://fake-id/src/newtab/index.html',
+          title: 'Tab Organizer',
+          domain: 'fake-id',
+          productKey: 'fake-id',
+          productLabel: 'Extension',
+          iconDomain: 'fake-id',
+          favIconUrl: '',
+          capturedAt: '2026-05-05T00:00:00Z',
+        },
+        {
+          url: 'devtools://devtools/bundled/inspector.html',
+          title: 'DevTools',
+          domain: 'devtools',
+          productKey: 'devtools',
+          productLabel: 'DevTools',
+          iconDomain: 'devtools',
+          favIconUrl: '',
+          capturedAt: '2026-05-05T00:00:00Z',
+        },
+        {
+          url: 'https://example.com',
+          title: 'Example',
+          domain: 'example.com',
+          productKey: 'example.com',
+          productLabel: 'Example',
+          iconDomain: 'example.com',
+          favIconUrl: '',
+          capturedAt: '2026-05-05T00:00:00Z',
+        },
+      ],
+    }];
+
+    const result = await readStorage();
+
+    expect(result.history).toHaveLength(1);
+    expect(result.history[0].tabs.map((tab) => tab.url)).toEqual(['https://example.com']);
+    expect(result.history[0].tabCount).toBe(1);
+  });
+
   it('normalizes v4 product-group organizer state and rejects tabUrl assignments', async () => {
     const rejectedUrlAssignmentType = 'tab' + 'Url';
     storage['schemaVersion'] = 4;
@@ -174,6 +235,21 @@ describe('readStorage', () => {
     const result = await readStorage();
 
     expect(result.unsortedOverrides).toEqual(['github', 'google.com']);
+  });
+
+  it('normalizes malformed manual groups and assignments to empty lists', async () => {
+    storage['schemaVersion'] = 4;
+    storage['manualGroups'] = 'not-an-array';
+    storage['groupAssignments'] = 'not-an-array';
+    storage['unsortedOverrides'] = 'not-an-array';
+    storage['viewMode'] = 'invalid';
+
+    const result = await readStorage();
+
+    expect(result.manualGroups).toEqual([]);
+    expect(result.groupAssignments).toEqual([]);
+    expect(result.unsortedOverrides).toEqual([]);
+    expect(result.viewMode).toBe('cards');
   });
 });
 
@@ -260,6 +336,7 @@ describe('history storage', () => {
     expect(result.history).toHaveLength(1);
     expect(result.history[0].tabs).toHaveLength(80);
   });
+
 
   it('keeps only five history snapshots and skips duplicate URL sets', async () => {
     for (let index = 0; index < 7; index += 1) {
@@ -381,6 +458,69 @@ describe('writeGroupOrder', () => {
     const result = await readStorage();
     expect(result.settings.soundEnabled).toBe(false);
     expect(result.groupOrder).toEqual({ 'github.com': 0 });
+  });
+});
+
+describe('organizer storage mutations', () => {
+  it('prunes stale order, assignments, and unsorted overrides', async () => {
+    storage['schemaVersion'] = 4;
+    storage['manualGroups'] = [{ id: 'group-1', name: 'Group', order: 0 }];
+    storage['groupOrder'] = { github: 0, stale: 1 };
+    storage['groupAssignments'] = [
+      { productKey: 'github', groupId: 'group-1', order: 0 },
+      { productKey: 'stale', groupId: 'group-1', order: 1 },
+      { productKey: 'github', groupId: 'missing-group', order: 2 },
+    ];
+    storage['unsortedOverrides'] = ['github', 'stale'];
+
+    await pruneStaleStorage(new Set(['github']));
+    const result = await readStorage();
+
+    expect(result.groupOrder).toEqual({ github: 0 });
+    expect(result.groupAssignments).toEqual([{ productKey: 'github', groupId: 'group-1', order: 0 }]);
+    expect(result.unsortedOverrides).toEqual(['github']);
+  });
+
+  it('leaves organizer storage untouched when no stale data exists', async () => {
+    storage['schemaVersion'] = 4;
+    storage['manualGroups'] = [{ id: 'group-1', name: 'Group', order: 0 }];
+    storage['groupOrder'] = { github: 0 };
+    storage['groupAssignments'] = [{ productKey: 'github', groupId: 'group-1', order: 0 }];
+    storage['unsortedOverrides'] = ['github'];
+
+    await pruneStaleStorage(new Set(['github']));
+    const result = await readStorage();
+
+    expect(result.groupOrder).toEqual({ github: 0 });
+    expect(result.groupAssignments).toEqual([{ productKey: 'github', groupId: 'group-1', order: 0 }]);
+    expect(result.unsortedOverrides).toEqual(['github']);
+  });
+
+  it('assigns and unassigns products by merging with current storage', async () => {
+    storage['schemaVersion'] = 4;
+    storage['manualGroups'] = [{ id: 'group-1', name: 'Group', order: 0 }];
+    storage['groupAssignments'] = [{ productKey: 'github', groupId: 'group-1', order: 0 }];
+    storage['unsortedOverrides'] = ['vercel', 'github'];
+
+    let next = await assignProductToGroup('vercel', 'group-1');
+    expect(next.groupAssignments).toEqual([
+      { productKey: 'github', groupId: 'group-1', order: 0 },
+      { productKey: 'vercel', groupId: 'group-1', order: 1 },
+    ]);
+    expect(next.unsortedOverrides).toEqual(['github']);
+
+    next = await unassignProductFromGroups('vercel');
+    expect(next.groupAssignments).toEqual([{ productKey: 'github', groupId: 'group-1', order: 0 }]);
+    expect(next.unsortedOverrides).toEqual(['github', 'vercel']);
+  });
+
+  it('does not duplicate an existing unsorted override when unassigning', async () => {
+    storage['schemaVersion'] = 4;
+    storage['unsortedOverrides'] = ['github'];
+
+    const next = await unassignProductFromGroups('github');
+
+    expect(next.unsortedOverrides).toEqual(['github']);
   });
 });
 

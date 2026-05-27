@@ -23,11 +23,36 @@ describe('tooling gates', () => {
 
     expect(check).toContain('npm run lint');
     expect(check).toContain('npm run lint:css');
-    expect(check).toContain('npm run test');
+    expect(check).toContain('npm run test:coverage');
     expect(check).toContain('npm run build');
+    expect(check).toContain('npm run check:dist-manifest');
     expect(check).toContain('npm run check:bundle');
     expect(check).toContain('npm run check:startup');
     expect(check).toContain('npm run test:e2e');
+  });
+
+  it('pins Node 22 and keeps release versions aligned', () => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'manifest.json'), 'utf8')) as { version: string };
+    const lockfile = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package-lock.json'), 'utf8')) as {
+      version: string;
+      packages: { '': { version: string } };
+    };
+    const nodeVersion = fs.readFileSync(path.join(repoRoot, '.node-version'), 'utf8').trim();
+
+    expect(packageJson.engines.node).toBe('>=22');
+    expect(nodeVersion).toBe('22');
+    expect(packageJson.version).toBe(manifest.version);
+    expect(lockfile.version).toBe(packageJson.version);
+    expect(lockfile.packages[''].version).toBe(packageJson.version);
+  });
+
+  it('keeps the privacy policy aligned with local-only storage and current repo support', () => {
+    const privacyPolicy = fs.readFileSync(path.join(repoRoot, 'public/privacy-policy.html'), 'utf8');
+
+    expect(privacyPolicy).toContain('chrome.storage.local');
+    expect(privacyPolicy).not.toContain('chrome.storage.sync');
+    expect(privacyPolicy).toContain('OWENLEEzy/tab-organizer');
+    expect(privacyPolicy).not.toContain('OWENLEEzy/tab-out');
   });
 
   it('enforces store storage imports through the architecture rule', () => {

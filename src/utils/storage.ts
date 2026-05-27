@@ -12,6 +12,7 @@ import { historyUrlSignature, shouldReplaceHistoryCandidate } from '../lib/histo
 import { DEFAULT_SPACES } from '../config/spaces';
 import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
 import { DEFAULT_GROUP_SORT, normalizeGroupSortBy } from '../config/group-sort';
+import { isRealTab } from './url';
 
 const CURRENT_SCHEMA_VERSION = 4;
 const STORAGE_KEYS = [
@@ -268,7 +269,7 @@ function normalizeHistorySnapshot(value: unknown): HistorySnapshot | null {
   const tabs = candidate.tabs
     .filter((tab) => tab && typeof tab === 'object')
     .map((tab) => tab as HistorySnapshot['tabs'][number])
-    .filter((tab) => typeof tab.url === 'string' && typeof tab.productKey === 'string')
+    .filter((tab) => typeof tab.url === 'string' && isRealTab(tab.url) && typeof tab.productKey === 'string')
     .slice(0, 80);
 
   if (tabs.length === 0) return null;
@@ -685,6 +686,66 @@ export async function writeOrganizerState(state: {
   }));
 }
 
+export async function assignProductToGroup(productKey: string, groupId: string): Promise<{
+  groupAssignments: GroupAssignment[];
+  unsortedOverrides: string[];
+}> {
+  let nextState = {
+    groupAssignments: [] as GroupAssignment[],
+    unsortedOverrides: [] as string[],
+  };
+
+  await updateStorage((storage) => {
+    const existingInGroup = storage.groupAssignments.filter(
+      (assignment) => assignment.groupId === groupId && assignment.productKey !== productKey,
+    );
+    const groupAssignments = [
+      ...storage.groupAssignments.filter((assignment) => assignment.productKey !== productKey),
+      { productKey, groupId, order: existingInGroup.length },
+    ];
+    const unsortedOverrides = storage.unsortedOverrides.filter((key) => key !== productKey);
+
+    nextState = { groupAssignments, unsortedOverrides };
+
+    return {
+      ...storage,
+      groupAssignments,
+      unsortedOverrides,
+    };
+  });
+
+  return nextState;
+}
+
+export async function unassignProductFromGroups(productKey: string): Promise<{
+  groupAssignments: GroupAssignment[];
+  unsortedOverrides: string[];
+}> {
+  let nextState = {
+    groupAssignments: [] as GroupAssignment[],
+    unsortedOverrides: [] as string[],
+  };
+
+  await updateStorage((storage) => {
+    const groupAssignments = storage.groupAssignments.filter(
+      (assignment) => assignment.productKey !== productKey,
+    );
+    const unsortedOverrides = storage.unsortedOverrides.includes(productKey)
+      ? storage.unsortedOverrides
+      : [...storage.unsortedOverrides, productKey];
+
+    nextState = { groupAssignments, unsortedOverrides };
+
+    return {
+      ...storage,
+      groupAssignments,
+      unsortedOverrides,
+    };
+  });
+
+  return nextState;
+}
+
 export async function updateHistoryCandidate(snapshot: HistorySnapshot | null): Promise<void> {
   await updateStorage((storage) => {
     if (snapshot == null) {
@@ -743,8 +804,14 @@ export async function promoteHistorySnapshot(snapshot: HistorySnapshot | null): 
 }
 
 export async function promoteHistoryCandidate(): Promise<boolean> {
-  const storage = await readStorage();
-  return promoteHistorySnapshot(storage.historyCandidate);
+  let promoted = false;
+  await updateStorage((storage) => {
+    const result = promoteSnapshotInStorage(storage, storage.historyCandidate);
+    promoted = result.promoted;
+    return result.next;
+  });
+
+  return promoted;
 }
 
 export async function deleteHistorySnapshot(id: string): Promise<void> {

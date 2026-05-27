@@ -125,4 +125,43 @@ describe('useSettingsStore', () => {
     const stored = chromeStorage.data['settings'] as AppSettings;
     expect(stored.staleThresholdDays).toBe(7);
   });
+
+  it('sets language and group sort preference', async () => {
+    await useSettingsStore.getState().setLanguage('zh');
+    await useSettingsStore.getState().setGroupSortBy('name');
+
+    expect(useSettingsStore.getState().settings.language).toBe('zh');
+    expect(useSettingsStore.getState().settings.groupSortBy).toBe('name');
+    const stored = chromeStorage.data['settings'] as AppSettings;
+    expect(stored.language).toBe('zh');
+    expect(stored.groupSortBy).toBe('name');
+  });
+
+  it('updates and resets key bindings', async () => {
+    await useSettingsStore.getState().updateKeyBinding('focusSearch', 'Meta+K');
+    expect(useSettingsStore.getState().settings.keyBindings.focusSearch).toBe('Meta+K');
+
+    await useSettingsStore.getState().resetKeyBindings();
+    expect(useSettingsStore.getState().settings.keyBindings.focusSearch).toBe('/');
+    const stored = chromeStorage.data['settings'] as AppSettings;
+    expect(stored.keyBindings.focusSearch).toBe('/');
+  });
+
+  it.each([
+    ['toggleSound', () => useSettingsStore.getState().toggleSound()],
+    ['toggleConfetti', () => useSettingsStore.getState().toggleConfetti()],
+    ['setMaxChipsVisible', () => useSettingsStore.getState().setMaxChipsVisible(16)],
+    ['setStaleThresholdDays', () => useSettingsStore.getState().setStaleThresholdDays(14)],
+    ['setLanguage', () => useSettingsStore.getState().setLanguage('en')],
+    ['setGroupSortBy', () => useSettingsStore.getState().setGroupSortBy('lastAccessed')],
+    ['updateKeyBinding', () => useSettingsStore.getState().updateKeyBinding('clearFilter', 'Escape')],
+    ['resetKeyBindings', () => useSettingsStore.getState().resetKeyBindings()],
+  ])('rolls back state if %s storage write fails', async (_name, act) => {
+    const previous = useSettingsStore.getState().settings;
+    chromeStorage.set.mockRejectedValueOnce(new Error('Storage failure'));
+
+    await act();
+
+    expect(useSettingsStore.getState().settings).toEqual(previous);
+  });
 });

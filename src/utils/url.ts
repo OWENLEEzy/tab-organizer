@@ -2,12 +2,23 @@
  * Check if a URL is a real web page (not browser-internal).
  */
 export function isRealTab(url: string): boolean {
+  const browserInternalPrefixes = [
+    'chrome://',
+    'chrome-extension://',
+    'chrome-search://',
+    'devtools://',
+    'about:',
+    'edge://',
+    'brave://',
+  ];
+  const normalized = url.trim().toLowerCase();
+  const target = normalized.startsWith('view-source:')
+    ? normalized.slice('view-source:'.length)
+    : normalized;
+
   return (
-    !url.startsWith('chrome://') &&
-    !url.startsWith('chrome-extension://') &&
-    !url.startsWith('about:') &&
-    !url.startsWith('edge://') &&
-    !url.startsWith('brave://')
+    target !== '' &&
+    !browserInternalPrefixes.some((prefix) => target.startsWith(prefix))
   );
 }
 

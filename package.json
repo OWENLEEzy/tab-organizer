@@ -1,8 +1,11 @@
 {
   "name": "tab-organizer",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite src/newtab/index.html",
     "dev:newtab": "vite src/newtab/index.html",
@@ -11,14 +14,16 @@
     "sync:dist": "node ./scripts/sync-dist.mjs",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:a11y": "vitest run src/__tests__/*.a11y.test.tsx",
     "test:watch": "vitest",
     "test:e2e": "node ./scripts/run-a11y-e2e.mjs",
     "check:bundle": "node ./scripts/check-bundle-budget.mjs",
     "check:startup": "node ./scripts/check-startup-budget.mjs",
+    "check:dist-manifest": "node ./scripts/check-dist-manifest.mjs",
     "lint": "eslint . --max-warnings=0",
     "lint:css": "stylelint \"src/**/*.css\"",
-    "check": "npm run lint && npm run lint:css && npm run test && npm run build && npm run check:bundle && npm run check:startup && npm run test:e2e"
+    "check": "npm run lint && npm run lint:css && npm run test:coverage && npm run build && npm run check:dist-manifest && npm run check:bundle && npm run check:startup && npm run test:e2e"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

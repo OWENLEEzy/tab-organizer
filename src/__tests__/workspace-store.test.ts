@@ -64,6 +64,18 @@ describe('useWorkspaceStore', () => {
     expect(useWorkspaceStore.getState().workspaces).toEqual(workspaces);
   });
 
+  it('clears workspace state when storage fetch fails', async () => {
+    useWorkspaceStore.setState({
+      workspaces: [{ id: '1', name: 'Work', icon: '', savedTabs: [], order: 0, createdAt: 1, updatedAt: 1 }],
+    });
+    chromeStorage.get.mockRejectedValueOnce(new Error('storage failed'));
+
+    await useWorkspaceStore.getState().fetchWorkspaces();
+
+    expect(useWorkspaceStore.getState().workspaces).toEqual([]);
+    expect(useWorkspaceStore.getState().loading).toBe(false);
+  });
+
   it('creates a new workspace', async () => {
     await useWorkspaceStore.getState().createWorkspace('Project X', '🚀');
 
@@ -136,6 +148,26 @@ describe('useWorkspaceStore', () => {
     expect(stored[0].savedTabs).toHaveLength(0);
   });
 
+  it('leaves non-matching workspaces unchanged for rename, add, and remove operations', async () => {
+    const workspace: Workspace = { id: 'w1', name: 'W', icon: '', savedTabs: [], order: 0, createdAt: 1, updatedAt: 1 };
+    const tab: SavedTab = {
+      id: 't1',
+      url: 'https://example.com',
+      title: 'Example',
+      domain: 'example.com',
+      savedAt: '2026',
+      completed: false,
+      dismissed: false,
+    };
+    useWorkspaceStore.setState({ workspaces: [workspace] });
+
+    await useWorkspaceStore.getState().renameWorkspace('missing', 'New');
+    await useWorkspaceStore.getState().addTabToWorkspace('missing', tab);
+    await useWorkspaceStore.getState().removeTabFromWorkspace('missing', 't1');
+
+    expect(useWorkspaceStore.getState().workspaces).toEqual([workspace]);
+  });
+
   it('restores a workspace by creating tabs', async () => {
     const tab: SavedTab = {
       id: 't1',
@@ -152,6 +184,14 @@ describe('useWorkspaceStore', () => {
     await useWorkspaceStore.getState().restoreWorkspace('w1');
 
     expect(chromeTabs.create).toHaveBeenCalledWith({ url: tab.url });
+  });
+
+  it('ignores restore for a missing workspace and stores active workspace locally', async () => {
+    useWorkspaceStore.getState().setActiveWorkspace('w1');
+    await useWorkspaceStore.getState().restoreWorkspace('missing');
+
+    expect(useWorkspaceStore.getState().activeWorkspaceId).toBe('w1');
+    expect(chromeTabs.create).not.toHaveBeenCalled();
   });
 
   it('rolls back on storage failure', async () => {
