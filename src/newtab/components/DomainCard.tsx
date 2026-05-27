@@ -2,7 +2,8 @@ import React, { useCallback, useMemo, useState } from 'react';
 import type { TabGroup } from '../../types';
 import { TabChip } from './TabChip';
 import { getVisibleTabs } from '../lib/visible-tabs';
-import { getGroupFaviconUrl } from '../../lib/tab-utils';
+import { getGroupFaviconSource } from '../../lib/group-favicon';
+import { getFaviconUrl } from '../../utils/favicon';
 import { useI18n } from '../hooks/useI18n';
 
 // ─── Types ────────────────────────────────────────────────────────────
@@ -152,7 +153,7 @@ export function DomainCard({
   const selectionMode = (selectedUrls?.size ?? 0) > 0 || (selectedTabIds?.size ?? 0) > 0;
   const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
   const groupFaviconUrl = useMemo(
-    () => getGroupFaviconUrl(tabs),
+    () => getFaviconUrl(getGroupFaviconSource(tabs)),
     [tabs],
   );
   const iconFailed = groupFaviconUrl !== '' && failedFaviconUrl === groupFaviconUrl;
@@ -213,10 +214,11 @@ export function DomainCard({
   const statusBarColor = hasDupes ? 'bg-accent-amber' : 'bg-accent-sage';
 
   return (
-    <div className="app-card rounded-card overflow-hidden">
-      <div className={`h-0.5 ${statusBarColor}`} />
+    <div className="app-card rounded-card overflow-hidden relative">
+      <div className="paper-noise" aria-hidden="true" />
+      <div className={`h-0.5 relative z-10 ${statusBarColor}`} />
 
-      <div className="border-b border-border-color p-4 bg-bg-surface/20">
+      <div className="border-b border-border-color p-4 bg-bg-surface/20 relative z-10">
         {/* Header: domain name + badges — DnD uses a dedicated handle to avoid nested interactive controls. */}
         <div className="flex flex-wrap items-center gap-2">
           {dragHandleProps && (
@@ -264,7 +266,7 @@ export function DomainCard({
             {hasDupes && (
               <button
                 type="button"
-                className="flex h-7 items-center gap-1 rounded-sm bg-accent-amber px-2 text-[var(--text-3xs)] font-semibold tracking-wider text-white transition-opacity hover:opacity-90 rotate-[2deg]"
+                className="flex h-7 items-center gap-1.5 rounded-[4px] border border-dashed border-accent-amber/60 bg-bg-surface px-2.5 text-[10px] font-semibold font-mono text-accent-amber transition-transform hover:translate-y-[-1px] hover:rotate-[1deg] hover:bg-accent-amber/10 active:translate-y-[2px] active:rotate-[3deg] active:border-dotted active:opacity-60"
                 onClick={handleCloseDuplicates}
                 title={t('cardCloseDupesTitle')}
               >
@@ -276,7 +278,7 @@ export function DomainCard({
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="p-4 relative z-10">
 
         {/* Tab chips */}
         <div className="flex flex-col gap-0.5">

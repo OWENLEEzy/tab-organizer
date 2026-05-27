@@ -9,7 +9,9 @@ import { useUIState } from './useUIState';
 import { useTabHandlers } from './useTabHandlers';
 import { useI18n } from './useI18n';
 import { DASHBOARD_SECTION_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
-import { isTabStale, analyzeDuplicates, getProductKey } from '../../lib/tab-utils';
+import { isTabStale } from '../../lib/staleness';
+import { analyzeDuplicates } from '../../lib/duplicate-analysis';
+import { getProductKey } from '../../lib/product-key';
 import { createSortComparator } from '../../lib/tab-grouper';
 
 // ─── Helpers ────────────────────────────────────────────────────────────

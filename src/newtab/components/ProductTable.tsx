@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import type { Section, TabGroup } from '../../types';
 import { TabChip } from './TabChip';
-import { analyzeDuplicates, getGroupFaviconUrl, getProductKey } from '../../lib/tab-utils';
+import { analyzeDuplicates } from '../../lib/duplicate-analysis';
+import { getProductKey } from '../../lib/product-key';
+import { getGroupFaviconSource } from '../../lib/group-favicon';
+import { getFaviconUrl } from '../../utils/favicon';
 import { ActionButton } from './ui/ActionButton';
 import { useI18n } from '../hooks/useI18n';
 
@@ -50,7 +53,7 @@ function RowIcon({ group }: { group: TabGroup }): React.ReactElement {
   const label = group.friendlyName || group.domain;
   const initial = label.trim().charAt(0).toUpperCase() || '?';
   const faviconUrl = useMemo(
-    () => getGroupFaviconUrl(group.tabs),
+    () => getFaviconUrl(getGroupFaviconSource(group.tabs)),
     [group.tabs],
   );
   const failed = faviconUrl !== '' && failedFaviconUrl === faviconUrl;
