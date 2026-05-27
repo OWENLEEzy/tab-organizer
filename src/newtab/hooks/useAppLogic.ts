@@ -3,7 +3,7 @@ import { useTabStore } from '../../stores/tab-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { useKeyboard } from './useKeyboard';
 import { flattenVisibleTabs } from '../lib/visible-tabs';
-import { isTabOrganizerPage } from '../../utils/url';
+import { isTabOrganizerPage } from '../../utils/browser-url';
 import type { TabGroup, Section } from '../../types';
 import { useUIState } from './useUIState';
 import { useTabHandlers } from './useTabHandlers';
@@ -133,6 +133,20 @@ export function useAppLogic() {
   const orderedSections = useMemo(
     () => [...sections].sort((a, b) => a.order - b.order),
     [sections],
+  );
+
+  const globalProductsBySection = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of products) {
+       const sectionId = assignmentByItemId.get(groupAssignmentKey(p));
+       if (sectionId) counts.set(sectionId, (counts.get(sectionId) || 0) + 1);
+    }
+    return counts;
+  }, [products, assignmentByItemId, groupAssignmentKey]);
+
+  const activeHeaderSections = useMemo(
+    () => orderedSections.filter((s) => (globalProductsBySection.get(s.id) ?? 0) > 0),
+    [orderedSections, globalProductsBySection]
   );
 
   // Debounce searchQuery for derived memos — avoids cascading recomputes on every keystroke.
@@ -485,6 +499,7 @@ export function useAppLogic() {
       filteredProducts,
       unassignedProducts,
       orderedSections,
+      activeHeaderSections,
       productsBySection,
       assignmentByItemId,
       itemIdForProduct,

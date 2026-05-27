@@ -2,7 +2,7 @@ import type { Tab, TabGroup, Section, CustomGroup, GroupSortOption } from '../ty
 import { productForHostname } from '../config/products';
 import { friendlyDomain } from './title-cleaner';
 import { analyzeDuplicates } from './tab-utils';
-import { getTabDomain } from '../utils/url';
+import { getTabDomain } from './url-rules';
 import { normalizeGroupSortBy } from '../config/group-sort';
 
 // ─── Constants ──────────────────────────────────────────────────────

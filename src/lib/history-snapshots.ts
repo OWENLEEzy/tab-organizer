@@ -1,6 +1,6 @@
 import { productForHostname } from '../config/products';
 import type { HistoryProductSummary, HistorySnapshot, HistoryTab, Tab } from '../types';
-import { getTabDomain, isRealTab } from '../utils/url';
+import { getTabDomain, isRealTab } from './url-rules';
 
 const MAX_TABS_PER_SNAPSHOT = 80;
 

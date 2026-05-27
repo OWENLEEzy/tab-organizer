@@ -15,7 +15,8 @@ import {
 import { legacyProductKeyForHostname, productForHostname } from '../config/products';
 import { buildHistorySnapshot } from '../lib/history-snapshots';
 import { duplicateTabIdsToClose } from '../lib/duplicate-tabs';
-import { getTabDomain, isRealTab, isTabOrganizerPage } from '../utils/url';
+import { getTabDomain, isRealTab } from '../lib/url-rules';
+import { isTabOrganizerPage } from '../utils/browser-url';
 import { getErrorMessage } from '../utils/error';
 import { useSettingsStore } from './settings-store';
 

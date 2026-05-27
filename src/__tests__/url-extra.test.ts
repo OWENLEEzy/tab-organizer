@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { isTabOrganizerPage, getTabDomain } from '../utils/url';
+import { getTabDomain } from '../lib/url-rules';
+import { isTabOrganizerPage } from '../utils/browser-url';
 
 describe('isTabOrganizerPage extra', () => {
   it('returns true for chrome://newtab/', () => {
