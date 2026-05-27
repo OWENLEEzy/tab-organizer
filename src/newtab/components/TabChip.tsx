@@ -251,7 +251,7 @@ export function TabChip({
         {/* Favicon */}
         {faviconUrl && !faviconFailed ? (
           <img
-            className="favicon size-4 shrink-0"
+            className={`favicon size-4 shrink-0 ${isStale && !isSelected ? 'sepia-[.4]' : ''}`}
             src={faviconUrl}
             alt=""
             onError={handleImageError}
@@ -272,7 +272,7 @@ export function TabChip({
 
         {/* Duplicate badge */}
         {duplicateCount > 1 && (
-          <span className="text-accent-amber shrink-0 text-[10px] font-semibold font-mono">
+          <span className="text-[10px] font-bold font-mono rotate-[-3deg] border border-dashed border-accent-amber/40 px-0.5 rounded-sm text-accent-amber shrink-0">
             ×{duplicateCount}
           </span>
         )}

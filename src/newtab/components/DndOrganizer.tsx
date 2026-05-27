@@ -140,7 +140,7 @@ function DndGroupBoard({
       <div className="group-header">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="font-body text-xs font-semibold uppercase tracking-wider text-text-primary">
+            <h2 className="font-heading text-lg italic text-text-primary">
               {title}
             </h2>
             <span className="rounded-sm bg-surface-light px-2 py-0.5 font-body text-[var(--text-2xs)] font-bold uppercase tracking-widest text-text-secondary">
