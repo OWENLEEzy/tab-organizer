@@ -1,11 +1,22 @@
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { CustomGroup, AppSettings, ManualGroup } from '../../types';
-import { ACCENTS, type AccentKey } from '../../config/themes';
+import { type AccentKey } from '../../config/themes';
 import { useI18n } from '../hooks/useI18n';
 
 // ─── Constants ────────────────────────────────────────────────────────
 
 const DEFAULT_EMPTY_GROUPS: ManualGroup[] = [];
+
+// Theme option list with i18n keys
+const ACCENTS_LIST: { key: AccentKey; labelKey: 'themeClay' | 'themeSage' | 'themeFrost' | 'themeOchre' | 'themeObsidian' | 'themePine' | 'themeAmethyst' }[] = [
+  { key: 'clay', labelKey: 'themeClay' },
+  { key: 'sage', labelKey: 'themeSage' },
+  { key: 'frost', labelKey: 'themeFrost' },
+  { key: 'ochre', labelKey: 'themeOchre' },
+  { key: 'obsidian', labelKey: 'themeObsidian' },
+  { key: 'pine', labelKey: 'themePine' },
+  { key: 'amethyst', labelKey: 'themeAmethyst' },
+];
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -273,7 +284,7 @@ export function SettingsPanel({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark flex size-[--spacing-button-icon-sm] cursor-pointer items-center justify-center transition-colors focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark flex size-[--spacing-button-icon-sm] cursor-pointer items-center justify-center transition-colors focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
               aria-label="Close settings"
             >
               <svg
@@ -310,9 +321,9 @@ export function SettingsPanel({
                   id="setting-theme"
                   label={t('settingsTheme')}
                   value={theme}
-                  options={Object.entries(ACCENTS).map(([key, config]) => ({
-                    value: key as AccentKey,
-                    label: config.label,
+                  options={ACCENTS_LIST.map(({ key, labelKey }) => ({
+                    value: key,
+                    label: t(labelKey),
                   }))}
                   onChange={onSetTheme}
                 />
@@ -402,7 +413,7 @@ export function SettingsPanel({
                   <button
                     type="button"
                     onClick={onResetSortOrder}
-                    className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 min-h-10 cursor-pointer px-3 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                    className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 min-h-10 cursor-pointer px-3 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
                   >
                     {t('settingsSortOrderBtn')}
                   </button>
@@ -471,7 +482,7 @@ function SelectRow<T extends string | number>({
           const num = Number(val);
           onChange((isNaN(num) ? val : num) as T);
         }}
-        className="settings-select focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
+        className="settings-select focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -506,8 +517,9 @@ function ToggleRow({ id, label, checked, onChange }: ToggleRowProps): React.Reac
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-label={label}
         onClick={onChange}
-        className={`settings-toggle ${checked ? 'is-checked' : ''} focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none`}
+        className={`settings-toggle ${checked ? 'is-checked' : ''} focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none`}
       >
         <span className="settings-toggle-thumb" aria-hidden="true" />
       </button>
@@ -606,21 +618,29 @@ function CustomGroupsSection({
 
       {/* Add form */}
       <div className="flex flex-col gap-2">
+        <label htmlFor="custom-group-hostname" className="sr-only">
+          {t('settingsPlaceholderHostname')}
+        </label>
         <input
+          id="custom-group-hostname"
           type="text"
           placeholder={t('settingsPlaceholderHostname')}
           value={hostname}
           onChange={(e) => { setHostname(e.target.value); setError(''); }}
           onKeyDown={handleKeyDown}
-          className="settings-input placeholder:text-text-secondary w-full focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
+          className="settings-input placeholder:text-text-secondary w-full focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
         />
+        <label htmlFor="custom-group-label" className="sr-only">
+          {t('settingsPlaceholderLabel')}
+        </label>
         <input
+          id="custom-group-label"
           type="text"
           placeholder={t('settingsPlaceholderLabel')}
           value={label}
           onChange={(e) => { setLabel(e.target.value); setError(''); }}
           onKeyDown={handleKeyDown}
-          className="settings-input placeholder:text-text-secondary w-full focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
+          className="settings-input placeholder:text-text-secondary w-full focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
         />
         {error && (
           <span className="text-accent-red text-xs font-body">{error}</span>
@@ -628,7 +648,7 @@ function CustomGroupsSection({
         <button
           type="button"
           onClick={handleAdd}
-          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 rounded-chip px-3 py-1.5 self-end transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-[--spacing-button-height]"
+          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 rounded-chip px-3 py-1.5 self-end transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-[--spacing-button-height]"
         >
           {t('settingsBtnAddRule')}
         </button>
@@ -682,15 +702,16 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
         <input
           type="text"
           placeholder={t('settingsPlaceholderSpaceName')}
+          aria-label={t('settingsPlaceholderSpaceName')}
           value={newSpaceName}
           onChange={(e) => setNewSpaceName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAddSpace()}
-          className="flex-1 settings-input placeholder:text-text-secondary focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
+          className="flex-1 settings-input placeholder:text-text-secondary focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
         />
         <button
           type="button"
           onClick={handleAddSpace}
-          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 rounded-chip px-3 py-1.5 transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-[--spacing-button-height] font-medium"
+          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 rounded-chip px-3 py-1.5 transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-[--spacing-button-height] font-medium"
         >
           {t('settingsBtnAddSpace')}
         </button>
@@ -708,12 +729,17 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
               <div key={space.id} className="border border-border-light dark:border-border-dark rounded-md p-3 bg-surface-light dark:bg-surface-dark flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <div className="relative w-10 shrink-0">
+                    <label htmlFor={`space-emoji-${space.id}`} className="sr-only">
+                      {t('settingsLabelEmoji')}
+                    </label>
                     <input
+                      id={`space-emoji-${space.id}`}
                       type="text"
                       maxLength={2}
                       value={space.emoji ?? ''}
                       onChange={(e) => onUpdateGroup(space.id, { emoji: e.target.value })}
-                      className="w-full h-full text-center settings-input focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
+                      className="w-full h-full text-center settings-input focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
+                      aria-label={t('settingsLabelEmoji')}
                     />
                     {!space.emoji && (
                       <span className="absolute inset-0 flex items-center justify-center pointer-events-none text-text-secondary">
@@ -725,15 +751,16 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
                   </div>
                   <input
                     type="text"
+                    aria-label={t('settingsPlaceholderSpaceName')}
                     value={space.name}
                     onChange={(e) => onUpdateGroup(space.id, { name: e.target.value })}
-                    className="flex-1 settings-input focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
+                    className="flex-1 settings-input focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => onDeleteGroup(space.id)}
+                    aria-label={t('settingsBtnDeleteSpace')}
                     className="text-accent-red hover:bg-accent-red/10 rounded p-1 flex items-center justify-center cursor-pointer shrink-0"
-                    title={t('settingsBtnDeleteSpace')}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.34 12m-4.72 0-.34-12M4.75 6.75h14.5M3.375 5.25h17.25m-1.5 0-.825 15.6a2.25 2.25 0 0 1-2.247 2.13H7.43a2.25 2.25 0 0 1-2.247-2.13L4.35 5.25" />
@@ -745,6 +772,7 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
                     {t('settingsLabelAutoRules')}
                   </span>
                   <textarea
+                    id="settings-auto-rules"
                     value={rulesText}
                     placeholder="e.g. github&#10;vercel"
                     onChange={(e) => {
@@ -753,7 +781,8 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
                         autoRules: patterns.map(p => ({ pattern: p, type: 'hostname' }))
                       });
                     }}
-                    className="settings-input placeholder:text-text-secondary w-full h-16 resize-none focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
+                    className="settings-input placeholder:text-text-secondary w-full h-16 resize-none focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
+                    aria-label={t('settingsLabelAutoRules')}
                   />
                 </div>
               </div>
@@ -833,7 +862,7 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
         <button
           type="button"
           onClick={onResetKeyBindings}
-          className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 px-2 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none min-h-[--spacing-button-height]"
+          className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 px-2 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none min-h-[--spacing-button-height]"
         >
           {t('settingsShortcutsResetBtn')}
         </button>

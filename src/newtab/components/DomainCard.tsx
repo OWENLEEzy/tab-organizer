@@ -98,7 +98,7 @@ function TabChipRow({
   searchQuery?: string;
 }): React.ReactElement {
   return (
-    <div className="tab-chip-row">
+    <div className="tab-chip-row cursor-pointer">
       <TabChip
         url={tab.url}
         title={tab.title}
@@ -205,13 +205,13 @@ export function DomainCard({
 
   // ─── Render ──────────────────────────────────────────────────────────
 
-  const statusBarColor = hasDupes ? 'bg-accent-amber/30' : 'bg-accent-sage/80';
+  const statusBarColor = hasDupes ? 'bg-accent-amber' : 'bg-accent-sage';
 
   return (
-    <div className="overflow-hidden rounded-card border border-border-light bg-card-light shadow-none transition-colors duration-150">
-      <div className={`h-2 border-b border-border-light ${statusBarColor}`} />
+    <div className="app-card rounded-card overflow-hidden">
+      <div className={`h-0.5 ${statusBarColor}`} />
 
-      <div className="border-b border-border-light p-4">
+      <div className="border-b border-border-color p-4 bg-bg-surface/20">
         {/* Header: domain name + badges — drag handle when DnD is active */}
         <div
           className={`flex flex-wrap items-center gap-2${dragHandleProps ? ' cursor-grab active:cursor-grabbing' : ''}`}
@@ -232,7 +232,7 @@ export function DomainCard({
           )}
           {iconFailed || !groupFaviconUrl ? (
             <span
-              className="bg-surface-light text-text-secondary flex size-5 shrink-0 items-center justify-center rounded-[3px] text-xs font-semibold"
+              className="bg-bg-surface border border-border-color/30 text-text-secondary flex size-5 shrink-0 items-center justify-center rounded-[3px] text-xs font-semibold"
               aria-hidden="true"
             >
               {initial}
@@ -247,7 +247,7 @@ export function DomainCard({
               onError={() => setFailedFaviconUrl(groupFaviconUrl)}
             />
           )}
-          <h3 className="min-w-0 flex-1 truncate font-heading text-base font-normal tracking-tight text-text-primary">
+          <h3 className="min-w-0 flex-1 truncate font-mono text-sm font-medium uppercase tracking-wider text-text-primary">
             {displayName}
           </h3>
 
@@ -255,7 +255,7 @@ export function DomainCard({
             {hasDupes && (
               <button
                 type="button"
-                className="flex h-7 items-center gap-1 rounded-sm bg-accent-amber px-2 text-[var(--text-2xs)] font-semibold tracking-wider text-white transition-opacity hover:opacity-90"
+                className="flex h-7 items-center gap-1 rounded-sm bg-accent-amber px-2 text-[var(--text-3xs)] font-semibold tracking-wider text-white transition-opacity hover:opacity-90"
                 onClick={handleCloseDuplicates}
                 title={t('cardCloseDupesTitle')}
               >
@@ -289,11 +289,10 @@ export function DomainCard({
           ))}
         </div>
 
-        {/* "+N more" expand button */}
         {extraCount > 0 && (
           <button
             type="button"
-            className="rounded-chip text-accent-blue font-body hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 mt-1 flex min-h-[--spacing-button-height] cursor-pointer items-center px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
+            className="w-full mt-1.5 py-1.5 text-[10px] font-mono tracking-wider text-text-muted border border-dashed border-border-color rounded hover:text-text-primary bg-transparent cursor-pointer transition-colors duration-150"
             onClick={handleExpand}
             aria-expanded={expanded}
             aria-label={
@@ -302,17 +301,19 @@ export function DomainCard({
                 : t('cardShowMoreLabel', { count: extraCount })
             }
           >
-            {expanded
-              ? t('cardBtnShowLess')
-              : t('cardBtnShowMore', { count: extraCount })}
+            <span className="uppercase">
+              {expanded
+                ? t('cardBtnShowLess')
+                : t('cardBtnShowMore', { count: extraCount })}
+            </span>
           </button>
         )}
 
         {/* Footer actions */}
-        <div className="mt-3 flex flex-wrap gap-2 border-t border-border-light pt-3">
+        <div className="mt-3 flex flex-wrap gap-2 border-t border-border-color pt-3">
           <button
             type="button"
-            className="rounded-chip text-text-secondary font-body hover:bg-surface-light hover:text-accent-red focus-visible:ring-accent-blue/40 inline-flex min-h-[--spacing-button-height] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
+            className="rounded-chip text-text-secondary font-body hover:bg-bg-surface hover:text-accent-red focus-visible:ring-accent-primary/40 inline-flex min-h-[--spacing-button-height] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
             onClick={handleCloseDomain}
           >
             <CloseAllIcon />
@@ -322,7 +323,7 @@ export function DomainCard({
           {hasDupes && (
             <button
               type="button"
-              className="rounded-chip text-text-secondary font-body hover:bg-accent-amber/10 hover:text-accent-amber focus-visible:ring-accent-blue/40 inline-flex min-h-[--spacing-button-height] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-chip text-text-secondary font-body hover:bg-accent-amber/10 hover:text-accent-amber focus-visible:ring-accent-primary/40 inline-flex min-h-[--spacing-button-height] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
               onClick={handleCloseDuplicates}
             >
               <DedupIcon />

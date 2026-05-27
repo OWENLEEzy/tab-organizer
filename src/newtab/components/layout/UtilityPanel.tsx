@@ -14,14 +14,14 @@ export function UtilityPanel({
   actions,
 }: UtilityPanelProps): React.ReactElement {
   return (
-    <aside className="border border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark rounded-card overflow-hidden shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-border-light bg-surface-light px-3 py-2 dark:border-border-dark dark:bg-surface-dark">
+    <aside className="border border-border-color bg-bg-card rounded-card overflow-hidden shadow-card">
+      <div className="flex items-center justify-between gap-3 border-b border-border-color bg-bg-surface/20 px-4 py-3">
         <div className="flex items-center gap-2">
-          <h2 className="font-body text-[var(--text-2xs)] font-semibold uppercase tracking-widest text-text-primary-light dark:text-text-primary-dark">
+          <h2 className="font-mono text-[var(--text-3xs)] font-semibold uppercase tracking-wider text-text-primary">
             {title}
           </h2>
           {count !== undefined ? (
-            <span className="rounded-sm bg-white/50 px-1.5 py-0.5 font-body text-[var(--text-2xs)] font-bold text-text-secondary dark:bg-black/20">
+            <span className="rounded-sm bg-bg-surface border border-border-color/30 px-1.5 py-0.5 font-mono text-[var(--text-3xs)] font-bold text-text-secondary">
               {count}
             </span>
           ) : null}
@@ -30,7 +30,7 @@ export function UtilityPanel({
           {actions}
         </div>
       </div>
-      <div className="p-3">
+      <div className="p-4">
         {children}
       </div>
     </aside>

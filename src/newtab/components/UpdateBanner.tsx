@@ -18,7 +18,6 @@ export function UpdateBanner({
 
   return (
     <div
-      role="status"
       className="rounded-card border-accent-sage/20 from-accent-sage/[0.04] to-accent-sage/[0.09] mb-4 flex animate-[fadeUp_0.5s_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
     >
       <div className="flex items-center gap-4">
@@ -29,7 +28,7 @@ export function UpdateBanner({
             viewBox="0 0 24 24"
             strokeWidth={1.5}
             stroke="currentColor"
-            className="text-accent-sage h-[var(--icon-size-sm)] w-[var(--icon-size-sm)]"
+            className="text-accent-sage size-[var(--icon-size-sm)]"
             aria-hidden="true"
           >
             <path
@@ -46,7 +45,7 @@ export function UpdateBanner({
       <button
         type="button"
         onClick={onDismiss}
-        className="rounded-chip text-text-secondary hover:bg-accent-sage/10 hover:text-accent-sage focus-visible:ring-accent-blue/40 ml-4 flex size-[--spacing-button-icon] shrink-0 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="rounded-chip text-text-secondary hover:bg-accent-sage/10 hover:text-accent-sage focus-visible:ring-accent-primary/40 ml-4 flex size-[--spacing-button-icon] shrink-0 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
         aria-label={t('updateBannerDismiss')}
       >
         <svg

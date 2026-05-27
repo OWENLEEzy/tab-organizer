@@ -142,26 +142,27 @@ function DndGroupBoard({
               {tabCount}
             </span>
           </div>
-          {manualGroup && (
-            <div className="group-actions flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => onRenameGroup?.(manualGroup)}
-                className="text-[var(--text-2xs)] font-semibold tracking-wider text-text-secondary hover:text-accent-blue transition-colors"
-              >
-                {t('organizerBtnRename')}
-              </button>
-              <div className="h-3 w-px bg-border-light mx-1" />
-              <button
-                type="button"
-                onClick={() => onDeleteGroup?.(manualGroup)}
-                className="text-[var(--text-2xs)] font-semibold tracking-wider text-text-secondary hover:text-accent-red transition-colors"
-              >
-                {t('organizerBtnDelete')}
-              </button>
-            </div>
-          )}
-          <div className="flex items-center gap-1">
+          <div className="section-actions flex items-center gap-1">
+            {manualGroup && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onRenameGroup?.(manualGroup)}
+                  className="text-[var(--text-2xs)] font-semibold tracking-wider text-text-secondary hover:text-accent-blue transition-colors"
+                >
+                  {t('organizerBtnRename')}
+                </button>
+                <div className="h-3 w-px bg-border-light mx-1" />
+                <button
+                  type="button"
+                  onClick={() => onDeleteGroup?.(manualGroup)}
+                  className="text-[var(--text-2xs)] font-semibold tracking-wider text-text-secondary hover:text-accent-red transition-colors"
+                >
+                  {t('organizerBtnDelete')}
+                </button>
+                <div className="h-3 w-px bg-border-light mx-1" />
+              </>
+            )}
             <button
               type="button"
               onClick={() => onCloseManualGroup(items, title)}

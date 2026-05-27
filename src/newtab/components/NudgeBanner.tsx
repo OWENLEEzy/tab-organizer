@@ -35,7 +35,7 @@ export function NudgeBanner({
             viewBox="0 0 24 24"
             strokeWidth={1.5}
             stroke="currentColor"
-            className="text-accent-red h-[var(--icon-size-sm)] w-[var(--icon-size-sm)]"
+            className="text-accent-red size-[var(--icon-size-sm)]"
             aria-hidden="true"
           >
             <path
@@ -52,7 +52,7 @@ export function NudgeBanner({
       <button
         type="button"
         onClick={onDismiss}
-        className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-blue/40 ml-4 flex size-[--spacing-button-icon] shrink-0 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-primary/40 ml-4 flex size-[--spacing-button-icon] shrink-0 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
         aria-label={t('actionDismiss')}
       >
         <svg

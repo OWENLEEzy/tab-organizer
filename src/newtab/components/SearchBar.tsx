@@ -11,6 +11,8 @@ interface SearchBarProps {
   spaces?: { id: string; name: string }[];
 }
 
+const EMPTY_SPACES: { id: string; name: string }[] = [];
+
 // ─── Component ────────────────────────────────────────────────────────
 
 export function SearchBar({
@@ -18,7 +20,7 @@ export function SearchBar({
   onChange,
   resultCount,
   totalCount,
-  spaces = [],
+  spaces = EMPTY_SPACES,
 }: SearchBarProps): React.ReactElement {
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
@@ -97,7 +99,13 @@ export function SearchBar({
     (e: React.KeyboardEvent<HTMLInputElement>): void => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        e.currentTarget.blur();
+        if (showCommands && filteredCommands.length > 0) {
+          // Close command palette if open
+          onChange('');
+          setSelectedIndex(0);
+        } else {
+          e.currentTarget.blur();
+        }
         return;
       }
 
@@ -145,9 +153,8 @@ export function SearchBar({
         {/* Input field */}
         <input
           ref={inputRef}
-          type="text"
-          role="searchbox"
-          className="border-border-light dark:border-border-dark bg-bg-light dark:bg-bg-dark text-text-primary-light dark:text-text-primary-dark rounded-chip placeholder:text-text-secondary focus:border-accent-sage focus-visible:ring-accent-blue/40 min-h-[--spacing-button-icon] w-full border py-2 pr-24 pl-9 text-sm transition-colors outline-none focus-visible:ring-2"
+          type="search"
+          className="border-border-color bg-bg-card text-text-primary rounded-chip placeholder:text-text-muted focus:border-accent-sage focus-visible:ring-accent-primary/40 min-h-[--spacing-button-icon] w-full border py-2.5 pr-32 pl-10 text-xs font-mono transition-colors outline-none focus-visible:ring-2"
           placeholder={t('searchPlaceholderTabs')}
           value={value}
           onChange={handleInputChange}
@@ -171,7 +178,7 @@ export function SearchBar({
             <button
               type="button"
               onClick={handleClear}
-              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark focus-visible:ring-accent-blue/40 flex size-[--spacing-button-icon] cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark focus-visible:ring-accent-primary/40 flex size-[--spacing-button-icon] cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
               aria-label="Clear search"
             >
               <svg

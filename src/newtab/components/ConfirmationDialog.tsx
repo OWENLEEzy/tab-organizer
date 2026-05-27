@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useEffectEvent, useRef } from 'react';
 import type { ConfirmDialogProps } from '../../types';
 import { ActionButton } from './ui/ActionButton';
 import { useI18n } from '../hooks/useI18n';
@@ -16,19 +16,21 @@ export function ConfirmationDialog({
   const dialogRef = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
 
+  const onCancelEffect = useEffectEvent(onCancel);
+
   // Close on Escape key
   useEffect(() => {
     if (!open) return;
 
     function handleKeyDown(e: KeyboardEvent): void {
       if (e.key === 'Escape') {
-        onCancel();
+        onCancelEffect();
       }
     }
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, onCancel]);
+  }, [open]);
 
   // Trap focus inside dialog
   useEffect(() => {

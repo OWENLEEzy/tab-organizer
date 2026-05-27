@@ -4,7 +4,7 @@ import { useSettingsStore } from '../../stores/settings-store';
 import { useKeyboard } from './useKeyboard';
 import { flattenVisibleTabs } from '../lib/visible-tabs';
 import { isTabOutPage } from '../../utils/url';
-import type { TabGroup } from '../../types';
+import type { TabGroup, ManualGroup } from '../../types';
 import { useUIState } from './useUIState';
 import { useTabHandlers } from './useTabHandlers';
 import { useI18n } from './useI18n';
@@ -147,7 +147,7 @@ export function useAppLogic() {
     }
 
     // Apply sort order
-    const sortComparator = createSortComparator(settings.groupSortBy ?? 'default');
+    const sortComparator = createSortComparator(settings.groupSortBy ?? 'count');
     result = [...result].sort(sortComparator);
 
     if (!debouncedSearchQuery.trim()) return result;
@@ -431,18 +431,24 @@ export function useAppLogic() {
     onSwitchSpaceAll: () => {
       tabStore.setActiveSpace(null);
     },
-    onCycleSpacePrev: () => {
-      const ids = [null, ...orderedGroups.map((g) => g.id)];
-      const currentIndex = ids.indexOf(tabStore.activeSpaceId);
-      const nextIndex = (currentIndex - 1 + ids.length) % ids.length;
-      tabStore.setActiveSpace(ids[nextIndex]);
-    },
-    onCycleSpaceNext: () => {
-      const ids = [null, ...orderedGroups.map((g) => g.id)];
-      const currentIndex = ids.indexOf(tabStore.activeSpaceId);
-      const nextIndex = (currentIndex + 1) % ids.length;
-      tabStore.setActiveSpace(ids[nextIndex]);
-    },
+    onCycleSpacePrev: (() => {
+      const getSpaceIds = (groups: ManualGroup[]) => [null, ...groups.map((g) => g.id)];
+      return () => {
+        const ids = getSpaceIds(orderedGroups);
+        const currentIndex = ids.indexOf(tabStore.activeSpaceId);
+        const nextIndex = (currentIndex - 1 + ids.length) % ids.length;
+        tabStore.setActiveSpace(ids[nextIndex]);
+      };
+    })(),
+    onCycleSpaceNext: (() => {
+      const getSpaceIds = (groups: ManualGroup[]) => [null, ...groups.map((g) => g.id)];
+      return () => {
+        const ids = getSpaceIds(orderedGroups);
+        const currentIndex = ids.indexOf(tabStore.activeSpaceId);
+        const nextIndex = (currentIndex + 1) % ids.length;
+        tabStore.setActiveSpace(ids[nextIndex]);
+      };
+    })(),
     onClearFilter: () => {
       tabStore.setActiveSpace(null);
     },
@@ -458,7 +464,7 @@ export function useAppLogic() {
       totalDupes,
       tabOutCount,
       showEmptyState: products.length === 0,
-      visibleGroupCount: orderedGroups.length + (products.length === 0 ? 0 : 1),
+      visibleSpaceCount: orderedGroups.length + (products.length === 0 ? 0 : 1),
       focusedUrl,
       filteredTabCount,
       parsedQuery,

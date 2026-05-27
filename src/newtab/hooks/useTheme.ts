@@ -6,6 +6,9 @@ export function useTheme(accent: AccentKey) {
     const config = ACCENTS[accent];
     const root = document.documentElement;
 
+    // Toggle dark mode class on root for CSS media queries and native elements
+    root.classList.toggle('dark', config.isDark);
+
     // Dynamic theme tokens
     root.style.setProperty('--bg-page', config.bgPage);
     root.style.setProperty('--bg-surface', config.bgSurface);
@@ -29,15 +32,10 @@ export function useTheme(accent: AccentKey) {
     root.style.setProperty('--shadow-card', config.shadowCard);
     root.style.setProperty('--shadow-card-hover', config.shadowCardHover);
 
-    // Legacy color aliases (also referenced by components)
-    root.style.setProperty('--color-bg-light', config.bgPage);
-    root.style.setProperty('--color-card-light', config.bgCard);
-    root.style.setProperty('--color-surface-light', config.bgSurface);
-    root.style.setProperty('--color-text-primary-light', config.textPrimary);
-    root.style.setProperty('--color-text-secondary', config.textSecondary);
-    root.style.setProperty('--color-text-muted', config.textMuted);
-    root.style.setProperty('--color-border-light', config.borderColor);
-    root.style.setProperty('--color-accent-amber', config.warningHex);
-    root.style.setProperty('--color-accent-blue', config.accentPrimary);
+    // Dynamic semantic red and sage colors
+    root.style.setProperty('--accent-red', config.accentRed);
+    root.style.setProperty('--accent-red-rgb', config.accentRedRgb);
+    root.style.setProperty('--accent-sage', config.accentSage);
+    root.style.setProperty('--accent-sage-rgb', config.accentSageRgb);
   }, [accent]);
 }

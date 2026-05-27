@@ -95,11 +95,12 @@ export function App(): React.ReactElement {
         }
 
         if (s.keyBindings && typeof s.keyBindings === 'object') {
-          const updates = Object.entries(s.keyBindings)
-            .filter(([, binding]) => typeof binding === 'string')
-            .map(([key, binding]) =>
-              settingsStore.updateKeyBinding(key as keyof typeof settings.keyBindings, binding as string)
-            );
+          const updates: Promise<void>[] = [];
+          for (const [key, binding] of Object.entries(s.keyBindings)) {
+            if (typeof binding === 'string') {
+              updates.push(settingsStore.updateKeyBinding(key as keyof typeof settings.keyBindings, binding));
+            }
+          }
           await Promise.all(updates);
         }
       }
@@ -161,7 +162,7 @@ export function App(): React.ReactElement {
           <StatusStrip
             totalTabs={state.totalTabs}
             totalDupes={state.totalDupes}
-            totalGroups={state.totalProducts}
+            totalGroups={state.visibleSpaceCount}
             alerts={statusAlerts}
           />
         }
@@ -169,6 +170,7 @@ export function App(): React.ReactElement {
           <>
             <SpaceSwitcher
               spaces={derived.orderedGroups}
+              spaceIds={[null, ...derived.orderedGroups.map((g) => g.id)]}
               activeSpaceId={tabStore.activeSpaceId}
               onChange={tabStore.setActiveSpace}
               onCreateSpace={handlers.handleCreateGroup}
@@ -177,7 +179,6 @@ export function App(): React.ReactElement {
             <DashboardHeader
               title={t('titleOpenTabs')}
               hasGroups={!state.showEmptyState}
-              groupCount={state.visibleGroupCount}
               searchQuery={state.searchQuery}
               onSearchChange={(q) => dispatch({ type: 'SET_SEARCH_QUERY', query: q })}
               resultCount={state.filteredTabCount}
@@ -227,7 +228,7 @@ export function App(): React.ReactElement {
                         viewBox="0 0 24 24"
                         strokeWidth={1.5}
                         stroke="currentColor"
-                        className="text-accent-amber h-[18px] w-[18px]"
+                        className="text-accent-amber size-[18px]"
                         aria-hidden="true"
                       >
                         <path
@@ -269,7 +270,7 @@ export function App(): React.ReactElement {
                         viewBox="0 0 24 24"
                         strokeWidth={1.5}
                         stroke="currentColor"
-                        className="text-accent-blue h-[18px] w-[18px]"
+                        className="text-accent-blue size-[18px]"
                         aria-hidden="true"
                       >
                         <path
@@ -291,7 +292,7 @@ export function App(): React.ReactElement {
                   <button
                     type="button"
                     onClick={() => handlers.handleSelectStaleTabs(settings.staleThresholdDays ?? 3)}
-                    className="rounded-chip bg-accent-blue font-body focus-visible:ring-accent-blue/50 min-h-11 cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
+                    className="rounded-chip bg-accent-blue font-body focus-visible:ring-accent-primary/50 min-h-11 cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
                   >
                     {t('sweepStaleBtn')}
                   </button>
@@ -302,11 +303,11 @@ export function App(): React.ReactElement {
                 <div className="flex flex-col items-center justify-center py-16 text-center animate-[fadeIn_0.3s_ease]">
                   <div className="bg-surface-light dark:bg-surface-dark mb-4 flex size-16 items-center justify-center rounded-full border border-dashed border-border-light dark:border-border-dark text-text-secondary">
                     {state.parsedQuery.type === 'stale' ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8 text-accent-blue"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-8 text-accent-blue"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                     ) : state.parsedQuery.type === 'dupes' ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8 text-accent-amber"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-8 text-accent-amber"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                     ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.602 10.602Z" /></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-8"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.602 10.602Z" /></svg>
                     )}
                   </div>
                   <h3 className="font-heading text-lg font-normal text-text-primary-light dark:text-text-primary-dark">

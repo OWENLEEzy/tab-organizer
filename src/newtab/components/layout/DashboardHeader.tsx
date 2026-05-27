@@ -8,19 +8,29 @@ import type { GroupSortOption } from '../../../types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
-function createDateFormatter(locale: string): Intl.DateTimeFormat {
-  return new Intl.DateTimeFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+const EN_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  weekday: 'long',
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+});
+
+const ZH_DATE_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
+  weekday: 'long',
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+});
+
+function getDateFormatter(locale: string): Intl.DateTimeFormat {
+  return locale === 'zh' ? ZH_DATE_FORMATTER : EN_DATE_FORMATTER;
 }
+
+const EMPTY_SPACES: { id: string; name: string }[] = [];
 
 interface DashboardHeaderProps {
   title: string;
   hasGroups: boolean;
-  groupCount: number;
   dateLabel?: string;
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -67,7 +77,6 @@ function SidebarIcon(): React.ReactElement {
 export function DashboardHeader({
   title,
   hasGroups,
-  groupCount,
   dateLabel,
   searchQuery,
   onSearchChange,
@@ -83,16 +92,15 @@ export function DashboardHeader({
   onOpenSettings,
   isSidebarExpanded = false,
   onToggleSidebar,
-  spaces = [],
+  spaces = EMPTY_SPACES,
 }: DashboardHeaderProps): React.ReactElement {
   const { t, locale } = useI18n();
 
   const formatDate = (date: Date): string => {
-    return createDateFormatter(locale).format(date);
+    return getDateFormatter(locale).format(date);
   };
 
   const activeDateLabel = dateLabel || formatDate(new Date());
-  const groupLabel = groupCount === 1 ? t('groupCountSingle') : t('groupCountPlural', { count: groupCount });
 
   return (
     <header className="pb-3 pt-2" aria-label="Dashboard controls">
@@ -109,9 +117,6 @@ export function DashboardHeader({
           <div className="flex flex-wrap items-center gap-3">
             {hasGroups ? (
               <>
-                <span className="inline-flex items-center rounded-sm bg-surface-light px-3 py-1.5 font-body text-xs font-semibold text-text-secondary dark:bg-surface-dark">
-                  {groupLabel}
-                </span>
                 <ViewToggle value={viewMode} onChange={onViewModeChange} />
                 <SortDropdown value={groupSortBy} onChange={onGroupSortByChange} />
               </>

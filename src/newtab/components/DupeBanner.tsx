@@ -26,7 +26,7 @@ export function DupeBanner({ count, onClose }: DupeBannerProps): React.ReactElem
             viewBox="0 0 24 24"
             strokeWidth={1.5}
             stroke="currentColor"
-            className="text-accent-amber h-[var(--icon-size-sm)] w-[var(--icon-size-sm)]"
+            className="text-accent-amber size-[var(--icon-size-sm)]"
             aria-hidden="true"
           >
             <path

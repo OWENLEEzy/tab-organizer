@@ -4,6 +4,7 @@ import { useI18n } from '../hooks/useI18n';
 
 interface SpaceSwitcherProps {
   spaces: ManualGroup[];
+  spaceIds?: (string | null)[];
   activeSpaceId: string | null;
   onChange: (id: string | null) => void;
   onCreateSpace: () => void;
@@ -12,6 +13,7 @@ interface SpaceSwitcherProps {
 
 export function SpaceSwitcher({
   spaces,
+  spaceIds,
   activeSpaceId,
   onChange,
   onCreateSpace,
@@ -37,8 +39,9 @@ export function SpaceSwitcher({
       const activeElement = document.activeElement as HTMLButtonElement;
       let currentIndex = buttons.indexOf(activeElement);
 
+      const ids = spaceIds ?? [null, ...spaces.map((s) => s.id)];
+
       if (currentIndex === -1) {
-        const ids = [null, ...spaces.map((s) => s.id)];
         currentIndex = ids.indexOf(activeSpaceId);
       }
 
@@ -51,7 +54,6 @@ export function SpaceSwitcher({
 
       buttons[nextIndex]?.focus();
 
-      const ids = [null, ...spaces.map((s) => s.id)];
       onChange(ids[nextIndex]);
       e.preventDefault();
     }
@@ -60,53 +62,57 @@ export function SpaceSwitcher({
   return (
     <div
       ref={containerRef}
-      className="flex flex-wrap gap-2 items-center pt-3 pb-1 mb-2 outline-none"
+      className="flex flex-wrap gap-3 items-center pt-3.5 pb-2.5 mb-3 border-b border-border-color/30 outline-none"
       onKeyDown={handleKeyDown}
       role="toolbar"
       aria-label="Space Switcher"
+      tabIndex={0}
     >
       <button
+        type="button"
         onClick={() => onChange(null)}
         tabIndex={activeSpaceId === null ? 0 : -1}
-        className={`px-4 py-1.5 rounded-none text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent-terracotta/40 outline-none ${
+        className={`px-4 py-1.5 rounded-chip text-xs transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none ${
           activeSpaceId === null
-            ? 'bg-accent-terracotta/10 text-accent-terracotta dark:bg-accent-terracotta/20 text-[var(--accent-primary)] shadow-sm border border-accent-terracotta/20 dark:border-accent-terracotta/40'
-            : 'text-[var(--text-secondary)] hover:bg-[var(--color-surface-light)] border border-transparent'
+            ? 'border border-[rgba(var(--accent-primary-rgb),0.2)] bg-[rgba(var(--accent-primary-rgb),0.10)] text-accent-primary font-semibold'
+            : 'border border-transparent text-text-secondary hover:bg-bg-surface font-medium'
         }`}
       >
         {t('spaceSwitcherAll')}
       </button>
-
+ 
       {spaces.map((space) => (
         <button
           key={space.id}
+          type="button"
           onClick={() => onChange(space.id)}
           tabIndex={activeSpaceId === space.id ? 0 : -1}
-          className={`px-4 py-1.5 rounded-none text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent-terracotta/40 outline-none ${
+          className={`px-4 py-1.5 rounded-chip text-xs transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none ${
             activeSpaceId === space.id
-              ? 'bg-accent-terracotta/10 text-accent-terracotta dark:bg-accent-terracotta/20 text-[var(--accent-primary)] shadow-sm border border-accent-terracotta/20 dark:border-accent-terracotta/40'
-              : 'text-[var(--text-secondary)] hover:bg-[var(--color-surface-light)] border border-transparent'
+              ? 'border border-[rgba(var(--accent-primary-rgb),0.2)] bg-[rgba(var(--accent-primary-rgb),0.10)] text-accent-primary font-semibold'
+              : 'border border-transparent text-text-secondary hover:bg-bg-surface font-medium'
           }`}
         >
           <span>{space.name}</span>
         </button>
       ))}
-
+ 
       <button
+        type="button"
         onClick={onCreateSpace}
         tabIndex={-1}
-        className="px-3 py-1.5 rounded-none text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--color-surface-light)] transition-colors border border-dashed border-[var(--border-color)] hover:border-[var(--text-secondary)] dark:hover:border-[var(--text-secondary)] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-accent-terracotta/40 outline-none"
+        className="px-3 py-1.5 rounded-chip text-xs font-medium text-text-muted hover:bg-bg-surface hover:text-text-primary transition-colors duration-150 border border-dashed border-border-color flex items-center justify-center focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none"
         aria-label={t('spaceSwitcherNew')}
         title={t('spaceSwitcherNew')}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
+          width="12"
+          height="12"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         >

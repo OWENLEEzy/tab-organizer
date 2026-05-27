@@ -11,7 +11,7 @@ export function SortDropdown({ value, onChange }: SortDropdownProps): React.Reac
   const { t } = useI18n();
 
   const options: { value: GroupSortOption; label: string }[] = [
-    { value: 'default', label: t('sortDefault') },
+    { value: 'count', label: t('sortCount') },
     { value: 'name', label: t('sortByName') },
     { value: 'lastAccessed', label: t('sortByLastAccessed') },
   ];

@@ -47,15 +47,15 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
   const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfXJ6osy2J84TLpyLE-DYA-NcWMcjRAZbcTHBOZV9RnQ7WEfA/viewform';
 
   return (
-    <footer className="pt-8 pb-12" aria-label="Dashboard footer">
+    <footer className="py-1.5" aria-label="Dashboard footer">
       <div className="text-text-secondary flex items-center justify-between text-xs font-semibold tracking-wider uppercase">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <span
-            className={`font-heading text-text-primary inline-block text-2xl font-light${state.popping ? ' animate-[countPop_0.3s_ease]' : ''}`}
+            className={`font-body text-text-primary inline-block text-xs font-bold${state.popping ? ' animate-[countPop_0.3s_ease]' : ''}`}
           >
             {tabCount}
           </span>
-          <span className="opacity-70">{t('metricTabs')}</span>
+          <span className="opacity-70 normal-case">{t('metricTabs')}</span>
         </div>
         <div className="flex items-center gap-4">
           <a
@@ -75,7 +75,7 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
             aria-label="View source code on GitHub"
           >
             <svg
-              className="size-5"
+              className="size-4"
               viewBox="0 0 24 24"
               fill="currentColor"
               xmlns="http://www.w3.org/2000/svg"
