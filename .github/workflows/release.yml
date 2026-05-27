@@ -49,8 +49,18 @@ jobs:
 
       - name: Create version tag
         run: |
-          git tag "${{ env.VERSION }}" "${GITHUB_SHA}"
-          git push origin ${{ env.VERSION }}
+          git fetch origin "refs/tags/${{ env.VERSION }}:refs/tags/${{ env.VERSION }}" || true
+          if git rev-parse --verify --quiet "refs/tags/${{ env.VERSION }}" >/dev/null; then
+            EXISTING_SHA="$(git rev-list -n 1 "${{ env.VERSION }}")"
+            if [ "$EXISTING_SHA" != "$GITHUB_SHA" ]; then
+              echo "Tag ${{ env.VERSION }} already exists at $EXISTING_SHA, expected $GITHUB_SHA"
+              exit 1
+            fi
+            echo "Tag ${{ env.VERSION }} already exists for this commit; continuing."
+          else
+            git tag "${{ env.VERSION }}" "${GITHUB_SHA}"
+            git push origin "refs/tags/${{ env.VERSION }}"
+          fi
 
       - name: Update Latest Release
         uses: softprops/action-gh-release@v2
