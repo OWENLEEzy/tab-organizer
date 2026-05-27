@@ -65,7 +65,7 @@ test.describe('Selection Mode', () => {
 
     // Also check: did React state update? Check for selection ring
     const afterClasses = await firstChip.getAttribute('class');
-    expect(afterClasses).toContain('bg-accent-blue/[0.12]');
+    expect(afterClasses).toContain('bg-accent-primary/[0.12]');
 
     expect(metaClickLog?.length).toBeGreaterThan(0);
   });
@@ -77,7 +77,7 @@ test.describe('Selection Mode', () => {
     await firstChip.click({ modifiers: ['Meta'] });
 
     // Should have selection ring
-    await expect(firstChip).toHaveClass(/bg-accent-blue\/\[0\.12\]/);
+    await expect(firstChip).toHaveClass(/bg-accent-primary\/\[0\.12\]/);
   });
 
   test('selection bar appears when tabs are selected', async ({ page }) => {
@@ -124,7 +124,7 @@ test.describe('Selection Mode', () => {
     await expect(selectionBar).not.toBeVisible();
 
     // Chip should not be selected
-    await expect(firstChip).not.toHaveClass(/bg-accent-blue\/\[0\.12\]/);
+    await expect(firstChip).not.toHaveClass(/bg-accent-primary\/\[0\.12\]/);
   });
 
   test('selection bar has correct z-index', async ({ page }) => {

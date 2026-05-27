@@ -21,4 +21,5 @@ extension/config.local.js
 .claude/
 .codex/
 .superpowers/
+.antigravitycli/
 coverage/
