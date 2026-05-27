@@ -217,23 +217,27 @@ export function DomainCard({
       <div className={`h-0.5 ${statusBarColor}`} />
 
       <div className="border-b border-border-color p-4 bg-bg-surface/20">
-        {/* Header: domain name + badges — drag handle when DnD is active */}
-        <div
-          className={`flex flex-wrap items-center gap-2${dragHandleProps ? ' cursor-grab active:cursor-grabbing' : ''}`}
-          {...dragHandleProps}
-        >
+        {/* Header: domain name + badges — DnD uses a dedicated handle to avoid nested interactive controls. */}
+        <div className="flex flex-wrap items-center gap-2">
           {dragHandleProps && (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="text-text-secondary size-4 shrink-0"
-              aria-hidden="true"
+            <button
+              type="button"
+              className="text-text-secondary hover:text-text-primary focus-visible:ring-accent-primary/40 flex size-6 shrink-0 cursor-grab items-center justify-center rounded-sm transition-colors active:cursor-grabbing focus-visible:ring-2 focus-visible:outline-none"
+              {...dragHandleProps}
+              onClick={(event) => event.preventDefault()}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="size-4"
+                aria-hidden="true"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            </button>
           )}
           {iconFailed || !groupFaviconUrl ? (
             <span

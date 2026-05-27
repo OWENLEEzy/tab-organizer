@@ -10,8 +10,7 @@ describe('DashboardHeader', () => {
   it('wires search and command actions without owning dashboard state', () => {
     const onSearchChange = vi.fn();
     const onViewModeChange = vi.fn();
-    const onCreateGroup = vi.fn();
-    const onCloseAll = vi.fn();
+    const onCreateSection = vi.fn();
     const onOpenSettings = vi.fn();
     const onGroupSortByChange = vi.fn();
 
@@ -20,6 +19,7 @@ describe('DashboardHeader', () => {
         title="Open Tabs by Product"
         hasGroups
         dateLabel="Tuesday, May 5, 2026"
+        groupCount={2}
         searchQuery=""
         onSearchChange={onSearchChange}
         resultCount={6}
@@ -29,9 +29,12 @@ describe('DashboardHeader', () => {
         groupSortBy="count"
         onGroupSortByChange={onGroupSortByChange}
         onRefresh={() => {}}
-        onCreateGroup={onCreateGroup}
-        onCloseAll={onCloseAll}
+        onCreateSection={onCreateSection}
         onOpenSettings={onOpenSettings}
+        sections={[{ id: 'work', name: 'Work', order: 0 }]}
+        sectionIds={[null, 'work']}
+        activeSectionId={null}
+        onSectionChange={() => {}}
       />,
     );
 
@@ -45,20 +48,17 @@ describe('DashboardHeader', () => {
     expect(screen.getByRole('button', { name: 'Cards' })).not.toHaveClass('h-[var(--spacing-button-height)]');
     expect(screen.getByRole('button', { name: 'Table' })).not.toHaveClass('h-[var(--spacing-button-height)]');
     expect(screen.getByRole('combobox', { name: 'Sort order' })).not.toHaveClass(hardcodedHeightClass);
-    expect(screen.getByRole('button', { name: 'New Group' })).toHaveClass('action-button');
-    expect(screen.getByRole('button', { name: 'Close All' })).toHaveClass('action-button');
-    expect(screen.getByRole('button', { name: 'Close All' })).not.toHaveClass('h-[var(--spacing-button-height)]');
+    expect(screen.getByRole('button', { name: 'New section' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Close All' })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByRole('searchbox', { name: 'Search tabs' }), {
       target: { value: 'github' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'New Group' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Close All' }));
+    fireEvent.click(screen.getByRole('button', { name: 'New section' }));
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
 
     expect(onSearchChange).toHaveBeenCalledWith('github');
-    expect(onCreateGroup).toHaveBeenCalledTimes(1);
-    expect(onCloseAll).toHaveBeenCalledTimes(1);
+    expect(onCreateSection).toHaveBeenCalledTimes(1);
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
@@ -71,6 +71,7 @@ describe('DashboardHeader', () => {
         title="Open Tabs by Product"
         hasGroups={false}
         dateLabel="Tuesday, May 5, 2026"
+        groupCount={0}
         searchQuery=""
         onSearchChange={() => {}}
         resultCount={0}
@@ -80,9 +81,12 @@ describe('DashboardHeader', () => {
         groupSortBy="count"
         onGroupSortByChange={onGroupSortByChange}
         onRefresh={() => {}}
-        onCreateGroup={() => {}}
-        onCloseAll={() => {}}
+        onCreateSection={() => {}}
         onOpenSettings={onOpenSettings}
+        sections={[]}
+        sectionIds={[null]}
+        activeSectionId={null}
+        onSectionChange={() => {}}
       />,
     );
 
@@ -90,7 +94,7 @@ describe('DashboardHeader', () => {
     expect(screen.queryByRole('searchbox', { name: 'Search tabs' })).not.toBeInTheDocument();
     expect(screen.queryByText('0 Groups')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Organize' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'New Group' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'New section' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Close All' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));

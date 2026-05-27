@@ -15,23 +15,20 @@ test.describe('Drag & Drop', () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test('domain card shows drag handle', async ({ page }) => {
+  test('domain card shows drag handle by default', async ({ page }) => {
     await page.waitForSelector('[class*="rounded-card"]');
 
-    await expect(page.locator('.cursor-grab')).toHaveCount(0);
-    await page.getByRole('button', { name: 'Organize' }).click();
-
+    // With direct drag, grab cursor should be visible without clicking Organize
     const cardHeader = page.locator('.cursor-grab').first();
     await expect(cardHeader).toBeVisible();
   });
 
   test('cursor changes to grab on hover', async ({ page }) => {
     await page.waitForSelector('[class*="rounded-card"]');
-    await page.getByRole('button', { name: 'Organize' }).click();
 
     const cardHeader = page.locator('[class*="cursor-grab"]').first();
 
-    // Check cursor style
+    // Check cursor style - should be grab by default
     const cursor = await cardHeader.evaluate((el) => {
       return window.getComputedStyle(el).cursor;
     });
@@ -39,9 +36,8 @@ test.describe('Drag & Drop', () => {
     expect(cursor).toContain('grab');
   });
 
-  test('domain cards have grab cursor', async ({ page }) => {
+  test('domain cards have grab cursor by default', async ({ page }) => {
     await page.waitForSelector('[class*="rounded-card"]');
-    await page.getByRole('button', { name: 'Organize' }).click();
 
     const grabbableElements = page.locator('.cursor-grab');
     await expect(grabbableElements.first()).toBeVisible();

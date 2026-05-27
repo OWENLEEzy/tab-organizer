@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { groupTabsByDomain, autoAssignProductToSpace, createSortComparator } from '../lib/tab-grouper';
-import type { Tab, ManualGroup, TabGroup } from '../types';
+import { groupTabsByDomain, autoAssignProductToSection, createSortComparator } from '../lib/tab-grouper';
+import type { Tab, Section, TabGroup } from '../types';
 
 function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
   return {
@@ -302,8 +302,8 @@ describe('groupTabsByDomain', () => {
   });
 });
 
-describe('autoAssignProductToSpace', () => {
-  const mockSpaces: ManualGroup[] = [
+describe('autoAssignProductToSection', () => {
+  const mockSections: Section[] = [
     {
       id: 'dev',
       name: 'Dev',
@@ -319,13 +319,13 @@ describe('autoAssignProductToSpace', () => {
   ];
 
   it('matches hostname against regex rules', () => {
-    expect(autoAssignProductToSpace(['github.com'], mockSpaces)).toBe('dev');
-    expect(autoAssignProductToSpace(['vercel.com'], mockSpaces)).toBe('dev');
-    expect(autoAssignProductToSpace(['youtube.com'], mockSpaces)).toBe('media');
+    expect(autoAssignProductToSection(['github.com'], mockSections)).toBe('dev');
+    expect(autoAssignProductToSection(['vercel.com'], mockSections)).toBe('dev');
+    expect(autoAssignProductToSection(['youtube.com'], mockSections)).toBe('media');
   });
 
   it('matches canonical Google products through their source hostnames', () => {
-    const spaces: ManualGroup[] = [
+    const sections: Section[] = [
       {
         id: 'work',
         name: 'Work',
@@ -334,25 +334,25 @@ describe('autoAssignProductToSpace', () => {
       },
     ];
 
-    expect(autoAssignProductToSpace(['mail.google.com'], spaces)).toBe('work');
-    expect(autoAssignProductToSpace(['docs.google.com'], spaces)).toBe('work');
+    expect(autoAssignProductToSection(['mail.google.com'], sections)).toBe('work');
+    expect(autoAssignProductToSection(['docs.google.com'], sections)).toBe('work');
   });
 
   it('returns null if no rule matches', () => {
-    expect(autoAssignProductToSpace(['google.com'], mockSpaces)).toBeNull();
+    expect(autoAssignProductToSection(['google.com'], mockSections)).toBeNull();
   });
 
   it('safely ignores invalid regex patterns', () => {
-    const spacesWithInvalidRegex: ManualGroup[] = [
+    const sectionsWithInvalidRegex: Section[] = [
       {
         id: 'bad-regex',
         name: 'Bad',
         order: 0,
         autoRules: [{ pattern: '[invalid', type: 'hostname' }],
       },
-      ...mockSpaces,
+      ...mockSections,
     ];
-    expect(autoAssignProductToSpace(['github.com'], spacesWithInvalidRegex)).toBe('dev');
+    expect(autoAssignProductToSection(['github.com'], sectionsWithInvalidRegex)).toBe('dev');
   });
 });
 

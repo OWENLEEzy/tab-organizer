@@ -1,8 +1,8 @@
-import type { ManualGroup } from '../types';
+import type { Section } from '../types';
 
-export const DEFAULT_SPACES: ManualGroup[] = [
+export const DEFAULT_SECTIONS: Section[] = [
   {
-    id: 'space-dev',
+    id: 'section-dev',
     name: 'Dev',
     order: 0,
     emoji: '🛠',
@@ -11,7 +11,7 @@ export const DEFAULT_SPACES: ManualGroup[] = [
     ]
   },
   {
-    id: 'space-work',
+    id: 'section-work',
     name: 'Work',
     order: 1,
     emoji: '📝',
@@ -20,7 +20,7 @@ export const DEFAULT_SPACES: ManualGroup[] = [
     ]
   },
   {
-    id: 'space-media',
+    id: 'section-media',
     name: 'Media',
     order: 2,
     emoji: '🎬',
@@ -29,7 +29,7 @@ export const DEFAULT_SPACES: ManualGroup[] = [
     ]
   },
   {
-    id: 'space-shopping',
+    id: 'section-shopping',
     name: 'Shopping',
     order: 3,
     emoji: '🛒',

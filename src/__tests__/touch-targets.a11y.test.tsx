@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { SearchBar } from '../newtab/components/SearchBar';
-import { NudgeBanner } from '../newtab/components/NudgeBanner';
-import { UpdateBanner } from '../newtab/components/UpdateBanner';
 import { SelectionBar } from '../newtab/components/SelectionBar';
 import { TabChip } from '../newtab/components/TabChip';
 import { ActionButton } from '../newtab/components/ui/ActionButton';
@@ -43,22 +41,6 @@ describe('touch target regressions', () => {
     const clearButton = screen.getByRole('button', { name: 'Clear search' });
     expectTouchHeight(clearButton);
     expectTouchWidth(clearButton);
-  });
-
-  it('keeps dismiss buttons large enough in banners', () => {
-    const { rerender } = render(
-      <NudgeBanner tabCount={20} onDismiss={() => {}} />,
-    );
-
-    const nudgeDismiss = screen.getByRole('button', { name: 'Dismiss' });
-    expectTouchHeight(nudgeDismiss);
-    expectTouchWidth(nudgeDismiss);
-
-    rerender(<UpdateBanner version="1.2.3" onDismiss={() => {}} />);
-
-    const updateDismiss = screen.getByRole('button', { name: 'Dismiss update notice' });
-    expectTouchHeight(updateDismiss);
-    expectTouchWidth(updateDismiss);
   });
 
   it('keeps floating action controls at accessible sizes', () => {

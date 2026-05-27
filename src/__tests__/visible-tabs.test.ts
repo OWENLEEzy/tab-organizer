@@ -19,7 +19,7 @@ function createTab(id: number, url: string, title: string): Tab {
   };
 }
 
-function createGroup(tabs: Tab[]): TabGroup {
+function createSection(tabs: Tab[]): TabGroup {
   return {
     id: 'github.com',
     domain: 'github.com',
@@ -35,7 +35,7 @@ function createGroup(tabs: Tab[]): TabGroup {
 
 describe('flattenVisibleTabs', () => {
   it('excludes duplicate URLs and collapsed overflow tabs from keyboard navigation', () => {
-    const group = createGroup([
+    const group = createSection([
       createTab(1, 'https://github.com/openai/openai', 'OpenAI'),
       createTab(2, 'https://github.com/openai/openai', 'OpenAI duplicate'),
       createTab(3, 'https://github.com/vercel/next.js', 'Next.js'),
@@ -51,7 +51,7 @@ describe('flattenVisibleTabs', () => {
   });
 
   it('includes expanded unique tabs in keyboard navigation', () => {
-    const group = createGroup([
+    const group = createSection([
       createTab(1, 'https://github.com/openai/openai', 'OpenAI'),
       createTab(2, 'https://github.com/openai/openai', 'OpenAI duplicate'),
       createTab(3, 'https://github.com/vercel/next.js', 'Next.js'),
@@ -70,12 +70,12 @@ describe('flattenVisibleTabs', () => {
 
 describe('visible sweep selection helpers', () => {
   it('selects duplicate tab ids only from visible products', () => {
-    const visibleGroup = createGroup([
+    const visibleGroup = createSection([
       createTab(1, 'https://github.com/openai/openai', 'OpenAI'),
       createTab(2, 'https://github.com/openai/openai', 'OpenAI duplicate'),
     ]);
     const hiddenGroup = {
-      ...createGroup([
+      ...createSection([
         createTab(3, 'https://vercel.com/dashboard', 'Vercel'),
         createTab(4, 'https://vercel.com/dashboard', 'Vercel duplicate'),
       ]),
@@ -90,7 +90,7 @@ describe('visible sweep selection helpers', () => {
 
   it('selects stale tab URLs only from visible products', () => {
     const now = new Date('2026-05-05T00:00:00Z').getTime();
-    const visibleGroup = createGroup([
+    const visibleGroup = createSection([
       { ...createTab(1, 'https://github.com/openai/openai', 'OpenAI'), lastAccessed: now - 4 * 24 * 60 * 60 * 1000 },
       { ...createTab(2, 'https://github.com/vercel/next.js', 'Next.js'), lastAccessed: now },
     ]);

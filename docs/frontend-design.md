@@ -111,9 +111,9 @@ the mapped `--color-*` bridge tokens declared in `global.css`, such as
 
 ## Accent Themes
 
-Tab Organizer offers 7 accent themes. Each theme is a complete color environment with its own page, surface, card, text, and accent colors. Themes are selected in Settings and applied at runtime via `useTheme(accent)`, which sets CSS custom properties on `:root`.
+Tab Organizer offers 10 accent themes. Each theme is a complete color environment with its own page, surface, card, text, and accent colors. Themes are selected in Settings and applied at runtime via `useTheme(accent)`, which sets CSS custom properties on `:root`.
 
-**There is no separate light/dark mode toggle.** The 4 light-background themes and 3 dark-background themes are all presented as equal accent choices. The `isDark` flag in a theme config is a technical signal that tells the CSS engine to apply `dark:` variant styles — it is not a separate product concept.
+**There is no separate light/dark mode toggle.** The 7 light-background themes and 3 dark-background themes are all presented as equal accent choices. The `isDark` flag in a theme config is a technical signal that tells the CSS engine to apply `dark:` variant styles — it is not a separate product concept.
 
 ### 1. Clay Paper (暖沙陶土) — `clay`
 
@@ -182,7 +182,55 @@ Warm, sunlit yellow-brown. Light background.
 | `--accent-primary` | `#A0781A` |
 | `--accent-primary-rgb` | `160, 120, 26` |
 
-### 5. Obsidian Ink (黑曜石墨) — `obsidian`
+### 5. Lavender Haze (薰衣草紫) — `lavender`
+
+Soft purple-gray with dusty violet accents. Light background.
+
+| Token | Hex |
+|---|---|
+| `--bg-page` | `#F7F5F8` |
+| `--bg-surface` | `#EBE8EF` |
+| `--bg-card` | `#FBFAFE` |
+| `--border-color` | `#D4CEE0` |
+| `--text-primary` | `#383040` |
+| `--text-secondary` | `#6A6070` |
+| `--text-muted` | `#9B93A8` |
+| `--accent-primary` | `#7B6880` |
+| `--accent-primary-rgb` | `123, 104, 128` |
+
+### 6. Rosewood Blush (玫瑰木粉) — `rosewood`
+
+Warm dusty rose with rich earth undertones. Light background.
+
+| Token | Hex |
+|---|---|
+| `--bg-page` | `#FAF5F5` |
+| `--bg-surface` | `#F0EAEA` |
+| `--bg-card` | `#FFFAFA` |
+| `--border-color` | `#DDD4D4` |
+| `--text-primary` | `#3D2C2E` |
+| `--text-secondary` | `#7A6466` |
+| `--text-muted` | `#B09698` |
+| `--accent-primary` | `#A0676B` |
+| `--accent-primary-rgb` | `160, 103, 107` |
+
+### 7. Sea Glass (海草青) — `seagrass`
+
+Cool sea-green with soft gray-blue undertones. Light background.
+
+| Token | Hex |
+|---|---|
+| `--bg-page` | `#F4F7F6` |
+| `--bg-surface` | `#E6EDEB` |
+| `--bg-card` | `#F8FCFB` |
+| `--border-color` | `#C4D4CE` |
+| `--text-primary` | `#2C3834` |
+| `--text-secondary` | `#5F706A` |
+| `--text-muted` | `#98ADA6` |
+| `--accent-primary` | `#5B8A7E` |
+| `--accent-primary-rgb` | `91, 138, 126` |
+
+### 8. Obsidian Ink (黑曜石墨) — `obsidian`
 
 Rich dark theme. Neutral charcoal with warm gray accents. Dark background (`isDark: true`).
 
@@ -200,7 +248,7 @@ Rich dark theme. Neutral charcoal with warm gray accents. Dark background (`isDa
 | `--shadow-card` | `0 4px 12px rgba(0, 0, 0, 0.4)` |
 | `--shadow-card-hover` | `0 10px 24px rgba(0, 0, 0, 0.6)` |
 
-### 6. Deep Pine (暗针长青) — `pine`
+### 9. Deep Pine (暗针长青) — `pine`
 
 Deep forest dark with teal-green accents. Dark background (`isDark: true`).
 
@@ -216,7 +264,7 @@ Deep forest dark with teal-green accents. Dark background (`isDark: true`).
 | `--accent-primary` | `#56A3A1` |
 | `--accent-primary-rgb` | `86, 163, 161` |
 
-### 7. Amethyst Night (紫曜晚霞) — `amethyst`
+### 10. Amethyst Night (紫曜晚霞) — `amethyst`
 
 Evening purple-dark with lavender accents. Dark background (`isDark: true`).
 
@@ -239,7 +287,7 @@ Evening purple-dark with lavender accents. Dark background (`isDark: true`).
 Themes are defined in `src/config/themes.ts` as `AccentConfig` objects. The `useTheme(accent: AccentKey)` hook in `src/newtab/hooks/useTheme.ts` applies them at runtime by setting CSS custom properties on `:root`.
 
 ```typescript
-export type AccentKey = 'clay' | 'sage' | 'frost' | 'ochre' | 'obsidian' | 'pine' | 'amethyst';
+export type AccentKey = 'clay' | 'sage' | 'frost' | 'ochre' | 'lavender' | 'rosewood' | 'seagrass' | 'obsidian' | 'pine' | 'amethyst';
 ```
 
 The `isDark: boolean` flag in each theme config:
@@ -438,9 +486,9 @@ input[type="search"]::-webkit-search-cancel-button {
 | `--spacing-button-icon` | `var(--spacing-button-height)` | Icon button container |
 | `--spacing-button-icon-sm` | `2rem` | Small icon button |
 | `--spacing-section-header-start` | `0.25rem` (4px) | Organizer section header top offset |
-| `--spacing-section-header-end` | `0.75rem` (12px) | Organizer section header to content |
-| `--spacing-section-header-rule` | `0.5rem` (8px) | Organizer section label to divider |
-| `--spacing-section-gap` | `1rem` (16px) | Space between organizer sections |
+| `--spacing-section-header-end` | `0.5rem` (8px) | Organizer section header to content |
+| `--spacing-section-header-rule` | `0.375rem` (6px) | Organizer section label to divider |
+| `--spacing-section-gap` | `0.75rem` (12px) | Space between organizer sections |
 | `--spacing-section-inset` | `0.125rem` (2px) | Organizer drop target inset |
 
 When using these tokens in Tailwind arbitrary utilities, wrap them in `var(...)`:
@@ -520,9 +568,27 @@ Left border accent for the currently active tab:
 ```css
 .tab-active {
   border-left: 3px solid var(--accent-primary) !important;
-  background-color: rgba(var(--accent-primary-rgb), 0.08) !important;
+  background-color: var(--bg-accent-active) !important;
 }
 ```
+
+---
+
+## Raw Color Governance
+
+Raw colors are allowed only at token boundaries:
+
+- `src/newtab/styles/global.css` inside the `@theme` token block.
+- `src/config/themes.ts`, where the 10 accent themes are registered.
+- Explicit non-UI exceptions such as browser badge colors, confetti particles,
+  and product grouping defaults.
+
+Component TSX and ordinary CSS rules must use token-backed classes or CSS
+custom properties such as `text-text-primary`, `bg-[var(--bg-accent-subtle)]`,
+or `box-shadow: var(--shadow-control-active)`. Do not add literal hex,
+`rgb(...)`, or `rgba(...)` values to UI components. `raw-color-governance.test.ts`
+enforces this by scanning newtab TSX and CSS; `global.css` is not exempt as a
+whole file, only its token definition block is.
 
 ---
 

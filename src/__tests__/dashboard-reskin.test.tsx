@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { DashboardHeader } from '../newtab/components/layout/DashboardHeader';
 import { getDateFormatter, getSnapshotDateFormatter } from '../newtab/lib/date-formatters';
 import { DashboardShell } from '../newtab/components/layout/DashboardShell';
-import { StatusStrip } from '../newtab/components/layout/StatusStrip';
+import { Footer } from '../newtab/components/Footer';
 import { UtilityPanel } from '../newtab/components/layout/UtilityPanel';
 import { TabChip } from '../newtab/components/TabChip';
 
@@ -60,19 +60,19 @@ describe('MotherDuck-inspired layout components', () => {
     }).format(date));
   });
 
-  it('renders the status strip with global metrics', () => {
+  it('renders footer metrics and alerts', () => {
     render(
-      <StatusStrip
-        totalTabs={42}
-        totalDupes={3}
-        totalGroups={12}
+      <Footer
+        tabCount={42}
+        duplicateCount={3}
         alerts={[{ id: 'tab-out-pages', label: '2 extra dashboard tabs', actionLabel: 'Close extras', onAction: () => {} }]}
       />,
     );
 
-    expect(screen.getByText('42 tabs')).toBeInTheDocument();
-    expect(screen.getByText('3 duplicates')).toBeInTheDocument();
-    expect(screen.getByText('12 groups')).toBeInTheDocument();
+    expect(screen.getByText('42')).toBeInTheDocument();
+    expect(screen.getByText('tabs')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByText('duplicates')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close extras' })).toBeInTheDocument();
   });
 
@@ -82,6 +82,7 @@ describe('MotherDuck-inspired layout components', () => {
         title="Open Tabs by Product"
         hasGroups
         dateLabel="Tuesday, May 5, 2026"
+        groupCount={2}
         searchQuery=""
         onSearchChange={() => {}}
         resultCount={5}
@@ -91,14 +92,20 @@ describe('MotherDuck-inspired layout components', () => {
         groupSortBy="count"
         onGroupSortByChange={() => {}}
         onRefresh={() => {}}
-        onCreateGroup={() => {}}
-        onCloseAll={() => {}}
+        onCreateSection={() => {}}
         onOpenSettings={() => {}}
+        sections={[{ id: 'work', name: 'Work', order: 0 }]}
+        sectionIds={[null, 'work']}
+        activeSectionId={null}
+        onSectionChange={() => {}}
       />,
     );
 
     expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
     expect(screen.getByText('Tuesday, May 5, 2026')).toBeInTheDocument();
+    expect(screen.getByText('2 groups')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'All sections' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: 'Search tabs' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
   });
@@ -106,12 +113,13 @@ describe('MotherDuck-inspired layout components', () => {
   it('composes primary content and utility panels', () => {
     render(
       <DashboardShell
-        top={<StatusStrip totalTabs={1} totalDupes={0} totalGroups={1} alerts={[]} />}
+        top={null}
         header={
           <DashboardHeader
             title="Open Tabs by Product"
             hasGroups
             dateLabel="Tuesday, May 5, 2026"
+            groupCount={1}
             searchQuery=""
             onSearchChange={() => {}}
             resultCount={1}
@@ -121,9 +129,12 @@ describe('MotherDuck-inspired layout components', () => {
             groupSortBy="count"
             onGroupSortByChange={() => {}}
             onRefresh={() => {}}
-            onCreateGroup={() => {}}
-            onCloseAll={() => {}}
+            onCreateSection={() => {}}
             onOpenSettings={() => {}}
+            sections={[]}
+            sectionIds={[null]}
+            activeSectionId={null}
+            onSectionChange={() => {}}
           />
         }
         toolbar={null}
@@ -146,20 +157,29 @@ describe('dashboard reskin composition contract', () => {
     );
 
     expect(appSource).toContain('DashboardShell');
-    expect(appSource).toContain('StatusStrip');
+    expect(appSource).toContain('Footer');
     expect(appSource).toContain('DashboardHeader');
-    expect(appSource).toContain('CardsBoard');
+    expect(appSource).toContain('DndOrganizer');
     expect(appSource).toContain('ProductTable');
   });
 
-  it('keeps the default cards board free of dnd-kit imports', () => {
-    const cardsBoardSource = readFileSync(
-      join(process.cwd(), 'src/newtab/components/CardsBoard.tsx'),
+  it('keeps dnd-kit isolated to the cards drag board', () => {
+    const appSource = readFileSync(
+      join(process.cwd(), 'src/newtab/App.tsx'),
+      'utf8',
+    );
+    const dndOrganizerSource = readFileSync(
+      join(process.cwd(), 'src/newtab/components/DndOrganizer.tsx'),
+      'utf8',
+    );
+    const productTableSource = readFileSync(
+      join(process.cwd(), 'src/newtab/components/ProductTable.tsx'),
       'utf8',
     );
 
-    expect(cardsBoardSource).not.toContain('@dnd-kit');
-    expect(cardsBoardSource).not.toContain('dragHandleProps');
+    expect(appSource).not.toContain('@dnd-kit');
+    expect(dndOrganizerSource).toContain('@dnd-kit');
+    expect(productTableSource).not.toContain('@dnd-kit');
   });
 });
 

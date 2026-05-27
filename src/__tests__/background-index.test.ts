@@ -134,13 +134,13 @@ describe('background service worker entry', () => {
     chromeMock.tabs.query.mockResolvedValue([]);
 
     await import('../background/index');
-    listeners.onCommand.mock.calls[0][0]('open-space-switcher');
+    listeners.onCommand.mock.calls[0][0]('open-section-switcher');
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
 
     expect(chromeMock.tabs.create).toHaveBeenCalledWith({
-      url: expect.stringContaining('#focus-space-switcher'),
+      url: expect.stringContaining('#focus-section-switcher'),
     });
   });
 
@@ -179,7 +179,7 @@ describe('background service worker entry', () => {
     expect(chromeMock.action.setBadgeText).toHaveBeenCalledWith({ text: '' });
   });
 
-  it('retries focusing the space switcher after command focus', async () => {
+  it('retries focusing the section switcher after command focus', async () => {
     chromeMock.tabs.query.mockResolvedValue([
       { id: 10, url: 'chrome-extension://fake-id/src/newtab/index.html', windowId: 1 },
     ]);
@@ -188,7 +188,7 @@ describe('background service worker entry', () => {
       .mockResolvedValueOnce({});
 
     await import('../background/index');
-    listeners.onCommand.mock.calls[0][0]('open-space-switcher');
+    listeners.onCommand.mock.calls[0][0]('open-section-switcher');
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
@@ -199,18 +199,18 @@ describe('background service worker entry', () => {
 
     expect(chromeMock.tabs.sendMessage).toHaveBeenCalledTimes(2);
     expect(chromeMock.tabs.sendMessage).toHaveBeenLastCalledWith(10, {
-      type: 'FOCUS_SPACE_SWITCHER',
+      type: 'FOCUS_SECTION_SWITCHER',
     });
   });
 
-  it('stops retrying space switcher focus after repeated send failures', async () => {
+  it('stops retrying section switcher focus after repeated send failures', async () => {
     chromeMock.tabs.query.mockResolvedValue([
       { id: 10, url: 'chrome-extension://fake-id/src/newtab/index.html', windowId: 1 },
     ]);
     chromeMock.tabs.sendMessage.mockRejectedValue(new Error('not ready'));
 
     await import('../background/index');
-    listeners.onCommand.mock.calls[0][0]('open-space-switcher');
+    listeners.onCommand.mock.calls[0][0]('open-section-switcher');
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();

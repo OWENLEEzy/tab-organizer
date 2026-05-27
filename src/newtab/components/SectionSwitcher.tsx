@@ -1,24 +1,24 @@
 import React, { useRef, useEffect } from 'react';
-import type { ManualGroup } from '../../types';
+import type { Section } from '../../types';
 import { useI18n } from '../hooks/useI18n';
 
-interface SpaceSwitcherProps {
-  spaces: ManualGroup[];
-  spaceIds?: (string | null)[];
-  activeSpaceId: string | null;
+interface SectionSwitcherProps {
+  sections: Section[];
+  sectionIds?: (string | null)[];
+  activeSectionId: string | null;
   onChange: (id: string | null) => void;
-  onCreateSpace: () => void;
+  onCreateSection: () => void;
   isFocused?: boolean;
 }
 
-export function SpaceSwitcher({
-  spaces,
-  spaceIds,
-  activeSpaceId,
+export function SectionSwitcher({
+  sections,
+  sectionIds,
+  activeSectionId,
   onChange,
-  onCreateSpace,
+  onCreateSection,
   isFocused,
-}: SpaceSwitcherProps) {
+}: SectionSwitcherProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
 
@@ -33,16 +33,16 @@ export function SpaceSwitcher({
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       const buttons = Array.from(
         containerRef.current?.querySelectorAll<HTMLButtonElement>(
-          'button:not([title="' + t('spaceSwitcherNew') + '"])',
+          'button:not([title="' + t('sectionSwitcherNew') + '"])',
         ) || [],
       );
       const activeElement = document.activeElement as HTMLButtonElement;
       let currentIndex = buttons.indexOf(activeElement);
 
-      const ids = spaceIds ?? [null, ...spaces.map((s) => s.id)];
+      const ids = sectionIds ?? [null, ...sections.map((s) => s.id)];
 
       if (currentIndex === -1) {
-        currentIndex = ids.indexOf(activeSpaceId);
+        currentIndex = ids.indexOf(activeSectionId);
       }
 
       let nextIndex = currentIndex;
@@ -62,48 +62,48 @@ export function SpaceSwitcher({
   return (
     <div
       ref={containerRef}
-      className="flex flex-wrap gap-3 items-center pt-3.5 pb-2.5 mb-3 border-b border-border-color/30 outline-none"
+      className="flex flex-wrap gap-3 items-center outline-none"
       onKeyDown={handleKeyDown}
       role="toolbar"
-      aria-label="Space Switcher"
+      aria-label="Section Switcher"
       tabIndex={0}
     >
       <button
         type="button"
         onClick={() => onChange(null)}
-        tabIndex={activeSpaceId === null ? 0 : -1}
+        tabIndex={activeSectionId === null ? 0 : -1}
         className={`px-4 py-1.5 rounded-chip text-xs transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none ${
-          activeSpaceId === null
-            ? 'border border-[rgba(var(--accent-primary-rgb),0.2)] bg-[rgba(var(--accent-primary-rgb),0.10)] text-text-primary font-semibold'
+          activeSectionId === null
+            ? 'border border-[var(--border-accent-subtle)] bg-[var(--bg-accent-subtle)] text-text-primary font-semibold'
             : 'border border-transparent text-text-secondary hover:bg-bg-surface font-medium'
         }`}
       >
-        {t('spaceSwitcherAll')}
+        {t('sectionSwitcherAll')}
       </button>
- 
-      {spaces.map((space) => (
+
+      {sections.map((section) => (
         <button
-          key={space.id}
+          key={section.id}
           type="button"
-          onClick={() => onChange(space.id)}
-          tabIndex={activeSpaceId === space.id ? 0 : -1}
+          onClick={() => onChange(section.id)}
+          tabIndex={activeSectionId === section.id ? 0 : -1}
           className={`px-4 py-1.5 rounded-chip text-xs transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none ${
-            activeSpaceId === space.id
-              ? 'border border-[rgba(var(--accent-primary-rgb),0.2)] bg-[rgba(var(--accent-primary-rgb),0.10)] text-text-primary font-semibold'
+            activeSectionId === section.id
+              ? 'border border-[var(--border-accent-subtle)] bg-[var(--bg-accent-subtle)] text-text-primary font-semibold'
               : 'border border-transparent text-text-secondary hover:bg-bg-surface font-medium'
           }`}
         >
-          <span>{space.name}</span>
+          <span>{section.name}</span>
         </button>
       ))}
- 
+
       <button
         type="button"
-        onClick={onCreateSpace}
+        onClick={onCreateSection}
         tabIndex={-1}
         className="px-3 py-1.5 rounded-chip text-xs font-medium text-text-muted hover:bg-bg-surface hover:text-text-primary transition-colors duration-150 border border-dashed border-border-color flex items-center justify-center focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none"
-        aria-label={t('spaceSwitcherNew')}
-        title={t('spaceSwitcherNew')}
+        aria-label={t('sectionSwitcherNew')}
+        title={t('sectionSwitcherNew')}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

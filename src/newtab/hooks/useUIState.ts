@@ -13,7 +13,6 @@ export interface UIState {
   };
   settingsOpen: boolean;
   isSidebarExpanded: boolean;
-  organizeMode: boolean;
   nudgeDismissed: boolean;
   focusedIndex: number | null;
   closingUrls: Set<string>;
@@ -30,7 +29,7 @@ export interface UIState {
     confirmLabel: string;
     onConfirm: (value: string) => void;
   };
-  spaceSwitcherFocused: boolean;
+  sectionSwitcherFocused: boolean;
 }
 
 export type UIAction =
@@ -40,7 +39,6 @@ export type UIAction =
   | { type: 'CLOSE_CONFIRM_DIALOG' }
   | { type: 'SET_SETTINGS_OPEN'; open: boolean }
   | { type: 'SET_SIDEBAR_EXPANDED'; expanded: boolean }
-  | { type: 'SET_ORGANIZE_MODE'; enabled: boolean }
   | { type: 'SET_NUDGE_DISMISSED'; dismissed: boolean }
   | { type: 'SET_FOCUSED_INDEX'; index: number | null | ((prev: number | null) => number | null) }
   | { type: 'SET_CLOSING_URLS'; urls: Set<string> | ((prev: Set<string>) => Set<string>) }
@@ -51,7 +49,7 @@ export type UIAction =
   | { type: 'SET_PROMPT_DIALOG'; dialog: UIState['promptDialog'] }
   | { type: 'CLOSE_PROMPT_DIALOG' }
   | { type: 'RESET_INTERACTION' }
-  | { type: 'SET_SPACE_SWITCHER_FOCUSED'; focused: boolean };
+  | { type: 'SET_SECTION_SWITCHER_FOCUSED'; focused: boolean };
 
 const initialState: UIState = {
   toast: { message: '', visible: false },
@@ -59,7 +57,6 @@ const initialState: UIState = {
   confirmDialog: { id: '', open: false, title: '', message: '', confirmLabel: '', onConfirm: () => {} },
   settingsOpen: false,
   isSidebarExpanded: false,
-  organizeMode: false,
   nudgeDismissed: false,
   focusedIndex: null,
   closingUrls: new Set(),
@@ -68,7 +65,7 @@ const initialState: UIState = {
   lastClickedIndex: null,
   expandedDomains: new Set(),
   promptDialog: { id: '', open: false, title: '', label: '', initialValue: '', confirmLabel: '', onConfirm: () => {} },
-  spaceSwitcherFocused: false,
+  sectionSwitcherFocused: false,
 };
 
 function uiReducer(state: UIState, action: UIAction): UIState {
@@ -85,8 +82,6 @@ function uiReducer(state: UIState, action: UIAction): UIState {
       return { ...state, settingsOpen: action.open };
     case 'SET_SIDEBAR_EXPANDED':
       return { ...state, isSidebarExpanded: action.expanded };
-    case 'SET_ORGANIZE_MODE':
-      return { ...state, organizeMode: action.enabled };
     case 'SET_NUDGE_DISMISSED':
       return { ...state, nudgeDismissed: action.dismissed };
     case 'SET_FOCUSED_INDEX':
@@ -106,9 +101,9 @@ function uiReducer(state: UIState, action: UIAction): UIState {
     case 'CLOSE_PROMPT_DIALOG':
       return { ...state, promptDialog: { ...state.promptDialog, open: false } };
     case 'RESET_INTERACTION':
-      return { ...state, searchQuery: '', settingsOpen: false, focusedIndex: null, selectedUrls: new Set(), selectedTabIds: new Set(), lastClickedIndex: null, spaceSwitcherFocused: false };
-    case 'SET_SPACE_SWITCHER_FOCUSED':
-      return { ...state, spaceSwitcherFocused: action.focused };
+      return { ...state, searchQuery: '', settingsOpen: false, focusedIndex: null, selectedUrls: new Set(), selectedTabIds: new Set(), lastClickedIndex: null, sectionSwitcherFocused: false };
+    case 'SET_SECTION_SWITCHER_FOCUSED':
+      return { ...state, sectionSwitcherFocused: action.focused };
     default:
       return state;
   }

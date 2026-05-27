@@ -86,7 +86,7 @@ export function useTabHandlers({
     [dispatch, performBatchClose, t],
   );
 
-  const handleCloseManualGroup = useCallback(
+  const handleCloseSection = useCallback(
     (groups: TabGroup[], title: string) => {
       const urls = groups.flatMap((p) => p.tabs.map((tab) => tab.url));
       dispatch({
@@ -287,7 +287,7 @@ export function useTabHandlers({
     });
   }, [dispatch, tabStore.tabs, performBatchClose, t]);
 
-  const handleCreateGroup = useCallback(() => {
+  const handleCreateSection = useCallback(() => {
     dispatch({
       type: 'SET_PROMPT_DIALOG',
       dialog: {
@@ -298,7 +298,7 @@ export function useTabHandlers({
         initialValue: t('promptCreateGroupValue'),
         confirmLabel: t('promptCreateGroupBtn'),
         onConfirm: (name) => {
-          tabStore.createGroup(name).then(() => {
+          tabStore.createSection(name).then(() => {
             showToast(t('toastGroupCreated'));
           });
           dispatch({ type: 'CLOSE_PROMPT_DIALOG' });
@@ -307,7 +307,7 @@ export function useTabHandlers({
     });
   }, [dispatch, tabStore, showToast, t]);
 
-  const handleRenameGroup = useCallback((group: { id: string; name: string }) => {
+  const handleRenameSection = useCallback((group: { id: string; name: string }) => {
     dispatch({
       type: 'SET_PROMPT_DIALOG',
       dialog: {
@@ -318,7 +318,7 @@ export function useTabHandlers({
         initialValue: group.name,
         confirmLabel: t('promptRenameGroupBtn'),
         onConfirm: (name) => {
-          tabStore.renameGroup(group.id, name).then(() => {
+          tabStore.renameSection(group.id, name).then(() => {
             showToast(t('toastGroupRenamed'));
           });
           dispatch({ type: 'CLOSE_PROMPT_DIALOG' });
@@ -327,7 +327,7 @@ export function useTabHandlers({
     });
   }, [dispatch, tabStore, showToast, t]);
 
-  const handleDeleteGroup = useCallback((group: { id: string; name: string }) => {
+  const handleDeleteSection = useCallback((group: { id: string; name: string }) => {
     dispatch({
       type: 'SET_CONFIRM_DIALOG',
       dialog: {
@@ -337,7 +337,7 @@ export function useTabHandlers({
         message: t('confirmDeleteGroupMsg'),
         confirmLabel: t('confirmDeleteGroupBtn'),
         onConfirm: () => {
-          tabStore.deleteGroup(group.id).then(() => {
+          tabStore.deleteSection(group.id).then(() => {
             showToast(t('toastGroupDeleted'));
           });
           dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
@@ -357,25 +357,25 @@ export function useTabHandlers({
     showToast(t('toastRefreshed'));
   }, [tabStore, showToast, t]);
 
-  const handleMoveTableItem = useCallback((p: TabGroup, groupId: string) => {
+  const handleMoveTableItem = useCallback((p: TabGroup, sectionId: string) => {
     const productKey = getProductKey(p);
-    const move = groupId
-      ? tabStore.moveProductToGroup(productKey, groupId)
-      : tabStore.moveProductToMain(productKey);
+    const move = sectionId
+      ? tabStore.moveProductToSection(productKey, sectionId)
+      : tabStore.moveProductToNoSection(productKey);
 
     move.then(() => {
-      showToast(groupId ? t('toastMovedToGroup') : t('toastMovedToUnsorted'));
+      showToast(sectionId ? t('toastMovedToGroup') : t('toastMovedToUnsorted'));
     });
   }, [tabStore, showToast, t]);
 
-  const handleMoveProductToMain = useCallback((productKey: string) => {
-    tabStore.moveProductToMain(productKey).then(() => {
+  const handleMoveProductToNoSection = useCallback((productKey: string) => {
+    tabStore.moveProductToNoSection(productKey).then(() => {
       showToast(t('toastMovedToUnsorted'));
     });
   }, [tabStore, showToast, t]);
 
-  const handleMoveProductToGroup = useCallback((productKey: string, groupId: string) => {
-    tabStore.moveProductToGroup(productKey, groupId).then(() => {
+  const handleMoveProductToSection = useCallback((productKey: string, sectionId: string) => {
+    tabStore.moveProductToSection(productKey, sectionId).then(() => {
       showToast(t('toastMovedToGroup'));
     });
   }, [tabStore, showToast, t]);
@@ -425,7 +425,7 @@ export function useTabHandlers({
 
   return {
     handleCloseProduct,
-    handleCloseManualGroup,
+    handleCloseSection,
     handleCloseDuplicates,
     handleCloseTabAnimated,
     handleFocusTab,
@@ -435,14 +435,14 @@ export function useTabHandlers({
     handleToggleExpanded,
     handleCloseSelected,
     handleCloseAll,
-    handleCreateGroup,
-    handleRenameGroup,
-    handleDeleteGroup,
+    handleCreateSection,
+    handleRenameSection,
+    handleDeleteSection,
     handleSetViewMode,
     handleRefresh,
     handleMoveTableItem,
-    handleMoveProductToMain,
-    handleMoveProductToGroup,
+    handleMoveProductToNoSection,
+    handleMoveProductToSection,
     handleSelectStaleTabs,
     handleSelectDuplicateTabs,
   };

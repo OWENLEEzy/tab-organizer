@@ -96,22 +96,22 @@ export interface LandingPagePattern {
 
 export type ViewMode = 'cards' | 'table';
 
-export interface SpaceAutoRule {
+export interface SectionAutoRule {
   pattern: string;
   type: 'hostname';
 }
 
-export interface ManualGroup {
+export interface Section {
   id: string;
   name: string;
   order: number;
   emoji?: string;
-  autoRules?: SpaceAutoRule[];
+  autoRules?: SectionAutoRule[];
 }
 
-export interface GroupAssignment {
+export interface SectionAssignment {
   productKey: string;
-  groupId: string;
+  sectionId: string;
   order: number;
 }
 
@@ -155,8 +155,8 @@ export interface AppSettings {
   customGroups: CustomGroup[];
   landingPagePatterns: LandingPagePattern[];
   keyBindings: {
-    switchSpaceN: string;
-    switchSpaceAll: string;
+    switchSectionN: string;
+    switchSectionAll: string;
     cyclePrev: string;
     cycleNext: string;
     focusSearch: string;
@@ -173,8 +173,8 @@ export interface StorageSchema {
   workspaces: Workspace[];
   settings: AppSettings;
   groupOrder: Record<string, number>;
-  manualGroups: ManualGroup[];
-  groupAssignments: GroupAssignment[];
+  sections: Section[];
+  sectionAssignments: SectionAssignment[];
   /** Product keys explicitly moved to Unsorted by the user — immune to auto-assignment. */
   unsortedOverrides: string[];
   viewMode: ViewMode;
@@ -187,8 +187,8 @@ export interface StorageSchema {
 export interface TabState {
   tabs: Tab[];
   products: TabGroup[];
-  manualGroups: ManualGroup[];
-  groupAssignments: GroupAssignment[];
+  sections: Section[];
+  sectionAssignments: SectionAssignment[];
   viewMode: ViewMode;
   loading: boolean;
   showAllWindows: boolean;

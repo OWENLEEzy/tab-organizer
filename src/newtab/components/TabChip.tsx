@@ -91,8 +91,8 @@ function HighlightedText({ text, highlight = '' }: { text: string; highlight?: s
   const trimmedLower = cleanHighlight.toLowerCase();
   const isCommand = 
     trimmedLower.startsWith('/') ||
-    trimmedLower.startsWith('space:') ||
-    trimmedLower.startsWith('spac:') ||
+    trimmedLower.startsWith('section:') ||
+    trimmedLower.startsWith('sec:') ||
     trimmedLower.startsWith('s:') ||
     trimmedLower === 'stale' || trimmedLower === 'stales' ||
     trimmedLower === 'dupe' || trimmedLower === 'dupes' ||
@@ -103,7 +103,7 @@ function HighlightedText({ text, highlight = '' }: { text: string; highlight?: s
     cleanHighlight = cleanHighlight
       .replace(/^\/?dupes?\s*/i, '')
       .replace(/^\/?stales?\s*/i, '')
-      .replace(/^\/?(?:space|spac|s):[^\s]*\s*/i, '')
+      .replace(/^\/?(?:section|sec|s):[^\s]*\s*/i, '')
       .trim();
   }
   if (!cleanHighlight) return <>{text}</>;

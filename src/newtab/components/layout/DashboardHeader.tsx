@@ -3,18 +3,20 @@ import { SearchBar } from '../SearchBar';
 import { ViewToggle } from '../ViewToggle';
 import { SortDropdown } from '../SortDropdown';
 import { ActionButton } from '../ui/ActionButton';
+import { SectionSwitcher } from '../SectionSwitcher';
 import { useI18n } from '../../hooks/useI18n';
 import { getDateFormatter } from '../../lib/date-formatters';
-import type { GroupSortOption } from '../../../types';
+import type { GroupSortOption, Section } from '../../../types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
-const EMPTY_SPACES: { id: string; name: string }[] = [];
+const EMPTY_SECTIONS: Section[] = [];
 
 interface DashboardHeaderProps {
   title: string;
   hasGroups: boolean;
   dateLabel?: string;
+  groupCount: number;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   resultCount: number;
@@ -24,14 +26,15 @@ interface DashboardHeaderProps {
   groupSortBy: GroupSortOption;
   onGroupSortByChange: (sortBy: GroupSortOption) => void;
   onRefresh: () => void;
-  onCreateGroup: () => void;
-  onCloseAll: () => void;
+  onCreateSection: () => void;
   onOpenSettings: () => void;
-  organizeMode?: boolean;
-  onToggleOrganize?: () => void;
   isSidebarExpanded?: boolean;
   onToggleSidebar?: () => void;
-  spaces?: { id: string; name: string }[];
+  sections?: Section[];
+  sectionIds?: (string | null)[];
+  activeSectionId: string | null;
+  onSectionChange: (id: string | null) => void;
+  isSectionSwitcherFocused?: boolean;
 }
 
 function RefreshIcon(): React.ReactElement {
@@ -59,18 +62,11 @@ function SidebarIcon(): React.ReactElement {
   );
 }
 
-function OrganizeIcon(): React.ReactElement {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="size-4">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
-    </svg>
-  );
-}
-
 export function DashboardHeader({
   title,
   hasGroups,
   dateLabel,
+  groupCount,
   searchQuery,
   onSearchChange,
   resultCount,
@@ -80,14 +76,15 @@ export function DashboardHeader({
   groupSortBy,
   onGroupSortByChange,
   onRefresh,
-  onCreateGroup,
-  onCloseAll,
+  onCreateSection,
   onOpenSettings,
-  organizeMode = false,
-  onToggleOrganize,
   isSidebarExpanded = false,
   onToggleSidebar,
-  spaces = EMPTY_SPACES,
+  sections = EMPTY_SECTIONS,
+  sectionIds,
+  activeSectionId,
+  onSectionChange,
+  isSectionSwitcherFocused,
 }: DashboardHeaderProps): React.ReactElement {
   const { t, locale } = useI18n();
   const headingId = React.useId();
@@ -101,14 +98,27 @@ export function DashboardHeader({
   return (
     <section className="pb-3 pt-2" aria-labelledby={headingId}>
       <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 border-b border-border-light pb-3 dark:border-border-dark md:flex-row md:items-center md:justify-between">
+          <SectionSwitcher
+            sections={sections}
+            sectionIds={sectionIds}
+            activeSectionId={activeSectionId}
+            onChange={onSectionChange}
+            onCreateSection={onCreateSection}
+            isFocused={isSectionSwitcherFocused}
+          />
+          <p className="font-body text-xs font-semibold tracking-normal text-text-secondary uppercase md:text-right">
+            {activeDateLabel}
+          </p>
+        </div>
         <div className="flex flex-col gap-3 border-b border-border-light pb-3 dark:border-border-dark lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <p className="font-body text-xs font-semibold tracking-normal text-text-secondary uppercase">
-              {activeDateLabel}
-            </p>
             <h1 id={headingId} className="mt-1 font-heading text-3xl font-normal tracking-tight text-text-primary-light dark:text-text-primary-dark">
               {title}
             </h1>
+            <p className="mt-1 font-body text-xs font-semibold tracking-normal text-text-secondary">
+              {groupCount} {t('metricGroups')}
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {hasGroups ? (
@@ -141,26 +151,13 @@ export function DashboardHeader({
                 onChange={onSearchChange}
                 resultCount={resultCount}
                 totalCount={totalCount}
-                spaces={spaces}
+                sections={sections}
               />
             </div>
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
               <ActionButton variant="quiet" icon={<RefreshIcon />} onClick={onRefresh} aria-label="Refresh tabs">
                 {t('refresh')}
               </ActionButton>
-              {viewMode === 'cards' && onToggleOrganize ? (
-                <ActionButton
-                  variant="quiet"
-                  icon={<OrganizeIcon />}
-                  onClick={onToggleOrganize}
-                  aria-label={organizeMode ? t('organizerDone') : t('organizerMode')}
-                  className={organizeMode ? 'bg-accent-blue/5 text-accent-blue' : ''}
-                >
-                  {organizeMode ? t('organizerDone') : t('organizerMode')}
-                </ActionButton>
-              ) : null}
-              <ActionButton onClick={onCreateGroup}>{t('newGroup')}</ActionButton>
-              <ActionButton variant="danger" onClick={onCloseAll}>{t('closeAll')}</ActionButton>
             </div>
           </div>
         ) : null}

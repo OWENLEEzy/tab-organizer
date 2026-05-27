@@ -25,10 +25,10 @@ app, account system, cloud sync product, bookmark manager, or task manager.
 ## Product Contract
 
 - The first screen is the working dashboard, not a marketing page.
-- Tabs are grouped automatically by product/domain; this grouping is the source
-  of truth for the UI.
-- Manual groups organize product groups. They must not rewrite grouping
-  semantics or become URL-level task management.
+- Tabs are single pages. They are grouped automatically into product/domain
+  `TabGroup`s; this grouping is the source of truth for the UI.
+- Sections are user-created containers for automatic groups. They must not
+  rewrite grouping semantics or become URL-level task management.
 - The extension is local-first by design: no account, no server sync, no
   analytics, no external storage, and no external API dependency.
 - Runtime data lives in Chrome and local extension storage. Treat privacy as a
@@ -74,8 +74,8 @@ Source of truth: `docs/frontend-design.md` and
 
 - Product/domain grouping from real Chrome tabs.
 - Cards view and Table view.
-- Product-only manual groups and group assignments.
-- Organize mode for dragging product groups into sections.
+- Product-only organizer sections and section assignments.
+- Cards view directly drags product groups into sections.
 - Duplicate detection, duplicate badges, and close-duplicate actions.
 - Tab title click/focus across Chrome windows.
 - Single-tab close and group-close flows with sound/confetti effects.
@@ -120,7 +120,7 @@ Build/runtime shape:
 - `src/newtab/index.html` is the dashboard entry.
 - `src/newtab/App.tsx` is the page orchestrator. It owns store wiring,
   transient UI state, search/keyboard flow, close/focus/dedupe handlers,
-  settings, history, confirmations, toast, and lazy organize mode.
+  settings, history, confirmations, toast, and the lazy drag organizer.
 - `src/background/index.ts` is the MV3 service worker. It refreshes badge counts
   and opens or focuses the dashboard from the toolbar action.
 - `src/utils/storage.ts` is the only adapter over `chrome.storage.local`.
@@ -145,12 +145,19 @@ User action
 - Components under `src/newtab/components/` receive data and callbacks by props.
 - Components do not call `chrome.tabs.*`, `chrome.storage.local`, or storage
   utilities directly.
-- Manual groups contain product groups only.
+- Sections contain automatic product groups only.
+- Sections are user-created containers for product groups. Sections contain groups, never individual URLs.
+- Terminology: tab = single page, group = automatic TabGroup of tabs, section = user-created container for groups.
+- English UI: tab / group / section. Chinese UI: 页面 / 区域 / 分区.
+- Cards view is directly draggable; Table view is not.
 - URL-level section assignments are not part of the current model.
 - Organizer ids are namespaced as `product:<productKey>` and
-  `group:<groupId>`.
-- Default Cards/Table views must not import or render drag handles.
-- `@dnd-kit` must stay out of the default dashboard entry path.
+  `section:<sectionId>`.
+- Cards view uses the lazy drag organizer directly so product groups can move
+  between sections without a separate organize mode.
+- `src/newtab/components/DndOrganizer.tsx` is the only component that may import
+  `@dnd-kit`; the Cards lazy chunk may contain DnD, while the Table path must
+  not import or render DnD handles.
 - `dist/` is generated output. Do not edit it manually.
 - CRXJS reads `manifest.json`; keep `src/newtab/index.html` as an explicit Vite
   build input so the toolbar dashboard stays bundled.
@@ -176,7 +183,7 @@ For grouping, duplicate, or visible-tab behavior:
 For storage and history changes:
 
 - Route persisted mutations through `src/utils/storage.ts`.
-- Keep legacy normalization at the adapter boundary.
+- Keep non-section legacy normalization at the adapter boundary.
 - Validate snapshot caps, local-only behavior, and internal-page filtering.
 
 For review/fix loops:
@@ -194,10 +201,12 @@ Persisted in `chrome.storage.local`:
 - Settings.
 - Product group order.
 - Product-only organizer sections.
-- Product-to-group assignments.
+- Product-to-section assignments.
 - History candidate/history snapshots.
-- Legacy `sections`, `sectionAssignments`, `recoveryCandidate`, and
-  `recoveryHistory` fields required for migration compatibility.
+- Legacy `recoveryCandidate` and `recoveryHistory` fields required for
+  migration compatibility.
+- Legacy `manualGroups` and `groupAssignments` are cleanup-only reset fields;
+  section data intentionally does not migrate from them.
 
 Storage rules:
 
@@ -206,7 +215,7 @@ Storage rules:
 - Localized consolidation (stripping TLDs) is limited to known safe variants in `PRODUCT_RULES` only.
 - All read-modify-write mutations go through the serial write queue in
   `src/utils/storage.ts`.
-- Normalize legacy storage shapes at the adapter boundary.
+- Normalize non-section legacy storage shapes at the adapter boundary.
 - Prune product assignments when the product is no longer open or the group no
   longer exists.
 - History snapshots are capped and local-only; do not introduce cloud/session

@@ -152,8 +152,8 @@ describe('useTabStore', () => {
     useTabStore.setState({
       tabs: [],
       products: [],
-      manualGroups: [],
-      groupAssignments: [],
+      sections: [],
+      sectionAssignments: [],
       unsortedOverrides: [],
       viewMode: 'cards',
       loading: false,
@@ -273,11 +273,11 @@ describe('useTabStore', () => {
         landingPagePatterns: [],
       },
       groupOrder: { youtube: 0, 'old-hostname.com': 1 },
-      manualGroups: [{ id: 'later', name: 'Later', order: 0 }],
-      groupAssignments: [
-        { productKey: 'youtube', groupId: 'later', order: 0 },
-        { productKey: 'missing-product', groupId: 'later', order: 2 },
-        { itemType: rejectedUrlAssignmentType, itemKey: 'https://www.youtube.com/watch?v=1', groupId: 'later', order: 3 },
+      sections: [{ id: 'later', name: 'Later', order: 0 }],
+      sectionAssignments: [
+        { productKey: 'youtube', sectionId: 'later', order: 0 },
+        { productKey: 'missing-product', sectionId: 'later', order: 2 },
+        { itemType: rejectedUrlAssignmentType, itemKey: 'https://www.youtube.com/watch?v=1', sectionId: 'later', order: 3 },
       ],
       viewMode: 'table',
     };
@@ -294,8 +294,8 @@ describe('useTabStore', () => {
       'https://www.youtube.com/watch?v=1',
       'https://www.youtube.com/watch?v=2',
     ]);
-    expect(state.groupAssignments).toEqual([
-      { productKey: 'youtube', groupId: 'later', order: 0 },
+    expect(state.sectionAssignments).toEqual([
+      { productKey: 'youtube', sectionId: 'later', order: 0 },
     ]);
     expect(state.viewMode).toBe('table');
     expect(chromeStorage.data['groupOrder']).toEqual({ youtube: 0 });
@@ -312,13 +312,13 @@ describe('useTabStore', () => {
 
     await useTabStore.getState().fetchTabs();
 
-    expect(useTabStore.getState().groupAssignments).toEqual([
-      { productKey: 'gmail', groupId: 'space-work', order: 0 },
-      { productKey: 'google-docs', groupId: 'space-work', order: 1 },
+    expect(useTabStore.getState().sectionAssignments).toEqual([
+      { productKey: 'gmail', sectionId: 'section-work', order: 0 },
+      { productKey: 'google-docs', sectionId: 'section-work', order: 1 },
     ]);
-    expect(chromeStorage.data['groupAssignments']).toEqual([
-      { productKey: 'gmail', groupId: 'space-work', order: 0 },
-      { productKey: 'google-docs', groupId: 'space-work', order: 1 },
+    expect(chromeStorage.data['sectionAssignments']).toEqual([
+      { productKey: 'gmail', sectionId: 'section-work', order: 0 },
+      { productKey: 'google-docs', sectionId: 'section-work', order: 1 },
     ]);
   });
 
@@ -331,21 +331,21 @@ describe('useTabStore', () => {
     ]);
 
     await useTabStore.getState().fetchTabs();
-    expect(useTabStore.getState().groupAssignments).toEqual([
-      { productKey: 'gmail', groupId: 'space-work', order: 0 },
+    expect(useTabStore.getState().sectionAssignments).toEqual([
+      { productKey: 'gmail', sectionId: 'section-work', order: 0 },
     ]);
 
-    await useTabStore.getState().moveProductToMain('gmail');
+    await useTabStore.getState().moveProductToNoSection('gmail');
 
-    expect(useTabStore.getState().groupAssignments).toEqual([]);
+    expect(useTabStore.getState().sectionAssignments).toEqual([]);
     expect(chromeStorage.data['unsortedOverrides']).toEqual(['gmail']);
 
     await useTabStore.getState().fetchTabs();
 
-    expect(useTabStore.getState().groupAssignments).toEqual([]);
+    expect(useTabStore.getState().sectionAssignments).toEqual([]);
   });
 
-  it('moves product groups into manual groups', async () => {
+  it('moves product groups into sections', async () => {
     useTabStore.setState({
       fetchTabs: vi.fn().mockResolvedValue(undefined),
       products: [
@@ -364,29 +364,29 @@ describe('useTabStore', () => {
           duplicateCount: 0,
         },
       ],
-      manualGroups: [{ id: 'later', name: 'Later', order: 0 }],
-      groupAssignments: [],
+      sections: [{ id: 'later', name: 'Later', order: 0 }],
+      sectionAssignments: [],
     });
 
-    await useTabStore.getState().moveProductToGroup('github', 'later');
+    await useTabStore.getState().moveProductToSection('github', 'later');
 
-    expect(useTabStore.getState().groupAssignments).toEqual([
-      { productKey: 'github', groupId: 'later', order: 0 },
+    expect(useTabStore.getState().sectionAssignments).toEqual([
+      { productKey: 'github', sectionId: 'later', order: 0 },
     ]);
-    expect(chromeStorage.data['groupAssignments']).toEqual([
-      { productKey: 'github', groupId: 'later', order: 0 },
+    expect(chromeStorage.data['sectionAssignments']).toEqual([
+      { productKey: 'github', sectionId: 'later', order: 0 },
     ]);
     expect(chromeStorage.data['unsortedOverrides']).toEqual([]);
 
-    await useTabStore.getState().moveProductToMain('github');
+    await useTabStore.getState().moveProductToNoSection('github');
 
-    expect(useTabStore.getState().groupAssignments).toEqual([]);
+    expect(useTabStore.getState().sectionAssignments).toEqual([]);
     expect(chromeStorage.data['unsortedOverrides']).toEqual(['github']);
 
-    await useTabStore.getState().moveProductToGroup('github', 'later');
+    await useTabStore.getState().moveProductToSection('github', 'later');
 
-    expect(useTabStore.getState().groupAssignments).toEqual([
-      { productKey: 'github', groupId: 'later', order: 0 },
+    expect(useTabStore.getState().sectionAssignments).toEqual([
+      { productKey: 'github', sectionId: 'later', order: 0 },
     ]);
     expect(chromeStorage.data['unsortedOverrides']).toEqual([]);
   });
@@ -394,27 +394,27 @@ describe('useTabStore', () => {
   it('preserves concurrent product moves based on the latest organizer storage state', async () => {
     useTabStore.setState({
       fetchTabs: vi.fn().mockResolvedValue(undefined),
-      manualGroups: [{ id: 'later', name: 'Later', order: 0 }],
-      groupAssignments: [],
+      sections: [{ id: 'later', name: 'Later', order: 0 }],
+      sectionAssignments: [],
       unsortedOverrides: [],
     });
     chromeStorage.data = {
       schemaVersion: 4,
-      manualGroups: [{ id: 'later', name: 'Later', order: 0 }],
-      groupAssignments: [],
+      sections: [{ id: 'later', name: 'Later', order: 0 }],
+      sectionAssignments: [],
       unsortedOverrides: [],
     };
 
     await Promise.all([
-      useTabStore.getState().moveProductToGroup('github', 'later'),
-      useTabStore.getState().moveProductToGroup('vercel', 'later'),
+      useTabStore.getState().moveProductToSection('github', 'later'),
+      useTabStore.getState().moveProductToSection('vercel', 'later'),
     ]);
 
-    expect(useTabStore.getState().groupAssignments.map((assignment) => assignment.productKey).sort()).toEqual([
+    expect(useTabStore.getState().sectionAssignments.map((assignment) => assignment.productKey).sort()).toEqual([
       'github',
       'vercel',
     ]);
-    expect((chromeStorage.data['groupAssignments'] as { productKey: string }[])
+    expect((chromeStorage.data['sectionAssignments'] as { productKey: string }[])
       .map((assignment) => assignment.productKey)
       .sort()).toEqual(['github', 'vercel']);
   });
@@ -571,30 +571,30 @@ describe('useTabStore', () => {
     vi.useRealTimers();
   });
 
-  it('creates, renames, updates, reorders, and deletes manual groups', async () => {
+  it('creates, renames, updates, reorders, and deletes sections', async () => {
     const fetchTabs = vi.fn().mockResolvedValue(undefined);
     useTabStore.setState({
       fetchTabs,
-      manualGroups: [],
-      groupAssignments: [{ productKey: 'github', groupId: 'group-1', order: 0 }],
+      sections: [],
+      sectionAssignments: [{ productKey: 'github', sectionId: 'group-1', order: 0 }],
     });
 
-    await useTabStore.getState().createGroup('  ');
-    const createdGroup = useTabStore.getState().manualGroups[0];
+    await useTabStore.getState().createSection('  ');
+    const createdGroup = useTabStore.getState().sections[0];
     expect(createdGroup.name).toBe('Untitled');
 
-    await useTabStore.getState().renameGroup(createdGroup.id, 'Work');
-    expect(useTabStore.getState().manualGroups[0].name).toBe('Work');
+    await useTabStore.getState().renameSection(createdGroup.id, 'Work');
+    expect(useTabStore.getState().sections[0].name).toBe('Work');
 
-    await useTabStore.getState().updateGroup(createdGroup.id, { emoji: 'W' });
+    await useTabStore.getState().updateSection(createdGroup.id, { emoji: 'W' });
     expect(fetchTabs).toHaveBeenCalled();
-    expect(useTabStore.getState().manualGroups[0].emoji).toBe('W');
+    expect(useTabStore.getState().sections[0].emoji).toBe('W');
 
-    await useTabStore.getState().reorderGroups([{ ...createdGroup, id: 'group-1', name: 'One', order: 10 }]);
-    expect(useTabStore.getState().manualGroups[0].order).toBe(0);
+    await useTabStore.getState().reorderSections([{ ...createdGroup, id: 'group-1', name: 'One', order: 10 }]);
+    expect(useTabStore.getState().sections[0].order).toBe(0);
 
-    await useTabStore.getState().deleteGroup('group-1');
-    expect(useTabStore.getState().groupAssignments).toEqual([]);
+    await useTabStore.getState().deleteSection('group-1');
+    expect(useTabStore.getState().sectionAssignments).toEqual([]);
   });
 
   it('restores and manages history snapshots', async () => {

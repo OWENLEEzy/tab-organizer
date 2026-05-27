@@ -4,7 +4,7 @@ import { Footer } from '../newtab/components/Footer';
 
 describe('Footer', () => {
   it('links to the bare feedback form without local runtime metadata', () => {
-    render(<Footer tabCount={42} />);
+    render(<Footer tabCount={42} duplicateCount={0} />);
 
     const feedback = screen.getByRole('link', { name: 'Give feedback' });
     const href = feedback.getAttribute('href') ?? '';

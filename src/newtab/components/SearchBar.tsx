@@ -8,10 +8,10 @@ interface SearchBarProps {
   onChange: (query: string) => void;
   resultCount: number;
   totalCount: number;
-  spaces?: { id: string; name: string }[];
+  sections?: { id: string; name: string }[];
 }
 
-const EMPTY_SPACES: { id: string; name: string }[] = [];
+const EMPTY_SECTIONS: { id: string; name: string }[] = [];
 
 interface CommandOption {
   key: string;
@@ -26,7 +26,7 @@ export function SearchBar({
   onChange,
   resultCount,
   totalCount,
-  spaces = EMPTY_SPACES,
+  sections = EMPTY_SECTIONS,
 }: SearchBarProps): React.ReactElement {
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
@@ -36,7 +36,7 @@ export function SearchBar({
   const commands = useMemo<CommandOption[]>(() => [
     { key: '/dupes', label: t('cmdDupesLabel'), desc: t('cmdDupesDesc') },
     { key: '/stale', label: t('cmdStaleLabel'), desc: t('cmdStaleDesc') },
-    { key: '/space:', label: t('cmdSpaceLabel'), desc: t('cmdSpaceDesc') },
+    { key: '/section:', label: t('cmdSectionLabel'), desc: t('cmdSectionDesc') },
   ], [t]);
 
   const handleInputChange = useCallback(
@@ -62,44 +62,44 @@ export function SearchBar({
     setTimeout(() => setFocused(false), 150);
   }, []);
 
-  const spaceMatch = useMemo(() => {
-    return value.match(/^\/?(space|spac|s):([^\s]*)$/i);
+  const sectionMatch = useMemo(() => {
+    return value.match(/^\/?(section|sec|s):([^\s]*)$/i);
   }, [value]);
 
   const getFinalCmd = useCallback((chosenCmd: string): string => {
-    const isRawPrefix = chosenCmd === '/space:' || chosenCmd === '/s:' || chosenCmd === '/spac:';
+    const isRawPrefix = chosenCmd === '/section:' || chosenCmd === '/s:';
     return isRawPrefix ? chosenCmd : chosenCmd + ' ';
   }, []);
 
   // Show commands when focused AND:
   // 1. Value is empty (great for discoverability!)
-  // 2. Or space command prefix is matched
+  // 2. Or section command prefix is matched
   // 3. Or value starts with '/' and is not already a fully entered command
   const showCommands =
     focused &&
     (value === '' ||
-      spaceMatch !== null ||
+      sectionMatch !== null ||
       (value.startsWith('/') &&
         !value.includes(' ') &&
         !commands.some((cmd) => cmd.key === value)));
 
-  // If spaceMatch matches, list matching spaces. Otherwise filter commands by prefix
+  // If sectionMatch matches, list matching sections. Otherwise filter commands by prefix
   const filteredCommands = useMemo(() => {
-    if (spaceMatch) {
-      const arg = spaceMatch[2].toLowerCase();
-      const matchingSpaces = spaces.filter((s) =>
+    if (sectionMatch) {
+      const arg = sectionMatch[2].toLowerCase();
+      const matchingSections = sections.filter((s) =>
         s.name.toLowerCase().includes(arg) || s.id.toLowerCase().includes(arg)
       );
-      return matchingSpaces.map((s) => ({
-        key: `/space:${s.id}`,
+      return matchingSections.map((s) => ({
+        key: `/section:${s.id}`,
         label: s.name,
-        desc: t('cmdSpaceDesc'),
+        desc: t('cmdSectionDesc'),
       }));
     }
     return commands.filter((cmd) =>
       value === '' ? true : cmd.key.startsWith(value)
     );
-  }, [spaceMatch, spaces, commands, value, t]);
+  }, [sectionMatch, sections, commands, value, t]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>): void => {

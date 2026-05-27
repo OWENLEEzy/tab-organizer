@@ -10,10 +10,10 @@ interface KeyboardActions {
   onArrowDown: () => void;
   onEnter: () => void;
   onDClose: () => void;
-  onSwitchSpaceN?: (n: number) => void;
-  onSwitchSpaceAll?: () => void;
-  onCycleSpacePrev?: () => void;
-  onCycleSpaceNext?: () => void;
+  onSwitchSectionN?: (n: number) => void;
+  onSwitchSectionAll?: () => void;
+  onCycleSectionPrev?: () => void;
+  onCycleSectionNext?: () => void;
   onClearFilter?: () => void;
 }
 
@@ -144,36 +144,36 @@ export function useKeyboard(
 
       // Custom bindings
       if (keyBindings) {
-        // switchSpaceN
+        // switchSectionN
         if (
           canUseGlobalNavigation &&
           e.key >= '1' &&
           e.key <= '9' &&
-          matchesKeyBinding(e, keyBindings.switchSpaceN, e.key)
+          matchesKeyBinding(e, keyBindings.switchSectionN, e.key)
         ) {
           e.preventDefault();
-          callbackRef.current.onSwitchSpaceN?.(Number(e.key));
+          callbackRef.current.onSwitchSectionN?.(Number(e.key));
           return;
         }
 
-        // switchSpaceAll
-        if (canUseGlobalNavigation && matchesKeyBinding(e, keyBindings.switchSpaceAll)) {
+        // switchSectionAll
+        if (canUseGlobalNavigation && matchesKeyBinding(e, keyBindings.switchSectionAll)) {
           e.preventDefault();
-          callbackRef.current.onSwitchSpaceAll?.();
+          callbackRef.current.onSwitchSectionAll?.();
           return;
         }
 
         // cyclePrev
         if (canUseGlobalNavigation && matchesKeyBinding(e, keyBindings.cyclePrev)) {
           e.preventDefault();
-          callbackRef.current.onCycleSpacePrev?.();
+          callbackRef.current.onCycleSectionPrev?.();
           return;
         }
 
         // cycleNext
         if (canUseGlobalNavigation && matchesKeyBinding(e, keyBindings.cycleNext)) {
           e.preventDefault();
-          callbackRef.current.onCycleSpaceNext?.();
+          callbackRef.current.onCycleSectionNext?.();
           return;
         }
 

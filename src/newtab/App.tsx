@@ -3,7 +3,6 @@ import type { CustomGroup } from '../types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingState } from './components/LoadingState';
 import { ProductTableMemo as ProductTable } from './components/ProductTable';
-import { CardsBoard } from './components/CardsBoard';
 import { SelectionBar } from './components/SelectionBar';
 import { EmptyState } from './components/EmptyState';
 import { Footer } from './components/Footer';
@@ -11,11 +10,9 @@ import { Toast } from './components/Toast';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { PromptDialog } from './components/PromptDialog';
 import { DashboardShell } from './components/layout/DashboardShell';
-import { StatusStrip } from './components/layout/StatusStrip';
-import type { StatusStripAlert } from './components/layout/StatusStrip';
 import { DashboardHeader } from './components/layout/DashboardHeader';
 import { HistoryPanel } from './components/HistoryPanel';
-import { SpaceSwitcher } from './components/SpaceSwitcher';
+import type { FooterAlert } from './components/Footer';
 import { useAppLogic } from './hooks/useAppLogic';
 import { useI18n } from './hooks/useI18n';
 import { useTheme } from './hooks/useTheme';
@@ -47,8 +44,8 @@ export function App(): React.ReactElement {
     const config = {
       version: '1.0',
       settings: settingsStore.settings,
-      manualGroups: tabStore.manualGroups,
-      groupAssignments: tabStore.groupAssignments,
+      sections: tabStore.sections,
+      sectionAssignments: tabStore.sectionAssignments,
     };
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -106,11 +103,11 @@ export function App(): React.ReactElement {
         }
       }
 
-      // Restore spaces and assignments
-      if (Array.isArray(parsed.manualGroups)) {
-        const manualGroups = parsed.manualGroups;
-        const groupAssignments = Array.isArray(parsed.groupAssignments) ? parsed.groupAssignments : [];
-        await tabStore.importBackup(manualGroups, groupAssignments);
+      // Restore sections and assignments
+      if (Array.isArray(parsed.sections)) {
+        const sections = parsed.sections;
+        const sectionAssignments = Array.isArray(parsed.sectionAssignments) ? parsed.sectionAssignments : [];
+        await tabStore.importBackup(sections, sectionAssignments);
       }
 
       handlers.showToast(t('toastSettingsImported'));
@@ -124,10 +121,10 @@ export function App(): React.ReactElement {
     return <LoadingState />;
   }
 
-  const statusAlerts: StatusStripAlert[] = [];
+  const footerAlerts: FooterAlert[] = [];
 
   if (state.dashboardCount > 1) {
-    statusAlerts.push({
+    footerAlerts.push({
       id: 'extra-tab-organizer-pages',
       label: state.dashboardCount - 1 === 1
         ? t('alertExtraTabOrganizerSingle')
@@ -140,7 +137,7 @@ export function App(): React.ReactElement {
   }
 
   if (!state.nudgeDismissed && state.totalTabs > 15) {
-    statusAlerts.push({
+    footerAlerts.push({
       id: 'tab-count-nudge',
       label: t('alertHighTabCount'),
       actionLabel: t('actionDismiss'),
@@ -161,46 +158,31 @@ export function App(): React.ReactElement {
         </a>
       </nav>
       <DashboardShell
-        top={
-          <StatusStrip
-            totalTabs={state.totalTabs}
-            totalDupes={state.totalDupes}
-            totalGroups={state.visibleSpaceCount}
-            alerts={statusAlerts}
-          />
-        }
+        top={null}
         header={
-          <>
-            <SpaceSwitcher
-              spaces={derived.orderedGroups}
-              spaceIds={[null, ...derived.orderedGroups.map((g) => g.id)]}
-              activeSpaceId={tabStore.activeSpaceId}
-              onChange={tabStore.setActiveSpace}
-              onCreateSpace={handlers.handleCreateGroup}
-              isFocused={state.spaceSwitcherFocused}
-            />
-            <DashboardHeader
-              title={t('titleOpenTabs')}
-              hasGroups={!state.showEmptyState}
-              searchQuery={state.searchQuery}
-              onSearchChange={(q) => dispatch({ type: 'SET_SEARCH_QUERY', query: q })}
-              resultCount={state.filteredTabCount}
-              totalCount={state.totalTabs}
-              viewMode={viewMode}
-              onViewModeChange={handlers.handleSetViewMode}
-              groupSortBy={settings.groupSortBy}
-              onGroupSortByChange={settingsStore.setGroupSortBy}
-              onRefresh={handlers.handleRefresh}
-              onCreateGroup={handlers.handleCreateGroup}
-              onCloseAll={handlers.handleCloseAll}
-              onOpenSettings={() => dispatch({ type: 'SET_SETTINGS_OPEN', open: true })}
-              organizeMode={state.organizeMode}
-              onToggleOrganize={() => dispatch({ type: 'SET_ORGANIZE_MODE', enabled: !state.organizeMode })}
-              isSidebarExpanded={state.isSidebarExpanded}
-              onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
-              spaces={derived.orderedGroups}
-            />
-          </>
+          <DashboardHeader
+            title={t('titleOpenTabs')}
+            hasGroups={!state.showEmptyState}
+            groupCount={state.visibleSectionCount}
+            searchQuery={state.searchQuery}
+            onSearchChange={(q) => dispatch({ type: 'SET_SEARCH_QUERY', query: q })}
+            resultCount={state.filteredTabCount}
+            totalCount={state.totalTabs}
+            viewMode={viewMode}
+            onViewModeChange={handlers.handleSetViewMode}
+            groupSortBy={settings.groupSortBy}
+            onGroupSortByChange={settingsStore.setGroupSortBy}
+            onRefresh={handlers.handleRefresh}
+            onCreateSection={handlers.handleCreateSection}
+            onOpenSettings={() => dispatch({ type: 'SET_SETTINGS_OPEN', open: true })}
+            isSidebarExpanded={state.isSidebarExpanded}
+            onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
+            sections={derived.orderedSections}
+            sectionIds={[null, ...derived.orderedSections.map((g) => g.id)]}
+            activeSectionId={tabStore.activeSectionId}
+            onSectionChange={tabStore.setActiveSection}
+            isSectionSwitcherFocused={state.sectionSwitcherFocused}
+          />
         }
         isSidebarExpanded={state.isSidebarExpanded}
         onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
@@ -214,7 +196,7 @@ export function App(): React.ReactElement {
           />
         }
         toolbar={null}
-        footer={<Footer tabCount={state.totalTabs} />}
+        footer={<Footer tabCount={state.totalTabs} duplicateCount={state.totalDupes} alerts={footerAlerts} />}
       >
         <div id="main-content" tabIndex={-1} className="active-section">
           {state.showEmptyState ? (
@@ -321,8 +303,8 @@ export function App(): React.ReactElement {
                       ? t('emptySweepStaleTitle')
                       : state.parsedQuery.type === 'dupes'
                       ? t('emptySweepDupeTitle')
-                      : state.parsedQuery.type === 'space'
-                      ? (state.parsedQuery.spaceToken ? t('emptySweepSpaceTitle') : t('emptySweepSpaceNoArg'))
+                      : state.parsedQuery.type === 'section'
+                      ? (state.parsedQuery.sectionToken ? t('emptySweepSectionTitle') : t('emptySweepSectionNoArg'))
                       : t('emptySweepSearchTitle')}
                   </h3>
                   <p className="text-text-secondary text-sm mt-1 max-w-sm px-4">
@@ -330,17 +312,17 @@ export function App(): React.ReactElement {
                       ? t('emptySweepStaleDesc', { days: settings.staleThresholdDays ?? 3 })
                       : state.parsedQuery.type === 'dupes'
                       ? t('emptySweepDupeDesc')
-                      : state.parsedQuery.type === 'space'
-                      ? (state.parsedQuery.spaceToken
-                          ? t('emptySweepSpaceDesc', { name: state.parsedQuery.spaceToken })
-                          : t('emptySweepSpaceNoArg'))
+                      : state.parsedQuery.type === 'section'
+                      ? (state.parsedQuery.sectionToken
+                          ? t('emptySweepSectionDesc', { name: state.parsedQuery.sectionToken })
+                          : t('emptySweepSectionNoArg'))
                       : t('emptySweepSearchDesc', { query: state.searchQuery })}
                   </p>
                 </div>
               ) : viewMode === 'table' ? (
                 <ProductTable
                   items={derived.filteredProducts}
-                  groups={derived.orderedGroups}
+                  groups={derived.orderedSections}
                   assignmentByItemId={derived.assignmentByItemId}
                   onMoveItem={handlers.handleMoveTableItem}
                   onCloseProduct={handlers.handleCloseProduct}
@@ -357,14 +339,14 @@ export function App(): React.ReactElement {
                   searchQuery={state.searchQuery}
                   staleThresholdDays={settings.staleThresholdDays ?? 3}
                 />
-              ) : state.organizeMode ? (
+              ) : viewMode === 'cards' ? (
                 <ErrorBoundary>
                   <React.Suspense fallback={<LoadingState />}>
                     <DndOrganizer
                       filteredProducts={derived.filteredProducts}
                       unassignedProducts={derived.unassignedProducts}
-                      orderedGroups={derived.orderedGroups}
-                      productsByGroup={derived.productsByGroup}
+                      orderedSections={derived.orderedSections}
+                      productsBySection={derived.productsBySection}
                       assignmentByItemId={derived.assignmentByItemId}
                       itemIdForProduct={derived.itemIdForProduct}
                       expandedDomains={state.expandedDomains}
@@ -374,12 +356,12 @@ export function App(): React.ReactElement {
                       closingUrls={state.closingUrls}
                       selectedUrls={state.selectedUrls}
                       selectedTabIds={state.selectedTabIds}
-                      onMoveProductToMain={handlers.handleMoveProductToMain}
-                      onMoveProductToGroup={handlers.handleMoveProductToGroup}
-                      onRenameGroup={handlers.handleRenameGroup}
-                      onDeleteGroup={handlers.handleDeleteGroup}
+                      onMoveProductToNoSection={handlers.handleMoveProductToNoSection}
+                      onMoveProductToSection={handlers.handleMoveProductToSection}
+                      onRenameSection={handlers.handleRenameSection}
+                      onDeleteSection={handlers.handleDeleteSection}
                       onCloseProduct={handlers.handleCloseProduct}
-                      onCloseManualGroup={handlers.handleCloseManualGroup}
+                      onCloseSection={handlers.handleCloseSection}
                       onCloseDuplicates={handlers.handleCloseDuplicates}
                       onCloseTab={handlers.handleCloseTabAnimated}
                       onFocusTab={handlers.handleFocusTab}
@@ -389,30 +371,7 @@ export function App(): React.ReactElement {
                     />
                   </React.Suspense>
                 </ErrorBoundary>
-              ) : (
-                <CardsBoard
-                  unassignedProducts={derived.unassignedProducts}
-                  orderedGroups={derived.orderedGroups}
-                  productsByGroup={derived.productsByGroup}
-                  expandedDomains={state.expandedDomains}
-                  maxChipsVisible={settings.maxChipsVisible}
-                  staleThresholdDays={settings.staleThresholdDays ?? 3}
-                  focusedUrl={state.focusedUrl}
-                  closingUrls={state.closingUrls}
-                  selectedUrls={state.selectedUrls}
-                  selectedTabIds={state.selectedTabIds}
-                  onRenameGroup={handlers.handleRenameGroup}
-                  onDeleteGroup={handlers.handleDeleteGroup}
-                  onCloseProduct={handlers.handleCloseProduct}
-                  onCloseManualGroup={handlers.handleCloseManualGroup}
-                  onCloseDuplicates={handlers.handleCloseDuplicates}
-                  onCloseTab={handlers.handleCloseTabAnimated}
-                  onFocusTab={handlers.handleFocusTab}
-                  onChipClick={handlers.handleChipClick}
-                  onToggleExpanded={handlers.handleToggleExpanded}
-                  searchQuery={state.searchQuery}
-                />
-              )}
+              ) : null}
             </>
           )}
         </div>
@@ -471,10 +430,10 @@ export function App(): React.ReactElement {
             onSetStaleThresholdDays={settingsStore.setStaleThresholdDays}
             onExportSettings={handleExportConfig}
             onImportSettings={handleImportConfig}
-            manualGroups={tabStore.manualGroups}
-            onUpdateGroup={tabStore.updateGroup}
-            onDeleteGroup={tabStore.deleteGroup}
-            onCreateGroup={tabStore.createGroup}
+            sections={tabStore.sections}
+            onUpdateSection={tabStore.updateSection}
+            onDeleteSection={tabStore.deleteSection}
+            onCreateSection={tabStore.createSection}
             keyBindings={settings.keyBindings}
             onUpdateKeyBinding={settingsStore.updateKeyBinding}
             onResetKeyBindings={settingsStore.resetKeyBindings}

@@ -1,14 +1,14 @@
 import { create } from 'zustand';
-import type { ManualGroup, HistorySnapshot, GroupAssignment, Tab, TabGroup, ViewMode, CustomGroup } from '../types';
-import { groupTabsByDomain, autoAssignProductToSpace } from '../lib/tab-grouper';
+import type { Section, HistorySnapshot, SectionAssignment, Tab, TabGroup, ViewMode, CustomGroup } from '../types';
+import { groupTabsByDomain, autoAssignProductToSection } from '../lib/tab-grouper';
 import {
   clearHistory,
   deleteHistorySnapshot,
-  assignProductToGroup,
+  assignProductToSection,
   promoteHistorySnapshot,
   readHistory,
   reconcileOrganizerState,
-  unassignProductFromGroups,
+  unassignProductFromSections,
   writeGroupOrder,
   writeOrganizerState,
 } from '../utils/storage';
@@ -42,20 +42,20 @@ interface TabActions {
   startListeners: () => () => void;
   /** Reorder products after drag-and-drop and persist the new order. */
   reorderProducts: (newProducts: TabGroup[]) => void;
-  /** Create a user-owned organization group. */
-  createGroup: (name: string) => Promise<void>;
-  /** Rename a user-owned organization group. */
-  renameGroup: (groupId: string, name: string) => Promise<void>;
-  /** Delete a group and return its items to the main area. */
-  deleteGroup: (groupId: string) => Promise<void>;
-  /** Update a manual group (such as name, emoji, autoRules). */
-  updateGroup: (groupId: string, updates: Partial<Omit<ManualGroup, 'id'>>) => Promise<void>;
-  /** Reorder manual groups and persist the new order. */
-  reorderGroups: (groups: ManualGroup[]) => Promise<void>;
-  /** Assign a product to a group. */
-  moveProductToGroup: (productKey: string, groupId: string) => Promise<void>;
+  /** Create a user-owned organization section. */
+  createSection: (name: string) => Promise<void>;
+  /** Rename a user-owned organization section. */
+  renameSection: (sectionId: string, name: string) => Promise<void>;
+  /** Delete a section and return its product groups to the unassigned area. */
+  deleteSection: (sectionId: string) => Promise<void>;
+  /** Update a section (such as name, emoji, autoRules). */
+  updateSection: (sectionId: string, updates: Partial<Omit<Section, 'id'>>) => Promise<void>;
+  /** Reorder sections and persist the new order. */
+  reorderSections: (groups: Section[]) => Promise<void>;
+  /** Assign a product group to a section. */
+  moveProductToSection: (productKey: string, sectionId: string) => Promise<void>;
   /** Remove a product group assignment. */
-  moveProductToMain: (productKey: string) => Promise<void>;
+  moveProductToNoSection: (productKey: string) => Promise<void>;
   /** Persist the visible organizer layout mode. */
   setViewMode: (viewMode: ViewMode) => Promise<void>;
   /** Clear the current error state. */
@@ -72,23 +72,23 @@ interface TabActions {
   clearHistory: () => Promise<void>;
   /** Find and close all other open dashboard tabs except the current one. */
   closeExtraDashboards: () => Promise<void>;
-  /** Set the currently active space to filter the dashboard. */
-  setActiveSpace: (id: string | null) => void;
-  /** Overwrite manualGroups and groupAssignments with imported backup. */
-  importBackup: (manualGroups: ManualGroup[], groupAssignments: GroupAssignment[]) => Promise<void>;
+  /** Set the currently active section to filter the dashboard. */
+  setActiveSection: (id: string | null) => void;
+  /** Overwrite sections and sectionAssignments with imported backup. */
+  importBackup: (sections: Section[], sectionAssignments: SectionAssignment[]) => Promise<void>;
 }
 
 export type TabStore = {
   tabs: Tab[];
   products: TabGroup[];
-  manualGroups: ManualGroup[];
-  groupAssignments: GroupAssignment[];
+  sections: Section[];
+  sectionAssignments: SectionAssignment[];
   unsortedOverrides: string[];
   history: HistorySnapshot[];
   viewMode: ViewMode;
   loading: boolean;
   error: string | null;
-  activeSpaceId: string | null;
+  activeSectionId: string | null;
 } & TabActions;
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -116,7 +116,7 @@ function toAppTab(raw: chrome.tabs.Tab): Tab {
   };
 }
 
-function orderedGroups(groups: ManualGroup[]): ManualGroup[] {
+function orderedSections(groups: Section[]): Section[] {
   return [...groups].sort((a, b) => a.order - b.order);
 }
 
@@ -188,16 +188,16 @@ async function protectHistoryBeforeClosing(allTabs: chrome.tabs.Tab[]): Promise<
 export const useTabStore = create<TabStore>((set) => ({
   tabs: [],
   products: [],
-  manualGroups: [],
-  groupAssignments: [],
+  sections: [],
+  sectionAssignments: [],
   unsortedOverrides: [],
   history: [],
   viewMode: 'cards',
   loading: false,
   error: null,
-  activeSpaceId: null,
+  activeSectionId: null,
 
-  setActiveSpace: (id) => set({ activeSpaceId: id }),
+  setActiveSection: (id) => set({ activeSectionId: id }),
 
   clearError: () => set({ error: null }),
 
@@ -212,25 +212,25 @@ export const useTabStore = create<TabStore>((set) => ({
       const organizerState = await reconcileOrganizerState(currentProductKeys, legacyKeyMap);
       const groupOrder = organizerState.groupOrder;
       const productGroups = groupTabsByDomain(mapped, groupOrder, customGroups);
-      const manualGroups = orderedGroups(organizerState.manualGroups);
+      const sections = orderedSections(organizerState.sections);
       const unsortedOverrideSet = new Set(organizerState.unsortedOverrides);
       
-      let groupAssignments = organizerState.groupAssignments;
+      let sectionAssignments = organizerState.sectionAssignments;
       let hasNewAssignments = false;
-      const assignedKeys = new Set(groupAssignments.map((a) => a.productKey));
+      const assignedKeys = new Set(sectionAssignments.map((a) => a.productKey));
 
       for (const product of productGroups) {
         const productKey = product.productKey ?? product.domain;
         if (!assignedKeys.has(productKey) && !unsortedOverrideSet.has(productKey)) {
-          const spaceId = autoAssignProductToSpace(
+          const sectionId = autoAssignProductToSection(
             hostnamesByProductKey.get(productKey) ?? [productKey],
-            manualGroups,
+            sections,
           );
-          if (spaceId) {
-            const existingInGroup = groupAssignments.filter((a) => a.groupId === spaceId);
-            groupAssignments = [
-              ...groupAssignments,
-              { productKey, groupId: spaceId, order: existingInGroup.length }
+          if (sectionId) {
+            const existingInGroup = sectionAssignments.filter((a) => a.sectionId === sectionId);
+            sectionAssignments = [
+              ...sectionAssignments,
+              { productKey, sectionId: sectionId, order: existingInGroup.length }
             ];
             hasNewAssignments = true;
             assignedKeys.add(productKey);
@@ -239,7 +239,7 @@ export const useTabStore = create<TabStore>((set) => ({
       }
 
       if (hasNewAssignments) {
-        await writeOrganizerState({ groupAssignments }).catch(err => {
+        await writeOrganizerState({ sectionAssignments }).catch(err => {
           console.warn('[Tab Organizer] Failed to persist auto-assignments:', err);
         });
       }
@@ -249,8 +249,8 @@ export const useTabStore = create<TabStore>((set) => ({
       set({
         tabs: mapped,
         products,
-        manualGroups,
-        groupAssignments,
+        sections,
+        sectionAssignments,
         unsortedOverrides: organizerState.unsortedOverrides,
         viewMode: organizerState.viewMode,
         loading: false,
@@ -479,74 +479,74 @@ export const useTabStore = create<TabStore>((set) => ({
     });
   },
 
-  createGroup: async (name: string) => {
+  createSection: async (name: string) => {
     const trimmed = name.trim() || 'Untitled';
-    const current = useTabStore.getState().manualGroups;
-    const group: ManualGroup = {
+    const current = useTabStore.getState().sections;
+    const group: Section = {
       id: crypto.randomUUID(),
       name: trimmed,
       order: current.length,
     };
-    const nextGroups = [...current, group];
-    set({ manualGroups: nextGroups });
-    await writeOrganizerState({ manualGroups: nextGroups });
+    const nextSections = [...current, group];
+    set({ sections: nextSections });
+    await writeOrganizerState({ sections: nextSections });
   },
 
-  renameGroup: async (groupId: string, name: string) => {
+  renameSection: async (sectionId: string, name: string) => {
     const trimmed = name.trim() || 'Untitled';
-    const nextGroups = useTabStore
+    const nextSections = useTabStore
       .getState()
-      .manualGroups
-      .map((g) => g.id === groupId ? { ...g, name: trimmed } : g);
-    set({ manualGroups: nextGroups });
-    await writeOrganizerState({ manualGroups: nextGroups });
+      .sections
+      .map((g) => g.id === sectionId ? { ...g, name: trimmed } : g);
+    set({ sections: nextSections });
+    await writeOrganizerState({ sections: nextSections });
   },
 
-  updateGroup: async (groupId: string, updates: Partial<Omit<ManualGroup, 'id'>>) => {
-    const nextGroups = useTabStore
+  updateSection: async (sectionId: string, updates: Partial<Omit<Section, 'id'>>) => {
+    const nextSections = useTabStore
       .getState()
-      .manualGroups
-      .map((g) => g.id === groupId ? { ...g, ...updates } : g);
-    set({ manualGroups: nextGroups });
-    await writeOrganizerState({ manualGroups: nextGroups });
+      .sections
+      .map((g) => g.id === sectionId ? { ...g, ...updates } : g);
+    set({ sections: nextSections });
+    await writeOrganizerState({ sections: nextSections });
     // Refetch to apply auto-rules updates immediately
     await useTabStore.getState().fetchTabs();
   },
 
-  deleteGroup: async (groupId: string) => {
-    const nextGroups = useTabStore
+  deleteSection: async (sectionId: string) => {
+    const nextSections = useTabStore
       .getState()
-      .manualGroups
-      .filter((g) => g.id !== groupId)
+      .sections
+      .filter((g) => g.id !== sectionId)
       .map((g, index) => ({ ...g, order: index }));
     const nextAssignments = useTabStore
       .getState()
-      .groupAssignments
-      .filter((assignment) => assignment.groupId !== groupId);
+      .sectionAssignments
+      .filter((assignment) => assignment.sectionId !== sectionId);
 
-    set({ manualGroups: nextGroups, groupAssignments: nextAssignments });
+    set({ sections: nextSections, sectionAssignments: nextAssignments });
     await writeOrganizerState({
-      manualGroups: nextGroups,
-      groupAssignments: nextAssignments,
+      sections: nextSections,
+      sectionAssignments: nextAssignments,
     });
     await useTabStore.getState().fetchTabs();
   },
 
-  reorderGroups: async (groups: ManualGroup[]) => {
-    const nextGroups = groups.map((g, index) => ({ ...g, order: index }));
-    set({ manualGroups: nextGroups });
-    await writeOrganizerState({ manualGroups: nextGroups });
+  reorderSections: async (groups: Section[]) => {
+    const nextSections = groups.map((g, index) => ({ ...g, order: index }));
+    set({ sections: nextSections });
+    await writeOrganizerState({ sections: nextSections });
   },
 
-  moveProductToGroup: async (productKey: string, groupId: string) => {
-    const { groupAssignments, unsortedOverrides } = await assignProductToGroup(productKey, groupId);
-    set({ groupAssignments, unsortedOverrides });
+  moveProductToSection: async (productKey: string, sectionId: string) => {
+    const { sectionAssignments, unsortedOverrides } = await assignProductToSection(productKey, sectionId);
+    set({ sectionAssignments, unsortedOverrides });
     await useTabStore.getState().fetchTabs();
   },
 
-  moveProductToMain: async (productKey: string) => {
-    const { groupAssignments, unsortedOverrides } = await unassignProductFromGroups(productKey);
-    set({ groupAssignments, unsortedOverrides });
+  moveProductToNoSection: async (productKey: string) => {
+    const { sectionAssignments, unsortedOverrides } = await unassignProductFromSections(productKey);
+    set({ sectionAssignments, unsortedOverrides });
     await useTabStore.getState().fetchTabs();
   },
 
@@ -616,11 +616,11 @@ export const useTabStore = create<TabStore>((set) => ({
     }
   },
 
-  importBackup: async (manualGroups: ManualGroup[], groupAssignments: GroupAssignment[]) => {
-    set({ manualGroups, groupAssignments });
+  importBackup: async (sections: Section[], sectionAssignments: SectionAssignment[]) => {
+    set({ sections, sectionAssignments });
     await writeOrganizerState({
-      manualGroups,
-      groupAssignments,
+      sections,
+      sectionAssignments,
     });
     await useTabStore.getState().fetchTabs();
   },

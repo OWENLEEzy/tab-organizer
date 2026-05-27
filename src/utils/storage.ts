@@ -3,33 +3,33 @@ import type {
   SavedTab,
   Workspace,
   AppSettings,
-  ManualGroup,
-  GroupAssignment,
+  Section,
+  SectionAssignment,
   ViewMode,
   HistorySnapshot,
 } from '../types';
 import { historyUrlSignature, shouldReplaceHistoryCandidate } from '../lib/history-snapshots';
-import { DEFAULT_SPACES } from '../config/spaces';
+import { DEFAULT_SECTIONS } from '../config/sections';
 import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
 import { DEFAULT_GROUP_SORT, normalizeGroupSortBy } from '../config/group-sort';
 import { isRealTab } from './url';
 
-const CURRENT_SCHEMA_VERSION = 4;
+const CURRENT_SCHEMA_VERSION = 5;
 const STORAGE_KEYS = [
   'schemaVersion',
   'deferred',
   'workspaces',
   'settings',
   'groupOrder',
-  'manualGroups',
-  'groupAssignments',
+  'sections',
+  'sectionAssignments',
   'unsortedOverrides',
   'viewMode',
   'historyCandidate',
   'history',
-  // Legacy keys for migration
-  'sections',
-  'sectionAssignments',
+  // Legacy keys cleaned after the section storage reset.
+  'manualGroups',
+  'groupAssignments',
   'recoveryCandidate',
   'recoveryHistory',
 ] as const;
@@ -57,8 +57,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   customGroups: [],
   landingPagePatterns: [],
   keyBindings: {
-    switchSpaceN: 'Meta+{n}',
-    switchSpaceAll: 'Meta+0',
+    switchSectionN: 'Meta+{n}',
+    switchSectionAll: 'Meta+0',
     cyclePrev: 'ArrowLeft',
     cycleNext: 'ArrowRight',
     focusSearch: '/',
@@ -73,8 +73,8 @@ const EMPTY_SCHEMA: StorageSchema = {
   workspaces: [],
   settings: DEFAULT_SETTINGS,
   groupOrder: {},
-  manualGroups: [],
-  groupAssignments: [],
+  sections: [],
+  sectionAssignments: [],
   unsortedOverrides: [],
   viewMode: 'cards',
   historyCandidate: null,
@@ -85,12 +85,12 @@ function isViewMode(value: unknown): value is ViewMode {
   return value === 'cards' || value === 'table';
 }
 
-function normalizeManualGroups(value: unknown): ManualGroup[] {
+function normalizeSections(value: unknown): Section[] {
   if (!Array.isArray(value)) return [];
   return value
-    .filter((group): group is ManualGroup => {
+    .filter((group): group is Section => {
       if (!group || typeof group !== 'object') return false;
-      const candidate = group as Partial<ManualGroup>;
+      const candidate = group as Partial<Section>;
       return typeof candidate.id === 'string' && candidate.id.trim() !== '' && typeof candidate.name === 'string';
     })
     .map((group, index) => ({
@@ -103,16 +103,15 @@ function normalizeManualGroups(value: unknown): ManualGroup[] {
     .sort((a, b) => a.order - b.order);
 }
 
-type LegacyAssignment = Partial<GroupAssignment> & {
+type LegacyAssignment = Partial<SectionAssignment> & {
   productKey?: unknown;
   itemType?: unknown;
   itemKey?: unknown;
-  groupId?: unknown;
-  sectionId?: unknown; // Legacy
+  sectionId?: unknown;
   order?: unknown;
 };
 
-function normalizeAssignments(value: unknown): GroupAssignment[] {
+function normalizeAssignments(value: unknown): SectionAssignment[] {
   if (!Array.isArray(value)) return [];
   return value
     .filter((assignment): assignment is LegacyAssignment & { sectionId: string } => {
@@ -120,7 +119,7 @@ function normalizeAssignments(value: unknown): GroupAssignment[] {
       const candidate = assignment as LegacyAssignment;
       const hasLegacyProductKey = typeof candidate.productKey === 'string';
       const hasProductItem = candidate.itemType === 'product' && typeof candidate.itemKey === 'string';
-      return (hasLegacyProductKey || hasProductItem) && (typeof candidate.groupId === 'string' || typeof candidate.sectionId === 'string');
+      return (hasLegacyProductKey || hasProductItem) && typeof candidate.sectionId === 'string';
     })
     .map((assignment, index) => {
       const productKey = typeof assignment.productKey === 'string'
@@ -129,7 +128,7 @@ function normalizeAssignments(value: unknown): GroupAssignment[] {
 
       return {
         productKey,
-        groupId: assignment.groupId ?? assignment.sectionId,
+        sectionId: assignment.sectionId,
         order: Number.isFinite(assignment.order) ? Number(assignment.order) : index,
       };
     });
@@ -155,15 +154,15 @@ function normalizeUnsortedOverrides(value: unknown): string[] {
  * Prune assignments that point to non-existent groups or products.
  */
 export function pruneAssignments(
-  assignments: GroupAssignment[],
-  groups: ManualGroup[],
+  assignments: SectionAssignment[],
+  groups: Section[],
   currentProductKeys: Set<string>,
-): GroupAssignment[] {
-  const groupIds = new Set(groups.map((g) => g.id));
+): SectionAssignment[] {
+  const sectionIds = new Set(groups.map((g) => g.id));
   const seen = new Set<string>();
 
   return assignments.filter((assignment) => {
-    if (!groupIds.has(assignment.groupId)) return false;
+    if (!sectionIds.has(assignment.sectionId)) return false;
     if (!currentProductKeys.has(assignment.productKey)) return false;
 
     if (seen.has(assignment.productKey)) return false;
@@ -205,16 +204,16 @@ function reconcileGroupOrder(
 }
 
 function reconcileAssignments(
-  assignments: GroupAssignment[],
-  groups: ManualGroup[],
+  assignments: SectionAssignment[],
+  groups: Section[],
   currentProductKeys: Set<string>,
   legacyKeyMap: Map<string, string>,
-): GroupAssignment[] {
-  const groupIds = new Set(groups.map((group) => group.id));
-  const bestByProduct = new Map<string, GroupAssignment & { originalIndex: number }>();
+): SectionAssignment[] {
+  const sectionIds = new Set(groups.map((group) => group.id));
+  const bestByProduct = new Map<string, SectionAssignment & { originalIndex: number }>();
 
   assignments.forEach((assignment, index) => {
-    if (!groupIds.has(assignment.groupId)) return;
+    if (!sectionIds.has(assignment.sectionId)) return;
 
     const productKey = legacyKeyMap.get(assignment.productKey) ?? assignment.productKey;
     if (!currentProductKeys.has(productKey)) return;
@@ -313,14 +312,12 @@ function normalizeHistory(value: unknown): HistorySnapshot[] {
 function migrate(data: Record<string, unknown>): StorageSchema {
   const version = (data['schemaVersion'] as number | undefined) ?? 0;
 
-  let manualGroups = data['manualGroups'];
-  let groupAssignments = data['groupAssignments'];
+  const sections = data['sections'];
+  const sectionAssignments = data['sectionAssignments'];
   let historyCandidate = data['historyCandidate'];
   let history = data['history'];
 
   if (version < 4) {
-    if (data['sections']) manualGroups = data['sections'];
-    if (data['sectionAssignments']) groupAssignments = data['sectionAssignments'];
     if (data['recoveryCandidate']) historyCandidate = data['recoveryCandidate'];
     if (data['recoveryHistory']) history = data['recoveryHistory'];
   }
@@ -338,8 +335,8 @@ function migrate(data: Record<string, unknown>): StorageSchema {
     workspaces: Array.isArray(data['workspaces']) ? (data['workspaces'] as Workspace[]) : [],
     settings,
     groupOrder: (data['groupOrder'] as Record<string, number> | undefined) ?? {},
-    manualGroups: normalizeManualGroups(manualGroups),
-    groupAssignments: normalizeAssignments(groupAssignments),
+    sections: normalizeSections(sections),
+    sectionAssignments: normalizeAssignments(sectionAssignments),
     unsortedOverrides: normalizeUnsortedOverrides(data['unsortedOverrides']),
     viewMode: isViewMode(data['viewMode']) ? data['viewMode'] : 'cards',
     historyCandidate: normalizeHistorySnapshot(historyCandidate),
@@ -348,7 +345,7 @@ function migrate(data: Record<string, unknown>): StorageSchema {
 }
 
 async function readStorageSnapshot(): Promise<Record<string, unknown>> {
-  return chrome.storage.local.get([...STORAGE_KEYS, 'sections', 'sectionAssignments', 'recoveryCandidate', 'recoveryHistory']);
+  return chrome.storage.local.get([...STORAGE_KEYS, 'recoveryCandidate', 'recoveryHistory']);
 }
 
 function hasOwnStorageKey(data: Record<string, unknown>, key: string): boolean {
@@ -362,16 +359,17 @@ async function persistStorage(data: StorageSchema): Promise<void> {
     workspaces: data.workspaces,
     settings: data.settings,
     groupOrder: data.groupOrder,
-    manualGroups: data.manualGroups,
-    groupAssignments: data.groupAssignments,
+    sections: data.sections,
+    sectionAssignments: data.sectionAssignments,
     unsortedOverrides: data.unsortedOverrides,
     viewMode: data.viewMode,
     historyCandidate: data.historyCandidate,
     history: data.history,
   });
 
-  // Clean up legacy keys
-  await chrome.storage.local.remove(['sections', 'sectionAssignments', 'recoveryCandidate', 'recoveryHistory']);
+  // Clean up legacy keys. Section data intentionally does not migrate from
+  // manualGroups/groupAssignments; users get the new section schema cleanly.
+  await chrome.storage.local.remove(['manualGroups', 'groupAssignments', 'recoveryCandidate', 'recoveryHistory']);
 }
 
 /**
@@ -407,8 +405,8 @@ export async function updateStorage(
 
     const isVersionCurrent = raw.schemaVersion === CURRENT_SCHEMA_VERSION;
     const hasLegacyKeys =
-      raw.sections !== undefined ||
-      raw.sectionAssignments !== undefined ||
+      raw.manualGroups !== undefined ||
+      raw.groupAssignments !== undefined ||
       raw.recoveryCandidate !== undefined ||
       raw.recoveryHistory !== undefined;
 
@@ -547,8 +545,8 @@ export async function pruneStaleStorage(currentProductKeys: Set<string>): Promis
   await updateStorage((current) => {
     const staleKeys = Object.keys(current.groupOrder).filter((d) => !currentProductKeys.has(d));
     const nextAssignments = pruneAssignments(
-      current.groupAssignments,
-      current.manualGroups,
+      current.sectionAssignments,
+      current.sections,
       currentProductKeys
     );
     const nextOverrides = current.unsortedOverrides.filter((productKey) =>
@@ -557,7 +555,7 @@ export async function pruneStaleStorage(currentProductKeys: Set<string>): Promis
 
     if (
       staleKeys.length === 0 &&
-      nextAssignments.length === current.groupAssignments.length &&
+      nextAssignments.length === current.sectionAssignments.length &&
       nextOverrides.length === current.unsortedOverrides.length
     ) {
       return current;
@@ -573,7 +571,7 @@ export async function pruneStaleStorage(currentProductKeys: Set<string>): Promis
     return {
       ...current,
       groupOrder: cleanedOrder,
-      groupAssignments: nextAssignments,
+      sectionAssignments: nextAssignments,
       unsortedOverrides: nextOverrides,
     };
   }).catch((err: unknown) => {
@@ -586,8 +584,8 @@ export async function reconcileOrganizerState(
   legacyKeyMap: Map<string, string>,
 ): Promise<{
   groupOrder: Record<string, number>;
-  manualGroups: ManualGroup[];
-  groupAssignments: GroupAssignment[];
+  sections: Section[];
+  sectionAssignments: SectionAssignment[];
   unsortedOverrides: string[];
   viewMode: ViewMode;
 }> {
@@ -595,15 +593,13 @@ export async function reconcileOrganizerState(
 
   try {
     const raw = await readStorageSnapshot();
-    const hasSchemaVersion = hasOwnStorageKey(raw, 'schemaVersion');
-    const hasManualGroups = hasOwnStorageKey(raw, 'manualGroups');
-    const hasLegacySections = !hasManualGroups && hasOwnStorageKey(raw, 'sections');
-    const shouldSeedDefaultSpaces = !hasSchemaVersion && !hasManualGroups && !hasLegacySections;
+    const hasSections = hasOwnStorageKey(raw, 'sections');
+    const shouldSeedDefaultSections = !hasSections;
 
     nextStorage = await updateStorage((current) => {
-      let currentGroups = current.manualGroups;
-      if (shouldSeedDefaultSpaces && currentGroups.length === 0) {
-        currentGroups = DEFAULT_SPACES;
+      let currentSections = current.sections;
+      if (shouldSeedDefaultSections && currentSections.length === 0) {
+        currentSections = DEFAULT_SECTIONS;
       }
 
       const groupOrder = reconcileGroupOrder(
@@ -611,9 +607,9 @@ export async function reconcileOrganizerState(
         currentProductKeys,
         legacyKeyMap,
       );
-      const groupAssignments = reconcileAssignments(
-        current.groupAssignments,
-        currentGroups,
+      const sectionAssignments = reconcileAssignments(
+        current.sectionAssignments,
+        currentSections,
         currentProductKeys,
         legacyKeyMap,
       );
@@ -624,9 +620,9 @@ export async function reconcileOrganizerState(
       );
 
       if (
-        currentGroups === current.manualGroups &&
+        currentSections === current.sections &&
         JSON.stringify(groupOrder) === JSON.stringify(current.groupOrder) &&
-        JSON.stringify(groupAssignments) === JSON.stringify(current.groupAssignments) &&
+        JSON.stringify(sectionAssignments) === JSON.stringify(current.sectionAssignments) &&
         JSON.stringify(unsortedOverrides) === JSON.stringify(current.unsortedOverrides)
       ) {
         return current;
@@ -634,9 +630,9 @@ export async function reconcileOrganizerState(
 
       return {
         ...current,
-        manualGroups: currentGroups,
+        sections: currentSections,
         groupOrder,
-        groupAssignments,
+        sectionAssignments,
         unsortedOverrides,
       };
     });
@@ -647,8 +643,8 @@ export async function reconcileOrganizerState(
 
   return {
     groupOrder: nextStorage.groupOrder,
-    manualGroups: nextStorage.manualGroups,
-    groupAssignments: nextStorage.groupAssignments,
+    sections: nextStorage.sections,
+    sectionAssignments: nextStorage.sectionAssignments,
     unsortedOverrides: nextStorage.unsortedOverrides,
     viewMode: nextStorage.viewMode,
   };
@@ -656,60 +652,60 @@ export async function reconcileOrganizerState(
 
 export async function readOrganizerState(): Promise<{
   groupOrder: Record<string, number>;
-  manualGroups: ManualGroup[];
-  groupAssignments: GroupAssignment[];
+  sections: Section[];
+  sectionAssignments: SectionAssignment[];
   unsortedOverrides: string[];
   viewMode: ViewMode;
 }> {
   const storage = await readStorage();
   return {
     groupOrder: storage.groupOrder,
-    manualGroups: storage.manualGroups,
-    groupAssignments: storage.groupAssignments,
+    sections: storage.sections,
+    sectionAssignments: storage.sectionAssignments,
     unsortedOverrides: storage.unsortedOverrides,
     viewMode: storage.viewMode,
   };
 }
 
 export async function writeOrganizerState(state: {
-  manualGroups?: ManualGroup[];
-  groupAssignments?: GroupAssignment[];
+  sections?: Section[];
+  sectionAssignments?: SectionAssignment[];
   unsortedOverrides?: string[];
   viewMode?: ViewMode;
 }): Promise<void> {
   await updateStorage((storage) => ({
     ...storage,
-    manualGroups: state.manualGroups ?? storage.manualGroups,
-    groupAssignments: state.groupAssignments ?? storage.groupAssignments,
+    sections: state.sections ?? storage.sections,
+    sectionAssignments: state.sectionAssignments ?? storage.sectionAssignments,
     unsortedOverrides: state.unsortedOverrides ?? storage.unsortedOverrides,
     viewMode: state.viewMode ?? storage.viewMode,
   }));
 }
 
-export async function assignProductToGroup(productKey: string, groupId: string): Promise<{
-  groupAssignments: GroupAssignment[];
+export async function assignProductToSection(productKey: string, sectionId: string): Promise<{
+  sectionAssignments: SectionAssignment[];
   unsortedOverrides: string[];
 }> {
   let nextState = {
-    groupAssignments: [] as GroupAssignment[],
+    sectionAssignments: [] as SectionAssignment[],
     unsortedOverrides: [] as string[],
   };
 
   await updateStorage((storage) => {
-    const existingInGroup = storage.groupAssignments.filter(
-      (assignment) => assignment.groupId === groupId && assignment.productKey !== productKey,
+    const existingInGroup = storage.sectionAssignments.filter(
+      (assignment) => assignment.sectionId === sectionId && assignment.productKey !== productKey,
     );
-    const groupAssignments = [
-      ...storage.groupAssignments.filter((assignment) => assignment.productKey !== productKey),
-      { productKey, groupId, order: existingInGroup.length },
+    const sectionAssignments = [
+      ...storage.sectionAssignments.filter((assignment) => assignment.productKey !== productKey),
+      { productKey, sectionId, order: existingInGroup.length },
     ];
     const unsortedOverrides = storage.unsortedOverrides.filter((key) => key !== productKey);
 
-    nextState = { groupAssignments, unsortedOverrides };
+    nextState = { sectionAssignments, unsortedOverrides };
 
     return {
       ...storage,
-      groupAssignments,
+      sectionAssignments,
       unsortedOverrides,
     };
   });
@@ -717,28 +713,28 @@ export async function assignProductToGroup(productKey: string, groupId: string):
   return nextState;
 }
 
-export async function unassignProductFromGroups(productKey: string): Promise<{
-  groupAssignments: GroupAssignment[];
+export async function unassignProductFromSections(productKey: string): Promise<{
+  sectionAssignments: SectionAssignment[];
   unsortedOverrides: string[];
 }> {
   let nextState = {
-    groupAssignments: [] as GroupAssignment[],
+    sectionAssignments: [] as SectionAssignment[],
     unsortedOverrides: [] as string[],
   };
 
   await updateStorage((storage) => {
-    const groupAssignments = storage.groupAssignments.filter(
+    const sectionAssignments = storage.sectionAssignments.filter(
       (assignment) => assignment.productKey !== productKey,
     );
     const unsortedOverrides = storage.unsortedOverrides.includes(productKey)
       ? storage.unsortedOverrides
       : [...storage.unsortedOverrides, productKey];
 
-    nextState = { groupAssignments, unsortedOverrides };
+    nextState = { sectionAssignments, unsortedOverrides };
 
     return {
       ...storage,
-      groupAssignments,
+      sectionAssignments,
       unsortedOverrides,
     };
   });

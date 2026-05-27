@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import type { ManualGroup, TabGroup } from '../../types';
+import type { Section, TabGroup } from '../../types';
 import { TabChip } from './TabChip';
 import { analyzeDuplicates, getGroupFaviconUrl, getProductKey } from '../../lib/tab-utils';
 import { ActionButton } from './ui/ActionButton';
@@ -7,9 +7,9 @@ import { useI18n } from '../hooks/useI18n';
 
 interface ProductTableProps {
   items: TabGroup[];
-  groups: ManualGroup[];
+  groups: Section[];
   assignmentByItemId: Map<string, string>;
-  onMoveItem: (p: TabGroup, groupId: string) => void;
+  onMoveItem: (p: TabGroup, sectionId: string) => void;
   onCloseProduct: (p: TabGroup) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onFocusTab: (url: string) => void;
@@ -120,7 +120,7 @@ export function ProductTable({
         <tbody>
           {rows.map((p) => {
             const id = itemId(p);
-            const groupId = assignmentByItemId.get(id) ?? '';
+            const sectionId = assignmentByItemId.get(id) ?? '';
             const dupes = dupeUrlsByProductId.get(p.id) ?? [];
             const isExpanded = expandedDomains.has(p.domain);
             const selectionMode = (selectedUrls?.size ?? 0) > 0 || (selectedTabIds?.size ?? 0) > 0;
@@ -151,7 +151,7 @@ export function ProductTable({
                   </td>
                   <td className="col-group">
                     <select
-                      value={groupId}
+                      value={sectionId}
                       onChange={(event) => onMoveItem(p, event.target.value)}
                       aria-label={`Move ${p.friendlyName || p.domain}`}
                       className="w-full"
