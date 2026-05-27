@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { ManualGroup, TabGroup } from '../../types';
 import { TabChip } from './TabChip';
-import { getDuplicateUrls, getGroupFaviconUrl, getProductKey } from '../../lib/tab-utils';
+import { analyzeDuplicates, getGroupFaviconUrl, getProductKey } from '../../lib/tab-utils';
 import { ActionButton } from './ui/ActionButton';
 import { useI18n } from '../hooks/useI18n';
 
@@ -22,6 +22,7 @@ interface ProductTableProps {
   closingUrls?: Set<string>;
   focusedUrl?: string | null;
   searchQuery?: string;
+  staleThresholdDays?: number;
 }
 
 function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
@@ -89,15 +90,16 @@ export function ProductTable({
   closingUrls = new Set(),
   focusedUrl = null,
   searchQuery = '',
+  staleThresholdDays = 3,
 }: ProductTableProps): React.ReactElement {
   const { t } = useI18n();
-  const rows = useMemo(() => items.toSorted((a, b) => a.order - b.order), [items]);
+  const rows = items;
 
   // Pre-compute duplicate URLs once per items array instead of once per rendered row.
   const dupeUrlsByProductId = useMemo(() => {
     const map = new Map<string, string[]>();
     for (const p of items) {
-      map.set(p.id, getDuplicateUrls(p.tabs));
+      map.set(p.id, analyzeDuplicates(p.tabs).duplicateUrls);
     }
     return map;
   }, [items]);
@@ -181,9 +183,9 @@ export function ProductTable({
                   <tr className="product-table-detail-row">
                     <td colSpan={6}>
                       <div className="product-table-tabs-list">
-                        {p.tabs.map((tab) => (
+                        {p.tabs.map((tab, index) => (
                           <TabChip
-                            key={tab.url}
+                            key={tab.id >= 0 ? tab.id : `${tab.url}:${index}`}
                             url={tab.url}
                             title={tab.title}
                             favIconUrl={tab.favIconUrl}
@@ -198,6 +200,7 @@ export function ProductTable({
                             onChipClick={onChipClick}
                             searchQuery={searchQuery}
                             lastAccessed={tab.lastAccessed}
+                            staleThresholdDays={staleThresholdDays}
                             pinned={tab.pinned}
                             audible={tab.audible}
                           />

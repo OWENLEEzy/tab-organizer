@@ -237,6 +237,38 @@ describe('groupTabsByDomain', () => {
       expect(groups[0].domain).toBe('example.com');
       expect(groups).toHaveLength(3);
     });
+
+    it('orders unordered products after products that only appear on the right side', () => {
+      const tabs = [
+        makeTab({ id: 1, url: 'https://github.com/user/repo' }),
+        makeTab({ id: 2, url: 'https://example.com/page' }),
+        makeTab({ id: 3, url: 'https://x.com/status' }),
+      ];
+
+      const groups = groupTabsByDomain(tabs, {
+        github: 0,
+      });
+
+      expect(groups[0].domain).toBe('github');
+    });
+  });
+
+  it('tracks group last access and applies custom product overrides', () => {
+    const groups = groupTabsByDomain(
+      [
+        makeTab({ id: 1, url: 'https://docs.internal.example/a', lastAccessed: 10 }),
+        makeTab({ id: 2, url: 'https://app.acme.test/b', lastAccessed: 30 }),
+        makeTab({ id: 3, url: 'https://app.acme.test/c', lastAccessed: 20 }),
+      ],
+      undefined,
+      [
+        { hostnameEndsWith: '.internal.example', groupKey: 'internal', groupLabel: 'Internal' },
+        { hostname: 'app.acme.test', groupKey: 'acme', groupLabel: 'Acme' },
+      ],
+    );
+
+    expect(groups.find((group) => group.domain === 'internal')?.friendlyName).toBe('Internal');
+    expect(groups.find((group) => group.domain === 'acme')?.lastAccessed).toBe(30);
   });
 
   describe('domain consolidation', () => {

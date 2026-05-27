@@ -1,7 +1,7 @@
 import type { Tab, TabGroup, ManualGroup, CustomGroup, GroupSortOption } from '../types';
 import { productForHostname } from '../config/products';
 import { friendlyDomain } from './title-cleaner';
-import { countDuplicates } from './tab-utils';
+import { analyzeDuplicates } from './tab-utils';
 import { getTabDomain } from '../utils/url';
 import { normalizeGroupSortBy } from '../config/group-sort';
 
@@ -151,7 +151,7 @@ export function groupTabsByDomain(
   for (let i = 0; i < sortedKeys.length; i++) {
     const key = sortedKeys[i];
     const groupTabs = groupMap.get(key)!;
-    const { duplicateCount, hasDuplicates } = countDuplicates(groupTabs);
+    const { duplicateCount, hasDuplicates } = analyzeDuplicates(groupTabs);
 
     groups.push({
       id: key,

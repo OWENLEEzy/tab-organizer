@@ -9,7 +9,7 @@ import { useUIState } from './useUIState';
 import { useTabHandlers } from './useTabHandlers';
 import { useI18n } from './useI18n';
 import { DASHBOARD_SPACE_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
-import { isTabStale, filterDuplicateTabs, getProductKey } from '../../lib/tab-utils';
+import { isTabStale, analyzeDuplicates, getProductKey } from '../../lib/tab-utils';
 import { createSortComparator } from '../../lib/tab-grouper';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
@@ -185,7 +185,7 @@ export function useAppLogic() {
         .filter(p => p.duplicateCount > 0)
         .map(p => ({
           ...p,
-          tabs: filterDuplicateTabs(p.tabs)
+          tabs: analyzeDuplicates(p.tabs).duplicateTabs
         }))
         .filter(p => p.tabs.length > 0);
     }
@@ -310,6 +310,7 @@ export function useAppLogic() {
     dispatch,
     showToast,
     flatChips,
+    visibleProducts: filteredProducts,
     selectedUrls,
     selectedTabIds: state.selectedTabIds,
     lastClickedIndex,
