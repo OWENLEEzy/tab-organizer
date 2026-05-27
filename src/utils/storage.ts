@@ -85,6 +85,43 @@ function isViewMode(value: unknown): value is ViewMode {
   return value === 'cards' || value === 'table';
 }
 
+type LegacyKeyBindings = Partial<AppSettings['keyBindings']> & {
+  switchSpaceN?: unknown;
+  switchSpaceAll?: unknown;
+};
+
+function normalizeKeyBindings(value: unknown): AppSettings['keyBindings'] {
+  const defaults = DEFAULT_SETTINGS.keyBindings;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return defaults;
+  }
+
+  const candidate = value as LegacyKeyBindings;
+  const switchSectionN = typeof candidate.switchSectionN === 'string'
+    ? candidate.switchSectionN
+    : typeof candidate.switchSpaceN === 'string'
+      ? candidate.switchSpaceN
+      : typeof candidate.switchSpaceN === 'number'
+        ? String(candidate.switchSpaceN)
+        : defaults.switchSectionN;
+  const switchSectionAll = typeof candidate.switchSectionAll === 'string'
+    ? candidate.switchSectionAll
+    : typeof candidate.switchSpaceAll === 'string'
+      ? candidate.switchSpaceAll
+      : typeof candidate.switchSpaceAll === 'number'
+        ? String(candidate.switchSpaceAll)
+        : defaults.switchSectionAll;
+
+  return {
+    switchSectionN,
+    switchSectionAll,
+    cyclePrev: typeof candidate.cyclePrev === 'string' ? candidate.cyclePrev : defaults.cyclePrev,
+    cycleNext: typeof candidate.cycleNext === 'string' ? candidate.cycleNext : defaults.cycleNext,
+    focusSearch: typeof candidate.focusSearch === 'string' ? candidate.focusSearch : defaults.focusSearch,
+    clearFilter: typeof candidate.clearFilter === 'string' ? candidate.clearFilter : defaults.clearFilter,
+  };
+}
+
 function normalizeSections(value: unknown): Section[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -327,6 +364,7 @@ function migrate(data: Record<string, unknown>): StorageSchema {
     ...rawSettings,
     theme: isAccentKey(rawSettings.theme) ? rawSettings.theme : DEFAULT_ACCENT,
     groupSortBy: normalizeGroupSortBy(rawSettings.groupSortBy),
+    keyBindings: normalizeKeyBindings(rawSettings.keyBindings),
   };
 
   return {
@@ -726,6 +764,8 @@ export async function unassignProductFromSections(productKey: string): Promise<{
     const sectionAssignments = storage.sectionAssignments.filter(
       (assignment) => assignment.productKey !== productKey,
     );
+    // Moving a product group to No section is an explicit user choice. Keep it
+    // out of auto-rules until the user assigns it to a section again.
     const unsortedOverrides = storage.unsortedOverrides.includes(productKey)
       ? storage.unsortedOverrides
       : [...storage.unsortedOverrides, productKey];

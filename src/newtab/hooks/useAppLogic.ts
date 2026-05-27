@@ -44,8 +44,8 @@ export function parseSearchQuery(query: string): CommandParsed {
     }
   }
   
-  // 3. Match /section:SectionName, /sec:SectionName, /s:SectionName, etc. (with or without slash)
-  const sectionMatch = trimmed.match(/^(\/?(?:section|sec|s):)([^\s]*)(?:\s+(.*))?$/);
+  // 3. Match /section:SectionName, /sec:SectionName, /s:SectionName, /space:SectionName, etc. (with or without slash)
+  const sectionMatch = trimmed.match(/^(\/?(?:section|sec|s|space):)([^\s]*)(?:\s+(.*))?$/);
   if (sectionMatch) {
     return {
       type: 'section',
