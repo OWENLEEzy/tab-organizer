@@ -13,7 +13,7 @@ import { DashboardShell } from './components/layout/DashboardShell';
 import { DashboardHeader } from './components/layout/DashboardHeader';
 import { HistoryPanel } from './components/HistoryPanel';
 import type { FooterAlert } from './components/Footer';
-import { useAppLogic } from './hooks/useAppLogic';
+import { useDashboardController } from './controllers/useDashboardController';
 import { useI18n } from './hooks/useI18n';
 import { useTheme } from './hooks/useTheme';
 import { parseImportedSettings } from './lib/settings-import';
@@ -31,7 +31,7 @@ const DndOrganizer = React.lazy(() =>
 // ─── Component ────────────────────────────────────────────────────────
 
 export function App(): React.ReactElement {
-  const { state, stores, derived, handlers, dispatch } = useAppLogic();
+  const { state, stores, derived, handlers, dispatch } = useDashboardController();
   const { t } = useI18n();
 
   const { tabStore, settingsStore } = stores;
@@ -163,7 +163,7 @@ export function App(): React.ReactElement {
           <DashboardHeader
             title={t('titleOpenTabs')}
             hasGroups={!state.showEmptyState}
-            groupCount={state.visibleSectionCount}
+            sectionCount={state.visibleSectionCount}
             searchQuery={state.searchQuery}
             onSearchChange={(q) => dispatch({ type: 'SET_SEARCH_QUERY', query: q })}
             resultCount={state.filteredTabCount}
@@ -177,8 +177,8 @@ export function App(): React.ReactElement {
             onOpenSettings={() => dispatch({ type: 'SET_SETTINGS_OPEN', open: true })}
             isSidebarExpanded={state.isSidebarExpanded}
             onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
-            sections={derived.orderedSections}
-            sectionIds={[null, ...derived.orderedSections.map((g) => g.id)]}
+            sections={derived.activeHeaderSections}
+            sectionIds={[null, ...derived.activeHeaderSections.map((g) => g.id)]}
             activeSectionId={tabStore.activeSectionId}
             onSectionChange={tabStore.setActiveSection}
             isSectionSwitcherFocused={state.sectionSwitcherFocused}
@@ -196,7 +196,7 @@ export function App(): React.ReactElement {
           />
         }
         toolbar={null}
-        footer={<Footer tabCount={state.totalTabs} duplicateCount={state.totalDupes} alerts={footerAlerts} />}
+        footer={<Footer tabCount={state.totalTabs} duplicateCount={state.totalDupes} groupCount={derived.filteredProducts.length} sectionCount={derived.orderedSections.length} alerts={footerAlerts} />}
       >
         <div id="main-content" tabIndex={-1} className="active-section">
           {state.showEmptyState ? (
@@ -368,6 +368,7 @@ export function App(): React.ReactElement {
                       onChipClick={handlers.handleChipClick}
                       onToggleExpanded={handlers.handleToggleExpanded}
                       searchQuery={state.searchQuery}
+                      activeSectionId={tabStore.activeSectionId}
                     />
                   </React.Suspense>
                 </ErrorBoundary>

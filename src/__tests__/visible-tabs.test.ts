@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Tab, TabGroup } from '../types';
 import { flattenVisibleTabs } from '../newtab/lib/visible-tabs';
-import { duplicateTabIdsForProducts, staleTabUrlsForProducts } from '../newtab/hooks/useTabHandlers';
+import { duplicateTabIdsForProducts, staleTabUrlsForProducts } from '../newtab/controllers/useTabActions';
 
 function createTab(id: number, url: string, title: string): Tab {
   return {
