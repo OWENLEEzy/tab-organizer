@@ -9,7 +9,7 @@ function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
     domain: '',
     windowId: 1,
     active: false,
-    isTabOut: false,
+    isDashboard: false,
     isDuplicate: false,
     isLandingPage: false,
     duplicateCount: 0,

@@ -9,7 +9,7 @@ function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
     domain: '',
     windowId: 1,
     active: false,
-    isTabOut: false,
+    isDashboard: false,
     isDuplicate: false,
     isLandingPage: false,
     duplicateCount: 0,
@@ -349,7 +349,7 @@ describe('createSortComparator', () => {
     return makeTab({ id: Math.random(), url, lastAccessed });
   }
 
-  it('sorts by tab count desc then alphabet when sortBy is "default"', () => {
+  it('sorts by tab count desc then alphabet when sortBy is "count"', () => {
     const groups: TabGroup[] = [
       makeGroup({ domain: 'z.com', friendlyName: 'Zee', tabs: [makeTab({ id: 1, url: 'https://z.com/1' })] }),
       makeGroup({ domain: 'a.com', friendlyName: 'Aee', tabs: [makeTab({ id: 2, url: 'https://a.com/1' }), makeTab({ id: 3, url: 'https://a.com/2' }), makeTab({ id: 4, url: 'https://a.com/3' })] }),
@@ -359,6 +359,17 @@ describe('createSortComparator', () => {
     const sorted = [...groups].sort(createSortComparator('count'));
 
     expect(sorted.map((g) => g.domain)).toEqual(['a.com', 'm.com', 'z.com']);
+  });
+
+  it('falls back to tab count sort for invalid persisted sort values', () => {
+    const groups: TabGroup[] = [
+      makeGroup({ domain: 'z.com', friendlyName: 'Zee', tabs: [makeTab({ id: 1, url: 'https://z.com/1' })] }),
+      makeGroup({ domain: 'a.com', friendlyName: 'Aee', tabs: [makeTab({ id: 2, url: 'https://a.com/1' }), makeTab({ id: 3, url: 'https://a.com/2' })] }),
+    ];
+
+    const sorted = [...groups].sort(createSortComparator('default' as never));
+
+    expect(sorted.map((g) => g.domain)).toEqual(['a.com', 'z.com']);
   });
 
   it('sorts by name A→Z when sortBy is "name"', () => {

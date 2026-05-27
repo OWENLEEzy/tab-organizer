@@ -7,7 +7,7 @@ export function makeAppTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): T
     domain: 'example.com',
     windowId: 1,
     active: false,
-    isTabOut: false,
+    isDashboard: false,
     isDuplicate: false,
     isLandingPage: false,
     duplicateCount: 0,

@@ -8,35 +8,29 @@ import { TabChip } from '../newtab/components/TabChip';
 import { ActionButton } from '../newtab/components/ui/ActionButton';
 
 function expectTouchHeight(element: HTMLElement): void {
-  // Accept hardcoded h-11/min-h-11, CSS token variants, or shared global button class.
+  // Accept only valid CSS variable token utilities or the shared global button class.
   const className = element.className;
   const valid =
     /\baction-button\b/.test(className) ||
-    /\bh-11\b/.test(className) ||
-    /\bmin-h-11\b/.test(className) ||
-    /\bsize-11\b/.test(className) ||
-    /h-\[--spacing-button-height\]/.test(className) ||
-    /min-h-\[--spacing-button-height\]/.test(className) ||
-    /size-\[--spacing-button-height\]/.test(className) ||
-    /h-\[--spacing-button-icon\]/.test(className) ||
-    /min-h-\[--spacing-button-icon\]/.test(className) ||
-    /size-\[--spacing-button-icon\]/.test(className);
+    /h-\[var\(--spacing-button-height\)\]/.test(className) ||
+    /min-h-\[var\(--spacing-button-height\)\]/.test(className) ||
+    /size-\[var\(--spacing-button-height\)\]/.test(className) ||
+    /h-\[var\(--spacing-button-icon\)\]/.test(className) ||
+    /min-h-\[var\(--spacing-button-icon\)\]/.test(className) ||
+    /size-\[var\(--spacing-button-icon\)\]/.test(className);
   expect(valid).toBe(true);
 }
 
 function expectTouchWidth(element: HTMLElement): void {
-  // Accept hardcoded w-11/min-w-11 or CSS token variants (44px)
+  // Accept only valid CSS variable token utilities for 44px width targets.
   const className = element.className;
   const valid =
-    /\bw-11\b/.test(className) ||
-    /\bmin-w-11\b/.test(className) ||
-    /\bsize-11\b/.test(className) ||
-    /w-\[--spacing-button-height\]/.test(className) ||
-    /min-w-\[--spacing-button-height\]/.test(className) ||
-    /size-\[--spacing-button-height\]/.test(className) ||
-    /w-\[--spacing-button-icon\]/.test(className) ||
-    /min-w-\[--spacing-button-icon\]/.test(className) ||
-    /size-\[--spacing-button-icon\]/.test(className);
+    /w-\[var\(--spacing-button-height\)\]/.test(className) ||
+    /min-w-\[var\(--spacing-button-height\)\]/.test(className) ||
+    /size-\[var\(--spacing-button-height\)\]/.test(className) ||
+    /w-\[var\(--spacing-button-icon\)\]/.test(className) ||
+    /min-w-\[var\(--spacing-button-icon\)\]/.test(className) ||
+    /size-\[var\(--spacing-button-icon\)\]/.test(className);
   expect(valid).toBe(true);
 }
 

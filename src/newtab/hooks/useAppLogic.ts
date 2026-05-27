@@ -3,7 +3,7 @@ import { useTabStore } from '../../stores/tab-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { useKeyboard } from './useKeyboard';
 import { flattenVisibleTabs } from '../lib/visible-tabs';
-import { isTabOutPage } from '../../utils/url';
+import { isTabOrganizerPage } from '../../utils/url';
 import type { TabGroup, ManualGroup } from '../../types';
 import { useUIState } from './useUIState';
 import { useTabHandlers } from './useTabHandlers';
@@ -293,8 +293,8 @@ export function useAppLogic() {
     [filteredProducts],
   );
 
-  const tabOutCount = useMemo(
-    () => tabs.filter((t) => isTabOutPage(t.url)).length,
+  const dashboardCount = useMemo(
+    () => tabs.filter((t) => isTabOrganizerPage(t.url)).length,
     [tabs],
   );
 
@@ -469,7 +469,7 @@ export function useAppLogic() {
       totalTabs: tabs.length,
       totalProducts: products.length,
       totalDupes,
-      tabOutCount,
+      dashboardCount,
       showEmptyState: products.length === 0,
       visibleSpaceCount: orderedGroups.length + (products.length === 0 ? 0 : 1),
       focusedUrl,

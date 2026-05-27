@@ -13,7 +13,7 @@ import {
 import { legacyProductKeyForHostname, productForHostname } from '../config/products';
 import { buildHistorySnapshot } from '../lib/history-snapshots';
 import { duplicateTabIdsToClose } from '../lib/duplicate-tabs';
-import { getTabDomain, isRealTab, isTabOutPage } from '../utils/url';
+import { getTabDomain, isRealTab, isTabOrganizerPage } from '../utils/url';
 import { getErrorMessage } from '../utils/error';
 import { useSettingsStore } from './settings-store';
 
@@ -104,7 +104,7 @@ function toAppTab(raw: chrome.tabs.Tab): Tab {
     domain: getTabDomain(url),
     windowId: raw.windowId ?? -1,
     active: raw.active ?? false,
-    isTabOut: isTabOutPage(url),
+    isDashboard: isTabOrganizerPage(url),
     isDuplicate: false,
     isLandingPage: false,
     duplicateCount: 0,
@@ -606,7 +606,7 @@ export const useTabStore = create<TabStore>((set) => ({
       const currentTabId = currentTab?.id ?? -1;
       const allTabs = useTabStore.getState().tabs;
       const extraDashboards = allTabs
-        .filter((t) => t.isTabOut && t.id !== currentTabId)
+        .filter((t) => t.isDashboard && t.id !== currentTabId)
         .map((t) => t.url);
 
       if (extraDashboards.length > 0) {

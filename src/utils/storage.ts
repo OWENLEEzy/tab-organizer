@@ -11,6 +11,7 @@ import type {
 import { historyUrlSignature, shouldReplaceHistoryCandidate } from '../lib/history-snapshots';
 import { DEFAULT_SPACES } from '../config/spaces';
 import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
+import { DEFAULT_GROUP_SORT, normalizeGroupSortBy } from '../config/group-sort';
 
 const CURRENT_SCHEMA_VERSION = 4;
 const STORAGE_KEYS = [
@@ -62,7 +63,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     focusSearch: '/',
     clearFilter: 'Escape',
   },
-  groupSortBy: 'count',
+  groupSortBy: DEFAULT_GROUP_SORT,
 };
 
 const EMPTY_SCHEMA: StorageSchema = {
@@ -327,6 +328,7 @@ function migrate(data: Record<string, unknown>): StorageSchema {
   const settings: AppSettings = {
     ...rawSettings,
     theme: isAccentKey(rawSettings.theme) ? rawSettings.theme : DEFAULT_ACCENT,
+    groupSortBy: normalizeGroupSortBy(rawSettings.groupSortBy),
   };
 
   return {

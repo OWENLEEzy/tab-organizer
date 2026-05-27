@@ -102,6 +102,11 @@ The 6 semantic color roles are **stable across all themes** — they always mean
 | `--bg-duplicate` | Background for duplicate badge/affected rows |
 | `--border-duplicate` | Border for duplicate badge/affected rows |
 
+These runtime tokens are the source of truth. Tailwind utility classes must use
+the mapped `--color-*` bridge tokens declared in `global.css`, such as
+`--color-bg-duplicate: var(--bg-duplicate)` and
+`--color-border-duplicate: var(--border-duplicate)`.
+
 ---
 
 ## Accent Themes
@@ -432,6 +437,9 @@ input[type="search"]::-webkit-search-cancel-button {
 | `--spacing-input-height` | `32px` | Input height |
 | `--spacing-button-icon` | `var(--spacing-button-height)` | Icon button container |
 | `--spacing-button-icon-sm` | `2rem` | Small icon button |
+
+When using these tokens in Tailwind arbitrary utilities, wrap them in `var(...)`:
+`min-h-[var(--spacing-button-height)]`. Do not omit the `var(...)` wrapper.
 
 ---
 

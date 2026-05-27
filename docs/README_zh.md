@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./public/readme-assets/real-screenshot.png" alt="Tab Organizer 控制面板" width="800">
+  <img src="../public/readme-assets/real-screenshot.png" alt="Tab Organizer 控制面板" width="800">
 
   # Tab Organizer (标签整理器)
   
@@ -9,7 +9,7 @@
   [![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)]()
   [![Chrome](https://img.shields.io/badge/Chrome-Extension-amber.svg)]()
 
-  ### [English](README.md) | [中文说明](README_zh.md) | [原项目 ↗️](https://github.com/OWENLEEzy/tab-out)
+  ### [English](../README.md) | [中文说明](README_zh.md) | [原项目 ↗️](https://github.com/OWENLEEzy/tab-out)
 
 </div>
 

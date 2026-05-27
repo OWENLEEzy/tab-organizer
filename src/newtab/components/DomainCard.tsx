@@ -313,7 +313,7 @@ export function DomainCard({
         <div className="mt-3 flex flex-wrap gap-2 border-t border-border-color pt-3">
           <button
             type="button"
-            className="rounded-chip text-text-secondary font-body hover:bg-bg-surface hover:text-accent-red focus-visible:ring-accent-primary/40 inline-flex min-h-[--spacing-button-height] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
+            className="rounded-chip text-text-secondary font-body hover:bg-bg-surface hover:text-accent-red focus-visible:ring-accent-primary/40 inline-flex min-h-[var(--spacing-button-height)] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
             onClick={handleCloseDomain}
           >
             <CloseAllIcon />
@@ -323,7 +323,7 @@ export function DomainCard({
           {hasDupes && (
             <button
               type="button"
-              className="rounded-chip text-text-secondary font-body hover:bg-accent-amber/10 hover:text-accent-amber focus-visible:ring-accent-primary/40 inline-flex min-h-[--spacing-button-height] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-chip text-text-secondary font-body hover:bg-accent-amber/10 hover:text-accent-amber focus-visible:ring-accent-primary/40 inline-flex min-h-[var(--spacing-button-height)] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
               onClick={handleCloseDuplicates}
             >
               <DedupIcon />

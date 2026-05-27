@@ -15,7 +15,7 @@ function toHistoryTab(raw: chrome.tabs.Tab): Tab {
     domain: getTabDomain(url),
     windowId: raw.windowId ?? -1,
     active: raw.active ?? false,
-    isTabOut: false,
+    isDashboard: false,
     isDuplicate: false,
     isLandingPage: false,
     duplicateCount: 0,
@@ -103,15 +103,15 @@ async function sendFocusSpaceSwitcher(tabId: number): Promise<void> {
 }
 
 // Open Tab Organizer dashboard when toolbar icon is clicked.
-async function openTabOutDashboard(options: { focusSpaceSwitcher?: boolean } = {}): Promise<void> {
-  const tabOutUrl = getDashboardUrl(chrome.runtime.getURL);
+async function openTabOrganizerDashboard(options: { focusSpaceSwitcher?: boolean } = {}): Promise<void> {
+  const dashboardUrl = getDashboardUrl(chrome.runtime.getURL);
   const createUrl = options.focusSpaceSwitcher
     ? getDashboardFocusUrl(chrome.runtime.getURL)
-    : tabOutUrl;
+    : dashboardUrl;
 
   try {
     const tabs = await chrome.tabs.query({});
-    const candidates = tabs.filter((tab) => isDashboardUrl(tab.url, tabOutUrl));
+    const candidates = tabs.filter((tab) => isDashboardUrl(tab.url, dashboardUrl));
 
     if (candidates.length > 0) {
       const currentWindow = await chrome.windows.getCurrent();
@@ -138,7 +138,7 @@ async function openTabOutDashboard(options: { focusSpaceSwitcher?: boolean } = {
 }
 
 chrome.action.onClicked.addListener(() => {
-  void openTabOutDashboard();
+  void openTabOrganizerDashboard();
 });
 
 // Initial run when service worker loads
@@ -147,6 +147,6 @@ void captureHistoryCandidate();
 
 chrome.commands.onCommand.addListener((command) => {
   if (command === 'open-space-switcher') {
-    void openTabOutDashboard({ focusSpaceSwitcher: true });
+    void openTabOrganizerDashboard({ focusSpaceSwitcher: true });
   }
 });

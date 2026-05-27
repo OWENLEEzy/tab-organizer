@@ -68,7 +68,7 @@
   --font-family-to-ui: 'DM Sans', system-ui, sans-serif;
   --font-family-to-reading: 'DM Sans', system-ui, sans-serif;
 
-  /* ── Accent color aliases (set by useTheme hook) ─────────────── */
+  /* ── Runtime accent tokens (set by useTheme hook) ────────────── */
   --bg-page: #FAF7F2;
   --bg-surface: #F1EDE4;
   --bg-card: #FFFCF7;
@@ -99,7 +99,9 @@
   --shadow-dropdown: 0 4px 12px rgba(44, 42, 41, 0.08), 0 2px 4px rgba(44, 42, 41, 0.04);
   --shadow-focus: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.2);
 
-  /* ── Mapped semantic color tokens for Tailwind v4 ─────────────── */
+  /* ── Tailwind color bridges.
+     Runtime tokens above are the source of truth; these --color-* aliases
+     make token-backed utility classes generate real CSS. ─────────── */
   --color-bg-page: var(--bg-page);
   --color-bg-surface: var(--bg-surface);
   --color-bg-card: var(--bg-card);
@@ -111,6 +113,8 @@
   --color-accent-amber: var(--accent-amber);
   --color-accent-red: var(--accent-red);
   --color-accent-sage: var(--accent-sage);
+  --color-bg-duplicate: var(--bg-duplicate);
+  --color-border-duplicate: var(--border-duplicate);
 
   /* ── Aliases referencing dynamic tokens (updated by useTheme) ─── */
   --color-bg-light: var(--bg-page);
@@ -895,4 +899,3 @@ input[type="search"]::-webkit-search-results-decoration {
   border-left: 3px solid var(--accent-primary) !important;
   background-color: rgba(var(--accent-primary-rgb), 0.08) !important;
 }
-

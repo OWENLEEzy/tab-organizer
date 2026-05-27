@@ -7,6 +7,45 @@ import tailwindcss from 'eslint-plugin-tailwindcss'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
+const forbiddenButtonSizePattern = /\b(?:h|min-h|size|w|min-w)-(?:8|9|10|11)\b|\b(?:h|min-h|size|w|min-w)-\[(?:32|36|40|44)px\]/
+
+function staticClassText(value) {
+  if (!value) return ''
+  if (value.type === 'Literal') return typeof value.value === 'string' ? value.value : ''
+  if (value.type !== 'JSXExpressionContainer') return ''
+
+  const expression = value.expression
+  if (expression.type === 'Literal') return typeof expression.value === 'string' ? expression.value : ''
+  if (expression.type === 'TemplateLiteral') {
+    return expression.quasis.map((quasi) => quasi.value.raw).join(' ')
+  }
+  return ''
+}
+
+const localRules = {
+  'button-size-tokens': {
+    meta: {
+      type: 'problem',
+      messages: {
+        hardcodedSize: 'Use token utilities such as min-h-[var(--spacing-button-height)] or size-[var(--spacing-button-icon)] instead of hardcoded button dimensions.',
+      },
+    },
+    create(context) {
+      return {
+        JSXAttribute(node) {
+          if (node.name?.name !== 'className') return
+          const openingElement = node.parent
+          if (openingElement?.name?.name !== 'button') return
+
+          if (forbiddenButtonSizePattern.test(staticClassText(node.value))) {
+            context.report({ node, messageId: 'hardcodedSize' })
+          }
+        },
+      }
+    },
+  },
+}
+
 export default defineConfig([
   globalIgnores(['dist', 'extension', 'coverage', 'playwright-report', 'test-results']),
   {
@@ -21,6 +60,11 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    plugins: {
+      local: {
+        rules: localRules,
+      },
+    },
     rules: {
       // ── Chrome Extension: no console in production ────────────────
       'no-console': ['warn', { allow: ['warn', 'error'] }],
@@ -33,6 +77,8 @@ export default defineConfig([
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
       }],
+
+      'local/button-size-tokens': 'error',
 
       // ── React Refresh: downgrade to warn, allow utility exports ───
       'react-refresh/only-export-components': ['warn', {
@@ -74,21 +120,6 @@ export default defineConfig([
       'tailwindcss/no-custom-classname': 'off',
       'tailwindcss/no-arbitrary-value': 'off',
       'tailwindcss/migration-from-tailwind-2': 'off',
-
-      // Rule 9: No hardcoded button sizes — use CSS design tokens
-      // Tokens: --spacing-button-height (44px), --spacing-button-height-sm (32px),
-      //         --spacing-button-icon (44px), --spacing-button-icon-sm (32px)
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: "JSXAttribute[name.name='className'] JSXExpressionContainer > Literal[value=/\\bmin-h-(8|9|11)\\b/]",
-          message: 'Use min-h-[--spacing-button-icon] or min-h-[--spacing-button-height-sm] instead of hardcoded min-h-8/9/11. See global.css button size tokens.',
-        },
-        {
-          selector: "JSXAttribute[name.name='className'] JSXExpressionContainer > Literal[value=/\\bh-(8|9|11)(?!-)/]",
-          message: 'Use h-[--spacing-button-height] or h-[--spacing-button-height-sm] instead of hardcoded h-8/9/11. See global.css button size tokens.',
-        },
-      ],
     },
   })),
 

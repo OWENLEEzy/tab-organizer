@@ -10,7 +10,7 @@ export interface Tab {
   domain: string;
   windowId: number;
   active: boolean;
-  isTabOut: boolean;
+  isDashboard: boolean;
   isDuplicate: boolean;
   isLandingPage: boolean;
   duplicateCount: number;

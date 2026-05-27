@@ -11,4 +11,10 @@ describe('parseImportedSettings', () => {
     expect(parseImportedSettings({ theme: 'system' })).toEqual({});
     expect(parseImportedSettings({ theme: 'not-real' })).toEqual({});
   });
+
+  it('normalizes legacy sort settings while ignoring unknown values', () => {
+    expect(parseImportedSettings({ groupSortBy: 'default' })).toEqual({ groupSortBy: 'count' });
+    expect(parseImportedSettings({ groupSortBy: 'lastAccessed' })).toEqual({ groupSortBy: 'lastAccessed' });
+    expect(parseImportedSettings({ groupSortBy: 'not-real' })).toEqual({});
+  });
 });

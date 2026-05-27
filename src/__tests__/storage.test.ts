@@ -74,6 +74,7 @@ describe('readStorage', () => {
     expect(result.deferred).toEqual([]);
     expect(result.workspaces).toEqual([]);
     expect(result.settings.theme).toBe('clay');
+    expect(result.settings.groupSortBy).toBe('count');
     expect(result.groupOrder).toEqual({});
     expect(result.manualGroups).toEqual([]);
     expect(result.groupAssignments).toEqual([]);
@@ -81,6 +82,18 @@ describe('readStorage', () => {
     expect(result.viewMode).toBe('cards');
     expect(result.historyCandidate).toBeNull();
     expect(result.history).toEqual([]);
+  });
+
+  it('normalizes legacy and unknown group sort settings', async () => {
+    storage['settings'] = { groupSortBy: 'default' };
+    await expect(readStorage()).resolves.toMatchObject({
+      settings: { groupSortBy: 'count' },
+    });
+
+    storage['settings'] = { groupSortBy: 'not-real' };
+    await expect(readStorage()).resolves.toMatchObject({
+      settings: { groupSortBy: 'count' },
+    });
   });
 
   it('migrates from v0 (no schemaVersion) to v4', async () => {

@@ -250,7 +250,7 @@ export function SettingsPanel({
                 key={item.id}
                 type="button"
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full text-left font-body text-xs rounded-chip px-3 py-2 transition-all cursor-pointer flex items-center gap-2 min-h-9 outline-none ${
+                className={`w-full text-left font-body text-xs rounded-chip px-3 py-2 transition-all cursor-pointer flex items-center gap-2 min-h-[var(--spacing-button-height)] outline-none ${
                   isActive
                     ? 'bg-accent-blue/10 text-accent-blue dark:bg-accent-blue/15 dark:text-blue-400 font-semibold border-l border-accent-blue pl-[11px]'
                     : 'text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark'
@@ -273,7 +273,7 @@ export function SettingsPanel({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark flex size-[--spacing-button-icon-sm] cursor-pointer items-center justify-center transition-colors focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark flex size-[var(--spacing-button-icon-sm)] cursor-pointer items-center justify-center transition-colors focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
               aria-label="Close settings"
             >
               <svg
@@ -357,7 +357,7 @@ export function SettingsPanel({
                     <button
                       type="button"
                       onClick={onExportSettings}
-                      className="flex-1 rounded-chip font-body border border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-10 cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5"
+                      className="flex-1 rounded-chip font-body border border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-[var(--spacing-button-height)] cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-3.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -365,7 +365,7 @@ export function SettingsPanel({
                       {t('settingsBackupExportBtn')}
                     </button>
                     <label
-                      className="flex-1 rounded-chip font-body border border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-10 cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5 text-center"
+                      className="flex-1 rounded-chip font-body border border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-[var(--spacing-button-height)] cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5 text-center"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-3.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
@@ -402,7 +402,7 @@ export function SettingsPanel({
                   <button
                     type="button"
                     onClick={onResetSortOrder}
-                    className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 min-h-10 cursor-pointer px-3 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                    className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 min-h-[var(--spacing-button-height)] cursor-pointer px-3 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
                   >
                     {t('settingsSortOrderBtn')}
                   </button>
@@ -637,7 +637,7 @@ function CustomGroupsSection({
         <button
           type="button"
           onClick={handleAdd}
-          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 rounded-chip px-3 py-1.5 self-end transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-[--spacing-button-height]"
+          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 rounded-chip px-3 py-1.5 self-end transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-[var(--spacing-button-height)]"
         >
           {t('settingsBtnAddRule')}
         </button>
@@ -700,7 +700,7 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
         <button
           type="button"
           onClick={handleAddSpace}
-          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 rounded-chip px-3 py-1.5 transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-[--spacing-button-height] font-medium"
+          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 rounded-chip px-3 py-1.5 transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-[var(--spacing-button-height)] font-medium"
         >
           {t('settingsBtnAddSpace')}
         </button>
@@ -851,7 +851,7 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
         <button
           type="button"
           onClick={onResetKeyBindings}
-          className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 px-2 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none min-h-[--spacing-button-height]"
+          className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 px-2 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none min-h-[var(--spacing-button-height)]"
         >
           {t('settingsShortcutsResetBtn')}
         </button>
@@ -862,12 +862,12 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
           const isRecording = recordingKey === key;
 
           return (
-            <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-surface-light dark:bg-surface-dark border border-border-light/50 dark:border-border-dark/50 min-h-[--spacing-button-height]">
+            <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-surface-light dark:bg-surface-dark border border-border-light/50 dark:border-border-dark/50 min-h-[var(--spacing-button-height)]">
               <span className="font-body text-xs text-text-primary-light dark:text-text-primary-dark">{label}</span>
               <button
                 type="button"
                 onClick={() => setRecordingKey(isRecording ? null : (key as keyof AppSettings['keyBindings']))}
-                className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-[--spacing-button-height-sm] min-w-[var(--width-button-min)] ${
+                className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-[var(--spacing-button-height-sm)] min-w-[var(--width-button-min)] ${
                   isRecording
                     ? 'bg-[var(--accent-amber)]/10 dark:bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] dark:text-[var(--accent-amber)] border-[var(--accent-amber)] dark:border-[var(--accent-amber)] animate-pulse'
                     : 'bg-[var(--bg-card)] dark:bg-[var(--bg-card)] text-text-secondary border-border-light dark:border-border-dark hover:border-gray-400 dark:hover:border-gray-600'

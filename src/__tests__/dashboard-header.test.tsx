@@ -39,14 +39,15 @@ describe('DashboardHeader', () => {
     expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
 
     const viewToggle = screen.getByLabelText('View mode');
+    const hardcodedHeightClass = ['h', '[44px]'].join('-');
     expect(viewToggle).toHaveClass('view-toggle');
-    expect(viewToggle).not.toHaveClass('h-[44px]');
-    expect(screen.getByRole('button', { name: 'Cards' })).not.toHaveClass('h-[--spacing-button-height]');
-    expect(screen.getByRole('button', { name: 'Table' })).not.toHaveClass('h-[--spacing-button-height]');
-    expect(screen.getByRole('combobox', { name: 'Sort order' })).not.toHaveClass('h-[44px]');
+    expect(viewToggle).not.toHaveClass(hardcodedHeightClass);
+    expect(screen.getByRole('button', { name: 'Cards' })).not.toHaveClass('h-[var(--spacing-button-height)]');
+    expect(screen.getByRole('button', { name: 'Table' })).not.toHaveClass('h-[var(--spacing-button-height)]');
+    expect(screen.getByRole('combobox', { name: 'Sort order' })).not.toHaveClass(hardcodedHeightClass);
     expect(screen.getByRole('button', { name: 'New Group' })).toHaveClass('action-button');
     expect(screen.getByRole('button', { name: 'Close All' })).toHaveClass('action-button');
-    expect(screen.getByRole('button', { name: 'Close All' })).not.toHaveClass('h-[--spacing-button-height]');
+    expect(screen.getByRole('button', { name: 'Close All' })).not.toHaveClass('h-[var(--spacing-button-height)]');
 
     fireEvent.change(screen.getByRole('searchbox', { name: 'Search tabs' }), {
       target: { value: 'github' },

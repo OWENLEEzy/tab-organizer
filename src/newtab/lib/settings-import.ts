@@ -1,12 +1,12 @@
-import type { AppSettings, CustomGroup, GroupSortOption } from '../../types';
+import type { AppSettings, CustomGroup } from '../../types';
 import { isAccentKey } from '../../config/themes';
+import { isGroupSortOption, normalizeGroupSortBy } from '../../config/group-sort';
 
 type ImportedSettings = Partial<Omit<AppSettings, 'keyBindings'>> & {
   keyBindings?: Partial<AppSettings['keyBindings']>;
 };
 
 const LANGUAGES = new Set(['en', 'zh', 'system']);
-const SORT_OPTIONS = new Set<GroupSortOption>(['count', 'name', 'lastAccessed']);
 const KEY_BINDING_KEYS = [
   'switchSpaceN',
   'switchSpaceAll',
@@ -58,8 +58,8 @@ export function parseImportedSettings(input: unknown): ImportedSettings {
     parsed.customGroups = input.customGroups.filter(isCustomGroup);
   }
 
-  if (typeof input.groupSortBy === 'string' && SORT_OPTIONS.has(input.groupSortBy as GroupSortOption)) {
-    parsed.groupSortBy = input.groupSortBy as GroupSortOption;
+  if (input.groupSortBy === 'default' || isGroupSortOption(input.groupSortBy)) {
+    parsed.groupSortBy = normalizeGroupSortBy(input.groupSortBy);
   }
 
   if (isRecord(input.keyBindings)) {

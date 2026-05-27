@@ -125,12 +125,12 @@ export function App(): React.ReactElement {
 
   const statusAlerts: StatusStripAlert[] = [];
 
-  if (state.tabOutCount > 1) {
+  if (state.dashboardCount > 1) {
     statusAlerts.push({
       id: 'extra-tab-organizer-pages',
-      label: state.tabOutCount - 1 === 1
+      label: state.dashboardCount - 1 === 1
         ? t('alertExtraTabOrganizerSingle')
-        : t('alertExtraTabOrganizerPlural', { count: state.tabOutCount - 1 }),
+        : t('alertExtraTabOrganizerPlural', { count: state.dashboardCount - 1 }),
       actionLabel: t('actionCloseExtras'),
       onAction: () => {
         tabStore.closeExtraDashboards();
@@ -250,7 +250,7 @@ export function App(): React.ReactElement {
                   <button
                     type="button"
                     onClick={() => handlers.handleSelectDuplicateTabs()}
-                    className="rounded-chip bg-accent-amber font-body focus-visible:ring-accent-amber/50 min-h-11 cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
+                    className="rounded-chip bg-accent-amber font-body focus-visible:ring-accent-amber/50 min-h-[var(--spacing-button-height)] cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
                   >
                     {t('sweepDupeBtn')}
                   </button>
@@ -292,7 +292,7 @@ export function App(): React.ReactElement {
                   <button
                     type="button"
                     onClick={() => handlers.handleSelectStaleTabs(settings.staleThresholdDays ?? 3)}
-                    className="rounded-chip bg-accent-blue font-body focus-visible:ring-accent-primary/50 min-h-11 cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
+                    className="rounded-chip bg-accent-blue font-body focus-visible:ring-accent-primary/50 min-h-[var(--spacing-button-height)] cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
                   >
                     {t('sweepStaleBtn')}
                   </button>

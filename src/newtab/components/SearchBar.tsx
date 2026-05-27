@@ -160,7 +160,7 @@ export function SearchBar({
         <input
           ref={inputRef}
           type="search"
-          className="border-border-color bg-bg-card text-text-primary rounded-chip placeholder:text-text-muted focus:border-accent-sage focus-visible:ring-accent-primary/40 min-h-[--spacing-button-icon] w-full border py-2.5 pr-32 pl-10 text-xs font-mono transition-colors outline-none focus-visible:ring-2"
+          className="border-border-color bg-bg-card text-text-primary rounded-chip placeholder:text-text-muted focus:border-accent-sage focus-visible:ring-accent-primary/40 min-h-[var(--spacing-button-icon)] w-full border py-2.5 pr-32 pl-10 text-xs font-mono transition-colors outline-none focus-visible:ring-2"
           placeholder={t('searchPlaceholderTabs')}
           value={value}
           onChange={handleInputChange}
@@ -184,7 +184,7 @@ export function SearchBar({
             <button
               type="button"
               onClick={handleClear}
-              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark focus-visible:ring-accent-primary/40 flex size-[--spacing-button-icon] cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark focus-visible:ring-accent-primary/40 flex size-[var(--spacing-button-icon)] cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
               aria-label="Clear search"
             >
               <svg
