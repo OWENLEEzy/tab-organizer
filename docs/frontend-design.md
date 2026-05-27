@@ -437,6 +437,11 @@ input[type="search"]::-webkit-search-cancel-button {
 | `--spacing-input-height` | `32px` | Input height |
 | `--spacing-button-icon` | `var(--spacing-button-height)` | Icon button container |
 | `--spacing-button-icon-sm` | `2rem` | Small icon button |
+| `--spacing-section-header-start` | `0.25rem` (4px) | Organizer section header top offset |
+| `--spacing-section-header-end` | `0.75rem` (12px) | Organizer section header to content |
+| `--spacing-section-header-rule` | `0.5rem` (8px) | Organizer section label to divider |
+| `--spacing-section-gap` | `1rem` (16px) | Space between organizer sections |
+| `--spacing-section-inset` | `0.125rem` (2px) | Organizer drop target inset |
 
 When using these tokens in Tailwind arbitrary utilities, wrap them in `var(...)`:
 `min-h-[var(--spacing-button-height)]`. Do not omit the `var(...)` wrapper.

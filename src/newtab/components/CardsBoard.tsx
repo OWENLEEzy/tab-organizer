@@ -78,7 +78,7 @@ function CardGroupSection({
 
   return (
     <section className="organizer-group">
-      <div className="group-header mb-5 border-b border-border-light pb-2">
+      <div className="group-header">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h2 className="font-body text-xs font-semibold tracking-wider text-text-primary uppercase">

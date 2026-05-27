@@ -148,6 +148,11 @@
   --spacing-button-height-sm: 2rem;   /* 32px small */
   --spacing-button-icon: var(--spacing-button-height);
   --spacing-button-icon-sm: 2rem;     /* 32px small icon buttons */
+  --spacing-section-header-start: 0.25rem;  /* 4px section header top offset */
+  --spacing-section-header-end: 0.75rem;    /* 12px section header to content */
+  --spacing-section-header-rule: 0.5rem;    /* 8px header text to divider */
+  --spacing-section-gap: 1rem;              /* 16px between organizer sections */
+  --spacing-section-inset: 0.125rem;        /* 2px organizer drop target inset */
 
   /* ── Icon sizes ──────────────────────────────────────────────── */
   --icon-size-xs: 0.75rem;   /* 12px */
@@ -362,17 +367,18 @@ body, html {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 20px;
-  margin-top: 8px;
+  gap: var(--spacing-section-header-end);
+  padding-bottom: var(--spacing-section-header-rule);
+  border-bottom: 1px solid var(--color-border-light);
+  margin-bottom: var(--spacing-section-header-end);
+  margin-top: var(--spacing-section-header-start);
 }
 
 .organizer-group {
   border: 1px solid transparent;
   border-radius: var(--radius-card);
-  margin-bottom: 24px;
-  min-height: 96px;
-  padding: 2px;
+  margin-bottom: var(--spacing-section-gap);
+  padding: var(--spacing-section-inset);
 }
 
 .organizer-group.is-over {

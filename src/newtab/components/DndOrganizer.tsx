@@ -137,7 +137,7 @@ function DndGroupBoard({
 
   return (
     <section ref={setNodeRef} className={`organizer-group ${isOver ? 'is-over' : ''}`}>
-      <div className="group-header border-b border-border-light pb-2 mb-5">
+      <div className="group-header">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h2 className="font-body text-xs font-semibold uppercase tracking-wider text-text-primary">
