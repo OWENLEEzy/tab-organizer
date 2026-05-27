@@ -90,6 +90,7 @@ export function DashboardHeader({
   spaces = EMPTY_SPACES,
 }: DashboardHeaderProps): React.ReactElement {
   const { t, locale } = useI18n();
+  const headingId = React.useId();
 
   const formatDate = (date: Date): string => {
     return getDateFormatter(locale).format(date);
@@ -98,14 +99,14 @@ export function DashboardHeader({
   const activeDateLabel = dateLabel || formatDate(new Date());
 
   return (
-    <div className="pb-3 pt-2" aria-label="Dashboard controls">
+    <section className="pb-3 pt-2" aria-labelledby={headingId}>
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 border-b border-border-light pb-3 dark:border-border-dark lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <p className="font-body text-xs font-semibold tracking-normal text-text-secondary uppercase">
               {activeDateLabel}
             </p>
-            <h1 className="mt-1 font-heading text-3xl font-normal tracking-tight text-text-primary-light dark:text-text-primary-dark">
+            <h1 id={headingId} className="mt-1 font-heading text-3xl font-normal tracking-tight text-text-primary-light dark:text-text-primary-dark">
               {title}
             </h1>
           </div>
@@ -164,6 +165,6 @@ export function DashboardHeader({
           </div>
         ) : null}
       </div>
-    </div>
+    </section>
   );
 }
