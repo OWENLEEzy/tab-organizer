@@ -356,7 +356,7 @@ describe('createSortComparator', () => {
       makeGroup({ domain: 'm.com', friendlyName: 'Mee', tabs: [makeTab({ id: 5, url: 'https://m.com/1' }), makeTab({ id: 6, url: 'https://m.com/2' })] }),
     ];
 
-    const sorted = [...groups].sort(createSortComparator('default'));
+    const sorted = [...groups].sort(createSortComparator('count'));
 
     expect(sorted.map((g) => g.domain)).toEqual(['a.com', 'm.com', 'z.com']);
   });

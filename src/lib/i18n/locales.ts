@@ -22,7 +22,7 @@ export const locales = {
     closeAll: 'Close All',
 
     // Sort Options
-    sortDefault: 'Default',
+    sortCount: 'By Tab Count',
     sortByName: 'By Name',
     sortByLastAccessed: 'By Last Used',
 
@@ -188,6 +188,15 @@ export const locales = {
     settingsThemeDark: 'Dark Mode',
     settingsThemeDesc: 'Choose dashboard visual appearance',
 
+    // Theme names
+    themeClay: 'Clay Paper',
+    themeSage: 'Sage Herb',
+    themeFrost: 'Ice Frost',
+    themeOchre: 'Chalk Ochre',
+    themeObsidian: 'Obsidian Ink',
+    themePine: 'Deep Pine',
+    themeAmethyst: 'Amethyst Night',
+
     settingsOptionsTitle: 'Interface Options',
     settingsOptionsSound: 'Sound Effects',
     settingsOptionsSoundDesc: 'Play satisfying click and pop sounds during cleanup',
@@ -294,6 +303,7 @@ export const locales = {
     settingsNoSpacesCreated: 'No spaces created yet. Add one above!',
     settingsBtnDeleteSpace: 'Delete Space',
     settingsLabelAutoRules: 'Auto-assignment rules (one pattern per line)',
+    settingsLabelEmoji: 'Space emoji (single character)',
     settingsShortcutRecording: 'Press key...',
     settingsShortcutLabelSwitchSpaceN: 'Switch to Space 1-9',
     settingsShortcutLabelSwitchSpaceAll: 'Switch to "All"',
@@ -325,7 +335,7 @@ export const locales = {
     closeAll: '关闭全部',
 
     // Sort Options
-    sortDefault: '默认顺序',
+    sortCount: '按标签数量',
     sortByName: '按名称',
     sortByLastAccessed: '按最近使用',
 
@@ -491,6 +501,15 @@ export const locales = {
     settingsThemeDark: '暗色模式 (深色)',
     settingsThemeDesc: '更改整理面板的整体外观颜色',
 
+    // Theme names
+    themeClay: '暖沙陶土',
+    themeSage: '草本鼠尾草',
+    themeFrost: '冰川冷蓝',
+    themeOchre: '白垩赭石',
+    themeObsidian: '黑曜石墨',
+    themePine: '暗针长青',
+    themeAmethyst: '紫曜晚霞',
+
     settingsOptionsTitle: '交互选项',
     settingsOptionsSound: '清理音效',
     settingsOptionsSoundDesc: '在关闭标签页或清理重复项时播放解压的音效',
@@ -597,6 +616,7 @@ export const locales = {
     settingsNoSpacesCreated: '暂无分区空间。在上方输入名称并创建！',
     settingsBtnDeleteSpace: '删除空间',
     settingsLabelAutoRules: '自动匹配规则 (每行输入一个关键字)',
+    settingsLabelEmoji: '空间表情符号 (单字符)',
     settingsShortcutRecording: '按下按键...',
     settingsShortcutLabelSwitchSpaceN: '切换到空间 1-9',
     settingsShortcutLabelSwitchSpaceAll: '切换到 "全部"',

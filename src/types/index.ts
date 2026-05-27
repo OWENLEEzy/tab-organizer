@@ -19,7 +19,7 @@ export interface Tab {
 
 // ─── Tab Groups ──────────────────────────────────────────────────
 
-export type GroupSortOption = 'default' | 'name' | 'lastAccessed';
+export type GroupSortOption = 'count' | 'name' | 'lastAccessed';
 
 export interface TabGroup {
   id: string;

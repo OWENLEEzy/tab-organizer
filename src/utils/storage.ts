@@ -61,7 +61,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     focusSearch: '/',
     clearFilter: 'Escape',
   },
-  groupSortBy: 'default',
+  groupSortBy: 'count',
 };
 
 const EMPTY_SCHEMA: StorageSchema = {

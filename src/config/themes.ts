@@ -20,6 +20,10 @@ export interface AccentConfig {
   borderDuplicate: string;
   shadowCard: string;
   shadowCardHover: string;
+  accentRed: string;
+  accentRedRgb: string;
+  accentSage: string;
+  accentSageRgb: string;
 }
 
 export const ACCENTS: Record<AccentKey, AccentConfig> = {
@@ -37,12 +41,16 @@ export const ACCENTS: Record<AccentKey, AccentConfig> = {
     accentPrimary: '#B25C38',
     accentPrimaryRgb: '178, 92, 56',
     bgHeader: 'rgba(250, 247, 242, 0.95)',
-    warningHex: '#8B6914',
-    warningRgb: '139, 105, 20',
+    warningHex: '#7A5A0D',
+    warningRgb: '122, 90, 13',
     bgDuplicate: 'rgba(197, 133, 20, 0.08)',
     borderDuplicate: 'rgba(197, 133, 20, 0.25)',
     shadowCard: '0 4px 12px rgba(51, 42, 36, 0.04), 0 1px 3px rgba(51, 42, 36, 0.02)',
-    shadowCardHover: '0 10px 24px rgba(51, 42, 36, 0.08), 0 3px 8px rgba(51, 42, 36, 0.04)'
+    shadowCardHover: '0 10px 24px rgba(51, 42, 36, 0.08), 0 3px 8px rgba(51, 42, 36, 0.04)',
+    accentRed: '#c94a4a',
+    accentRedRgb: '201, 74, 74',
+    accentSage: '#5e806b',
+    accentSageRgb: '94, 128, 107'
   },
   sage: {
     label: 'Sage Herb (草本鼠尾草)',
@@ -58,12 +66,16 @@ export const ACCENTS: Record<AccentKey, AccentConfig> = {
     accentPrimary: '#4C725B',
     accentPrimaryRgb: '76, 114, 91',
     bgHeader: 'rgba(245, 247, 244, 0.95)',
-    warningHex: '#B58E2A',
-    warningRgb: '181, 142, 42',
+    warningHex: '#8A6715',
+    warningRgb: '138, 103, 21',
     bgDuplicate: 'rgba(181, 142, 42, 0.08)',
     borderDuplicate: 'rgba(181, 142, 42, 0.25)',
     shadowCard: '0 4px 12px rgba(38, 46, 40, 0.04), 0 1px 3px rgba(38, 46, 40, 0.02)',
-    shadowCardHover: '0 10px 24px rgba(38, 46, 40, 0.08), 0 3px 8px rgba(38, 46, 40, 0.04)'
+    shadowCardHover: '0 10px 24px rgba(38, 46, 40, 0.08), 0 3px 8px rgba(38, 46, 40, 0.04)',
+    accentRed: '#c94a4a',
+    accentRedRgb: '201, 74, 74',
+    accentSage: '#5e806b',
+    accentSageRgb: '94, 128, 107'
   },
   frost: {
     label: 'Ice Frost (冰川冷蓝)',
@@ -79,12 +91,16 @@ export const ACCENTS: Record<AccentKey, AccentConfig> = {
     accentPrimary: '#2F65D6',
     accentPrimaryRgb: '47, 101, 214',
     bgHeader: 'rgba(243, 246, 250, 0.95)',
-    warningHex: '#C08121',
-    warningRgb: '192, 129, 33',
+    warningHex: '#946114',
+    warningRgb: '148, 97, 20',
     bgDuplicate: 'rgba(192, 129, 33, 0.08)',
     borderDuplicate: 'rgba(192, 129, 33, 0.25)',
     shadowCard: '0 4px 12px rgba(35, 43, 56, 0.04), 0 1px 3px rgba(35, 43, 56, 0.02)',
-    shadowCardHover: '0 10px 24px rgba(35, 43, 56, 0.08), 0 3px 8px rgba(35, 43, 56, 0.04)'
+    shadowCardHover: '0 10px 24px rgba(35, 43, 56, 0.08), 0 3px 8px rgba(35, 43, 56, 0.04)',
+    accentRed: '#c94a4a',
+    accentRedRgb: '201, 74, 74',
+    accentSage: '#5e806b',
+    accentSageRgb: '94, 128, 107'
   },
   ochre: {
     label: 'Chalk Ochre (白垩赭石)',
@@ -100,12 +116,16 @@ export const ACCENTS: Record<AccentKey, AccentConfig> = {
     accentPrimary: '#A0781A',
     accentPrimaryRgb: '160, 120, 26',
     bgHeader: 'rgba(250, 246, 238, 0.95)',
-    warningHex: '#C19B1A',
-    warningRgb: '193, 155, 26',
+    warningHex: '#8E6D0D',
+    warningRgb: '142, 109, 13',
     bgDuplicate: 'rgba(193, 155, 26, 0.08)',
     borderDuplicate: 'rgba(193, 155, 26, 0.25)',
     shadowCard: '0 4px 12px rgba(58, 48, 26, 0.04), 0 1px 3px rgba(58, 48, 26, 0.02)',
-    shadowCardHover: '0 10px 24px rgba(58, 48, 26, 0.08), 0 3px 8px rgba(58, 48, 26, 0.04)'
+    shadowCardHover: '0 10px 24px rgba(58, 48, 26, 0.08), 0 3px 8px rgba(58, 48, 26, 0.04)',
+    accentRed: '#c94a4a',
+    accentRedRgb: '201, 74, 74',
+    accentSage: '#5e806b',
+    accentSageRgb: '94, 128, 107'
   },
   obsidian: {
     label: 'Obsidian Ink (黑曜石墨)',
@@ -126,7 +146,11 @@ export const ACCENTS: Record<AccentKey, AccentConfig> = {
     bgDuplicate: 'rgba(206, 172, 116, 0.12)',
     borderDuplicate: 'rgba(206, 172, 116, 0.3)',
     shadowCard: '0 4px 12px rgba(0, 0, 0, 0.4)',
-    shadowCardHover: '0 10px 24px rgba(0, 0, 0, 0.6)'
+    shadowCardHover: '0 10px 24px rgba(0, 0, 0, 0.6)',
+    accentRed: '#e76f51',
+    accentRedRgb: '231, 111, 81',
+    accentSage: '#81b29a',
+    accentSageRgb: '129, 178, 154'
   },
   pine: {
     label: 'Deep Pine (暗针长青)',
@@ -147,7 +171,11 @@ export const ACCENTS: Record<AccentKey, AccentConfig> = {
     bgDuplicate: 'rgba(212, 184, 94, 0.12)',
     borderDuplicate: 'rgba(212, 184, 94, 0.3)',
     shadowCard: '0 4px 12px rgba(0, 0, 0, 0.4)',
-    shadowCardHover: '0 10px 24px rgba(0, 0, 0, 0.6)'
+    shadowCardHover: '0 10px 24px rgba(0, 0, 0, 0.6)',
+    accentRed: '#e76f51',
+    accentRedRgb: '231, 111, 81',
+    accentSage: '#81b29a',
+    accentSageRgb: '129, 178, 154'
   },
   amethyst: {
     label: 'Amethyst Night (紫曜晚霞)',
@@ -168,6 +196,10 @@ export const ACCENTS: Record<AccentKey, AccentConfig> = {
     bgDuplicate: 'rgba(224, 189, 93, 0.12)',
     borderDuplicate: 'rgba(224, 189, 93, 0.3)',
     shadowCard: '0 4px 12px rgba(0, 0, 0, 0.4)',
-    shadowCardHover: '0 10px 24px rgba(0, 0, 0, 0.6)'
+    shadowCardHover: '0 10px 24px rgba(0, 0, 0, 0.6)',
+    accentRed: '#e76f51',
+    accentRedRgb: '231, 111, 81',
+    accentSage: '#81b29a',
+    accentSageRgb: '129, 178, 154'
   }
 };

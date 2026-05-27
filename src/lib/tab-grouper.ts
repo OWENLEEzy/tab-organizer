@@ -54,10 +54,8 @@ export function createSortComparator(
         if (bTime !== aTime) return bTime - aTime;
         return a.friendlyName.localeCompare(b.friendlyName);
       };
-    case 'default':
-    default:
+    case 'count':
       return (a, b) => {
-        // For default sort, use tab count descending, then alphabet
         const bCount = b.tabs.length;
         const aCount = a.tabs.length;
         if (bCount !== aCount) return bCount - aCount;

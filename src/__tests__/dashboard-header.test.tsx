@@ -19,7 +19,6 @@ describe('DashboardHeader', () => {
       <DashboardHeader
         title="Open Tabs by Product"
         hasGroups
-        groupCount={2}
         dateLabel="Tuesday, May 5, 2026"
         searchQuery=""
         onSearchChange={onSearchChange}
@@ -27,7 +26,7 @@ describe('DashboardHeader', () => {
         totalCount={12}
         viewMode="cards"
         onViewModeChange={onViewModeChange}
-        groupSortBy="default"
+        groupSortBy="count"
         onGroupSortByChange={onGroupSortByChange}
         onRefresh={() => {}}
         onCreateGroup={onCreateGroup}
@@ -38,7 +37,6 @@ describe('DashboardHeader', () => {
 
     expect(screen.getByText('Tuesday, May 5, 2026')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
-    expect(screen.getByText('2 Groups')).toBeInTheDocument();
 
     const viewToggle = screen.getByLabelText('View mode');
     expect(viewToggle).toHaveClass('view-toggle');
@@ -71,7 +69,6 @@ describe('DashboardHeader', () => {
       <DashboardHeader
         title="Open Tabs by Product"
         hasGroups={false}
-        groupCount={0}
         dateLabel="Tuesday, May 5, 2026"
         searchQuery=""
         onSearchChange={() => {}}
@@ -79,7 +76,7 @@ describe('DashboardHeader', () => {
         totalCount={0}
         viewMode="cards"
         onViewModeChange={() => {}}
-        groupSortBy="default"
+        groupSortBy="count"
         onGroupSortByChange={onGroupSortByChange}
         onRefresh={() => {}}
         onCreateGroup={() => {}}
