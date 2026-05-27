@@ -1,8 +1,12 @@
 import { useEffect } from 'react';
-import { ACCENTS, type AccentKey } from '../../config/themes';
+import { ACCENTS, isAccentKey, type AccentKey } from '../../config/themes';
 
 export function useTheme(accent: AccentKey) {
   useEffect(() => {
+    if (!isAccentKey(accent)) {
+      throw new Error(`Unknown accent theme: ${String(accent)}`);
+    }
+
     const config = ACCENTS[accent];
     const root = document.documentElement;
 

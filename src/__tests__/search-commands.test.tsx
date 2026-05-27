@@ -188,15 +188,17 @@ describe('SearchBar Commands Menu', () => {
     const input = screen.getByRole('searchbox', { name: 'Search tabs' });
     fireEvent.focus(input);
 
-    // Should display the matching space suggestions
-    expect(screen.getByText('/s:Work')).toBeInTheDocument();
-    expect(screen.getByText('/s:Social')).toBeInTheDocument();
+    // Should display stable space-id commands while keeping readable names visible.
+    expect(screen.getByText('/space:w1')).toBeInTheDocument();
+    expect(screen.getByText('/space:w2')).toBeInTheDocument();
+    expect(screen.getByText('Work')).toBeInTheDocument();
+    expect(screen.getByText('Social')).toBeInTheDocument();
 
-    const workBtn = screen.getByRole('button', { name: /\/s:Work/ });
+    const workBtn = screen.getByRole('button', { name: /\/space:w1/ });
     await user.click(workBtn);
 
     // Selecting a completed space command appends a space
-    expect(onChange).toHaveBeenCalledWith('/s:Work ');
+    expect(onChange).toHaveBeenCalledWith('/space:w1 ');
   });
 });
 

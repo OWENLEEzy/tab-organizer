@@ -15,11 +15,13 @@ import { createSortComparator } from '../../lib/tab-grouper';
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 
-interface CommandParsed {
+export interface CommandParsed {
   type: 'dupes' | 'stale' | 'space' | 'text';
-  arg?: string;
+  spaceToken?: string;
   textQuery: string;
 }
+
+type SpaceTarget = Pick<ManualGroup, 'id' | 'name' | 'order'>;
 
 export function parseSearchQuery(query: string): CommandParsed {
   const trimmed = query.trim().toLowerCase();
@@ -47,12 +49,24 @@ export function parseSearchQuery(query: string): CommandParsed {
   if (spaceMatch) {
     return {
       type: 'space',
-      arg: spaceMatch[2] || '',
+      spaceToken: spaceMatch[2] || '',
       textQuery: (spaceMatch[3] || '').trim()
     };
   }
   
   return { type: 'text', textQuery: trimmed };
+}
+
+export function resolveSpaceQueryTarget(token: string, spaces: SpaceTarget[]): SpaceTarget | null {
+  const normalizedToken = token.trim().toLowerCase();
+  if (!normalizedToken) return null;
+
+  const idMatch = spaces.find((space) => space.id.toLowerCase() === normalizedToken);
+  if (idMatch) return idMatch;
+
+  return [...spaces]
+    .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
+    .find((space) => space.name.trim().toLowerCase().includes(normalizedToken)) ?? null;
 }
 
 function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void {
@@ -154,19 +168,12 @@ export function useAppLogic() {
 
     // 1. Process /space:SpaceName command
     if (parsedQuery.type === 'space') {
-      const arg = parsedQuery.arg || '';
-      if (arg) {
-        const targetSpace = orderedGroups.find(
-          (g) => g.name.toLowerCase().includes(arg)
-        );
-        if (targetSpace) {
-          result = products.filter(p => {
-            const itemKey = groupAssignmentKey(p);
-            return assignmentByItemId.get(itemKey) === targetSpace.id;
-          });
-        } else {
-          result = [];
-        }
+      const targetSpace = resolveSpaceQueryTarget(parsedQuery.spaceToken ?? '', orderedGroups);
+      if (targetSpace) {
+        result = products.filter(p => {
+          const itemKey = groupAssignmentKey(p);
+          return assignmentByItemId.get(itemKey) === targetSpace.id;
+        });
       } else {
         result = [];
       }

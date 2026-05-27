@@ -1,3 +1,5 @@
+import type { AccentKey } from '../config/themes';
+
 // ─── Tab Data ────────────────────────────────────────────────────
 
 export interface Tab {
@@ -144,7 +146,7 @@ export interface HistorySnapshot {
 // ─── App Settings ────────────────────────────────────────────────
 
 export interface AppSettings {
-  theme: 'clay' | 'sage' | 'frost' | 'ochre' | 'obsidian' | 'pine' | 'amethyst';
+  theme: AccentKey;
   language?: 'en' | 'zh' | 'system';
   soundEnabled: boolean;
   confettiEnabled: boolean;

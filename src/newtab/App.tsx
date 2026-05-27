@@ -18,6 +18,7 @@ import { SpaceSwitcher } from './components/SpaceSwitcher';
 import { useAppLogic } from './hooks/useAppLogic';
 import { useI18n } from './hooks/useI18n';
 import { useTheme } from './hooks/useTheme';
+import { parseImportedSettings } from './lib/settings-import';
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -76,30 +77,29 @@ export function App(): React.ReactElement {
 
       // Restore preferences
       if (parsed.settings && typeof parsed.settings === 'object') {
-        const s = parsed.settings;
-        if (typeof s.theme === 'string') await settingsStore.setTheme(s.theme);
-        if (typeof s.soundEnabled === 'boolean' && s.soundEnabled !== settingsStore.settings.soundEnabled) await settingsStore.toggleSound();
-        if (typeof s.confettiEnabled === 'boolean' && s.confettiEnabled !== settingsStore.settings.confettiEnabled) await settingsStore.toggleConfetti();
-        if (typeof s.maxChipsVisible === 'number') await settingsStore.setMaxChipsVisible(s.maxChipsVisible);
-        if (typeof s.staleThresholdDays === 'number') await settingsStore.setStaleThresholdDays(s.staleThresholdDays);
+        const importedSettings = parseImportedSettings(parsed.settings);
+        if (importedSettings.theme) await settingsStore.setTheme(importedSettings.theme);
+        if (importedSettings.soundEnabled !== undefined && importedSettings.soundEnabled !== settingsStore.settings.soundEnabled) await settingsStore.toggleSound();
+        if (importedSettings.confettiEnabled !== undefined && importedSettings.confettiEnabled !== settingsStore.settings.confettiEnabled) await settingsStore.toggleConfetti();
+        if (importedSettings.maxChipsVisible !== undefined) await settingsStore.setMaxChipsVisible(importedSettings.maxChipsVisible);
+        if (importedSettings.staleThresholdDays !== undefined) await settingsStore.setStaleThresholdDays(importedSettings.staleThresholdDays);
+        if (importedSettings.groupSortBy) await settingsStore.setGroupSortBy(importedSettings.groupSortBy);
 
-        if (Array.isArray(s.customGroups)) {
+        if (importedSettings.customGroups) {
           // Clear all existing custom groups (parallel)
           await Promise.all(settingsStore.settings.customGroups.map(cg =>
             settingsStore.removeCustomGroup(cg.groupKey)
           ));
           // Add imported custom groups (parallel)
-          await Promise.all(s.customGroups.map((cg: CustomGroup) =>
+          await Promise.all(importedSettings.customGroups.map((cg: CustomGroup) =>
             settingsStore.addCustomGroup(cg)
           ));
         }
 
-        if (s.keyBindings && typeof s.keyBindings === 'object') {
+        if (importedSettings.keyBindings) {
           const updates: Promise<void>[] = [];
-          for (const [key, binding] of Object.entries(s.keyBindings)) {
-            if (typeof binding === 'string') {
-              updates.push(settingsStore.updateKeyBinding(key as keyof typeof settings.keyBindings, binding));
-            }
+          for (const [key, binding] of Object.entries(importedSettings.keyBindings)) {
+            updates.push(settingsStore.updateKeyBinding(key as keyof typeof settings.keyBindings, binding));
           }
           await Promise.all(updates);
         }
@@ -316,7 +316,7 @@ export function App(): React.ReactElement {
                       : state.parsedQuery.type === 'dupes'
                       ? t('emptySweepDupeTitle')
                       : state.parsedQuery.type === 'space'
-                      ? (state.parsedQuery.arg ? t('emptySweepSpaceTitle') : t('emptySweepSpaceNoArg'))
+                      ? (state.parsedQuery.spaceToken ? t('emptySweepSpaceTitle') : t('emptySweepSpaceNoArg'))
                       : t('emptySweepSearchTitle')}
                   </h3>
                   <p className="text-text-secondary text-sm mt-1 max-w-sm px-4">
@@ -325,8 +325,8 @@ export function App(): React.ReactElement {
                       : state.parsedQuery.type === 'dupes'
                       ? t('emptySweepDupeDesc')
                       : state.parsedQuery.type === 'space'
-                      ? (state.parsedQuery.arg
-                          ? t('emptySweepSpaceDesc', { name: state.parsedQuery.arg })
+                      ? (state.parsedQuery.spaceToken
+                          ? t('emptySweepSpaceDesc', { name: state.parsedQuery.spaceToken })
                           : t('emptySweepSpaceNoArg'))
                       : t('emptySweepSearchDesc', { query: state.searchQuery })}
                   </p>

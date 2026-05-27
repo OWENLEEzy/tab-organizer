@@ -10,6 +10,7 @@ import type {
 } from '../types';
 import { historyUrlSignature, shouldReplaceHistoryCandidate } from '../lib/history-snapshots';
 import { DEFAULT_SPACES } from '../config/spaces';
+import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
 
 const CURRENT_SCHEMA_VERSION = 4;
 const STORAGE_KEYS = [
@@ -45,7 +46,7 @@ function queuedWrite(fn: () => Promise<void>): Promise<void> {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  theme: 'clay',
+  theme: DEFAULT_ACCENT,
   language: 'system',
   soundEnabled: true,
   confettiEnabled: true,
@@ -322,13 +323,11 @@ function migrate(data: Record<string, unknown>): StorageSchema {
     if (data['recoveryHistory']) history = data['recoveryHistory'];
   }
 
-  let settings: AppSettings = { ...DEFAULT_SETTINGS, ...(data['settings'] as Partial<AppSettings> | undefined) };
-
-  // Migrate legacy theme values (AccentKey not available yet — use string literal union)
-  const validAccents = ['clay', 'sage', 'frost', 'ochre', 'obsidian', 'pine', 'amethyst'] as const;
-  if (typeof settings.theme === 'string' && !(validAccents as readonly string[]).includes(settings.theme)) {
-    settings = { ...settings, theme: 'clay' };
-  }
+  const rawSettings = { ...DEFAULT_SETTINGS, ...(data['settings'] as Partial<AppSettings> | undefined) };
+  const settings: AppSettings = {
+    ...rawSettings,
+    theme: isAccentKey(rawSettings.theme) ? rawSettings.theme : DEFAULT_ACCENT,
+  };
 
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,

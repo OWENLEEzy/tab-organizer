@@ -1,4 +1,9 @@
-export type AccentKey = 'clay' | 'sage' | 'frost' | 'ochre' | 'obsidian' | 'pine' | 'amethyst';
+export const ACCENT_KEYS = ['clay', 'sage', 'frost', 'ochre', 'obsidian', 'pine', 'amethyst'] as const;
+
+export type AccentKey = typeof ACCENT_KEYS[number];
+export type AccentLabelKey = `theme${Capitalize<AccentKey>}`;
+
+export const DEFAULT_ACCENT: AccentKey = 'clay';
 
 export interface AccentConfig {
   label: string;
@@ -203,3 +208,12 @@ export const ACCENTS: Record<AccentKey, AccentConfig> = {
     accentSageRgb: '129, 178, 154'
   }
 };
+
+export const ACCENT_OPTIONS: { key: AccentKey; labelKey: AccentLabelKey }[] = ACCENT_KEYS.map((key) => ({
+  key,
+  labelKey: `theme${key[0].toUpperCase()}${key.slice(1)}` as AccentLabelKey,
+}));
+
+export function isAccentKey(value: unknown): value is AccentKey {
+  return typeof value === 'string' && Object.hasOwn(ACCENTS, value);
+}

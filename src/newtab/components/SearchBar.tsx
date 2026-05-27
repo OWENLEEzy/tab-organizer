@@ -13,6 +13,12 @@ interface SearchBarProps {
 
 const EMPTY_SPACES: { id: string; name: string }[] = [];
 
+interface CommandOption {
+  key: string;
+  desc: string;
+  label?: string;
+}
+
 // ─── Component ────────────────────────────────────────────────────────
 
 export function SearchBar({
@@ -27,7 +33,7 @@ export function SearchBar({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { t } = useI18n();
 
-  const commands = useMemo(() => [
+  const commands = useMemo<CommandOption[]>(() => [
     { key: '/dupes', label: t('cmdDupesLabel'), desc: t('cmdDupesDesc') },
     { key: '/stale', label: t('cmdStaleLabel'), desc: t('cmdStaleDesc') },
     { key: '/space:', label: t('cmdSpaceLabel'), desc: t('cmdSpaceDesc') },
@@ -80,14 +86,14 @@ export function SearchBar({
   // If spaceMatch matches, list matching spaces. Otherwise filter commands by prefix
   const filteredCommands = useMemo(() => {
     if (spaceMatch) {
-      const prefix = spaceMatch[1];
       const arg = spaceMatch[2].toLowerCase();
       const matchingSpaces = spaces.filter((s) =>
-        s.name.toLowerCase().includes(arg)
+        s.name.toLowerCase().includes(arg) || s.id.toLowerCase().includes(arg)
       );
       return matchingSpaces.map((s) => ({
-        key: `/${prefix}:${s.name}`,
-        desc: `${t('cmdSpaceDesc')} (${s.name})`,
+        key: `/space:${s.id}`,
+        label: s.name,
+        desc: t('cmdSpaceDesc'),
       }));
     }
     return commands.filter((cmd) =>
@@ -239,6 +245,11 @@ export function SearchBar({
                 >
                   <div className="flex flex-col">
                     <span className="font-mono text-xs font-semibold">{cmd.key}</span>
+                    {cmd.label && (
+                      <span className="text-xs font-medium text-text-primary-light dark:text-text-primary-dark mt-0.5">
+                        {cmd.label}
+                      </span>
+                    )}
                     <span className="text-[11px] text-text-secondary mt-0.5">{cmd.desc}</span>
                   </div>
                   {active && (

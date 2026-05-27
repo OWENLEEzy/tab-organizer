@@ -1,22 +1,11 @@
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { CustomGroup, AppSettings, ManualGroup } from '../../types';
-import { type AccentKey } from '../../config/themes';
+import { ACCENT_OPTIONS, type AccentKey } from '../../config/themes';
 import { useI18n } from '../hooks/useI18n';
 
 // ─── Constants ────────────────────────────────────────────────────────
 
 const DEFAULT_EMPTY_GROUPS: ManualGroup[] = [];
-
-// Theme option list with i18n keys
-const ACCENTS_LIST: { key: AccentKey; labelKey: 'themeClay' | 'themeSage' | 'themeFrost' | 'themeOchre' | 'themeObsidian' | 'themePine' | 'themeAmethyst' }[] = [
-  { key: 'clay', labelKey: 'themeClay' },
-  { key: 'sage', labelKey: 'themeSage' },
-  { key: 'frost', labelKey: 'themeFrost' },
-  { key: 'ochre', labelKey: 'themeOchre' },
-  { key: 'obsidian', labelKey: 'themeObsidian' },
-  { key: 'pine', labelKey: 'themePine' },
-  { key: 'amethyst', labelKey: 'themeAmethyst' },
-];
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -321,7 +310,7 @@ export function SettingsPanel({
                   id="setting-theme"
                   label={t('settingsTheme')}
                   value={theme}
-                  options={ACCENTS_LIST.map(({ key, labelKey }) => ({
+                  options={ACCENT_OPTIONS.map(({ key, labelKey }) => ({
                     value: key,
                     label: t(labelKey),
                   }))}
