@@ -163,6 +163,8 @@ export const locales = {
 
     // DnD Organizer
     organizerUnsorted: 'Unsorted',
+    organizerMode: 'Organize',
+    organizerDone: 'Done',
     organizerBtnRename: 'Rename',
     organizerBtnDelete: 'Delete',
     organizerBtnCloseAll: 'Close all',
@@ -476,6 +478,8 @@ export const locales = {
 
     // DnD Organizer
     organizerUnsorted: '未分类',
+    organizerMode: '整理',
+    organizerDone: '完成',
     organizerBtnRename: '重命名',
     organizerBtnDelete: '删除空间',
     organizerBtnCloseAll: '关闭全部',

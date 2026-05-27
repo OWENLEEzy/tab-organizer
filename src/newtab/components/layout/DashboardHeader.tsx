@@ -4,27 +4,10 @@ import { ViewToggle } from '../ViewToggle';
 import { SortDropdown } from '../SortDropdown';
 import { ActionButton } from '../ui/ActionButton';
 import { useI18n } from '../../hooks/useI18n';
+import { getDateFormatter } from '../../lib/date-formatters';
 import type { GroupSortOption } from '../../../types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────
-
-const EN_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
-  weekday: 'long',
-  month: 'long',
-  day: 'numeric',
-  year: 'numeric',
-});
-
-const ZH_DATE_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
-  weekday: 'long',
-  month: 'long',
-  day: 'numeric',
-  year: 'numeric',
-});
-
-function getDateFormatter(locale: string): Intl.DateTimeFormat {
-  return locale === 'zh' ? ZH_DATE_FORMATTER : EN_DATE_FORMATTER;
-}
 
 const EMPTY_SPACES: { id: string; name: string }[] = [];
 
@@ -44,6 +27,8 @@ interface DashboardHeaderProps {
   onCreateGroup: () => void;
   onCloseAll: () => void;
   onOpenSettings: () => void;
+  organizeMode?: boolean;
+  onToggleOrganize?: () => void;
   isSidebarExpanded?: boolean;
   onToggleSidebar?: () => void;
   spaces?: { id: string; name: string }[];
@@ -74,6 +59,14 @@ function SidebarIcon(): React.ReactElement {
   );
 }
 
+function OrganizeIcon(): React.ReactElement {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="size-4">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+    </svg>
+  );
+}
+
 export function DashboardHeader({
   title,
   hasGroups,
@@ -90,6 +83,8 @@ export function DashboardHeader({
   onCreateGroup,
   onCloseAll,
   onOpenSettings,
+  organizeMode = false,
+  onToggleOrganize,
   isSidebarExpanded = false,
   onToggleSidebar,
   spaces = EMPTY_SPACES,
@@ -103,7 +98,7 @@ export function DashboardHeader({
   const activeDateLabel = dateLabel || formatDate(new Date());
 
   return (
-    <header className="pb-3 pt-2" aria-label="Dashboard controls">
+    <div className="pb-3 pt-2" aria-label="Dashboard controls">
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 border-b border-border-light pb-3 dark:border-border-dark lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
@@ -152,12 +147,23 @@ export function DashboardHeader({
               <ActionButton variant="quiet" icon={<RefreshIcon />} onClick={onRefresh} aria-label="Refresh tabs">
                 {t('refresh')}
               </ActionButton>
+              {viewMode === 'cards' && onToggleOrganize ? (
+                <ActionButton
+                  variant="quiet"
+                  icon={<OrganizeIcon />}
+                  onClick={onToggleOrganize}
+                  aria-label={organizeMode ? t('organizerDone') : t('organizerMode')}
+                  className={organizeMode ? 'bg-accent-blue/5 text-accent-blue' : ''}
+                >
+                  {organizeMode ? t('organizerDone') : t('organizerMode')}
+                </ActionButton>
+              ) : null}
               <ActionButton onClick={onCreateGroup}>{t('newGroup')}</ActionButton>
               <ActionButton variant="danger" onClick={onCloseAll}>{t('closeAll')}</ActionButton>
             </div>
           </div>
         ) : null}
       </div>
-    </header>
+    </div>
   );
 }

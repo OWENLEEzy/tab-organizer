@@ -36,6 +36,7 @@ interface TabChipProps {
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   searchQuery?: string;
   lastAccessed?: number;
+  staleThresholdDays?: number;
   pinned?: boolean;
   audible?: boolean;
 }
@@ -145,6 +146,7 @@ export function TabChip({
   onChipClick,
   searchQuery = '',
   lastAccessed,
+  staleThresholdDays = 3,
   pinned = false,
   audible = false,
 }: TabChipProps): React.ReactElement {
@@ -162,8 +164,8 @@ export function TabChip({
   const isStale = React.useMemo(() => {
     if (active || pinned || audible || !lastAccessed) return false;
     // eslint-disable-next-line react-hooks/purity
-    return Date.now() - lastAccessed > 3 * 24 * 60 * 60 * 1000;
-  }, [lastAccessed, active, pinned, audible]);
+    return Date.now() - lastAccessed > staleThresholdDays * 24 * 60 * 60 * 1000;
+  }, [lastAccessed, active, pinned, audible, staleThresholdDays]);
 
   useEffect(() => {
     if (isFocused && chipRef.current) {

@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DashboardHeader } from '../newtab/components/layout/DashboardHeader';
+import { getDateFormatter, getSnapshotDateFormatter } from '../newtab/lib/date-formatters';
 import { DashboardShell } from '../newtab/components/layout/DashboardShell';
 import { StatusStrip } from '../newtab/components/layout/StatusStrip';
 import { UtilityPanel } from '../newtab/components/layout/UtilityPanel';
@@ -42,6 +43,23 @@ describe('MotherDuck-inspired dashboard token layer', () => {
 });
 
 describe('MotherDuck-inspired layout components', () => {
+  it('uses Chinese date formatters for zh-CN locales', () => {
+    const date = new Date('2026-05-05T12:00:00Z');
+
+    expect(getDateFormatter('zh-CN').format(date)).toBe(new Intl.DateTimeFormat('zh-CN', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date));
+    expect(getSnapshotDateFormatter('zh-CN').format(date)).toBe(new Intl.DateTimeFormat('zh-CN', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(date));
+  });
+
   it('renders the status strip with global metrics', () => {
     render(
       <StatusStrip
@@ -130,8 +148,18 @@ describe('dashboard reskin composition contract', () => {
     expect(appSource).toContain('DashboardShell');
     expect(appSource).toContain('StatusStrip');
     expect(appSource).toContain('DashboardHeader');
-    expect(appSource).toContain('DndOrganizer');
+    expect(appSource).toContain('CardsBoard');
     expect(appSource).toContain('ProductTable');
+  });
+
+  it('keeps the default cards board free of dnd-kit imports', () => {
+    const cardsBoardSource = readFileSync(
+      join(process.cwd(), 'src/newtab/components/CardsBoard.tsx'),
+      'utf8',
+    );
+
+    expect(cardsBoardSource).not.toContain('@dnd-kit');
+    expect(cardsBoardSource).not.toContain('dragHandleProps');
   });
 });
 

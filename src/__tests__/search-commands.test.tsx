@@ -74,6 +74,44 @@ describe('TabChip Focus Stealing Prevention', () => {
     const tabButton = screen.getByRole('button', { name: /^GitHub Tab/ });
     expect(document.activeElement).toBe(tabButton);
   });
+
+  it('uses the configured stale threshold for chip stale styling', () => {
+    const now = new Date('2026-05-05T00:00:00Z').getTime();
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+
+    try {
+      const { rerender } = render(
+        <TabChip
+          url="https://github.com"
+          title="GitHub Tab"
+          duplicateCount={1}
+          lastAccessed={now - 4 * 24 * 60 * 60 * 1000}
+          staleThresholdDays={7}
+          onFocus={() => {}}
+          onClose={() => {}}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: /^GitHub Tab/ }).className).not.toContain('opacity-55');
+
+      rerender(
+        <TabChip
+          url="https://github.com"
+          title="GitHub Tab"
+          duplicateCount={1}
+          lastAccessed={now - 4 * 24 * 60 * 60 * 1000}
+          staleThresholdDays={3}
+          onFocus={() => {}}
+          onClose={() => {}}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: /^GitHub Tab/ }).className).toContain('opacity-55');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('SearchBar Commands Menu', () => {

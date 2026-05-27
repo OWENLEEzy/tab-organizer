@@ -48,21 +48,21 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
 
   return (
     <footer className="py-1.5" aria-label="Dashboard footer">
-      <div className="text-text-secondary flex items-center justify-between text-xs font-semibold tracking-wider uppercase">
+      <div className="text-text-primary flex items-center justify-between text-xs font-semibold tracking-wider uppercase">
         <div className="flex items-center gap-1.5">
           <span
             className={`font-body text-text-primary inline-block text-xs font-bold${state.popping ? ' animate-[countPop_0.3s_ease]' : ''}`}
           >
             {tabCount}
           </span>
-          <span className="opacity-70 normal-case">{t('metricTabs')}</span>
+          <span className="normal-case">{t('metricTabs')}</span>
         </div>
         <div className="flex items-center gap-4">
           <a
             href={FEEDBACK_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-text-secondary hover:text-accent-blue transition-colors text-xs font-semibold normal-case"
+            className="text-text-primary hover:text-accent-blue transition-colors text-xs font-semibold normal-case"
             aria-label="Give feedback"
           >
             Feedback
@@ -71,7 +71,7 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
             href={GITHUB_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-text-secondary hover:text-accent-blue transition-colors flex items-center"
+            className="text-text-primary hover:text-accent-blue transition-colors flex items-center"
             aria-label="View source code on GitHub"
           >
             <svg

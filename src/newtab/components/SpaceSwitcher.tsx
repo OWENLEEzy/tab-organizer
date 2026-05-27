@@ -74,7 +74,7 @@ export function SpaceSwitcher({
         tabIndex={activeSpaceId === null ? 0 : -1}
         className={`px-4 py-1.5 rounded-chip text-xs transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none ${
           activeSpaceId === null
-            ? 'border border-[rgba(var(--accent-primary-rgb),0.2)] bg-[rgba(var(--accent-primary-rgb),0.10)] text-accent-primary font-semibold'
+            ? 'border border-[rgba(var(--accent-primary-rgb),0.2)] bg-[rgba(var(--accent-primary-rgb),0.10)] text-text-primary font-semibold'
             : 'border border-transparent text-text-secondary hover:bg-bg-surface font-medium'
         }`}
       >
@@ -89,7 +89,7 @@ export function SpaceSwitcher({
           tabIndex={activeSpaceId === space.id ? 0 : -1}
           className={`px-4 py-1.5 rounded-chip text-xs transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none ${
             activeSpaceId === space.id
-              ? 'border border-[rgba(var(--accent-primary-rgb),0.2)] bg-[rgba(var(--accent-primary-rgb),0.10)] text-accent-primary font-semibold'
+              ? 'border border-[rgba(var(--accent-primary-rgb),0.2)] bg-[rgba(var(--accent-primary-rgb),0.10)] text-text-primary font-semibold'
               : 'border border-transparent text-text-secondary hover:bg-bg-surface font-medium'
           }`}
         >

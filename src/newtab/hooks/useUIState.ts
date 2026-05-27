@@ -13,6 +13,7 @@ export interface UIState {
   };
   settingsOpen: boolean;
   isSidebarExpanded: boolean;
+  organizeMode: boolean;
   nudgeDismissed: boolean;
   focusedIndex: number | null;
   closingUrls: Set<string>;
@@ -39,6 +40,7 @@ export type UIAction =
   | { type: 'CLOSE_CONFIRM_DIALOG' }
   | { type: 'SET_SETTINGS_OPEN'; open: boolean }
   | { type: 'SET_SIDEBAR_EXPANDED'; expanded: boolean }
+  | { type: 'SET_ORGANIZE_MODE'; enabled: boolean }
   | { type: 'SET_NUDGE_DISMISSED'; dismissed: boolean }
   | { type: 'SET_FOCUSED_INDEX'; index: number | null | ((prev: number | null) => number | null) }
   | { type: 'SET_CLOSING_URLS'; urls: Set<string> | ((prev: Set<string>) => Set<string>) }
@@ -57,6 +59,7 @@ const initialState: UIState = {
   confirmDialog: { id: '', open: false, title: '', message: '', confirmLabel: '', onConfirm: () => {} },
   settingsOpen: false,
   isSidebarExpanded: false,
+  organizeMode: false,
   nudgeDismissed: false,
   focusedIndex: null,
   closingUrls: new Set(),
@@ -82,6 +85,8 @@ function uiReducer(state: UIState, action: UIAction): UIState {
       return { ...state, settingsOpen: action.open };
     case 'SET_SIDEBAR_EXPANDED':
       return { ...state, isSidebarExpanded: action.expanded };
+    case 'SET_ORGANIZE_MODE':
+      return { ...state, organizeMode: action.enabled };
     case 'SET_NUDGE_DISMISSED':
       return { ...state, nudgeDismissed: action.dismissed };
     case 'SET_FOCUSED_INDEX':

@@ -12,6 +12,7 @@ interface DomainCardProps {
   dragHandleProps?: Record<string, unknown>;
   expanded?: boolean;
   maxChipsVisible?: number;
+  staleThresholdDays?: number;
   onCloseDomain: (group: TabGroup) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onCloseTab: (url: string) => void;
@@ -84,6 +85,7 @@ function TabChipRow({
   onClose,
   onChipClick,
   searchQuery,
+  staleThresholdDays,
 }: {
   tab: TabGroup['tabs'][number];
   duplicateCount: number;
@@ -96,6 +98,7 @@ function TabChipRow({
   onClose: (url: string) => void;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   searchQuery?: string;
+  staleThresholdDays?: number;
 }): React.ReactElement {
   return (
     <div className="tab-chip-row cursor-pointer">
@@ -114,6 +117,7 @@ function TabChipRow({
         onChipClick={onChipClick}
         searchQuery={searchQuery}
         lastAccessed={tab.lastAccessed}
+        staleThresholdDays={staleThresholdDays}
         pinned={tab.pinned}
         audible={tab.audible}
       />
@@ -128,6 +132,7 @@ export function DomainCard({
   dragHandleProps,
   expanded = false,
   maxChipsVisible = DEFAULT_MAX_CHIPS,
+  staleThresholdDays = 3,
   onCloseDomain,
   onCloseDuplicates,
   onCloseTab,
@@ -271,9 +276,9 @@ export function DomainCard({
 
         {/* Tab chips */}
         <div className="flex flex-col gap-0.5">
-          {visibleTabs.map((tab) => (
+          {visibleTabs.map((tab, index) => (
             <TabChipRow
-              key={tab.url}
+              key={tab.id >= 0 ? tab.id : `${tab.url}:${index}`}
               tab={tab}
               duplicateCount={tabUrlCounts.get(tab.url) ?? 1}
               focusedUrl={focusedUrl}
@@ -285,6 +290,7 @@ export function DomainCard({
               onClose={handleCloseTab}
               onChipClick={onChipClick}
               searchQuery={searchQuery}
+              staleThresholdDays={staleThresholdDays}
             />
           ))}
         </div>

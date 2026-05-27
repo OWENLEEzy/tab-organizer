@@ -95,12 +95,14 @@ export function SettingsPanel({
 
     function handleKeyDown(e: KeyboardEvent): void {
       if (e.key === 'Escape') {
+        const target = e.target instanceof Element ? e.target : null;
+        if (target?.closest('[data-recording-shortcut="true"]')) return;
         onCloseEffect();
       }
     }
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [open]);
 
   useEffect(() => {
@@ -866,6 +868,7 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
               <span className="font-body text-xs text-text-primary-light dark:text-text-primary-dark">{label}</span>
               <button
                 type="button"
+                data-recording-shortcut={isRecording ? 'true' : undefined}
                 onClick={() => setRecordingKey(isRecording ? null : (key as keyof AppSettings['keyBindings']))}
                 className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-[var(--spacing-button-height-sm)] min-w-[var(--width-button-min)] ${
                   isRecording

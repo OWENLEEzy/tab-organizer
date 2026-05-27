@@ -20,6 +20,7 @@ interface DraggableDomainCardProps {
   draggableId: string;
   expanded?: boolean;
   maxChipsVisible: number;
+  staleThresholdDays: number;
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
@@ -38,6 +39,7 @@ function DraggableDomainCard({
   draggableId,
   expanded,
   maxChipsVisible,
+  staleThresholdDays,
   focusedUrl,
   closingUrls,
   selectedUrls,
@@ -60,6 +62,7 @@ function DraggableDomainCard({
         dragHandleProps={{ ...attributes, ...listeners, 'aria-label': `Drag ${label} product` }}
         expanded={expanded}
         maxChipsVisible={maxChipsVisible}
+        staleThresholdDays={staleThresholdDays}
         onCloseDomain={onCloseDomain}
         onCloseDuplicates={onCloseDuplicates}
         onCloseTab={onCloseTab}
@@ -86,6 +89,7 @@ interface DndGroupBoardProps {
   tabCount: number;
   expandedDomains: Set<string>;
   maxChipsVisible: number;
+  staleThresholdDays: number;
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
@@ -111,6 +115,7 @@ function DndGroupBoard({
   tabCount,
   expandedDomains,
   maxChipsVisible,
+  staleThresholdDays,
   focusedUrl,
   closingUrls,
   selectedUrls,
@@ -182,6 +187,7 @@ function DndGroupBoard({
             draggableId={itemIdForProduct(p)}
             expanded={expandedDomains.has(p.domain)}
             maxChipsVisible={maxChipsVisible}
+            staleThresholdDays={staleThresholdDays}
             focusedUrl={focusedUrl}
             closingUrls={closingUrls}
             selectedUrls={selectedUrls}
@@ -211,6 +217,7 @@ interface DndOrganizerProps {
   itemIdForProduct: (p: TabGroup) => string;
   expandedDomains: Set<string>;
   maxChipsVisible: number;
+  staleThresholdDays: number;
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
@@ -238,6 +245,7 @@ export function DndOrganizer({
   itemIdForProduct,
   expandedDomains,
   maxChipsVisible,
+  staleThresholdDays,
   focusedUrl,
   closingUrls,
   selectedUrls,
@@ -299,6 +307,7 @@ export function DndOrganizer({
   const sharedProps = {
     expandedDomains,
     maxChipsVisible,
+    staleThresholdDays,
     focusedUrl,
     closingUrls,
     selectedUrls,
@@ -345,6 +354,7 @@ export function DndOrganizer({
             group={activeGroup}
             expanded={expandedDomains.has(activeGroup.domain)}
             maxChipsVisible={maxChipsVisible}
+            staleThresholdDays={staleThresholdDays}
             onCloseDomain={onCloseProduct}
             onCloseDuplicates={onCloseDuplicates}
             onCloseTab={onCloseTab}

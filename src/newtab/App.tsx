@@ -3,6 +3,7 @@ import type { CustomGroup } from '../types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingState } from './components/LoadingState';
 import { ProductTableMemo as ProductTable } from './components/ProductTable';
+import { CardsBoard } from './components/CardsBoard';
 import { SelectionBar } from './components/SelectionBar';
 import { EmptyState } from './components/EmptyState';
 import { Footer } from './components/Footer';
@@ -151,12 +152,14 @@ export function App(): React.ReactElement {
     <ErrorBoundary>
       <div className="noise-overlay" aria-hidden="true" />
       {/* Skip to main content — keyboard accessibility */}
-      <a
-        href="#main-content"
-        className="focus:rounded-chip focus:bg-accent-blue sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:text-sm focus:text-white focus:outline-none"
-      >
-        {t('skipToContent')}
-      </a>
+      <nav aria-label="Skip links">
+        <a
+          href="#main-content"
+          className="focus:rounded-chip focus:bg-accent-blue sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:text-sm focus:text-white focus:outline-none"
+        >
+          {t('skipToContent')}
+        </a>
+      </nav>
       <DashboardShell
         top={
           <StatusStrip
@@ -191,6 +194,8 @@ export function App(): React.ReactElement {
               onCreateGroup={handlers.handleCreateGroup}
               onCloseAll={handlers.handleCloseAll}
               onOpenSettings={() => dispatch({ type: 'SET_SETTINGS_OPEN', open: true })}
+              organizeMode={state.organizeMode}
+              onToggleOrganize={() => dispatch({ type: 'SET_ORGANIZE_MODE', enabled: !state.organizeMode })}
               isSidebarExpanded={state.isSidebarExpanded}
               onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
               spaces={derived.orderedGroups}
@@ -211,11 +216,12 @@ export function App(): React.ReactElement {
         toolbar={null}
         footer={<Footer tabCount={state.totalTabs} />}
       >
-        {state.showEmptyState ? (
-          <EmptyState />
-        ) : (
-          <main id="main-content" tabIndex={-1} className="active-section">
-              {state.parsedQuery.type === 'dupes' && (
+        <div id="main-content" tabIndex={-1} className="active-section">
+          {state.showEmptyState ? (
+            <EmptyState />
+          ) : (
+            <>
+                {state.parsedQuery.type === 'dupes' && (
                 <div
                   role="alert"
                   className="rounded-card border-accent-amber/20 from-accent-amber/[0.04] to-accent-amber/[0.09] mb-4 flex animate-[fadeUp_0.5s_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
@@ -349,8 +355,9 @@ export function App(): React.ReactElement {
                   closingUrls={state.closingUrls}
                   focusedUrl={state.focusedUrl}
                   searchQuery={state.searchQuery}
+                  staleThresholdDays={settings.staleThresholdDays ?? 3}
                 />
-              ) : (
+              ) : state.organizeMode ? (
                 <ErrorBoundary>
                   <React.Suspense fallback={<LoadingState />}>
                     <DndOrganizer
@@ -362,6 +369,7 @@ export function App(): React.ReactElement {
                       itemIdForProduct={derived.itemIdForProduct}
                       expandedDomains={state.expandedDomains}
                       maxChipsVisible={settings.maxChipsVisible}
+                      staleThresholdDays={settings.staleThresholdDays ?? 3}
                       focusedUrl={state.focusedUrl}
                       closingUrls={state.closingUrls}
                       selectedUrls={state.selectedUrls}
@@ -381,9 +389,33 @@ export function App(): React.ReactElement {
                     />
                   </React.Suspense>
                 </ErrorBoundary>
+              ) : (
+                <CardsBoard
+                  unassignedProducts={derived.unassignedProducts}
+                  orderedGroups={derived.orderedGroups}
+                  productsByGroup={derived.productsByGroup}
+                  expandedDomains={state.expandedDomains}
+                  maxChipsVisible={settings.maxChipsVisible}
+                  staleThresholdDays={settings.staleThresholdDays ?? 3}
+                  focusedUrl={state.focusedUrl}
+                  closingUrls={state.closingUrls}
+                  selectedUrls={state.selectedUrls}
+                  selectedTabIds={state.selectedTabIds}
+                  onRenameGroup={handlers.handleRenameGroup}
+                  onDeleteGroup={handlers.handleDeleteGroup}
+                  onCloseProduct={handlers.handleCloseProduct}
+                  onCloseManualGroup={handlers.handleCloseManualGroup}
+                  onCloseDuplicates={handlers.handleCloseDuplicates}
+                  onCloseTab={handlers.handleCloseTabAnimated}
+                  onFocusTab={handlers.handleFocusTab}
+                  onChipClick={handlers.handleChipClick}
+                  onToggleExpanded={handlers.handleToggleExpanded}
+                  searchQuery={state.searchQuery}
+                />
               )}
-          </main>
-        )}
+            </>
+          )}
+        </div>
       </DashboardShell>
 
       {/* Confirmation dialog */}

@@ -15,10 +15,26 @@ interface HandlerDeps {
   dispatch: Dispatch<UIAction>;
   showToast: (msg: string) => void;
   flatChips: { url: string }[];
+  visibleProducts: TabGroup[];
   selectedUrls: Set<string>;
   selectedTabIds: Set<number>;
   lastClickedIndex: number | null;
   t: (key: TranslationKey, params?: Record<string, string | number>) => string;
+}
+
+export function duplicateTabIdsForProducts(products: readonly TabGroup[]): number[] {
+  return duplicateTabIdsToClose(products.flatMap((product) => product.tabs));
+}
+
+export function staleTabUrlsForProducts(
+  products: readonly TabGroup[],
+  days: number,
+  now = Date.now(),
+): string[] {
+  return products
+    .flatMap((product) => product.tabs)
+    .filter((tab) => isTabStale(tab, now, days))
+    .map((tab) => tab.url);
 }
 
 export function useTabHandlers({
@@ -26,6 +42,7 @@ export function useTabHandlers({
   dispatch,
   showToast,
   flatChips,
+  visibleProducts,
   selectedUrls,
   selectedTabIds,
   lastClickedIndex,
@@ -366,9 +383,7 @@ export function useTabHandlers({
   const handleSelectStaleTabs = useCallback((days = settings.staleThresholdDays ?? 3) => {
     const now = Date.now();
 
-    const staleUrls = tabStore.tabs
-      .filter((tab) => isTabStale(tab, now, days))
-      .map((tab) => tab.url);
+    const staleUrls = staleTabUrlsForProducts(visibleProducts, days, now);
 
     if (staleUrls.length > 0) {
       dispatch({
@@ -384,10 +399,10 @@ export function useTabHandlers({
     } else {
       showToast(t('toastNoStaleTabs'));
     }
-  }, [tabStore, dispatch, showToast, settings.staleThresholdDays, t]);
+  }, [visibleProducts, dispatch, showToast, settings.staleThresholdDays, t]);
 
   const handleSelectDuplicateTabs = useCallback(() => {
-    const duplicateTabIds = duplicateTabIdsToClose(tabStore.tabs);
+    const duplicateTabIds = duplicateTabIdsForProducts(visibleProducts);
 
     if (duplicateTabIds.length > 0) {
       dispatch({
@@ -406,7 +421,7 @@ export function useTabHandlers({
     } else {
       showToast(t('toastNoDuplicates'));
     }
-  }, [tabStore, dispatch, showToast, t]);
+  }, [visibleProducts, dispatch, showToast, t]);
 
   return {
     handleCloseProduct,
