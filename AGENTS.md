@@ -62,7 +62,7 @@ Source of truth: `docs/frontend-design.md` and
   - Terracotta: stale/inactive tabs.
   - Ink: dark theme accent surfaces.
 - There is no separate dark mode toggle. Dark-background themes (obsidian,
-  pine, amethyst) are presented as equal accent choices alongside the four
+  pine, amethyst, ember) are presented as equal accent choices alongside the seven
   light-background themes. The `isDark` flag in theme configs is a technical
   detail that toggles the `.dark` CSS class for Tailwind `dark:` variants.
 - Do not turn the dashboard into cards inside cards or a decorative landing
@@ -115,6 +115,17 @@ Build/runtime shape:
 - `public/` contains bundled fonts and icons required by MV3 CSP.
 - `dist/` is the generated Chrome-ready extension bundle.
 
+Source placement rules:
+
+- Use shallow files when a source has one clear responsibility and no stable peer group.
+- Use subdirectories only when depth expresses a durable responsibility group.
+- `src/newtab/controllers/` owns page-level orchestration and may coordinate stores, Chrome runtime messages, toast/dialog state, and user actions.
+- `src/newtab/hooks/` is for pure UI/DOM hooks only. Hooks in this directory must not import stores, storage utilities, or Chrome APIs.
+- `src/newtab/components/` is grouped by UI responsibility: `layout`, `ui`, `tabs`, `organizer`, `settings`, `history`, `search`, and `states`.
+- `src/newtab/lib/` is for newtab-only pure UI projections and parsers.
+- `src/lib/` is pure product/domain logic. It must not import `src/utils`, React, Zustand, DOM, storage, or Chrome APIs.
+- `src/utils/` is for Chrome/browser/platform adapters. It must not import stores, newtab modules, controllers, or components.
+
 ## Architecture Ownership
 
 - `src/newtab/index.html` is the dashboard entry.
@@ -137,6 +148,32 @@ User action
     -> Zustand store action
       -> storage adapter or Chrome tabs API
         -> Zustand state refresh
+```
+
+Allowed import chains:
+
+```text
+App -> controllers/providers/components
+controllers -> stores/newtab-lib/lib/utils/types/config
+providers -> stores/lib/types/config
+components -> components/hooks/newtab-lib/lib/types/config
+stores -> lib/utils/types/config
+newtab-lib -> lib/types/config
+lib -> types/config only
+utils -> types/config only
+config -> types only
+types -> no runtime imports
+```
+
+Forbidden import chains:
+
+```text
+components -> stores/controllers/utils/storage/chrome.*
+hooks -> stores/utils/storage/chrome.*
+lib -> utils/stores/newtab/React/Zustand/chrome.*
+utils -> stores/newtab/components/controllers/React/Zustand
+stores -> newtab/components/controllers
+config/types -> runtime layer
 ```
 
 ## State And Component Invariants
