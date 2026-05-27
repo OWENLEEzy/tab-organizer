@@ -15,18 +15,29 @@ const globalCss = readFileSync(
 
 describe('MotherDuck-inspired dashboard token layer', () => {
   it('defines visual tokens instead of relying on raw brand class names', () => {
-    expect(globalCss).toContain('--color-to-bg-page');
-    expect(globalCss).toContain('--color-to-bg-surface');
-    expect(globalCss).toContain('--color-to-bg-yellow');
-    expect(globalCss).toContain('--color-to-bg-blue');
-    expect(globalCss).toContain('--color-to-border-strong');
-    expect(globalCss).toContain('--font-family-to-ui');
+    expect(globalCss).toContain('--color-bg-page');
+    expect(globalCss).toContain('--color-bg-surface');
+    expect(globalCss).toContain('--color-accent-amber');
+    expect(globalCss).toContain('--color-accent-primary');
+    expect(globalCss).toContain('--color-border-color');
+    expect(globalCss).toContain('--font-family-body');
   });
 
   it('keeps warm flat layout classes available to React components', () => {
     expect(globalCss).toContain('.dashboard-shell');
     expect(globalCss).toContain('.dashboard-workspace');
     expect(globalCss).toContain('.dashboard-utilities');
+  });
+
+  it('keeps dashboard control heights managed by global size tokens', () => {
+    expect(globalCss).toContain('.action-button');
+    expect(globalCss).toContain('.view-toggle');
+    expect(globalCss).toContain('.sort-dropdown');
+    expect(globalCss).toContain('height: var(--spacing-button-height)');
+    expect(globalCss).not.toContain('min-width: calc(var(--spacing-button-height)');
+    expect(globalCss).not.toContain('--spacing-button-min-width');
+    expect(globalCss).not.toContain('--spacing-button-padding-x');
+    expect(globalCss).not.toContain('height: 44px');
   });
 });
 
@@ -52,7 +63,6 @@ describe('MotherDuck-inspired layout components', () => {
       <DashboardHeader
         title="Open Tabs by Product"
         hasGroups
-        groupCount={1}
         dateLabel="Tuesday, May 5, 2026"
         searchQuery=""
         onSearchChange={() => {}}
@@ -60,7 +70,7 @@ describe('MotherDuck-inspired layout components', () => {
         totalCount={8}
         viewMode="cards"
         onViewModeChange={() => {}}
-        groupSortBy="default"
+        groupSortBy="count"
         onGroupSortByChange={() => {}}
         onRefresh={() => {}}
         onCreateGroup={() => {}}
@@ -71,7 +81,6 @@ describe('MotherDuck-inspired layout components', () => {
 
     expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
     expect(screen.getByText('Tuesday, May 5, 2026')).toBeInTheDocument();
-    expect(screen.getByText('1 Group')).toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: 'Search tabs' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
   });
@@ -84,7 +93,6 @@ describe('MotherDuck-inspired layout components', () => {
           <DashboardHeader
             title="Open Tabs by Product"
             hasGroups
-            groupCount={1}
             dateLabel="Tuesday, May 5, 2026"
             searchQuery=""
             onSearchChange={() => {}}
@@ -92,7 +100,7 @@ describe('MotherDuck-inspired layout components', () => {
             totalCount={1}
             viewMode="cards"
             onViewModeChange={() => {}}
-            groupSortBy="default"
+            groupSortBy="count"
             onGroupSortByChange={() => {}}
             onRefresh={() => {}}
             onCreateGroup={() => {}}
@@ -132,14 +140,14 @@ describe('tab title readability', () => {
     render(
       <TabChip
         url="https://github.com/OWENLEEzy/tab-out"
-        title="Tab Out repo"
+        title="Tab Organizer repo"
         duplicateCount={1}
         onFocus={() => {}}
         onClose={() => {}}
       />,
     );
 
-    expect(screen.getByText('Tab Out repo')).toBeInTheDocument();
+    expect(screen.getByText('Tab Organizer repo')).toBeInTheDocument();
     expect(screen.queryByText('TAB OUT REPO')).not.toBeInTheDocument();
   });
 });

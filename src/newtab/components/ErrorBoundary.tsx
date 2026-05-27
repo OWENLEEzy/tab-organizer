@@ -27,11 +27,11 @@ export class ErrorBoundary extends React.Component<
               Something went wrong
             </h1>
             <p className="text-text-secondary mb-4 text-sm">
-              Tab Out encountered an unexpected error.
+              Tab Organizer encountered an unexpected error.
             </p>
             <button
               type="button"
-              className="rounded-chip bg-accent-blue focus-visible:ring-accent-blue/40 min-h-11 cursor-pointer px-4 py-2 text-sm text-white transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-chip bg-accent-blue focus-visible:ring-accent-blue/40 min-h-[var(--spacing-button-height)] cursor-pointer px-4 py-2 text-sm text-white transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
               onClick={() => window.location.reload()}
             >
               Reload

@@ -8,6 +8,15 @@ interface SearchBarProps {
   onChange: (query: string) => void;
   resultCount: number;
   totalCount: number;
+  spaces?: { id: string; name: string }[];
+}
+
+const EMPTY_SPACES: { id: string; name: string }[] = [];
+
+interface CommandOption {
+  key: string;
+  desc: string;
+  label?: string;
 }
 
 // ─── Component ────────────────────────────────────────────────────────
@@ -17,13 +26,14 @@ export function SearchBar({
   onChange,
   resultCount,
   totalCount,
+  spaces = EMPTY_SPACES,
 }: SearchBarProps): React.ReactElement {
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { t } = useI18n();
 
-  const commands = useMemo(() => [
+  const commands = useMemo<CommandOption[]>(() => [
     { key: '/dupes', label: t('cmdDupesLabel'), desc: t('cmdDupesDesc') },
     { key: '/stale', label: t('cmdStaleLabel'), desc: t('cmdStaleDesc') },
     { key: '/space:', label: t('cmdSpaceLabel'), desc: t('cmdSpaceDesc') },
@@ -52,26 +62,56 @@ export function SearchBar({
     setTimeout(() => setFocused(false), 150);
   }, []);
 
+  const spaceMatch = useMemo(() => {
+    return value.match(/^\/?(space|spac|s):([^\s]*)$/i);
+  }, [value]);
+
+  const getFinalCmd = useCallback((chosenCmd: string): string => {
+    const isRawPrefix = chosenCmd === '/space:' || chosenCmd === '/s:' || chosenCmd === '/spac:';
+    return isRawPrefix ? chosenCmd : chosenCmd + ' ';
+  }, []);
+
   // Show commands when focused AND:
   // 1. Value is empty (great for discoverability!)
-  // 2. Or value starts with '/' and is not already a fully entered command
+  // 2. Or space command prefix is matched
+  // 3. Or value starts with '/' and is not already a fully entered command
   const showCommands =
     focused &&
     (value === '' ||
+      spaceMatch !== null ||
       (value.startsWith('/') &&
         !value.includes(' ') &&
         !commands.some((cmd) => cmd.key === value)));
 
-  // If value is empty, show all commands; otherwise filter by prefix
-  const filteredCommands = commands.filter((cmd) =>
-    value === '' ? true : cmd.key.startsWith(value)
-  );
+  // If spaceMatch matches, list matching spaces. Otherwise filter commands by prefix
+  const filteredCommands = useMemo(() => {
+    if (spaceMatch) {
+      const arg = spaceMatch[2].toLowerCase();
+      const matchingSpaces = spaces.filter((s) =>
+        s.name.toLowerCase().includes(arg) || s.id.toLowerCase().includes(arg)
+      );
+      return matchingSpaces.map((s) => ({
+        key: `/space:${s.id}`,
+        label: s.name,
+        desc: t('cmdSpaceDesc'),
+      }));
+    }
+    return commands.filter((cmd) =>
+      value === '' ? true : cmd.key.startsWith(value)
+    );
+  }, [spaceMatch, spaces, commands, value, t]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>): void => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        e.currentTarget.blur();
+        if (showCommands && filteredCommands.length > 0) {
+          // Close command palette if open
+          onChange('');
+          setSelectedIndex(0);
+        } else {
+          e.currentTarget.blur();
+        }
         return;
       }
 
@@ -86,13 +126,12 @@ export function SearchBar({
       } else if (e.key === 'Enter' || e.key === 'Tab') {
         e.preventDefault();
         const chosenCmd = filteredCommands[selectedIndex].key;
-        // Append a space for /dupes and /stale to naturally close the menu and allow typing search term
-        const finalCmd = chosenCmd === '/space:' ? chosenCmd : chosenCmd + ' ';
+        const finalCmd = getFinalCmd(chosenCmd);
         onChange(finalCmd);
         setSelectedIndex(0);
       }
     },
-    [showCommands, filteredCommands, selectedIndex, onChange],
+    [showCommands, filteredCommands, selectedIndex, onChange, getFinalCmd],
   );
 
   const showResults = value.length > 0;
@@ -120,9 +159,8 @@ export function SearchBar({
         {/* Input field */}
         <input
           ref={inputRef}
-          type="text"
-          role="searchbox"
-          className="border-border-light dark:border-border-dark bg-bg-light dark:bg-bg-dark text-text-primary-light dark:text-text-primary-dark rounded-chip placeholder:text-text-secondary focus:border-accent-sage focus-visible:ring-accent-blue/40 min-h-11 w-full border py-2 pr-24 pl-9 text-sm transition-colors outline-none focus-visible:ring-2"
+          type="search"
+          className="border-border-color bg-bg-card text-text-primary rounded-chip placeholder:text-text-muted focus:border-accent-sage focus-visible:ring-accent-primary/40 min-h-[var(--spacing-button-icon)] w-full border py-2.5 pr-32 pl-10 text-xs font-mono transition-colors outline-none focus-visible:ring-2"
           placeholder={t('searchPlaceholderTabs')}
           value={value}
           onChange={handleInputChange}
@@ -146,7 +184,7 @@ export function SearchBar({
             <button
               type="button"
               onClick={handleClear}
-              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark focus-visible:ring-accent-blue/40 flex size-11 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark focus-visible:ring-accent-primary/40 flex size-[var(--spacing-button-icon)] cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
               aria-label="Clear search"
             >
               <svg
@@ -179,8 +217,8 @@ export function SearchBar({
       {/* Floating suggestion panel */}
       {showCommands && filteredCommands.length > 0 && (
         <div
-          className="absolute top-12 left-0 z-50 w-full rounded-lg border border-border-light bg-[#FFFDF9]/95 dark:bg-card-dark/95 p-1.5 shadow-lg backdrop-blur-md dark:border-border-dark font-body"
-          style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}
+          className="absolute top-12 left-0 z-50 w-full rounded-lg border border-border-light bg-[var(--bg-card)] dark:bg-card-dark/95 p-1.5 shadow-lg backdrop-blur-md dark:border-border-dark font-body"
+          style={{ boxShadow: 'var(--shadow-dropdown)' }}
         >
           <div className="px-2.5 py-1 text-[10px] font-bold tracking-wider text-text-secondary uppercase select-none">
             {value === '' ? t('cmdPanelTitleHint') : t('cmdPanelTitle')}
@@ -195,7 +233,7 @@ export function SearchBar({
                   onMouseDown={(e) => {
                     e.preventDefault(); // Prevents input blur
                     const chosenCmd = cmd.key;
-                    const finalCmd = chosenCmd === '/space:' ? chosenCmd : chosenCmd + ' ';
+                    const finalCmd = getFinalCmd(chosenCmd);
                     onChange(finalCmd);
                     setSelectedIndex(0);
                   }}
@@ -207,6 +245,11 @@ export function SearchBar({
                 >
                   <div className="flex flex-col">
                     <span className="font-mono text-xs font-semibold">{cmd.key}</span>
+                    {cmd.label && (
+                      <span className="text-xs font-medium text-text-primary-light dark:text-text-primary-dark mt-0.5">
+                        {cmd.label}
+                      </span>
+                    )}
                     <span className="text-[11px] text-text-secondary mt-0.5">{cmd.desc}</span>
                   </div>
                   {active && (

@@ -8,11 +8,30 @@ import { TabChip } from '../newtab/components/TabChip';
 import { ActionButton } from '../newtab/components/ui/ActionButton';
 
 function expectTouchHeight(element: HTMLElement): void {
-  expect(element.className).toMatch(/\b(?:h-11|min-h-11|size-11)\b/);
+  // Accept only valid CSS variable token utilities or the shared global button class.
+  const className = element.className;
+  const valid =
+    /\baction-button\b/.test(className) ||
+    /h-\[var\(--spacing-button-height\)\]/.test(className) ||
+    /min-h-\[var\(--spacing-button-height\)\]/.test(className) ||
+    /size-\[var\(--spacing-button-height\)\]/.test(className) ||
+    /h-\[var\(--spacing-button-icon\)\]/.test(className) ||
+    /min-h-\[var\(--spacing-button-icon\)\]/.test(className) ||
+    /size-\[var\(--spacing-button-icon\)\]/.test(className);
+  expect(valid).toBe(true);
 }
 
 function expectTouchWidth(element: HTMLElement): void {
-  expect(element.className).toMatch(/\b(?:w-11|min-w-11|size-11)\b/);
+  // Accept only valid CSS variable token utilities for 44px width targets.
+  const className = element.className;
+  const valid =
+    /w-\[var\(--spacing-button-height\)\]/.test(className) ||
+    /min-w-\[var\(--spacing-button-height\)\]/.test(className) ||
+    /size-\[var\(--spacing-button-height\)\]/.test(className) ||
+    /w-\[var\(--spacing-button-icon\)\]/.test(className) ||
+    /min-w-\[var\(--spacing-button-icon\)\]/.test(className) ||
+    /size-\[var\(--spacing-button-icon\)\]/.test(className);
+  expect(valid).toBe(true);
 }
 
 describe('touch target regressions', () => {
@@ -53,7 +72,7 @@ describe('touch target regressions', () => {
     rerender(
       <TabChip
         url="https://github.com/OWENLEEzy/tab-out"
-        title="Tab Out repo"
+        title="Tab Organizer repo"
         duplicateCount={2}
         active
         onFocus={() => {}}
@@ -65,7 +84,7 @@ describe('touch target regressions', () => {
     expect(primaryButton).not.toBeNull();
     expectTouchHeight(primaryButton!);
 
-    const closeButton = screen.getByRole('button', { name: /Close Tab Out repo/i });
+    const closeButton = screen.getByRole('button', { name: /Close Tab Organizer repo/i });
     expectTouchHeight(closeButton);
     expectTouchWidth(closeButton);
   });

@@ -140,7 +140,7 @@ export function ProductTable({
                   <td className="col-name">
                     <button
                       type="button"
-                      className="product-table-name"
+                      className="product-table-name cursor-pointer"
                       onClick={() => onFocusTab(p.tabs[0]?.url ?? '')}
                     >
                       <RowIcon group={p} />

@@ -19,7 +19,6 @@ describe('DashboardHeader', () => {
       <DashboardHeader
         title="Open Tabs by Product"
         hasGroups
-        groupCount={2}
         dateLabel="Tuesday, May 5, 2026"
         searchQuery=""
         onSearchChange={onSearchChange}
@@ -27,7 +26,7 @@ describe('DashboardHeader', () => {
         totalCount={12}
         viewMode="cards"
         onViewModeChange={onViewModeChange}
-        groupSortBy="default"
+        groupSortBy="count"
         onGroupSortByChange={onGroupSortByChange}
         onRefresh={() => {}}
         onCreateGroup={onCreateGroup}
@@ -38,7 +37,17 @@ describe('DashboardHeader', () => {
 
     expect(screen.getByText('Tuesday, May 5, 2026')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
-    expect(screen.getByText('2 Groups')).toBeInTheDocument();
+
+    const viewToggle = screen.getByLabelText('View mode');
+    const hardcodedHeightClass = ['h', '[44px]'].join('-');
+    expect(viewToggle).toHaveClass('view-toggle');
+    expect(viewToggle).not.toHaveClass(hardcodedHeightClass);
+    expect(screen.getByRole('button', { name: 'Cards' })).not.toHaveClass('h-[var(--spacing-button-height)]');
+    expect(screen.getByRole('button', { name: 'Table' })).not.toHaveClass('h-[var(--spacing-button-height)]');
+    expect(screen.getByRole('combobox', { name: 'Sort order' })).not.toHaveClass(hardcodedHeightClass);
+    expect(screen.getByRole('button', { name: 'New Group' })).toHaveClass('action-button');
+    expect(screen.getByRole('button', { name: 'Close All' })).toHaveClass('action-button');
+    expect(screen.getByRole('button', { name: 'Close All' })).not.toHaveClass('h-[var(--spacing-button-height)]');
 
     fireEvent.change(screen.getByRole('searchbox', { name: 'Search tabs' }), {
       target: { value: 'github' },
@@ -61,7 +70,6 @@ describe('DashboardHeader', () => {
       <DashboardHeader
         title="Open Tabs by Product"
         hasGroups={false}
-        groupCount={0}
         dateLabel="Tuesday, May 5, 2026"
         searchQuery=""
         onSearchChange={() => {}}
@@ -69,7 +77,7 @@ describe('DashboardHeader', () => {
         totalCount={0}
         viewMode="cards"
         onViewModeChange={() => {}}
-        groupSortBy="default"
+        groupSortBy="count"
         onGroupSortByChange={onGroupSortByChange}
         onRefresh={() => {}}
         onCreateGroup={() => {}}

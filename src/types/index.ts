@@ -1,3 +1,5 @@
+import type { AccentKey } from '../config/themes';
+
 // ─── Tab Data ────────────────────────────────────────────────────
 
 export interface Tab {
@@ -8,7 +10,7 @@ export interface Tab {
   domain: string;
   windowId: number;
   active: boolean;
-  isTabOut: boolean;
+  isDashboard: boolean;
   isDuplicate: boolean;
   isLandingPage: boolean;
   duplicateCount: number;
@@ -19,7 +21,7 @@ export interface Tab {
 
 // ─── Tab Groups ──────────────────────────────────────────────────
 
-export type GroupSortOption = 'default' | 'name' | 'lastAccessed';
+export type GroupSortOption = 'count' | 'name' | 'lastAccessed';
 
 export interface TabGroup {
   id: string;
@@ -144,7 +146,7 @@ export interface HistorySnapshot {
 // ─── App Settings ────────────────────────────────────────────────
 
 export interface AppSettings {
-  theme: 'light' | 'dark' | 'system';
+  theme: AccentKey;
   language?: 'en' | 'zh' | 'system';
   soundEnabled: boolean;
   confettiEnabled: boolean;

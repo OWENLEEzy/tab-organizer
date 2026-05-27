@@ -26,7 +26,7 @@ export function MetricPill({
   return (
     <span
       className={[
-        'inline-flex min-h-8 items-center gap-2 rounded-chip border border-border-light px-2.5 py-1',
+        'inline-flex min-h-[var(--spacing-button-height-sm)] items-center gap-2 rounded-chip border border-border-light px-2.5 py-1',
         'font-body text-xs font-medium uppercase dark:border-border-dark',
         toneClasses[tone],
         className,

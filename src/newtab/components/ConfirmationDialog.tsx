@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useEffectEvent, useRef } from 'react';
 import type { ConfirmDialogProps } from '../../types';
 import { ActionButton } from './ui/ActionButton';
 import { useI18n } from '../hooks/useI18n';
@@ -16,19 +16,21 @@ export function ConfirmationDialog({
   const dialogRef = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
 
+  const onCancelEffect = useEffectEvent(onCancel);
+
   // Close on Escape key
   useEffect(() => {
     if (!open) return;
 
     function handleKeyDown(e: KeyboardEvent): void {
       if (e.key === 'Escape') {
-        onCancel();
+        onCancelEffect();
       }
     }
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, onCancel]);
+  }, [open]);
 
   // Trap focus inside dialog
   useEffect(() => {
@@ -98,11 +100,11 @@ export function ConfirmationDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
-        className="border border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] p-6 rounded-card"
+        className="border border-border-light bg-card-light relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] p-6 rounded-card"
       >
         <h3
           id="confirm-dialog-title"
-          className="font-heading text-text-primary-light dark:text-text-primary-dark text-lg font-semibold"
+          className="font-heading text-text-primary text-lg font-semibold"
         >
           {title}
         </h3>

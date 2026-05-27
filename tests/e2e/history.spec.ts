@@ -4,7 +4,7 @@ test.describe('History Panel', () => {
   test.beforeEach(async ({ page }) => {
     // Inject mock history data into localStorage before the app loads
     await page.addInitScript(() => {
-      const storageKey = '__tab_out_e2e_storage__';
+      const storageKey = '__tab_organizer_e2e_storage__';
       const mockHistory = [
         {
           id: 'snap-1',

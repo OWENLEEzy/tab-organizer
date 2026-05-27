@@ -42,9 +42,9 @@ export function getTabDomain(url: string): string {
 }
 
 /**
- * Check if a URL is a Tab Out new tab page.
+ * Check if a URL is a Tab Organizer new tab page.
  */
-export function isTabOutPage(url: string): boolean {
+export function isTabOrganizerPage(url: string): boolean {
   if (!url) return false;
   if (url === 'chrome://newtab/') return true;
   try {

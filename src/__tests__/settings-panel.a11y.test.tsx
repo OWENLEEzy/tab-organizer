@@ -16,7 +16,7 @@ function SettingsHarness(): React.ReactElement {
       <SettingsPanel
         open={open}
         onClose={() => setOpen(false)}
-        theme="system"
+        theme="clay"
         language="system"
         soundEnabled
         confettiEnabled
@@ -70,7 +70,7 @@ describe('SettingsPanel accessibility', () => {
       <SettingsPanel
         open
         onClose={() => {}}
-        theme="system"
+        theme="clay"
         language="system"
         soundEnabled
         confettiEnabled

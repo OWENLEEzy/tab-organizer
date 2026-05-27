@@ -1,4 +1,4 @@
-# Tab Out Release Checklist
+# Tab Organizer Release Checklist
 
 ## Preflight
 - Run `npm install` if dependencies changed.
@@ -10,7 +10,7 @@
 - Open `chrome://extensions`.
 - Enable Developer mode.
 - Load unpacked from `dist/`.
-- Click the Tab Out toolbar icon.
+- Click the Tab Organizer toolbar icon.
 - Confirm tab groups appear.
 - Confirm YouTube Music appears inside YouTube.
 - Confirm `*.vercel.app` appears inside Vercel.
@@ -26,7 +26,7 @@
 - Use screenshots from the current build.
 
 ## Privacy Review
-- Confirm permissions are still limited to `tabs` and `storage`.
+- Confirm permissions are still limited to `tabs`, `storage`, and `favicon`.
 - Confirm no account, backend, remote sync, analytics, or tracking is introduced.
 - Confirm recovery snapshots are capped to 5 sessions and 80 tabs each.
 - Confirm delete and clear controls are available for recovery snapshots.

@@ -26,7 +26,7 @@ export function DupeBanner({ count, onClose }: DupeBannerProps): React.ReactElem
             viewBox="0 0 24 24"
             strokeWidth={1.5}
             stroke="currentColor"
-            className="text-accent-amber h-[18px] w-[18px]"
+            className="text-accent-amber size-[var(--icon-size-sm)]"
             aria-hidden="true"
           >
             <path
@@ -36,14 +36,14 @@ export function DupeBanner({ count, onClose }: DupeBannerProps): React.ReactElem
             />
           </svg>
         </div>
-        <p className="text-text-primary-light dark:text-text-primary-dark text-sm leading-relaxed">
-          {t('alertExtraTabOutPlural', { count })}
+        <p className="text-text-primary text-sm leading-relaxed">
+          {t('alertExtraTabOrganizerPlural', { count })}
         </p>
       </div>
       <button
         type="button"
         onClick={onClose}
-        className="rounded-chip bg-accent-amber font-body focus-visible:ring-accent-amber/50 min-h-11 cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
+        className="rounded-chip bg-accent-amber font-body focus-visible:ring-accent-amber/50 min-h-[var(--spacing-button-height)] cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
       >
         {t('actionCloseExtras')}
       </button>

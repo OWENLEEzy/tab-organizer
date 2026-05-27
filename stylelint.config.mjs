@@ -29,7 +29,7 @@ export default {
     'color-function-alias-notation': null,
     'color-function-notation': null,
     'color-hex-length': null,
-    'custom-property-pattern': '^(color|font-family|radius|shadow)-[a-z0-9-]+$',
+    'custom-property-pattern': '^(color|font-family|radius|shadow|spacing)-[a-z0-9-]+$',
     'import-notation': null,
     'keyframes-name-pattern': null,
     'media-feature-range-notation': null,

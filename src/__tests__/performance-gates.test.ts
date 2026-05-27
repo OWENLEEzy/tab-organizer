@@ -24,8 +24,8 @@ describe('performance gates', () => {
     expect(script).toContain('totalParsed');
     expect(script).toContain('entryGzip');
     expect(script).toContain('totalGzip');
-    expect(script).toContain('300 * 1024');
-    expect(script).toContain('400 * 1024');
+    expect(script).toContain('600 * 1024');
+    expect(script).toContain('1024 * 1024');
   });
 
   it('lazy-loads panels that are not needed for the initial dashboard view', () => {

@@ -17,6 +17,8 @@ import { HistoryPanel } from './components/HistoryPanel';
 import { SpaceSwitcher } from './components/SpaceSwitcher';
 import { useAppLogic } from './hooks/useAppLogic';
 import { useI18n } from './hooks/useI18n';
+import { useTheme } from './hooks/useTheme';
+import { parseImportedSettings } from './lib/settings-import';
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -38,6 +40,8 @@ export function App(): React.ReactElement {
   const { settings } = settingsStore;
   const { history, viewMode } = tabStore;
 
+  useTheme(settings.theme);
+
   const handleExportConfig = () => {
     const config = {
       version: '1.0',
@@ -50,7 +54,7 @@ export function App(): React.ReactElement {
     try {
       const a = document.createElement('a');
       a.href = url;
-      a.download = `tab-out-settings-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `tab-organizer-settings-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
     } finally {
       URL.revokeObjectURL(url);
@@ -73,30 +77,30 @@ export function App(): React.ReactElement {
 
       // Restore preferences
       if (parsed.settings && typeof parsed.settings === 'object') {
-        const s = parsed.settings;
-        if (typeof s.theme === 'string') await settingsStore.setTheme(s.theme);
-        if (typeof s.soundEnabled === 'boolean' && s.soundEnabled !== settingsStore.settings.soundEnabled) await settingsStore.toggleSound();
-        if (typeof s.confettiEnabled === 'boolean' && s.confettiEnabled !== settingsStore.settings.confettiEnabled) await settingsStore.toggleConfetti();
-        if (typeof s.maxChipsVisible === 'number') await settingsStore.setMaxChipsVisible(s.maxChipsVisible);
-        if (typeof s.staleThresholdDays === 'number') await settingsStore.setStaleThresholdDays(s.staleThresholdDays);
+        const importedSettings = parseImportedSettings(parsed.settings);
+        if (importedSettings.theme) await settingsStore.setTheme(importedSettings.theme);
+        if (importedSettings.soundEnabled !== undefined && importedSettings.soundEnabled !== settingsStore.settings.soundEnabled) await settingsStore.toggleSound();
+        if (importedSettings.confettiEnabled !== undefined && importedSettings.confettiEnabled !== settingsStore.settings.confettiEnabled) await settingsStore.toggleConfetti();
+        if (importedSettings.maxChipsVisible !== undefined) await settingsStore.setMaxChipsVisible(importedSettings.maxChipsVisible);
+        if (importedSettings.staleThresholdDays !== undefined) await settingsStore.setStaleThresholdDays(importedSettings.staleThresholdDays);
+        if (importedSettings.groupSortBy) await settingsStore.setGroupSortBy(importedSettings.groupSortBy);
 
-        if (Array.isArray(s.customGroups)) {
+        if (importedSettings.customGroups) {
           // Clear all existing custom groups (parallel)
           await Promise.all(settingsStore.settings.customGroups.map(cg =>
             settingsStore.removeCustomGroup(cg.groupKey)
           ));
           // Add imported custom groups (parallel)
-          await Promise.all(s.customGroups.map((cg: CustomGroup) =>
+          await Promise.all(importedSettings.customGroups.map((cg: CustomGroup) =>
             settingsStore.addCustomGroup(cg)
           ));
         }
 
-        if (s.keyBindings && typeof s.keyBindings === 'object') {
-          const updates = Object.entries(s.keyBindings)
-            .filter(([, binding]) => typeof binding === 'string')
-            .map(([key, binding]) =>
-              settingsStore.updateKeyBinding(key as keyof typeof settings.keyBindings, binding as string)
-            );
+        if (importedSettings.keyBindings) {
+          const updates: Promise<void>[] = [];
+          for (const [key, binding] of Object.entries(importedSettings.keyBindings)) {
+            updates.push(settingsStore.updateKeyBinding(key as keyof typeof settings.keyBindings, binding));
+          }
           await Promise.all(updates);
         }
       }
@@ -110,7 +114,7 @@ export function App(): React.ReactElement {
 
       handlers.showToast(t('toastSettingsImported'));
     } catch (err) {
-      console.error('[Tab Out] Failed to import settings:', err);
+      console.error('[Tab Organizer] Failed to import settings:', err);
       handlers.showToast(t('toastImportFailed'));
     }
   };
@@ -121,12 +125,12 @@ export function App(): React.ReactElement {
 
   const statusAlerts: StatusStripAlert[] = [];
 
-  if (state.tabOutCount > 1) {
+  if (state.dashboardCount > 1) {
     statusAlerts.push({
-      id: 'extra-tab-out-pages',
-      label: state.tabOutCount - 1 === 1
-        ? t('alertExtraTabOutSingle')
-        : t('alertExtraTabOutPlural', { count: state.tabOutCount - 1 }),
+      id: 'extra-tab-organizer-pages',
+      label: state.dashboardCount - 1 === 1
+        ? t('alertExtraTabOrganizerSingle')
+        : t('alertExtraTabOrganizerPlural', { count: state.dashboardCount - 1 }),
       actionLabel: t('actionCloseExtras'),
       onAction: () => {
         tabStore.closeExtraDashboards();
@@ -145,11 +149,11 @@ export function App(): React.ReactElement {
 
   return (
     <ErrorBoundary>
+      <div className="noise-overlay" aria-hidden="true" />
       {/* Skip to main content — keyboard accessibility */}
       <a
         href="#main-content"
         className="focus:rounded-chip focus:bg-accent-blue sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:text-sm focus:text-white focus:outline-none"
-        style={{ zIndex: 60 }}
       >
         {t('skipToContent')}
       </a>
@@ -158,7 +162,7 @@ export function App(): React.ReactElement {
           <StatusStrip
             totalTabs={state.totalTabs}
             totalDupes={state.totalDupes}
-            totalGroups={state.totalProducts}
+            totalGroups={state.visibleSpaceCount}
             alerts={statusAlerts}
           />
         }
@@ -166,6 +170,7 @@ export function App(): React.ReactElement {
           <>
             <SpaceSwitcher
               spaces={derived.orderedGroups}
+              spaceIds={[null, ...derived.orderedGroups.map((g) => g.id)]}
               activeSpaceId={tabStore.activeSpaceId}
               onChange={tabStore.setActiveSpace}
               onCreateSpace={handlers.handleCreateGroup}
@@ -174,22 +179,22 @@ export function App(): React.ReactElement {
             <DashboardHeader
               title={t('titleOpenTabs')}
               hasGroups={!state.showEmptyState}
-              groupCount={state.visibleGroupCount}
               searchQuery={state.searchQuery}
               onSearchChange={(q) => dispatch({ type: 'SET_SEARCH_QUERY', query: q })}
-            resultCount={state.filteredTabCount}
-            totalCount={state.totalTabs}
-            viewMode={viewMode}
-            onViewModeChange={handlers.handleSetViewMode}
-            groupSortBy={settings.groupSortBy}
-            onGroupSortByChange={settingsStore.setGroupSortBy}
-            onRefresh={handlers.handleRefresh}
-            onCreateGroup={handlers.handleCreateGroup}
-            onCloseAll={handlers.handleCloseAll}
-            onOpenSettings={() => dispatch({ type: 'SET_SETTINGS_OPEN', open: true })}
-            isSidebarExpanded={state.isSidebarExpanded}
-            onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
-          />
+              resultCount={state.filteredTabCount}
+              totalCount={state.totalTabs}
+              viewMode={viewMode}
+              onViewModeChange={handlers.handleSetViewMode}
+              groupSortBy={settings.groupSortBy}
+              onGroupSortByChange={settingsStore.setGroupSortBy}
+              onRefresh={handlers.handleRefresh}
+              onCreateGroup={handlers.handleCreateGroup}
+              onCloseAll={handlers.handleCloseAll}
+              onOpenSettings={() => dispatch({ type: 'SET_SETTINGS_OPEN', open: true })}
+              isSidebarExpanded={state.isSidebarExpanded}
+              onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
+              spaces={derived.orderedGroups}
+            />
           </>
         }
         isSidebarExpanded={state.isSidebarExpanded}
@@ -223,7 +228,7 @@ export function App(): React.ReactElement {
                         viewBox="0 0 24 24"
                         strokeWidth={1.5}
                         stroke="currentColor"
-                        className="text-accent-amber h-[18px] w-[18px]"
+                        className="text-accent-amber size-[18px]"
                         aria-hidden="true"
                       >
                         <path
@@ -245,7 +250,7 @@ export function App(): React.ReactElement {
                   <button
                     type="button"
                     onClick={() => handlers.handleSelectDuplicateTabs()}
-                    className="rounded-chip bg-accent-amber font-body focus-visible:ring-accent-amber/50 min-h-11 cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
+                    className="rounded-chip bg-accent-amber font-body focus-visible:ring-accent-amber/50 min-h-[var(--spacing-button-height)] cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
                   >
                     {t('sweepDupeBtn')}
                   </button>
@@ -265,7 +270,7 @@ export function App(): React.ReactElement {
                         viewBox="0 0 24 24"
                         strokeWidth={1.5}
                         stroke="currentColor"
-                        className="text-accent-blue h-[18px] w-[18px]"
+                        className="text-accent-blue size-[18px]"
                         aria-hidden="true"
                       >
                         <path
@@ -287,7 +292,7 @@ export function App(): React.ReactElement {
                   <button
                     type="button"
                     onClick={() => handlers.handleSelectStaleTabs(settings.staleThresholdDays ?? 3)}
-                    className="rounded-chip bg-accent-blue font-body focus-visible:ring-accent-blue/50 min-h-11 cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
+                    className="rounded-chip bg-accent-blue font-body focus-visible:ring-accent-primary/50 min-h-[var(--spacing-button-height)] cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
                   >
                     {t('sweepStaleBtn')}
                   </button>
@@ -298,11 +303,11 @@ export function App(): React.ReactElement {
                 <div className="flex flex-col items-center justify-center py-16 text-center animate-[fadeIn_0.3s_ease]">
                   <div className="bg-surface-light dark:bg-surface-dark mb-4 flex size-16 items-center justify-center rounded-full border border-dashed border-border-light dark:border-border-dark text-text-secondary">
                     {state.parsedQuery.type === 'stale' ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8 text-accent-blue"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-8 text-accent-blue"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                     ) : state.parsedQuery.type === 'dupes' ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8 text-accent-amber"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-8 text-accent-amber"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                     ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.602 10.602Z" /></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-8"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.602 10.602Z" /></svg>
                     )}
                   </div>
                   <h3 className="font-heading text-lg font-normal text-text-primary-light dark:text-text-primary-dark">
@@ -311,7 +316,7 @@ export function App(): React.ReactElement {
                       : state.parsedQuery.type === 'dupes'
                       ? t('emptySweepDupeTitle')
                       : state.parsedQuery.type === 'space'
-                      ? (state.parsedQuery.arg ? t('emptySweepSpaceTitle') : t('emptySweepSpaceNoArg'))
+                      ? (state.parsedQuery.spaceToken ? t('emptySweepSpaceTitle') : t('emptySweepSpaceNoArg'))
                       : t('emptySweepSearchTitle')}
                   </h3>
                   <p className="text-text-secondary text-sm mt-1 max-w-sm px-4">
@@ -320,8 +325,8 @@ export function App(): React.ReactElement {
                       : state.parsedQuery.type === 'dupes'
                       ? t('emptySweepDupeDesc')
                       : state.parsedQuery.type === 'space'
-                      ? (state.parsedQuery.arg
-                          ? t('emptySweepSpaceDesc', { name: state.parsedQuery.arg })
+                      ? (state.parsedQuery.spaceToken
+                          ? t('emptySweepSpaceDesc', { name: state.parsedQuery.spaceToken })
                           : t('emptySweepSpaceNoArg'))
                       : t('emptySweepSearchDesc', { query: state.searchQuery })}
                   </p>

@@ -5,6 +5,7 @@ dist-zip
 *.log
 check_results.txt
 e2e_results.txt
+catalog.json
 .DS_Store
 docs/superpowers/
 
@@ -21,4 +22,5 @@ extension/config.local.js
 .claude/
 .codex/
 .superpowers/
+.antigravitycli/
 coverage/

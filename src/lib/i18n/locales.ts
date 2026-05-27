@@ -10,7 +10,7 @@ export const locales = {
     skipToContent: 'Skip to main content',
 
     // Dashboard Header
-    titleOpenTabs: 'Open Tabs by Product',
+    titleOpenTabs: 'Tab Organizer',
     groupCountSingle: '1 Group',
     groupCountPlural: '{count} Groups',
     noGroupsFound: 'No groups found',
@@ -22,7 +22,7 @@ export const locales = {
     closeAll: 'Close All',
 
     // Sort Options
-    sortDefault: 'Default',
+    sortCount: 'By Tab Count',
     sortByName: 'By Name',
     sortByLastAccessed: 'By Last Used',
 
@@ -30,8 +30,8 @@ export const locales = {
     metricTabs: 'tabs',
     metricDuplicates: 'duplicates',
     metricGroups: 'groups',
-    alertExtraTabOutSingle: '1 extra dashboard tab',
-    alertExtraTabOutPlural: '{count} extra dashboard tabs',
+    alertExtraTabOrganizerSingle: '1 extra dashboard tab',
+    alertExtraTabOrganizerPlural: '{count} extra dashboard tabs',
     actionCloseExtras: 'Close extras',
     alertHighTabCount: 'High tab count',
     alertHighTabCountDesc: 'You have {count} tabs open. Consider closing the ones you\'re not using.',
@@ -135,7 +135,7 @@ export const locales = {
     selectedCancel: 'Cancel',
 
     // Update Banner
-    updateBannerText: 'Tab Out updated to v{version} — What\'s new?',
+    updateBannerText: 'Tab Organizer updated to v{version} — What\'s new?',
     updateBannerDismiss: 'Dismiss update notice',
 
     // Product Table
@@ -188,6 +188,15 @@ export const locales = {
     settingsThemeDark: 'Dark Mode',
     settingsThemeDesc: 'Choose dashboard visual appearance',
 
+    // Theme names
+    themeClay: 'Clay Paper',
+    themeSage: 'Sage Herb',
+    themeFrost: 'Ice Frost',
+    themeOchre: 'Chalk Ochre',
+    themeObsidian: 'Obsidian Ink',
+    themePine: 'Deep Pine',
+    themeAmethyst: 'Amethyst Night',
+
     settingsOptionsTitle: 'Interface Options',
     settingsOptionsSound: 'Sound Effects',
     settingsOptionsSoundDesc: 'Play satisfying click and pop sounds during cleanup',
@@ -228,7 +237,7 @@ export const locales = {
     settingsShortcutDedupeActive: 'Dedupe Active Product',
     settingsShortcutCloseStale: 'Close Stale Sweep',
     settingsShortcutsResetBtn: 'Reset Shortcuts',
-    settingsShortcutsHint: 'Keyboard shortcuts let you trigger Tab Out workflows quickly. Double click a field to change it.',
+    settingsShortcutsHint: 'Keyboard shortcuts let you trigger Tab Organizer workflows quickly. Double click a field to change it.',
 
     // Settings - Backup & Import
     settingsBackupTitle: 'Backup & Portability',
@@ -294,6 +303,7 @@ export const locales = {
     settingsNoSpacesCreated: 'No spaces created yet. Add one above!',
     settingsBtnDeleteSpace: 'Delete Space',
     settingsLabelAutoRules: 'Auto-assignment rules (one pattern per line)',
+    settingsLabelEmoji: 'Space emoji (single character)',
     settingsShortcutRecording: 'Press key...',
     settingsShortcutLabelSwitchSpaceN: 'Switch to Space 1-9',
     settingsShortcutLabelSwitchSpaceAll: 'Switch to "All"',
@@ -325,7 +335,7 @@ export const locales = {
     closeAll: '关闭全部',
 
     // Sort Options
-    sortDefault: '默认顺序',
+    sortCount: '按标签数量',
     sortByName: '按名称',
     sortByLastAccessed: '按最近使用',
 
@@ -333,8 +343,8 @@ export const locales = {
     metricTabs: '标签页',
     metricDuplicates: '重复项',
     metricGroups: '独立分组',
-    alertExtraTabOutSingle: '1 个多余的整理面板标签',
-    alertExtraTabOutPlural: '{count} 个多余的整理面板标签',
+    alertExtraTabOrganizerSingle: '1 个多余的整理面板标签',
+    alertExtraTabOrganizerPlural: '{count} 个多余的整理面板标签',
     actionCloseExtras: '关闭多余面板',
     alertHighTabCount: '标签页数量过高',
     alertHighTabCountDesc: '您当前打开了 {count} 个标签页。建议关闭不常用的标签页以释放资源。',
@@ -438,7 +448,7 @@ export const locales = {
     selectedCancel: '取消选择',
 
     // Update Banner
-    updateBannerText: 'Tab Out 已更新至 v{version} — 了解新功能！',
+    updateBannerText: 'Tab Organizer 已更新至 v{version} — 了解新功能！',
     updateBannerDismiss: '关闭更新通知',
 
     // Product Table
@@ -491,6 +501,15 @@ export const locales = {
     settingsThemeDark: '暗色模式 (深色)',
     settingsThemeDesc: '更改整理面板的整体外观颜色',
 
+    // Theme names
+    themeClay: '暖沙陶土',
+    themeSage: '草本鼠尾草',
+    themeFrost: '冰川冷蓝',
+    themeOchre: '白垩赭石',
+    themeObsidian: '黑曜石墨',
+    themePine: '暗针长青',
+    themeAmethyst: '紫曜晚霞',
+
     settingsOptionsTitle: '交互选项',
     settingsOptionsSound: '清理音效',
     settingsOptionsSoundDesc: '在关闭标签页或清理重复项时播放解压的音效',
@@ -531,7 +550,7 @@ export const locales = {
     settingsShortcutDedupeActive: '去重当前活跃产品',
     settingsShortcutCloseStale: '一键清理闲置标签',
     settingsShortcutsResetBtn: '重置快捷键',
-    settingsShortcutsHint: '键盘快捷键能帮您迅速触发 Tab Out 整理流程。双击字段即可对其进行修改。',
+    settingsShortcutsHint: '键盘快捷键能帮您迅速触发 Tab Organizer 整理流程。双击字段即可对其进行修改。',
 
     // Settings - Backup & Import
     settingsBackupTitle: '数据备份与迁移',
@@ -597,6 +616,7 @@ export const locales = {
     settingsNoSpacesCreated: '暂无分区空间。在上方输入名称并创建！',
     settingsBtnDeleteSpace: '删除空间',
     settingsLabelAutoRules: '自动匹配规则 (每行输入一个关键字)',
+    settingsLabelEmoji: '空间表情符号 (单字符)',
     settingsShortcutRecording: '按下按键...',
     settingsShortcutLabelSwitchSpaceN: '切换到空间 1-9',
     settingsShortcutLabelSwitchSpaceAll: '切换到 "全部"',

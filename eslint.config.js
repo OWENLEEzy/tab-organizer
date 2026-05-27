@@ -7,6 +7,45 @@ import tailwindcss from 'eslint-plugin-tailwindcss'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
+const forbiddenButtonSizePattern = /\b(?:h|min-h|size|w|min-w)-(?:8|9|10|11)\b|\b(?:h|min-h|size|w|min-w)-\[(?:32|36|40|44)px\]/
+
+function staticClassText(value) {
+  if (!value) return ''
+  if (value.type === 'Literal') return typeof value.value === 'string' ? value.value : ''
+  if (value.type !== 'JSXExpressionContainer') return ''
+
+  const expression = value.expression
+  if (expression.type === 'Literal') return typeof expression.value === 'string' ? expression.value : ''
+  if (expression.type === 'TemplateLiteral') {
+    return expression.quasis.map((quasi) => quasi.value.raw).join(' ')
+  }
+  return ''
+}
+
+const localRules = {
+  'button-size-tokens': {
+    meta: {
+      type: 'problem',
+      messages: {
+        hardcodedSize: 'Use token utilities such as min-h-[var(--spacing-button-height)] or size-[var(--spacing-button-icon)] instead of hardcoded button dimensions.',
+      },
+    },
+    create(context) {
+      return {
+        JSXAttribute(node) {
+          if (node.name?.name !== 'className') return
+          const openingElement = node.parent
+          if (openingElement?.name?.name !== 'button') return
+
+          if (forbiddenButtonSizePattern.test(staticClassText(node.value))) {
+            context.report({ node, messageId: 'hardcodedSize' })
+          }
+        },
+      }
+    },
+  },
+}
+
 export default defineConfig([
   globalIgnores(['dist', 'extension', 'coverage', 'playwright-report', 'test-results']),
   {
@@ -21,6 +60,11 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    plugins: {
+      local: {
+        rules: localRules,
+      },
+    },
     rules: {
       // ── Chrome Extension: no console in production ────────────────
       'no-console': ['warn', { allow: ['warn', 'error'] }],
@@ -33,6 +77,8 @@ export default defineConfig([
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
       }],
+
+      'local/button-size-tokens': 'error',
 
       // ── React Refresh: downgrade to warn, allow utility exports ───
       'react-refresh/only-export-components': ['warn', {
@@ -231,6 +277,10 @@ export default defineConfig([
         {
           selector: "JSXOpeningElement[name.name='button'] JSXAttribute[name.name='className'] Literal[value=/\\brounded-(?!chip|sm|none|full)\\w+/]",
           message: 'Custom large border-radius is restricted on buttons. Use "rounded-chip" (4px) as specified in frontend-design.md.',
+        },
+        {
+          selector: "JSXText[value=/[\\u{1F300}-\\u{1F9FF}\\u{2600}-\\u{26FF}\\u{2700}-\\u{27BF}]/u]",
+          message: 'No emoji in JSX text. Use SVG icons instead.',
         },
       ],
     },

@@ -11,7 +11,7 @@ function makeTab(id: number, url: string): Tab {
     domain: '',
     windowId: 1,
     active: false,
-    isTabOut: false,
+    isDashboard: false,
     isDuplicate: false,
     isLandingPage: false,
     duplicateCount: 0,

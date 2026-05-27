@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "Tab Out",
+    "message": "Tab Organizer",
     "description": "The name of the extension."
   },
   "extDesc": {
@@ -8,7 +8,7 @@
     "description": "The description of the extension."
   },
   "extCommandDesc": {
-    "message": "Open Tab Out Space Switcher",
+    "message": "Open Tab Organizer Space Switcher",
     "description": "Shortcut command description."
   }
 }

@@ -9,11 +9,11 @@
   [![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)]()
   [![Chrome](https://img.shields.io/badge/Chrome-Extension-amber.svg)]()
 
-  ### [English](README.md) | [中文说明](README_zh.md) | [Original Project ↗️](https://github.com/OWENLEEzy/tab-out)
+  ### [English](README.md) | [中文说明](docs/README_zh.md) | [Original Project ↗️](https://github.com/OWENLEEzy/tab-out)
 
 </div>
 
-  ### [English](README.md) | [中文说明](README_zh.md) | [Original Project ↗️](https://github.com/OWENLEEzy/tab-out)
+  ### [English](README.md) | [中文说明](docs/README_zh.md) | [Original Project ↗️](https://github.com/OWENLEEzy/tab-out)
 
 </div>
 
@@ -49,6 +49,7 @@
 
 1. **Download**: Visit the [Releases](https://github.com/OWENLEEzy/tab-organizer/releases) page.
    - **⚠️ IMPORTANT**: Download the file named **`tab-organizer-latest.zip`**.
+   - Direct download: [tab-organizer-latest.zip](https://github.com/OWENLEEzy/tab-organizer/releases/latest/download/tab-organizer-latest.zip)
    - **DO NOT** download the "Source code (zip)" at the bottom; it is uncompiled and won't work as an extension directly.
 2. **Unpack**: Extract the downloaded `.zip` file to a permanent folder on your computer (e.g., Documents).
 3. **Load**: 

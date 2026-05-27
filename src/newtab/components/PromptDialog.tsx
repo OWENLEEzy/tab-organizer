@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { PromptDialogProps } from '../../types';
 import { ActionButton } from './ui/ActionButton';
 import { useI18n } from '../hooks/useI18n';
@@ -23,19 +23,21 @@ export function PromptDialog({
   // Local state for user input - component remounts when initialValue changes (via parent key)
   const [inputValue, setInputValue] = useState(initialValue ?? '');
 
+  const onCancelEffect = useEffectEvent(onCancel);
+
   // Close on Escape key
   useEffect(() => {
     if (!open) return;
 
     function handleKeyDown(e: KeyboardEvent): void {
       if (e.key === 'Escape') {
-        onCancel();
+        onCancelEffect();
       }
     }
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, onCancel]);
+  }, [open]);
 
   // Trap focus + auto-focus input
   useEffect(() => {

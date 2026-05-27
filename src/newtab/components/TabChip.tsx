@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getHostname, sanitizeUrl } from '../../utils/url';
 import {
   cleanTitle,
@@ -91,6 +91,8 @@ function HighlightedText({ text, highlight = '' }: { text: string; highlight?: s
   const isCommand = 
     trimmedLower.startsWith('/') ||
     trimmedLower.startsWith('space:') ||
+    trimmedLower.startsWith('spac:') ||
+    trimmedLower.startsWith('s:') ||
     trimmedLower === 'stale' || trimmedLower === 'stales' ||
     trimmedLower === 'dupe' || trimmedLower === 'dupes' ||
     trimmedLower.startsWith('stale ') || trimmedLower.startsWith('stales ') ||
@@ -100,7 +102,7 @@ function HighlightedText({ text, highlight = '' }: { text: string; highlight?: s
     cleanHighlight = cleanHighlight
       .replace(/^\/?dupes?\s*/i, '')
       .replace(/^\/?stales?\s*/i, '')
-      .replace(/^\/?space:[^\s]*\s*/i, '')
+      .replace(/^\/?(?:space|spac|s):[^\s]*\s*/i, '')
       .trim();
   }
   if (!cleanHighlight) return <>{text}</>;
@@ -114,7 +116,7 @@ function HighlightedText({ text, highlight = '' }: { text: string; highlight?: s
         part.toLowerCase() === cleanHighlight.toLowerCase() ? (
           <mark
             key={`${part}-${i}`}
-            className="bg-accent-amber/25 text-text-primary-light dark:text-text-primary-dark rounded-sm px-0.5 font-semibold"
+            className="bg-accent-amber/25 text-text-primary rounded-sm px-0.5 font-semibold"
           >
             {part}
           </mark>
@@ -201,22 +203,22 @@ export function TabChip({
     setFailedFaviconUrl(faviconUrl);
   }, [faviconUrl]);
 
-  const chipClasses = [
-    'flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-chip border border-transparent px-2.5 py-1.5 text-left',
+  const chipClasses = useMemo(() => [
+    'flex min-h-[var(--spacing-button-icon)] min-w-0 flex-1 items-center gap-2 rounded-chip border border-transparent px-2.5 py-1.5 text-left font-mono text-xs',
     'cursor-pointer bg-transparent transition-colors duration-150',
-    isSelected ? '' : 'hover:border-border-light hover:bg-surface-light dark:hover:border-border-dark dark:hover:bg-surface-dark',
-    'focus-visible:ring-2 focus-visible:ring-accent-blue/40 focus-visible:outline-none',
-    duplicateCount > 1 ? 'border-accent-amber bg-accent-amber/[0.08]' : '',
-    active && !isSelected ? 'border-accent-sage bg-accent-sage/[0.08]' : '',
-    isFocused && !isSelected ? 'ring-2 ring-accent-blue/40 border-border-light bg-surface-light dark:border-border-dark dark:bg-surface-dark' : '',
+    isSelected ? '' : 'hover:border-border-color hover:bg-bg-surface',
+    'focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none',
+    duplicateCount > 1 ? 'border-border-duplicate bg-bg-duplicate' : '',
+    active && !isSelected ? 'tab-active' : '',
+    isFocused && !isSelected ? 'ring-2 ring-accent-primary/40 border-border-color bg-bg-surface' : '',
     isClosing ? 'chip-closing' : '',
-    isSelected ? 'ring-2 ring-accent-blue border-accent-blue bg-accent-blue/[0.12]' : '',
+    isSelected ? 'ring-2 ring-accent-primary border-accent-primary bg-accent-primary/[0.12]' : '',
     isStale && !isSelected
-      ? 'opacity-55 saturate-[0.15] bg-[#F7F6F3]/40 border-dashed border-[#E8E7E4] dark:bg-card-dark/30 hover:opacity-100 hover:saturate-100 hover:border-transparent transition-all duration-200'
+      ? 'opacity-55 saturate-[0.15] bg-bg-surface/40 border-dashed border-border-color hover:opacity-100 hover:saturate-100 hover:border-transparent transition-all duration-200'
       : '',
   ]
     .filter(Boolean)
-    .join(' ');
+    .join(' '), [isSelected, isFocused, isClosing, isStale, duplicateCount, active]);
 
   return (
     <div className={`group flex items-center gap-1${isClosing ? ' chip-closing' : ''}`}>
@@ -238,8 +240,8 @@ export function TabChip({
         */}
         {active && (
           <span
-            className="bg-accent-sage h-1.5 w-1.5 shrink-0 rounded-full"
-            style={{ boxShadow: '0 0 0 2px rgba(77,171,154,0.2)' }}
+            className="bg-accent-sage size-1.5 shrink-0 rounded-full"
+            style={{ boxShadow: 'var(--shadow-focus)' }}
             aria-hidden="true"
           />
         )}
@@ -254,7 +256,7 @@ export function TabChip({
           />
         ) : (
           <span
-            className="bg-surface-light dark:bg-surface-dark text-text-secondary flex size-4 shrink-0 items-center justify-center rounded-[3px] text-[10px] font-semibold"
+            className="bg-bg-surface text-text-secondary flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-badge)] text-[var(--text-3xs)] font-semibold"
             aria-hidden="true"
           >
             {initial}
@@ -262,13 +264,13 @@ export function TabChip({
         )}
 
         {/* Title */}
-        <span className={`font-body text-text-primary-light dark:text-text-primary-dark min-w-0 flex-1 truncate text-sm${active ? ' font-semibold' : ''}`}>
+        <span className={`min-w-0 flex-1 truncate text-text-primary font-mono text-xs${active ? ' font-semibold' : ''}`}>
           <HighlightedText text={displayLabel} highlight={searchQuery} />
         </span>
 
         {/* Duplicate badge */}
         {duplicateCount > 1 && (
-          <span className="font-body text-accent-amber shrink-0 text-xs font-medium">
+          <span className="text-accent-amber shrink-0 text-[10px] font-semibold font-mono">
             ×{duplicateCount}
           </span>
         )}
@@ -279,7 +281,7 @@ export function TabChip({
         <div className={`ml-auto flex shrink-0 items-center gap-1 transition-opacity duration-150 ${isTouch ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`}>
           <button
             type="button"
-            className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-red/40 flex size-11 cursor-pointer items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
+            className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-red/40 flex size-[var(--spacing-button-icon)] min-w-auto cursor-pointer items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
             onClick={handleClose}
             title="Close this tab"
             aria-label={`Close ${displayLabel}`}

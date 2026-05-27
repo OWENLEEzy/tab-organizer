@@ -166,6 +166,40 @@ describe('SearchBar Commands Menu', () => {
 
     expect(onChange).toHaveBeenCalledWith('/space:');
   });
+
+  it('shows manual spaces list as suggestions when /space: or /s: is typed', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const spaces = [
+      { id: 'w1', name: 'Work' },
+      { id: 'w2', name: 'Social' },
+    ];
+
+    render(
+      <SearchBar
+        value="/s:"
+        onChange={onChange}
+        resultCount={0}
+        totalCount={0}
+        spaces={spaces}
+      />
+    );
+
+    const input = screen.getByRole('searchbox', { name: 'Search tabs' });
+    fireEvent.focus(input);
+
+    // Should display stable space-id commands while keeping readable names visible.
+    expect(screen.getByText('/space:w1')).toBeInTheDocument();
+    expect(screen.getByText('/space:w2')).toBeInTheDocument();
+    expect(screen.getByText('Work')).toBeInTheDocument();
+    expect(screen.getByText('Social')).toBeInTheDocument();
+
+    const workBtn = screen.getByRole('button', { name: /\/space:w1/ });
+    await user.click(workBtn);
+
+    // Selecting a completed space command appends a space
+    expect(onChange).toHaveBeenCalledWith('/space:w1 ');
+  });
 });
 
 function KeyboardBlurHarness(): React.ReactElement {

@@ -13,7 +13,7 @@ vi.mock('../lib/confetti', () => ({
 }));
 
 const BASE_SETTINGS: AppSettings = {
-  theme: 'system',
+  theme: 'clay',
   soundEnabled: true,
   confettiEnabled: true,
   maxChipsVisible: 8,
@@ -28,7 +28,7 @@ const BASE_SETTINGS: AppSettings = {
     focusSearch: '/',
     clearFilter: 'Escape',
   },
-  groupSortBy: 'default',
+  groupSortBy: 'count',
 };
 
 describe('playCloseEffects', () => {

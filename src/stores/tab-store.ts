@@ -13,7 +13,7 @@ import {
 import { legacyProductKeyForHostname, productForHostname } from '../config/products';
 import { buildHistorySnapshot } from '../lib/history-snapshots';
 import { duplicateTabIdsToClose } from '../lib/duplicate-tabs';
-import { getTabDomain, isRealTab, isTabOutPage } from '../utils/url';
+import { getTabDomain, isRealTab, isTabOrganizerPage } from '../utils/url';
 import { getErrorMessage } from '../utils/error';
 import { useSettingsStore } from './settings-store';
 
@@ -104,7 +104,7 @@ function toAppTab(raw: chrome.tabs.Tab): Tab {
     domain: getTabDomain(url),
     windowId: raw.windowId ?? -1,
     active: raw.active ?? false,
-    isTabOut: isTabOutPage(url),
+    isDashboard: isTabOrganizerPage(url),
     isDuplicate: false,
     isLandingPage: false,
     duplicateCount: 0,
@@ -177,7 +177,7 @@ async function protectHistoryBeforeClosing(allTabs: chrome.tabs.Tab[]): Promise<
     const snapshot = buildHistorySnapshot(allTabs.map(toAppTab));
     await promoteHistorySnapshot(snapshot);
   } catch (err: unknown) {
-    console.warn('[Tab Out] Failed to protect history before closing tabs:', err);
+    console.warn('[Tab Organizer] Failed to protect history before closing tabs:', err);
   }
 }
 
@@ -238,7 +238,7 @@ export const useTabStore = create<TabStore>((set) => ({
 
       if (hasNewAssignments) {
         await writeOrganizerState({ groupAssignments }).catch(err => {
-          console.warn('[Tab Out] Failed to persist auto-assignments:', err);
+          console.warn('[Tab Organizer] Failed to persist auto-assignments:', err);
         });
       }
 
@@ -453,7 +453,7 @@ export const useTabStore = create<TabStore>((set) => ({
     }
     set({ products: newProducts });
     writeGroupOrder(groupOrder).catch((err: unknown) => {
-      console.warn('[Tab Out] Failed to persist product order:', err);
+      console.warn('[Tab Organizer] Failed to persist product order:', err);
     });
   },
 
@@ -606,14 +606,14 @@ export const useTabStore = create<TabStore>((set) => ({
       const currentTabId = currentTab?.id ?? -1;
       const allTabs = useTabStore.getState().tabs;
       const extraDashboards = allTabs
-        .filter((t) => t.isTabOut && t.id !== currentTabId)
+        .filter((t) => t.isDashboard && t.id !== currentTabId)
         .map((t) => t.url);
 
       if (extraDashboards.length > 0) {
         await useTabStore.getState().closeTabsExact(extraDashboards);
       }
     } catch (err: unknown) {
-      console.warn('[Tab Out] Failed to close extra dashboards:', err);
+      console.warn('[Tab Organizer] Failed to close extra dashboards:', err);
     }
   },
 

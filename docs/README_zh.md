@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./public/readme-assets/real-screenshot.png" alt="Tab Organizer 控制面板" width="800">
+  <img src="../public/readme-assets/real-screenshot.png" alt="Tab Organizer 控制面板" width="800">
 
   # Tab Organizer (标签整理器)
   
@@ -9,7 +9,7 @@
   [![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)]()
   [![Chrome](https://img.shields.io/badge/Chrome-Extension-amber.svg)]()
 
-  ### [English](README.md) | [中文说明](README_zh.md) | [原项目 ↗️](https://github.com/OWENLEEzy/tab-out)
+  ### [English](../README.md) | [中文说明](README_zh.md) | [原项目 ↗️](https://github.com/OWENLEEzy/tab-out)
 
 </div>
 
@@ -44,6 +44,7 @@
 
 1. **下载**：访问 [Releases](https://github.com/OWENLEEzy/tab-organizer/releases) 页面。
    - **⚠️ 重要**：请下载名为 **`tab-organizer-latest.zip`** 的文件。
+   - 直接下载：[tab-organizer-latest.zip](https://github.com/OWENLEEzy/tab-organizer/releases/latest/download/tab-organizer-latest.zip)
    - **不要**直接下载底部的 `Source code (zip)`，因为那是未经编译的源码，无法直接加载。
 2. **解压**：将下载的 `.zip` 文件解压到你电脑上的一个固定位置（例如“文档”或专用插件文件夹）。
 3. **加载**：

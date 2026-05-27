@@ -42,7 +42,7 @@ describe('useSettingsStore', () => {
   it('hydrates settings from storage', async () => {
     const customSettings = {
       ...DEFAULT_SETTINGS,
-      theme: 'dark' as const,
+      theme: 'sage' as const,
       soundEnabled: false,
     };
     chromeStorage.data['settings'] = customSettings;
@@ -71,11 +71,11 @@ describe('useSettingsStore', () => {
   });
 
   it('sets theme and persists to storage', async () => {
-    await useSettingsStore.getState().setTheme('dark');
+    await useSettingsStore.getState().setTheme('clay');
 
-    expect(useSettingsStore.getState().settings.theme).toBe('dark');
+    expect(useSettingsStore.getState().settings.theme).toBe('clay');
     const stored = chromeStorage.data['settings'] as AppSettings;
-    expect(stored.theme).toBe('dark');
+    expect(stored.theme).toBe('clay');
   });
 
   it('adds a custom group rule', async () => {
@@ -104,7 +104,7 @@ describe('useSettingsStore', () => {
     chromeStorage.set.mockRejectedValueOnce(new Error('Storage failure'));
     const initialTheme = useSettingsStore.getState().settings.theme;
 
-    await useSettingsStore.getState().setTheme('dark');
+    await useSettingsStore.getState().setTheme('clay');
 
     // Should have updated then rolled back
     expect(useSettingsStore.getState().settings.theme).toBe(initialTheme);

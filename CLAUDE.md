@@ -1,6 +1,6 @@
-# Tab Out Agent Notes
+# Tab Organizer Agent Notes
 
-Tab Out is a local-only Chrome MV3 extension. Clicking the toolbar icon opens a
+Tab Organizer is a local-only Chrome MV3 extension. Clicking the toolbar icon opens a
 React dashboard of the user's currently open Chrome tabs. It is not a server
 app, account system, cloud sync product, bookmark manager, or task manager.
 
@@ -59,8 +59,12 @@ Source of truth: `docs/frontend-design.md` and
   - Amber: duplicate/warning state.
   - Red: destructive close/delete.
   - Sage: success/healthy state.
-- Dark mode is a peer mode, not an afterthought. Add explicit dark behavior for
-  new surfaces.
+  - Terracotta: stale/inactive tabs.
+  - Ink: dark theme accent surfaces.
+- There is no separate dark mode toggle. Dark-background themes (obsidian,
+  pine, amethyst) are presented as equal accent choices alongside the four
+  light-background themes. The `isDark` flag in theme configs is a technical
+  detail that toggles the `.dark` CSS class for Tailwind `dark:` variants.
 - Do not turn the dashboard into cards inside cards or a decorative landing
   page. Preserve a dense, scan-friendly tool surface.
 - Any UI simplification must preserve the user's ability to scan, jump, close,
@@ -79,7 +83,7 @@ Source of truth: `docs/frontend-design.md` and
 - Settings panel for local preferences.
 - History panel with local snapshot preview, restore, delete, and clear.
 - Background badge updates from tab lifecycle events.
-- Browser-internal pages, extension pages, and Tab Out pages are filtered out of
+- Browser-internal pages, extension pages, and Tab Organizer pages are filtered out of
   grouping and recovery snapshots.
 
 ## Basic Architecture
@@ -262,8 +266,8 @@ cd dist && pwd | pbcopy && open "chrome://extensions" && open .
 ```
 
 Chrome steps: enable Developer mode, click **Load unpacked**, select `dist/`,
-then click the Tab Out toolbar icon. To update the loaded extension after a
-source change, rebuild and click reload for Tab Out in `chrome://extensions`.
+then click the Tab Organizer toolbar icon. To update the loaded extension after a
+source change, rebuild and click reload for Tab Organizer in `chrome://extensions`.
 
 ## Gotchas
 

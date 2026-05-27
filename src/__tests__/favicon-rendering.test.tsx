@@ -17,7 +17,7 @@ function makeTab(overrides: Partial<Tab> & Pick<Tab, 'url'>): Tab {
     domain: 'api-docs.deepseek.com',
     windowId: 1,
     active: false,
-    isTabOut: false,
+    isDashboard: false,
     isDuplicate: false,
     isLandingPage: false,
     duplicateCount: 0,

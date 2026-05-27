@@ -12,13 +12,22 @@ const HistorySnapshotDetails = React.lazy(() =>
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
-function createSnapshotDateFormatter(locale: string): Intl.DateTimeFormat {
-  return new Intl.DateTimeFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+const EN_SNAPSHOT_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
+const ZH_SNAPSHOT_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
+function getSnapshotDateFormatter(locale: string): Intl.DateTimeFormat {
+  return locale === 'zh' ? ZH_SNAPSHOT_FORMATTER : EN_SNAPSHOT_FORMATTER;
 }
 
 interface HistoryPanelProps {
@@ -45,7 +54,7 @@ export function HistoryPanel({
 
   const formatCapturedAt = (value: string): string => {
     try {
-      return createSnapshotDateFormatter(locale).format(new Date(value));
+      return getSnapshotDateFormatter(locale).format(new Date(value));
     } catch {
       return value;
     }
@@ -56,7 +65,7 @@ export function HistoryPanel({
       title={t('historyTitle')}
       count={visibleSnapshots.length}
       actions={visibleSnapshots.length > 0 ? (
-        <ActionButton variant="quiet" className="min-h-8 px-2 py-1" onClick={onClearSnapshots}>
+        <ActionButton variant="quiet" className="min-h-[var(--spacing-button-height-sm)] min-w-auto px-2 py-1" onClick={onClearSnapshots}>
           {t('historyClear')}
         </ActionButton>
       ) : null}
@@ -65,7 +74,7 @@ export function HistoryPanel({
         {visibleSnapshots.length === 0 ? (
           <div className="history-empty-state text-center py-12 px-6">
             <div className="text-text-secondary text-sm mb-2 opacity-60">{t('historyNoSnapshotsTitle')}</div>
-            <p className="text-text-secondary text-[11px] leading-relaxed opacity-40 max-w-[180px] mx-auto">
+            <p className="text-text-secondary text-[var(--text-2xs)] leading-relaxed opacity-40 max-w-[var(--width-label)] mx-auto">
               {t('historyNoSnapshotsDesc')}
             </p>
           </div>

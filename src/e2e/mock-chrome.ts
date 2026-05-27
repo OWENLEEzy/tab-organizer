@@ -6,7 +6,7 @@
 export type E2EScenario = 'default' | 'duplicates' | 'empty' | 'many-tabs';
 
 export const mockChromeApi = (scenario: E2EScenario = 'default') => {
-  const storageKey = '__tab_out_e2e_storage__';
+  const storageKey = '__tab_organizer_e2e_storage__';
   const readStorageData = (): Record<string, unknown> => {
     try {
       return JSON.parse(window.localStorage.getItem(storageKey) ?? '{}') as Record<string, unknown>;

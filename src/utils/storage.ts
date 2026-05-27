@@ -10,6 +10,8 @@ import type {
 } from '../types';
 import { historyUrlSignature, shouldReplaceHistoryCandidate } from '../lib/history-snapshots';
 import { DEFAULT_SPACES } from '../config/spaces';
+import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
+import { DEFAULT_GROUP_SORT, normalizeGroupSortBy } from '../config/group-sort';
 
 const CURRENT_SCHEMA_VERSION = 4;
 const STORAGE_KEYS = [
@@ -45,7 +47,7 @@ function queuedWrite(fn: () => Promise<void>): Promise<void> {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  theme: 'system',
+  theme: DEFAULT_ACCENT,
   language: 'system',
   soundEnabled: true,
   confettiEnabled: true,
@@ -61,7 +63,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     focusSearch: '/',
     clearFilter: 'Escape',
   },
-  groupSortBy: 'default',
+  groupSortBy: DEFAULT_GROUP_SORT,
 };
 
 const EMPTY_SCHEMA: StorageSchema = {
@@ -322,11 +324,18 @@ function migrate(data: Record<string, unknown>): StorageSchema {
     if (data['recoveryHistory']) history = data['recoveryHistory'];
   }
 
+  const rawSettings = { ...DEFAULT_SETTINGS, ...(data['settings'] as Partial<AppSettings> | undefined) };
+  const settings: AppSettings = {
+    ...rawSettings,
+    theme: isAccentKey(rawSettings.theme) ? rawSettings.theme : DEFAULT_ACCENT,
+    groupSortBy: normalizeGroupSortBy(rawSettings.groupSortBy),
+  };
+
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     deferred: Array.isArray(data['deferred']) ? (data['deferred'] as SavedTab[]) : [],
     workspaces: Array.isArray(data['workspaces']) ? (data['workspaces'] as Workspace[]) : [],
-    settings: { ...DEFAULT_SETTINGS, ...(data['settings'] as Partial<AppSettings> | undefined) },
+    settings,
     groupOrder: (data['groupOrder'] as Record<string, number> | undefined) ?? {},
     manualGroups: normalizeManualGroups(manualGroups),
     groupAssignments: normalizeAssignments(groupAssignments),
@@ -567,7 +576,7 @@ export async function pruneStaleStorage(currentProductKeys: Set<string>): Promis
       unsortedOverrides: nextOverrides,
     };
   }).catch((err: unknown) => {
-    console.warn('[Tab Out] Failed to prune stale organizer storage:', err);
+    console.warn('[Tab Organizer] Failed to prune stale organizer storage:', err);
   });
 }
 
@@ -631,7 +640,7 @@ export async function reconcileOrganizerState(
       };
     });
   } catch (err: unknown) {
-    console.warn('[Tab Out] Failed to prune stale organizer storage:', err);
+    console.warn('[Tab Organizer] Failed to prune stale organizer storage:', err);
     nextStorage = await readStorage();
   }
 

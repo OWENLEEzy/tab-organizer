@@ -15,7 +15,7 @@ export function A11yHarness(): React.ReactElement {
         </h1>
         <button
           type="button"
-          className="rounded-chip bg-accent-blue px-4 py-3 text-sm font-medium text-text-primary-light"
+          className="rounded-chip bg-accent-blue px-4 py-3 text-sm font-medium text-white"
           onClick={() => setSettingsOpen(true)}
         >
           Open settings
@@ -26,7 +26,7 @@ export function A11yHarness(): React.ReactElement {
       <section aria-label="Tab chip examples" className="space-y-2">
         <TabChip
           url="https://github.com/OWENLEEzy/tab-out"
-          title="Tab Out repo"
+          title="Tab Organizer repo"
           duplicateCount={2}
           active
           onFocus={() => {}}
@@ -39,7 +39,7 @@ export function A11yHarness(): React.ReactElement {
       <SettingsPanel
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        theme="system"
+        theme="clay"
         language="system"
         soundEnabled
         confettiEnabled

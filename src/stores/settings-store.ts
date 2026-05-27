@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { AppSettings, CustomGroup, GroupSortOption } from '../types';
 import { readSettings, writeSettings, DEFAULT_SETTINGS } from '../utils/storage';
+import { type AccentKey } from '../config/themes';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -12,7 +13,7 @@ interface SettingsActions {
   /** Toggle the confetti-enabled flag. */
   toggleConfetti: () => Promise<void>;
   /** Change the theme preference. */
-  setTheme: (theme: 'light' | 'dark' | 'system') => Promise<void>;
+  setTheme: (theme: AccentKey) => Promise<void>;
   /** Change the language preference. */
   setLanguage: (language: 'en' | 'zh' | 'system') => Promise<void>;
   /** Add a custom group rule. */
@@ -74,7 +75,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     }
   },
 
-  setTheme: async (theme: 'light' | 'dark' | 'system') => {
+  setTheme: async (theme: AccentKey) => {
     const { settings: prev } = get();
     const updated: AppSettings = { ...prev, theme };
     set({ settings: updated });

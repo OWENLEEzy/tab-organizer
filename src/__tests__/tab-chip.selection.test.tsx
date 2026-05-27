@@ -16,7 +16,7 @@ describe('TabChip selection mode', () => {
     render(
       <TabChip
         url="https://github.com/OWENLEEzy/tab-out"
-        title="Tab Out repo"
+        title="Tab Organizer repo"
         duplicateCount={2}
         selectionMode
         onFocus={onFocus}
@@ -25,7 +25,7 @@ describe('TabChip selection mode', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: /^Tab Out repo/ }));
+    await user.click(screen.getByRole('button', { name: /^Tab Organizer repo/ }));
 
     expect(onChipClick).toHaveBeenCalledTimes(1);
     expect(onFocus).not.toHaveBeenCalled();

@@ -3,6 +3,7 @@ import { productForHostname } from '../config/products';
 import { friendlyDomain } from './title-cleaner';
 import { countDuplicates } from './tab-utils';
 import { getTabDomain } from '../utils/url';
+import { normalizeGroupSortBy } from '../config/group-sort';
 
 // ─── Constants ──────────────────────────────────────────────────────
 
@@ -44,7 +45,7 @@ function getGroupLastAccessed(tabs: Tab[]): number | undefined {
 export function createSortComparator(
   sortBy: GroupSortOption,
 ): (a: TabGroup, b: TabGroup) => number {
-  switch (sortBy) {
+  switch (normalizeGroupSortBy(sortBy)) {
     case 'name':
       return (a, b) => a.friendlyName.localeCompare(b.friendlyName);
     case 'lastAccessed':
@@ -54,10 +55,8 @@ export function createSortComparator(
         if (bTime !== aTime) return bTime - aTime;
         return a.friendlyName.localeCompare(b.friendlyName);
       };
-    case 'default':
-    default:
+    case 'count':
       return (a, b) => {
-        // For default sort, use tab count descending, then alphabet
         const bCount = b.tabs.length;
         const aCount = a.tabs.length;
         if (bCount !== aCount) return bCount - aCount;

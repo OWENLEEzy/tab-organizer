@@ -1,13 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
-import { isTabOutPage, getTabDomain } from '../utils/url';
+import { isTabOrganizerPage, getTabDomain } from '../utils/url';
 
-describe('isTabOutPage extra', () => {
+describe('isTabOrganizerPage extra', () => {
   it('returns true for chrome://newtab/', () => {
-    expect(isTabOutPage('chrome://newtab/')).toBe(true);
+    expect(isTabOrganizerPage('chrome://newtab/')).toBe(true);
   });
 
   it('returns false for empty URL', () => {
-    expect(isTabOutPage('')).toBe(false);
+    expect(isTabOrganizerPage('')).toBe(false);
   });
 
   it('returns false when chrome API throws', () => {
@@ -16,7 +16,7 @@ describe('isTabOutPage extra', () => {
         getURL: () => { throw new Error('fail'); }
       }
     });
-    expect(isTabOutPage('https://example.com')).toBe(false);
+    expect(isTabOrganizerPage('https://example.com')).toBe(false);
     vi.unstubAllGlobals();
   });
 });

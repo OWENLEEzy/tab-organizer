@@ -1,5 +1,6 @@
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { CustomGroup, AppSettings, ManualGroup } from '../../types';
+import { ACCENT_OPTIONS, type AccentKey } from '../../config/themes';
 import { useI18n } from '../hooks/useI18n';
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -11,12 +12,12 @@ const DEFAULT_EMPTY_GROUPS: ManualGroup[] = [];
 interface SettingsPanelProps {
   open: boolean;
   onClose: () => void;
-  theme: 'light' | 'dark' | 'system';
+  theme: AccentKey;
   language: 'en' | 'zh' | 'system';
   soundEnabled: boolean;
   confettiEnabled: boolean;
   customGroups: CustomGroup[];
-  onSetTheme: (theme: 'light' | 'dark' | 'system') => void;
+  onSetTheme: (theme: AccentKey) => void;
   onSetLanguage: (language: 'en' | 'zh' | 'system') => void;
   onToggleSound: () => void;
   onToggleConfetti: () => void;
@@ -249,9 +250,9 @@ export function SettingsPanel({
                 key={item.id}
                 type="button"
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full text-left font-body text-xs rounded-chip px-3 py-2 transition-colors cursor-pointer flex items-center gap-2 min-h-10 outline-none ${
+                className={`w-full text-left font-body text-xs rounded-chip px-3 py-2 transition-all cursor-pointer flex items-center gap-2 min-h-[var(--spacing-button-height)] outline-none ${
                   isActive
-                    ? 'bg-accent-blue text-white font-medium shadow-sm'
+                    ? 'bg-accent-blue/10 text-accent-blue dark:bg-accent-blue/15 dark:text-blue-400 font-semibold border-l border-accent-blue pl-[11px]'
                     : 'text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark'
                 }`}
               >
@@ -272,7 +273,7 @@ export function SettingsPanel({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark flex size-8 cursor-pointer items-center justify-center transition-colors focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark flex size-[var(--spacing-button-icon-sm)] cursor-pointer items-center justify-center transition-colors focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
               aria-label="Close settings"
             >
               <svg
@@ -305,7 +306,16 @@ export function SettingsPanel({
                   onChange={(val) => onSetLanguage(val as 'en' | 'zh' | 'system')}
                 />
                 
-                <ThemeRow value={theme} onChange={onSetTheme} />
+                <SelectRow
+                  id="setting-theme"
+                  label={t('settingsTheme')}
+                  value={theme}
+                  options={ACCENT_OPTIONS.map(({ key, labelKey }) => ({
+                    value: key,
+                    label: t(labelKey),
+                  }))}
+                  onChange={onSetTheme}
+                />
                 
                 <ToggleRow
                   id="setting-sound"
@@ -347,7 +357,7 @@ export function SettingsPanel({
                     <button
                       type="button"
                       onClick={onExportSettings}
-                      className="flex-1 rounded-chip font-body border border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-10 cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5"
+                      className="flex-1 rounded-chip font-body border border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-[var(--spacing-button-height)] cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-3.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -355,7 +365,7 @@ export function SettingsPanel({
                       {t('settingsBackupExportBtn')}
                     </button>
                     <label
-                      className="flex-1 rounded-chip font-body border border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-10 cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5 text-center"
+                      className="flex-1 rounded-chip font-body border border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-[var(--spacing-button-height)] cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5 text-center"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-3.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
@@ -392,7 +402,7 @@ export function SettingsPanel({
                   <button
                     type="button"
                     onClick={onResetSortOrder}
-                    className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 min-h-10 cursor-pointer px-3 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                    className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 min-h-[var(--spacing-button-height)] cursor-pointer px-3 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
                   >
                     {t('settingsSortOrderBtn')}
                   </button>
@@ -461,7 +471,7 @@ function SelectRow<T extends string | number>({
           const num = Number(val);
           onChange((isNaN(num) ? val : num) as T);
         }}
-        className="font-body text-xs text-text-primary-light dark:text-text-primary-dark bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded px-2.5 py-1.5 focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none min-h-10 min-w-[140px] cursor-pointer"
+        className="settings-select focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -469,54 +479,6 @@ function SelectRow<T extends string | number>({
           </option>
         ))}
       </select>
-    </div>
-  );
-}
-
-// ─── Theme selector sub-component ────────────────────────────────────
-
-interface ThemeRowProps {
-  value: 'light' | 'dark' | 'system';
-  onChange: (theme: 'light' | 'dark' | 'system') => void;
-}
-
-function ThemeRow({ value, onChange }: ThemeRowProps): React.ReactElement {
-  const { t } = useI18n();
-
-  const THEME_OPTIONS: { value: 'light' | 'dark' | 'system'; label: string }[] = [
-    { value: 'system', label: t('settingsThemeSystem') },
-    { value: 'light', label: t('settingsThemeLight') },
-    { value: 'dark', label: t('settingsThemeDark') },
-  ];
-
-  return (
-    <div className="flex items-center justify-between">
-      <span
-        id="theme-label"
-        className="font-body text-text-primary-light dark:text-text-primary-dark text-sm"
-      >
-        {t('settingsTheme')}
-      </span>
-      <div
-        role="group"
-        aria-labelledby="theme-label"
-        className="rounded-chip border-border-light dark:border-border-dark inline-flex overflow-hidden border"
-      >
-        {THEME_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onChange(opt.value)}
-            className={`font-body min-h-11 min-w-11 cursor-pointer px-4 text-xs transition-colors ${
-              value === opt.value
-                ? 'bg-accent-blue text-white'
-                : 'text-text-secondary hover:bg-surface-light dark:hover:bg-surface-dark'
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
@@ -544,19 +506,11 @@ function ToggleRow({ id, label, checked, onChange }: ToggleRowProps): React.Reac
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-label={label}
         onClick={onChange}
-        className={`focus-visible:ring-accent-blue/40 relative inline-flex h-11 w-14 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
-          checked
-            ? 'bg-accent-blue'
-            : 'bg-border-light dark:bg-border-dark'
-        }`}
+        className={`settings-toggle ${checked ? 'is-checked' : ''} focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none`}
       >
-        <span
-          className={`pointer-events-none inline-block size-6 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-            checked ? 'translate-x-7' : 'translate-x-1.5'
-          }`}
-          aria-hidden="true"
-        />
+        <span className="settings-toggle-thumb" aria-hidden="true" />
       </button>
     </div>
   );
@@ -653,21 +607,29 @@ function CustomGroupsSection({
 
       {/* Add form */}
       <div className="flex flex-col gap-2">
+        <label htmlFor="custom-group-hostname" className="sr-only">
+          {t('settingsPlaceholderHostname')}
+        </label>
         <input
+          id="custom-group-hostname"
           type="text"
           placeholder={t('settingsPlaceholderHostname')}
           value={hostname}
           onChange={(e) => { setHostname(e.target.value); setError(''); }}
           onKeyDown={handleKeyDown}
-          className="font-body text-text-primary-light dark:text-text-primary-dark placeholder:text-text-secondary bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-chip px-3 py-2 text-xs focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none w-full"
+          className="settings-input placeholder:text-text-secondary w-full focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
         />
+        <label htmlFor="custom-group-label" className="sr-only">
+          {t('settingsPlaceholderLabel')}
+        </label>
         <input
+          id="custom-group-label"
           type="text"
           placeholder={t('settingsPlaceholderLabel')}
           value={label}
           onChange={(e) => { setLabel(e.target.value); setError(''); }}
           onKeyDown={handleKeyDown}
-          className="font-body text-text-primary-light dark:text-text-primary-dark placeholder:text-text-secondary bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-chip px-3 py-2 text-xs focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none w-full"
+          className="settings-input placeholder:text-text-secondary w-full focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
         />
         {error && (
           <span className="text-accent-red text-xs font-body">{error}</span>
@@ -675,7 +637,7 @@ function CustomGroupsSection({
         <button
           type="button"
           onClick={handleAdd}
-          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 rounded-chip px-3 py-1.5 self-end transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-11"
+          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 rounded-chip px-3 py-1.5 self-end transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-[var(--spacing-button-height)]"
         >
           {t('settingsBtnAddRule')}
         </button>
@@ -729,15 +691,16 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
         <input
           type="text"
           placeholder={t('settingsPlaceholderSpaceName')}
+          aria-label={t('settingsPlaceholderSpaceName')}
           value={newSpaceName}
           onChange={(e) => setNewSpaceName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAddSpace()}
-          className="flex-1 font-body text-text-primary-light dark:text-text-primary-dark placeholder:text-text-secondary bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-chip px-3 py-2 text-xs focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
+          className="flex-1 settings-input placeholder:text-text-secondary focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
         />
         <button
           type="button"
           onClick={handleAddSpace}
-          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 rounded-chip px-3 py-1.5 transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-11 font-medium"
+          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 rounded-chip px-3 py-1.5 transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-[var(--spacing-button-height)] font-medium"
         >
           {t('settingsBtnAddSpace')}
         </button>
@@ -754,25 +717,39 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
             return (
               <div key={space.id} className="border border-border-light dark:border-border-dark rounded-md p-3 bg-surface-light dark:bg-surface-dark flex flex-col gap-2">
                 <div className="flex items-center gap-2">
+                  <div className="relative w-10 shrink-0">
+                    <label htmlFor={`space-emoji-${space.id}`} className="sr-only">
+                      {t('settingsLabelEmoji')}
+                    </label>
+                    <input
+                      id={`space-emoji-${space.id}`}
+                      type="text"
+                      maxLength={2}
+                      value={space.emoji ?? ''}
+                      onChange={(e) => onUpdateGroup(space.id, { emoji: e.target.value })}
+                      className="w-full h-full text-center settings-input focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
+                      aria-label={t('settingsLabelEmoji')}
+                    />
+                    {!space.emoji && (
+                      <span className="absolute inset-0 flex items-center justify-center pointer-events-none text-text-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+                        </svg>
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="text"
-                    maxLength={2}
-                    value={space.emoji ?? ''}
-                    placeholder="✨"
-                    onChange={(e) => onUpdateGroup(space.id, { emoji: e.target.value })}
-                    className="w-10 text-center font-body text-text-primary-light dark:text-text-primary-dark bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded px-1.5 py-1 text-sm focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
-                  />
-                  <input
-                    type="text"
+                    aria-label={t('settingsPlaceholderSpaceName')}
                     value={space.name}
                     onChange={(e) => onUpdateGroup(space.id, { name: e.target.value })}
-                    className="flex-1 font-body text-text-primary-light dark:text-text-primary-dark bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded px-2 py-1 text-sm focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none"
+                    className="flex-1 settings-input focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => onDeleteGroup(space.id)}
+                    aria-label={t('settingsBtnDeleteSpace')}
                     className="text-accent-red hover:bg-accent-red/10 rounded p-1 flex items-center justify-center cursor-pointer shrink-0"
-                    title={t('settingsBtnDeleteSpace')}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.34 12m-4.72 0-.34-12M4.75 6.75h14.5M3.375 5.25h17.25m-1.5 0-.825 15.6a2.25 2.25 0 0 1-2.247 2.13H7.43a2.25 2.25 0 0 1-2.247-2.13L4.35 5.25" />
@@ -780,10 +757,11 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
                   </button>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="font-body text-text-secondary text-[11px]">
+                  <span className="font-body text-text-secondary text-[var(--text-3xs)]">
                     {t('settingsLabelAutoRules')}
                   </span>
                   <textarea
+                    id="settings-auto-rules"
                     value={rulesText}
                     placeholder="e.g. github&#10;vercel"
                     onChange={(e) => {
@@ -792,7 +770,8 @@ function SpacesSection({ spaces, onUpdateGroup, onDeleteGroup, onCreateGroup }: 
                         autoRules: patterns.map(p => ({ pattern: p, type: 'hostname' }))
                       });
                     }}
-                    className="font-body text-xs text-text-primary-light dark:text-text-primary-dark placeholder:text-text-secondary bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded px-2 py-1.5 focus-visible:ring-accent-blue/40 focus-visible:ring-2 focus-visible:outline-none w-full h-16 resize-none"
+                    className="settings-input placeholder:text-text-secondary w-full h-16 resize-none focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
+                    aria-label={t('settingsLabelAutoRules')}
                   />
                 </div>
               </div>
@@ -872,7 +851,7 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
         <button
           type="button"
           onClick={onResetKeyBindings}
-          className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-blue/40 px-2 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none min-h-11"
+          className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 px-2 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none min-h-[var(--spacing-button-height)]"
         >
           {t('settingsShortcutsResetBtn')}
         </button>
@@ -883,15 +862,15 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
           const isRecording = recordingKey === key;
 
           return (
-            <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-surface-light dark:bg-surface-dark border border-border-light/50 dark:border-border-dark/50 min-h-11">
+            <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-surface-light dark:bg-surface-dark border border-border-light/50 dark:border-border-dark/50 min-h-[var(--spacing-button-height)]">
               <span className="font-body text-xs text-text-primary-light dark:text-text-primary-dark">{label}</span>
               <button
                 type="button"
                 onClick={() => setRecordingKey(isRecording ? null : (key as keyof AppSettings['keyBindings']))}
-                className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-8 min-w-[70px] ${
+                className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-[var(--spacing-button-height-sm)] min-w-[var(--width-button-min)] ${
                   isRecording
-                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 animate-pulse'
-                    : 'bg-white dark:bg-card-dark text-text-secondary border-border-light dark:border-border-dark hover:border-gray-400 dark:hover:border-gray-600'
+                    ? 'bg-[var(--accent-amber)]/10 dark:bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] dark:text-[var(--accent-amber)] border-[var(--accent-amber)] dark:border-[var(--accent-amber)] animate-pulse'
+                    : 'bg-[var(--bg-card)] dark:bg-[var(--bg-card)] text-text-secondary border-border-light dark:border-border-dark hover:border-gray-400 dark:hover:border-gray-600'
                 }`}
               >
                 {isRecording ? t('settingsShortcutRecording') : binding}

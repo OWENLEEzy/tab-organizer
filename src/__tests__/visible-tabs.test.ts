@@ -11,7 +11,7 @@ function createTab(id: number, url: string, title: string): Tab {
     domain: new URL(url).hostname,
     windowId: 1,
     active: false,
-    isTabOut: false,
+    isDashboard: false,
     isDuplicate: false,
     isLandingPage: false,
     duplicateCount: 0,

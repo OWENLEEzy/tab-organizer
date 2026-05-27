@@ -8,7 +8,6 @@ interface ToastProps {
 export function Toast({ message, visible }: ToastProps): React.ReactElement {
   return (
     <div
-      role="status"
       aria-live="polite"
       className={`font-body dark:text-text-primary-light pointer-events-none fixed bottom-8 left-1/2 z-50 flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-medium text-white shadow-lg transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         visible

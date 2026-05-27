@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "Tab Out 标签页整理",
+    "message": "Tab Organizer 标签页整理",
     "description": "The name of the extension."
   },
   "extDesc": {
@@ -8,7 +8,7 @@
     "description": "The description of the extension."
   },
   "extCommandDesc": {
-    "message": "打开 Tab Out 空间分区面板",
+    "message": "打开 Tab Organizer 空间分区面板",
     "description": "Shortcut command description."
   }
 }

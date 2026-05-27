@@ -3,8 +3,8 @@ import { useTabStore } from '../../stores/tab-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { useKeyboard } from './useKeyboard';
 import { flattenVisibleTabs } from '../lib/visible-tabs';
-import { isTabOutPage } from '../../utils/url';
-import type { TabGroup } from '../../types';
+import { isTabOrganizerPage } from '../../utils/url';
+import type { TabGroup, ManualGroup } from '../../types';
 import { useUIState } from './useUIState';
 import { useTabHandlers } from './useTabHandlers';
 import { useI18n } from './useI18n';
@@ -15,11 +15,13 @@ import { createSortComparator } from '../../lib/tab-grouper';
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 
-interface CommandParsed {
+export interface CommandParsed {
   type: 'dupes' | 'stale' | 'space' | 'text';
-  arg?: string;
+  spaceToken?: string;
   textQuery: string;
 }
+
+type SpaceTarget = Pick<ManualGroup, 'id' | 'name' | 'order'>;
 
 export function parseSearchQuery(query: string): CommandParsed {
   const trimmed = query.trim().toLowerCase();
@@ -42,17 +44,29 @@ export function parseSearchQuery(query: string): CommandParsed {
     }
   }
   
-  // 3. Match /space:SpaceName or space:SpaceName (with or without slash)
-  const spaceMatch = trimmed.match(/^(\/?space:)([^\s]*)(?:\s+(.*))?$/);
+  // 3. Match /space:SpaceName, /spac:SpaceName, /s:SpaceName, etc. (with or without slash)
+  const spaceMatch = trimmed.match(/^(\/?(?:space|spac|s):)([^\s]*)(?:\s+(.*))?$/);
   if (spaceMatch) {
     return {
       type: 'space',
-      arg: spaceMatch[2] || '',
+      spaceToken: spaceMatch[2] || '',
       textQuery: (spaceMatch[3] || '').trim()
     };
   }
   
   return { type: 'text', textQuery: trimmed };
+}
+
+export function resolveSpaceQueryTarget(token: string, spaces: SpaceTarget[]): SpaceTarget | null {
+  const normalizedToken = token.trim().toLowerCase();
+  if (!normalizedToken) return null;
+
+  const idMatch = spaces.find((space) => space.id.toLowerCase() === normalizedToken);
+  if (idMatch) return idMatch;
+
+  return [...spaces]
+    .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
+    .find((space) => space.name.trim().toLowerCase().includes(normalizedToken)) ?? null;
 }
 
 function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void {
@@ -147,26 +161,19 @@ export function useAppLogic() {
     }
 
     // Apply sort order
-    const sortComparator = createSortComparator(settings.groupSortBy ?? 'default');
+    const sortComparator = createSortComparator(settings.groupSortBy ?? 'count');
     result = [...result].sort(sortComparator);
 
     if (!debouncedSearchQuery.trim()) return result;
 
     // 1. Process /space:SpaceName command
     if (parsedQuery.type === 'space') {
-      const arg = parsedQuery.arg || '';
-      if (arg) {
-        const targetSpace = orderedGroups.find(
-          (g) => g.name.toLowerCase().includes(arg)
-        );
-        if (targetSpace) {
-          result = products.filter(p => {
-            const itemKey = groupAssignmentKey(p);
-            return assignmentByItemId.get(itemKey) === targetSpace.id;
-          });
-        } else {
-          result = [];
-        }
+      const targetSpace = resolveSpaceQueryTarget(parsedQuery.spaceToken ?? '', orderedGroups);
+      if (targetSpace) {
+        result = products.filter(p => {
+          const itemKey = groupAssignmentKey(p);
+          return assignmentByItemId.get(itemKey) === targetSpace.id;
+        });
       } else {
         result = [];
       }
@@ -286,8 +293,8 @@ export function useAppLogic() {
     [filteredProducts],
   );
 
-  const tabOutCount = useMemo(
-    () => tabs.filter((t) => isTabOutPage(t.url)).length,
+  const dashboardCount = useMemo(
+    () => tabs.filter((t) => isTabOrganizerPage(t.url)).length,
     [tabs],
   );
 
@@ -309,30 +316,7 @@ export function useAppLogic() {
     t,
   });
 
-  const theme = useSettingsStore((s) => s.settings.theme);
-
-  // ─── Init: fetch data + dark mode ──────────────────────────────────
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-
-    const applyTheme = () => {
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else if (theme === 'light') {
-        document.documentElement.classList.remove('dark');
-      } else {
-        document.documentElement.classList.toggle('dark', mq.matches);
-      }
-    };
-
-    applyTheme();
-    mq.addEventListener('change', applyTheme);
-
-    return () => {
-      mq.removeEventListener('change', applyTheme);
-    };
-  }, [theme]);
+  // ─── Init: fetch data ────────────────────────────────────────────────
 
   useEffect(() => {
     async function init() {
@@ -454,18 +438,24 @@ export function useAppLogic() {
     onSwitchSpaceAll: () => {
       tabStore.setActiveSpace(null);
     },
-    onCycleSpacePrev: () => {
-      const ids = [null, ...orderedGroups.map((g) => g.id)];
-      const currentIndex = ids.indexOf(tabStore.activeSpaceId);
-      const nextIndex = (currentIndex - 1 + ids.length) % ids.length;
-      tabStore.setActiveSpace(ids[nextIndex]);
-    },
-    onCycleSpaceNext: () => {
-      const ids = [null, ...orderedGroups.map((g) => g.id)];
-      const currentIndex = ids.indexOf(tabStore.activeSpaceId);
-      const nextIndex = (currentIndex + 1) % ids.length;
-      tabStore.setActiveSpace(ids[nextIndex]);
-    },
+    onCycleSpacePrev: (() => {
+      const getSpaceIds = (groups: ManualGroup[]) => [null, ...groups.map((g) => g.id)];
+      return () => {
+        const ids = getSpaceIds(orderedGroups);
+        const currentIndex = ids.indexOf(tabStore.activeSpaceId);
+        const nextIndex = (currentIndex - 1 + ids.length) % ids.length;
+        tabStore.setActiveSpace(ids[nextIndex]);
+      };
+    })(),
+    onCycleSpaceNext: (() => {
+      const getSpaceIds = (groups: ManualGroup[]) => [null, ...groups.map((g) => g.id)];
+      return () => {
+        const ids = getSpaceIds(orderedGroups);
+        const currentIndex = ids.indexOf(tabStore.activeSpaceId);
+        const nextIndex = (currentIndex + 1) % ids.length;
+        tabStore.setActiveSpace(ids[nextIndex]);
+      };
+    })(),
     onClearFilter: () => {
       tabStore.setActiveSpace(null);
     },
@@ -479,9 +469,9 @@ export function useAppLogic() {
       totalTabs: tabs.length,
       totalProducts: products.length,
       totalDupes,
-      tabOutCount,
+      dashboardCount,
       showEmptyState: products.length === 0,
-      visibleGroupCount: orderedGroups.length + (products.length === 0 ? 0 : 1),
+      visibleSpaceCount: orderedGroups.length + (products.length === 0 ? 0 : 1),
       focusedUrl,
       filteredTabCount,
       parsedQuery,
