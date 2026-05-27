@@ -8,8 +8,8 @@ import { clearGroupOrder } from '../../utils/storage';
 import { playCloseEffects } from '../../lib/close-effects';
 import { getChipCloseDelay, userPrefersReducedMotion } from '../lib/motion';
 import type { TabGroup, AppSettings } from '../../types';
-import type { UIAction } from './useUIState';
-import type { TranslationKey } from './useI18n';
+import type { UIAction } from '../hooks/useUIState';
+import type { TranslationKey } from '../hooks/useI18n';
 
 interface HandlerDeps {
   settings: AppSettings;
@@ -38,7 +38,7 @@ export function staleTabUrlsForProducts(
     .map((tab) => tab.url);
 }
 
-export function useTabHandlers({
+export function useTabActions({
   settings,
   dispatch,
   showToast,

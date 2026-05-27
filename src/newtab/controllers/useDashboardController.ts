@@ -1,75 +1,23 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTabStore } from '../../stores/tab-store';
 import { useSettingsStore } from '../../stores/settings-store';
-import { useKeyboard } from './useKeyboard';
+import { useKeyboard } from '../hooks/useKeyboard';
 import { flattenVisibleTabs } from '../lib/visible-tabs';
 import { isTabOrganizerPage } from '../../utils/browser-url';
 import type { TabGroup, Section } from '../../types';
-import { useUIState } from './useUIState';
-import { useTabHandlers } from './useTabHandlers';
-import { useI18n } from './useI18n';
+import { useUIState } from '../hooks/useUIState';
+import { useTabActions } from './useTabActions';
+import { useI18n } from '../hooks/useI18n';
 import { DASHBOARD_SECTION_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
 import { isTabStale } from '../../lib/staleness';
 import { analyzeDuplicates } from '../../lib/duplicate-analysis';
 import { getProductKey } from '../../lib/product-key';
 import { createSortComparator } from '../../lib/tab-grouper';
+import { parseSearchQuery, resolveSectionQueryTarget } from '../lib/search-commands';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
-
-export interface CommandParsed {
-  type: 'dupes' | 'stale' | 'section' | 'text';
-  sectionToken?: string;
-  textQuery: string;
-}
-
 type SectionTarget = Pick<Section, 'id' | 'name' | 'order'>;
-
-export function parseSearchQuery(query: string): CommandParsed {
-  const trimmed = query.trim().toLowerCase();
-  
-  // 1. Match /dupe, /dupes, dupe, or dupes
-  const dupeMatch = trimmed.match(/^(\/?dupes?)(?:\s+(.*))?$/);
-  if (dupeMatch) {
-    const term = dupeMatch[1];
-    if (term.startsWith('/') || term === 'dupe' || term === 'dupes') {
-      return { type: 'dupes', textQuery: (dupeMatch[2] || '').trim() };
-    }
-  }
-  
-  // 2. Match /stale, /stales, stale, or stales
-  const staleMatch = trimmed.match(/^(\/?stales?)(?:\s+(.*))?$/);
-  if (staleMatch) {
-    const term = staleMatch[1];
-    if (term.startsWith('/') || term === 'stale' || term === 'stales') {
-      return { type: 'stale', textQuery: (staleMatch[2] || '').trim() };
-    }
-  }
-  
-  // 3. Match /section:SectionName, /sec:SectionName, /s:SectionName, /space:SectionName, etc. (with or without slash)
-  const sectionMatch = trimmed.match(/^(\/?(?:section|sec|s|space):)([^\s]*)(?:\s+(.*))?$/);
-  if (sectionMatch) {
-    return {
-      type: 'section',
-      sectionToken: sectionMatch[2] || '',
-      textQuery: (sectionMatch[3] || '').trim()
-    };
-  }
-  
-  return { type: 'text', textQuery: trimmed };
-}
-
-export function resolveSectionQueryTarget(token: string, sections: SectionTarget[]): SectionTarget | null {
-  const normalizedToken = token.trim().toLowerCase();
-  if (!normalizedToken) return null;
-
-  const idMatch = sections.find((section) => section.id.toLowerCase() === normalizedToken);
-  if (idMatch) return idMatch;
-
-  return [...sections]
-    .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
-    .find((section) => section.name.trim().toLowerCase().includes(normalizedToken)) ?? null;
-}
 
 function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void {
   const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tab-url]'));
@@ -321,7 +269,7 @@ export function useAppLogic() {
 
   // ─── Handlers ──────────────────────────────────────────────────────
   const { t } = useI18n();
-  const handlers = useTabHandlers({
+  const handlers = useTabActions({
     settings,
     dispatch,
     showToast,
