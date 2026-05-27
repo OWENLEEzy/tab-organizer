@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { I18nProvider } from '../newtab/providers/I18nProvider';
 import { DashboardHeader } from '../newtab/components/layout/DashboardHeader';
 import { getDateFormatter, getSnapshotDateFormatter } from '../newtab/lib/date-formatters';
 import { DashboardShell } from '../newtab/components/layout/DashboardShell';
 import { Footer } from '../newtab/components/Footer';
 import { UtilityPanel } from '../newtab/components/layout/UtilityPanel';
-import { TabChip } from '../newtab/components/TabChip';
+import { TabChip } from '../newtab/components/tabs/TabChip';
 
 const globalCss = readFileSync(
   join(process.cwd(), 'src/newtab/styles/global.css'),
@@ -62,11 +63,13 @@ describe('MotherDuck-inspired layout components', () => {
 
   it('renders footer metrics and alerts', () => {
     render(
-      <Footer
-        tabCount={42}
-        duplicateCount={3}
-        alerts={[{ id: 'tab-out-pages', label: '2 extra dashboard tabs', actionLabel: 'Close extras', onAction: () => {} }]}
-      />,
+      <I18nProvider>
+        <Footer
+          tabCount={42}
+          duplicateCount={3}
+          alerts={[{ id: 'tab-out-pages', label: '2 extra dashboard tabs', actionLabel: 'Close extras', onAction: () => {} }]}
+        />
+      </I18nProvider>,
     );
 
     expect(screen.getByText('42')).toBeInTheDocument();
@@ -78,27 +81,29 @@ describe('MotherDuck-inspired layout components', () => {
 
   it('renders the merged dashboard header without marketing copy', () => {
     render(
-      <DashboardHeader
-        title="Open Tabs by Product"
-        hasGroups
-        dateLabel="Tuesday, May 5, 2026"
-        sectionCount={2}
-        searchQuery=""
-        onSearchChange={() => {}}
-        resultCount={5}
-        totalCount={8}
-        viewMode="cards"
-        onViewModeChange={() => {}}
-        groupSortBy="count"
-        onGroupSortByChange={() => {}}
-        onRefresh={() => {}}
-        onCreateSection={() => {}}
-        onOpenSettings={() => {}}
-        sections={[{ id: 'work', name: 'Work', order: 0 }]}
-        sectionIds={[null, 'work']}
-        activeSectionId={null}
-        onSectionChange={() => {}}
-      />,
+      <I18nProvider>
+        <DashboardHeader
+          title="Open Tabs by Product"
+          hasGroups
+          dateLabel="Tuesday, May 5, 2026"
+          sectionCount={2}
+          searchQuery=""
+          onSearchChange={() => {}}
+          resultCount={5}
+          totalCount={8}
+          viewMode="cards"
+          onViewModeChange={() => {}}
+          groupSortBy="count"
+          onGroupSortByChange={() => {}}
+          onRefresh={() => {}}
+          onCreateSection={() => {}}
+          onOpenSettings={() => {}}
+          sections={[{ id: 'work', name: 'Work', order: 0 }]}
+          sectionIds={[null, 'work']}
+          activeSectionId={null}
+          onSectionChange={() => {}}
+        />
+      </I18nProvider>,
     );
 
     expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
@@ -112,36 +117,38 @@ describe('MotherDuck-inspired layout components', () => {
 
   it('composes primary content and utility panels', () => {
     render(
-      <DashboardShell
-        top={null}
-        header={
-          <DashboardHeader
-            title="Open Tabs by Product"
-            hasGroups
-            dateLabel="Tuesday, May 5, 2026"
-            sectionCount={1}
-            searchQuery=""
-            onSearchChange={() => {}}
-            resultCount={1}
-            totalCount={1}
-            viewMode="cards"
-            onViewModeChange={() => {}}
-            groupSortBy="count"
-            onGroupSortByChange={() => {}}
-            onRefresh={() => {}}
-            onCreateSection={() => {}}
-            onOpenSettings={() => {}}
-            sections={[]}
-            sectionIds={[null]}
-            activeSectionId={null}
-            onSectionChange={() => {}}
-          />
-        }
-        toolbar={null}
-        utilities={<UtilityPanel title="Saved">Saved item</UtilityPanel>}
-      >
-        <main>Product grid</main>
-      </DashboardShell>,
+      <I18nProvider>
+        <DashboardShell
+          top={null}
+          header={
+            <DashboardHeader
+              title="Open Tabs by Product"
+              hasGroups
+              dateLabel="Tuesday, May 5, 2026"
+              sectionCount={1}
+              searchQuery=""
+              onSearchChange={() => {}}
+              resultCount={1}
+              totalCount={1}
+              viewMode="cards"
+              onViewModeChange={() => {}}
+              groupSortBy="count"
+              onGroupSortByChange={() => {}}
+              onRefresh={() => {}}
+              onCreateSection={() => {}}
+              onOpenSettings={() => {}}
+              sections={[]}
+              sectionIds={[null]}
+              activeSectionId={null}
+              onSectionChange={() => {}}
+            />
+          }
+          toolbar={null}
+          utilities={<UtilityPanel title="Saved">Saved item</UtilityPanel>}
+        >
+          <main>Product grid</main>
+        </DashboardShell>
+      </I18nProvider>,
     );
 
     expect(screen.getByText('Product grid')).toBeInTheDocument();
@@ -169,11 +176,11 @@ describe('dashboard reskin composition contract', () => {
       'utf8',
     );
     const dndOrganizerSource = readFileSync(
-      join(process.cwd(), 'src/newtab/components/DndOrganizer.tsx'),
+      join(process.cwd(), 'src/newtab/components/organizer/DndOrganizer.tsx'),
       'utf8',
     );
     const productTableSource = readFileSync(
-      join(process.cwd(), 'src/newtab/components/ProductTable.tsx'),
+      join(process.cwd(), 'src/newtab/components/tabs/ProductTable.tsx'),
       'utf8',
     );
 
@@ -186,13 +193,15 @@ describe('dashboard reskin composition contract', () => {
 describe('tab title readability', () => {
   it('does not uppercase real tab titles', () => {
     render(
-      <TabChip
-        url="https://github.com/OWENLEEzy/tab-out"
-        title="Tab Organizer repo"
-        duplicateCount={1}
-        onFocus={() => {}}
-        onClose={() => {}}
-      />,
+      <I18nProvider>
+        <TabChip
+          url="https://github.com/OWENLEEzy/tab-out"
+          title="Tab Organizer repo"
+          duplicateCount={1}
+          onFocus={() => {}}
+          onClose={() => {}}
+        />
+      </I18nProvider>,
     );
 
     expect(screen.getByText('Tab Organizer repo')).toBeInTheDocument();

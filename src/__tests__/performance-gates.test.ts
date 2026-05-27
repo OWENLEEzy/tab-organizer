@@ -1,7 +1,7 @@
-/// <reference types="node" />
 
 import fs from 'node:fs';
 import path from 'node:path';
+/// <reference types="node" />
 import { describe, expect, it } from 'vitest';
 import packageJson from '../../package.json';
 
@@ -34,6 +34,6 @@ describe('performance gates', () => {
     expect(appSource).not.toContain("import { SettingsPanel }");
     expect(appSource).not.toContain("import { RecoveryPanel }");
     expect(appSource).toContain('React.lazy');
-    expect(appSource).toContain("import('./components/SettingsPanel')");
+    expect(appSource).toContain("import('./components/settings/SettingsPanel')");
   });
 });

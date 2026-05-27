@@ -175,7 +175,7 @@ export interface StorageSchema {
   groupOrder: Record<string, number>;
   sections: Section[];
   sectionAssignments: SectionAssignment[];
-  /** Product keys explicitly moved to Unsorted by the user — immune to auto-assignment. */
+  /** Product keys explicitly moved to No section by the user — immune to auto-assignment. */
   unsortedOverrides: string[];
   viewMode: ViewMode;
   historyCandidate: HistorySnapshot | null;

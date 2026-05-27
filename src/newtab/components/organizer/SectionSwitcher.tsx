@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import type { Section } from '../../types';
-import { useI18n } from '../hooks/useI18n';
+import type { Section } from '../../../types';
+import { useI18n } from '../../hooks/useI18n';
 
 interface SectionSwitcherProps {
   sections: Section[];

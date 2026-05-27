@@ -1,10 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import type { TabGroup } from '../../types';
+import type { TabGroup } from '../../../types';
 import { TabChip } from './TabChip';
-import { getVisibleTabs } from '../lib/visible-tabs';
-import { getGroupFaviconSource } from '../../lib/group-favicon';
-import { getFaviconUrl } from '../../utils/favicon';
-import { useI18n } from '../hooks/useI18n';
+import { getVisibleTabs } from '../../lib/visible-tabs';
+import { getGroupFaviconSource } from '../../../lib/group-favicon';
+import { getFaviconUrl } from '../../../utils/favicon';
+import { useI18n } from '../../hooks/useI18n';
 
 // ─── Types ────────────────────────────────────────────────────────────
 

@@ -72,9 +72,11 @@ test.describe('Settings & Theme', () => {
     const settingsGear = page.getByRole('button', { name: 'Settings', exact: true });
     await settingsGear.click();
 
+    const dialog = page.locator('[role="dialog"]');
+    await expect(dialog).toBeVisible();
+
     await page.keyboard.press('Escape');
 
-    const dialog = page.locator('[role="dialog"]');
     await expect(dialog).not.toBeVisible();
   });
 

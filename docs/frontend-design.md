@@ -86,7 +86,7 @@ The 6 semantic color roles are **stable across all themes** — they always mean
 
 | Token | Role |
 |---|---|
-| `--accent-primary` | Theme accent (clay/sage/frost/ochre/obsidian/pine/amethyst) |
+| `--accent-primary` | Active theme accent color |
 | `--accent-primary-rgb` | RGB triplet of accent for alpha compositing |
 | `--accent-amber` | Amber role (duplicate/warning) |
 | `--accent-amber-rgb` | RGB triplet for amber |
@@ -111,9 +111,9 @@ the mapped `--color-*` bridge tokens declared in `global.css`, such as
 
 ## Accent Themes
 
-Tab Organizer offers 10 accent themes. Each theme is a complete color environment with its own page, surface, card, text, and accent colors. Themes are selected in Settings and applied at runtime via `useTheme(accent)`, which sets CSS custom properties on `:root`.
+Tab Organizer offers 11 accent themes. Each theme is a complete color environment with its own page, surface, card, text, and accent colors. Themes are selected in Settings and applied at runtime via `useTheme(accent)`, which sets CSS custom properties on `:root`.
 
-**There is no separate light/dark mode toggle.** The 7 light-background themes and 3 dark-background themes are all presented as equal accent choices. The `isDark` flag in a theme config is a technical signal that tells the CSS engine to apply `dark:` variant styles — it is not a separate product concept.
+**There is no separate light/dark mode toggle.** The 7 light-background themes and 4 dark-background themes are all presented as equal accent choices. The `isDark` flag in a theme config is a technical signal that tells the CSS engine to apply `dark:` variant styles — it is not a separate product concept.
 
 ### 1. Clay Paper (暖沙陶土) — `clay`
 
@@ -128,8 +128,8 @@ The default theme. Warm, earthy, approachable. Light background.
 | `--text-primary` | `#332A24` |
 | `--text-secondary` | `#7C6C60` |
 | `--text-muted` | `#B5A596` |
-| `--accent-primary` | `#B25C38` |
-| `--accent-primary-rgb` | `178, 92, 56` |
+| `--accent-primary` | `#A8522E` |
+| `--accent-primary-rgb` | `168, 82, 46` |
 | `--bg-header` | `rgba(250, 247, 242, 0.95)` |
 | `--shadow-card` | `0 4px 12px rgba(51, 42, 36, 0.04), 0 1px 3px rgba(51, 42, 36, 0.02)` |
 | `--shadow-card-hover` | `0 10px 24px rgba(51, 42, 36, 0.08), 0 3px 8px rgba(51, 42, 36, 0.04)` |
@@ -179,8 +179,8 @@ Warm, sunlit yellow-brown. Light background.
 | `--text-primary` | `#3A301A` |
 | `--text-secondary` | `#756441` |
 | `--text-muted` | `#AFA184` |
-| `--accent-primary` | `#A0781A` |
-| `--accent-primary-rgb` | `160, 120, 26` |
+| `--accent-primary` | `#8A6513` |
+| `--accent-primary-rgb` | `138, 101, 19` |
 
 ### 5. Lavender Haze (薰衣草紫) — `lavender`
 
@@ -211,8 +211,8 @@ Warm dusty rose with rich earth undertones. Light background.
 | `--text-primary` | `#3D2C2E` |
 | `--text-secondary` | `#7A6466` |
 | `--text-muted` | `#B09698` |
-| `--accent-primary` | `#A0676B` |
-| `--accent-primary-rgb` | `160, 103, 107` |
+| `--accent-primary` | `#965D61` |
+| `--accent-primary-rgb` | `150, 93, 97` |
 
 ### 7. Sea Glass (海草青) — `seagrass`
 
@@ -227,8 +227,8 @@ Cool sea-green with soft gray-blue undertones. Light background.
 | `--text-primary` | `#2C3834` |
 | `--text-secondary` | `#5F706A` |
 | `--text-muted` | `#98ADA6` |
-| `--accent-primary` | `#5B8A7E` |
-| `--accent-primary-rgb` | `91, 138, 126` |
+| `--accent-primary` | `#4B7A6E` |
+| `--accent-primary-rgb` | `75, 122, 110` |
 
 ### 8. Obsidian Ink (黑曜石墨) — `obsidian`
 
@@ -236,10 +236,10 @@ Rich dark theme. Neutral charcoal with warm gray accents. Dark background (`isDa
 
 | Token | Hex |
 |---|---|
-| `--bg-page` | `#121110` |
-| `--bg-surface` | `#1b1918` |
-| `--bg-card` | `#22201f` |
-| `--border-color` | `#3d3734` |
+| `--bg-page` | `#141312` |
+| `--bg-surface` | `#1C1A19` |
+| `--bg-card` | `#242120` |
+| `--border-color` | `#3D3633` |
 | `--text-primary` | `#e6e1dc` |
 | `--text-secondary` | `#b0a8a4` |
 | `--text-muted` | `#7d7571` |
@@ -254,13 +254,13 @@ Deep forest dark with teal-green accents. Dark background (`isDark: true`).
 
 | Token | Hex |
 |---|---|
-| `--bg-page` | `#121110` |
-| `--bg-surface` | `#1b1918` |
-| `--bg-card` | `#22201f` |
-| `--border-color` | `#3d3734` |
-| `--text-primary` | `#e6e1dc` |
-| `--text-secondary` | `#b0a8a4` |
-| `--text-muted` | `#7d7571` |
+| `--bg-page` | `#111413` |
+| `--bg-surface` | `#181C1B` |
+| `--bg-card` | `#1F2523` |
+| `--border-color` | `#323D3A` |
+| `--text-primary` | `#e6edea` |
+| `--text-secondary` | `#9db0a9` |
+| `--text-muted` | `#748a82` |
 | `--accent-primary` | `#56A3A1` |
 | `--accent-primary-rgb` | `86, 163, 161` |
 
@@ -270,15 +270,31 @@ Evening purple-dark with lavender accents. Dark background (`isDark: true`).
 
 | Token | Hex |
 |---|---|
-| `--bg-page` | `#121110` |
-| `--bg-surface` | `#1b1918` |
-| `--bg-card` | `#22201f` |
-| `--border-color` | `#3d3734` |
-| `--text-primary` | `#e6e1dc` |
-| `--text-secondary` | `#b0a8a4` |
-| `--text-muted` | `#7d7571` |
+| `--bg-page` | `#151318` |
+| `--bg-surface` | `#1D1A22` |
+| `--bg-card` | `#241F29` |
+| `--border-color` | `#3B3142` |
+| `--text-primary` | `#e8e4ed` |
+| `--text-secondary` | `#afa6b8` |
+| `--text-muted` | `#82798c` |
 | `--accent-primary` | `#A887CE` |
 | `--accent-primary-rgb` | `168, 135, 206` |
+
+### 11. Roast Ember (焦糖暗火) — `ember`
+
+Warm ember-dark with caramel accents. Dark background (`isDark: true`).
+
+| Token | Hex |
+|---|---|
+| `--bg-page` | `#1A1614` |
+| `--bg-surface` | `#241E1C` |
+| `--bg-card` | `#2D2523` |
+| `--border-color` | `#423835` |
+| `--text-primary` | `#E8DFD8` |
+| `--text-secondary` | `#B0A198` |
+| `--text-muted` | `#85756C` |
+| `--accent-primary` | `#C47257` |
+| `--accent-primary-rgb` | `196, 114, 87` |
 
 ---
 
@@ -287,7 +303,7 @@ Evening purple-dark with lavender accents. Dark background (`isDark: true`).
 Themes are defined in `src/config/themes.ts` as `AccentConfig` objects. The `useTheme(accent: AccentKey)` hook in `src/newtab/hooks/useTheme.ts` applies them at runtime by setting CSS custom properties on `:root`.
 
 ```typescript
-export type AccentKey = 'clay' | 'sage' | 'frost' | 'ochre' | 'lavender' | 'rosewood' | 'seagrass' | 'obsidian' | 'pine' | 'amethyst';
+export type AccentKey = 'clay' | 'sage' | 'frost' | 'ochre' | 'lavender' | 'rosewood' | 'seagrass' | 'obsidian' | 'pine' | 'amethyst' | 'ember';
 ```
 
 The `isDark: boolean` flag in each theme config:
@@ -579,7 +595,7 @@ Left border accent for the currently active tab:
 Raw colors are allowed only at token boundaries:
 
 - `src/newtab/styles/global.css` inside the `@theme` token block.
-- `src/config/themes.ts`, where the 10 accent themes are registered.
+- `src/config/themes.ts`, where the 11 accent themes are registered.
 - Explicit non-UI exceptions such as browser badge colors, confetti particles,
   and product grouping defaults.
 

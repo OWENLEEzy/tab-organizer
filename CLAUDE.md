@@ -274,6 +274,7 @@ Storage rules:
 | `npm run test:e2e` | Run Playwright a11y/e2e harness. |
 | `npm run lint` | Run ESLint. |
 | `npm run lint:css` | Run Stylelint on `src/**/*.css`. |
+| `npm run knip` | Run knip dead code detection. |
 | `npm run check:bundle` | Check bundle budget. |
 | `npm run check:startup` | Check startup budget. |
 | `npm run check` | Full gate: lint, CSS lint, tests, build, budgets, e2e. |

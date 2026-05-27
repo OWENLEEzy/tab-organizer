@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ViewMode } from '../../types';
+import type { ViewMode } from '../../../types';
 
 interface ViewToggleProps {
   value: ViewMode;

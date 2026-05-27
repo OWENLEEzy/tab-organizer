@@ -38,6 +38,10 @@ export function App(): React.ReactElement {
   const { settings } = settingsStore;
   const { history, viewMode } = tabStore;
 
+  const appVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
+    ? chrome.runtime.getManifest().version
+    : '2.0.0';
+
   useTheme(settings.theme);
 
   const handleExportConfig = () => {
@@ -438,6 +442,7 @@ export function App(): React.ReactElement {
             keyBindings={settings.keyBindings}
             onUpdateKeyBinding={settingsStore.updateKeyBinding}
             onResetKeyBindings={settingsStore.resetKeyBindings}
+            appVersion={appVersion}
           />
         </React.Suspense>
       )}

@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { SearchBar } from '../newtab/components/SearchBar';
-import { SelectionBar } from '../newtab/components/SelectionBar';
+import { I18nProvider } from '../newtab/providers/I18nProvider';
+import { SearchBar } from '../newtab/components/search/SearchBar';
+import { SelectionBar } from '../newtab/components/tabs/SelectionBar';
 import { TabChip } from '../newtab/components/tabs/TabChip';
 import { ActionButton } from '../newtab/components/ui/ActionButton';
 
 function expectTouchHeight(element: HTMLElement): void {
-  // Accept only valid CSS variable token utilities or the shared global button class.
   const className = element.className;
   const valid =
     /\baction-button\b/.test(className) ||
@@ -20,7 +20,6 @@ function expectTouchHeight(element: HTMLElement): void {
 }
 
 function expectTouchWidth(element: HTMLElement): void {
-  // Accept only valid CSS variable token utilities for 44px width targets.
   const className = element.className;
   const valid =
     /w-\[var\(--spacing-button-height\)\]/.test(className) ||
@@ -34,7 +33,11 @@ function expectTouchWidth(element: HTMLElement): void {
 
 describe('touch target regressions', () => {
   it('keeps the search field and clear button at accessible sizes', () => {
-    render(<SearchBar value="docs" onChange={() => {}} resultCount={1} totalCount={4} />);
+    render(
+      <I18nProvider>
+        <SearchBar value="docs" onChange={() => {}} resultCount={1} totalCount={4} />
+      </I18nProvider>,
+    );
 
     expectTouchHeight(screen.getByRole('searchbox', { name: 'Search tabs' }));
 
@@ -45,21 +48,25 @@ describe('touch target regressions', () => {
 
   it('keeps floating action controls at accessible sizes', () => {
     const { rerender } = render(
-      <SelectionBar count={2} onClose={() => {}} onClear={() => {}} />,
+      <I18nProvider>
+        <SelectionBar count={2} onClose={() => {}} onClear={() => {}} />
+      </I18nProvider>,
     );
 
     expectTouchHeight(screen.getByRole('button', { name: 'Close' }));
     expectTouchHeight(screen.getByRole('button', { name: 'Cancel' }));
 
     rerender(
-      <TabChip
-        url="https://github.com/OWENLEEzy/tab-out"
-        title="Tab Organizer repo"
-        duplicateCount={2}
-        active
-        onFocus={() => {}}
-        onClose={() => {}}
-      />,
+      <I18nProvider>
+        <TabChip
+          url="https://github.com/OWENLEEzy/tab-out"
+          title="Tab Organizer repo"
+          duplicateCount={2}
+          active
+          onFocus={() => {}}
+          onClose={() => {}}
+        />
+      </I18nProvider>,
     );
 
     const primaryButton = document.querySelector<HTMLButtonElement>('button[aria-current="page"]');

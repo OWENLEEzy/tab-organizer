@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { SearchBar } from '../newtab/components/SearchBar';
-import { SettingsPanel } from '../newtab/components/SettingsPanel';
-import { Toast } from '../newtab/components/Toast';
-import { TabChip } from '../newtab/components/TabChip';
+import { SearchBar } from '../newtab/components/search/SearchBar';
+import { SettingsPanel } from '../newtab/components/settings/SettingsPanel';
+import { Toast } from '../newtab/components/states/Toast';
+import { TabChip } from '../newtab/components/tabs/TabChip';
 
 export function A11yHarness(): React.ReactElement {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -58,6 +58,7 @@ export function A11yHarness(): React.ReactElement {
         onExportSettings={() => {}}
         onImportSettings={async () => {}}
         onCreateSection={() => {}}
+        appVersion="2.0.0-test"
       />
     </main>
   );

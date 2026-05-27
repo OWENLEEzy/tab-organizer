@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import type { Section, TabGroup } from '../../types';
+import type { Section, TabGroup } from '../../../types';
 import { TabChip } from './TabChip';
-import { analyzeDuplicates } from '../../lib/duplicate-analysis';
-import { getProductKey } from '../../lib/product-key';
-import { getGroupFaviconSource } from '../../lib/group-favicon';
-import { getFaviconUrl } from '../../utils/favicon';
-import { ActionButton } from './ui/ActionButton';
-import { useI18n } from '../hooks/useI18n';
+import { analyzeDuplicates } from '../../../lib/duplicate-analysis';
+import { getProductKey } from '../../../lib/product-key';
+import { getGroupFaviconSource } from '../../../lib/group-favicon';
+import { getFaviconUrl } from '../../../utils/favicon';
+import { ActionButton } from '../ui/ActionButton';
+import { useI18n } from '../../hooks/useI18n';
 
 interface ProductTableProps {
   items: TabGroup[];

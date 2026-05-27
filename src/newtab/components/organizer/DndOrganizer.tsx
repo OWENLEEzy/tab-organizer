@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import { closestCenter, DndContext, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import type { Section, TabGroup } from '../../types';
-import { DomainCard } from './DomainCard';
-import { useI18n } from '../hooks/useI18n';
+import type { Section, TabGroup } from '../../../types';
+import { DomainCard } from '../tabs/DomainCard';
+import { useI18n } from '../../hooks/useI18n';
 
 const UNASSIGNED_SECTION_ID = 'section:unassigned';
 

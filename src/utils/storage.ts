@@ -54,7 +54,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   confettiEnabled: true,
   maxChipsVisible: 8,
   staleThresholdDays: 3,
-  customGroups: [],
+  customGroups: [
+    { hostnameEndsWith: '.substack.com', groupKey: 'substack', groupLabel: "Author's Substack" },
+    { hostnameEndsWith: '.github.io', groupKey: 'github-pages', groupLabel: 'GitHub Pages' },
+  ],
   landingPagePatterns: [],
   keyBindings: {
     switchSectionN: 'Meta+{n}',

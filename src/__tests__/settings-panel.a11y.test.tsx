@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { I18nProvider } from '../newtab/providers/I18nProvider';
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
-import { SettingsPanel } from '../newtab/components/SettingsPanel';
+import { SettingsPanel } from '../newtab/components/settings/SettingsPanel';
 
 function SettingsHarness(): React.ReactElement {
   const [open, setOpen] = useState(false);
@@ -35,6 +36,7 @@ function SettingsHarness(): React.ReactElement {
         onExportSettings={() => {}}
         onImportSettings={async () => {}}
         onCreateSection={() => {}}
+        appVersion="2.0.0-test"
       />
     </>
   );
@@ -44,7 +46,7 @@ describe('SettingsPanel accessibility', () => {
   it('moves focus into the dialog, traps tab navigation, and restores focus on close', async () => {
     const user = userEvent.setup();
 
-    render(<SettingsHarness />);
+    render(<I18nProvider><SettingsHarness /></I18nProvider>);
 
     const openButton = screen.getByRole('button', { name: 'Open settings' });
     openButton.focus();
@@ -67,6 +69,7 @@ describe('SettingsPanel accessibility', () => {
 
   it('has no obvious axe violations when open', async () => {
     const { container } = render(
+      <I18nProvider>
       <SettingsPanel
         open
         onClose={() => {}}
@@ -89,7 +92,9 @@ describe('SettingsPanel accessibility', () => {
         onExportSettings={() => {}}
         onImportSettings={async () => {}}
         onCreateSection={() => {}}
-      />,
+        appVersion="2.0.0-test"
+      />
+      </I18nProvider>
     );
 
     const results = await axe(container);
