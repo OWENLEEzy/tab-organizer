@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Tab, TabGroup } from '../types';
 import { flattenVisibleTabs } from '../newtab/lib/visible-tabs';
+import { duplicateTabIdsForProducts, staleTabUrlsForProducts } from '../newtab/hooks/useTabHandlers';
 
 function createTab(id: number, url: string, title: string): Tab {
   return {
@@ -18,7 +19,7 @@ function createTab(id: number, url: string, title: string): Tab {
   };
 }
 
-function createGroup(tabs: Tab[]): TabGroup {
+function createSection(tabs: Tab[]): TabGroup {
   return {
     id: 'github.com',
     domain: 'github.com',
@@ -34,7 +35,7 @@ function createGroup(tabs: Tab[]): TabGroup {
 
 describe('flattenVisibleTabs', () => {
   it('excludes duplicate URLs and collapsed overflow tabs from keyboard navigation', () => {
-    const group = createGroup([
+    const group = createSection([
       createTab(1, 'https://github.com/openai/openai', 'OpenAI'),
       createTab(2, 'https://github.com/openai/openai', 'OpenAI duplicate'),
       createTab(3, 'https://github.com/vercel/next.js', 'Next.js'),
@@ -50,7 +51,7 @@ describe('flattenVisibleTabs', () => {
   });
 
   it('includes expanded unique tabs in keyboard navigation', () => {
-    const group = createGroup([
+    const group = createSection([
       createTab(1, 'https://github.com/openai/openai', 'OpenAI'),
       createTab(2, 'https://github.com/openai/openai', 'OpenAI duplicate'),
       createTab(3, 'https://github.com/vercel/next.js', 'Next.js'),
@@ -63,6 +64,39 @@ describe('flattenVisibleTabs', () => {
       'https://github.com/openai/openai',
       'https://github.com/vercel/next.js',
       'https://github.com/vitejs/vite',
+    ]);
+  });
+});
+
+describe('visible sweep selection helpers', () => {
+  it('selects duplicate tab ids only from visible products', () => {
+    const visibleGroup = createSection([
+      createTab(1, 'https://github.com/openai/openai', 'OpenAI'),
+      createTab(2, 'https://github.com/openai/openai', 'OpenAI duplicate'),
+    ]);
+    const hiddenGroup = {
+      ...createSection([
+        createTab(3, 'https://vercel.com/dashboard', 'Vercel'),
+        createTab(4, 'https://vercel.com/dashboard', 'Vercel duplicate'),
+      ]),
+      id: 'vercel.com',
+      domain: 'vercel.com',
+      friendlyName: 'Vercel',
+    };
+
+    expect(duplicateTabIdsForProducts([visibleGroup])).toEqual([2]);
+    expect(duplicateTabIdsForProducts([hiddenGroup])).toEqual([4]);
+  });
+
+  it('selects stale tab URLs only from visible products', () => {
+    const now = new Date('2026-05-05T00:00:00Z').getTime();
+    const visibleGroup = createSection([
+      { ...createTab(1, 'https://github.com/openai/openai', 'OpenAI'), lastAccessed: now - 4 * 24 * 60 * 60 * 1000 },
+      { ...createTab(2, 'https://github.com/vercel/next.js', 'Next.js'), lastAccessed: now },
+    ]);
+
+    expect(staleTabUrlsForProducts([visibleGroup], 3, now)).toEqual([
+      'https://github.com/openai/openai',
     ]);
   });
 });

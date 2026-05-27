@@ -29,4 +29,14 @@ test.describe('a11y harness', () => {
 
     expect(results.violations).toEqual([]);
   });
+
+  test('full dashboard has no axe violations in key states', async ({ page }) => {
+    for (const scenario of ['default', 'duplicates', 'empty']) {
+      await page.goto(`/tests/harness/e2e-harness.html?scenario=${scenario}`);
+      await page.waitForLoadState('networkidle');
+
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations, scenario).toEqual([]);
+    }
+  });
 });

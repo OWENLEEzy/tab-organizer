@@ -16,16 +16,8 @@ test.describe('Tab Management', () => {
     await expect(badge.first()).toBeVisible();
   });
 
-  test('close all button shows confirmation dialog', async ({ page }) => {
-    // Use the header section to scope the close all button
-    const closeButton = page.getByRole('button', { name: 'Close All' }).first();
-    await closeButton.click();
-
-    const dialog = page.locator('[role="dialog"]');
-    await expect(dialog).toBeVisible();
-
-    const confirmButton = dialog.getByRole('button', { name: 'Close All', exact: true });
-    await expect(confirmButton).toBeVisible();
+  test.skip('close all button shows confirmation dialog', async () => {
+    // Global Close All was removed from header per plan - section-level close all remains
   });
 
   test('domain card shows correct tab count', async ({ page }) => {

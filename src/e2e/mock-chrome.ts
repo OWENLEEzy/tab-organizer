@@ -136,7 +136,7 @@ export const mockChromeApi = (scenario: E2EScenario = 'default') => {
     },
     runtime: {
       getURL: (path: string) => `chrome-extension://test-extension-id/${path || ''}`,
-      getManifest: () => ({ version: '1.0.0' }),
+      getManifest: () => ({ version: '2.0.0' }),
       id: 'test-extension-id',
       onMessage: createEvent(),
       onConnect: createEvent(),

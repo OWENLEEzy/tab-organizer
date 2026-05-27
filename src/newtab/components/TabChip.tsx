@@ -36,6 +36,7 @@ interface TabChipProps {
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   searchQuery?: string;
   lastAccessed?: number;
+  staleThresholdDays?: number;
   pinned?: boolean;
   audible?: boolean;
 }
@@ -90,8 +91,8 @@ function HighlightedText({ text, highlight = '' }: { text: string; highlight?: s
   const trimmedLower = cleanHighlight.toLowerCase();
   const isCommand = 
     trimmedLower.startsWith('/') ||
-    trimmedLower.startsWith('space:') ||
-    trimmedLower.startsWith('spac:') ||
+    trimmedLower.startsWith('section:') ||
+    trimmedLower.startsWith('sec:') ||
     trimmedLower.startsWith('s:') ||
     trimmedLower === 'stale' || trimmedLower === 'stales' ||
     trimmedLower === 'dupe' || trimmedLower === 'dupes' ||
@@ -102,7 +103,7 @@ function HighlightedText({ text, highlight = '' }: { text: string; highlight?: s
     cleanHighlight = cleanHighlight
       .replace(/^\/?dupes?\s*/i, '')
       .replace(/^\/?stales?\s*/i, '')
-      .replace(/^\/?(?:space|spac|s):[^\s]*\s*/i, '')
+      .replace(/^\/?(?:section|sec|s):[^\s]*\s*/i, '')
       .trim();
   }
   if (!cleanHighlight) return <>{text}</>;
@@ -145,6 +146,7 @@ export function TabChip({
   onChipClick,
   searchQuery = '',
   lastAccessed,
+  staleThresholdDays = 3,
   pinned = false,
   audible = false,
 }: TabChipProps): React.ReactElement {
@@ -162,8 +164,8 @@ export function TabChip({
   const isStale = React.useMemo(() => {
     if (active || pinned || audible || !lastAccessed) return false;
     // eslint-disable-next-line react-hooks/purity
-    return Date.now() - lastAccessed > 3 * 24 * 60 * 60 * 1000;
-  }, [lastAccessed, active, pinned, audible]);
+    return Date.now() - lastAccessed > staleThresholdDays * 24 * 60 * 60 * 1000;
+  }, [lastAccessed, active, pinned, audible, staleThresholdDays]);
 
   useEffect(() => {
     if (isFocused && chipRef.current) {
@@ -249,7 +251,7 @@ export function TabChip({
         {/* Favicon */}
         {faviconUrl && !faviconFailed ? (
           <img
-            className="favicon size-4 shrink-0"
+            className={`favicon size-4 shrink-0 ${isStale && !isSelected ? 'sepia-[.4]' : ''}`}
             src={faviconUrl}
             alt=""
             onError={handleImageError}
@@ -270,7 +272,7 @@ export function TabChip({
 
         {/* Duplicate badge */}
         {duplicateCount > 1 && (
-          <span className="text-accent-amber shrink-0 text-[10px] font-semibold font-mono">
+          <span className="text-[10px] font-bold font-mono rotate-[-3deg] border border-dashed border-accent-amber/40 px-0.5 rounded-sm text-accent-amber shrink-0">
             ×{duplicateCount}
           </span>
         )}

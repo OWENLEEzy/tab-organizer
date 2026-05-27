@@ -1,5 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { countDuplicates, getDuplicateUrls, dedupeTabsByUrl } from '../lib/tab-utils';
+import { describe, it, expect, vi } from 'vitest';
+import {
+  analyzeDuplicates,
+  getGroupFaviconUrl,
+  getProductKey,
+  isTabStale,
+} from '../lib/tab-utils';
 import type { Tab } from '../types';
 
 function makeTab(id: number, url: string): Tab {
@@ -19,13 +24,19 @@ function makeTab(id: number, url: string): Tab {
 }
 
 describe('tab-utils', () => {
-  describe('countDuplicates', () => {
+  vi.stubGlobal('chrome', {
+    runtime: {
+      getURL: vi.fn((path: string) => `chrome-extension://fake-id${path}`),
+    },
+  });
+
+  describe('analyzeDuplicates', () => {
     it('returns zero for unique URLs', () => {
       const tabs = [
         makeTab(1, 'https://a.com'),
         makeTab(2, 'https://b.com'),
       ];
-      const result = countDuplicates(tabs);
+      const result = analyzeDuplicates(tabs);
       expect(result.duplicateCount).toBe(0);
       expect(result.hasDuplicates).toBe(false);
     });
@@ -37,20 +48,18 @@ describe('tab-utils', () => {
         makeTab(3, 'https://a.com'),
         makeTab(4, 'https://b.com'),
       ];
-      const result = countDuplicates(tabs);
+      const result = analyzeDuplicates(tabs);
       // 3 tabs of a.com means 2 are "duplicates" (extras)
       expect(result.duplicateCount).toBe(2);
       expect(result.hasDuplicates).toBe(true);
     });
-  });
 
-  describe('getDuplicateUrls', () => {
     it('returns empty array for unique list', () => {
       const tabs = [
         makeTab(1, 'https://a.com'),
         makeTab(2, 'https://b.com'),
       ];
-      expect(getDuplicateUrls(tabs)).toEqual([]);
+      expect(analyzeDuplicates(tabs).duplicateUrls).toEqual([]);
     });
 
     it('returns only URLs that appear more than once', () => {
@@ -61,25 +70,68 @@ describe('tab-utils', () => {
         makeTab(4, 'https://c.com'),
         makeTab(5, 'https://c.com'),
       ];
-      const dupes = getDuplicateUrls(tabs);
+      const dupes = analyzeDuplicates(tabs).duplicateUrls;
       expect(dupes).toContain('https://a.com');
       expect(dupes).toContain('https://c.com');
       expect(dupes).not.toContain('https://b.com');
       expect(dupes).toHaveLength(2);
     });
-  });
 
-  describe('dedupeTabsByUrl', () => {
-    it('keeps only the first occurrence of each URL', () => {
+    it('returns deduped tabs by keeping the first tab for each URL', () => {
+      const tabs = [
+        makeTab(1, 'https://a.com'),
+        makeTab(2, 'https://a.com'), // duplicate
+        makeTab(3, 'https://b.com'),
+      ];
+      const result = analyzeDuplicates(tabs);
+      expect(result.dedupedTabs.map((tab) => tab.id)).toEqual([1, 3]);
+    });
+
+    it('filters duplicate tabs correctly', () => {
       const tabs = [
         makeTab(1, 'https://a.com'),
         makeTab(2, 'https://a.com'),
         makeTab(3, 'https://b.com'),
       ];
-      const deduped = dedupeTabsByUrl(tabs);
-      expect(deduped).toHaveLength(2);
-      expect(deduped[0].id).toBe(1);
-      expect(deduped[1].id).toBe(3);
+      const result = analyzeDuplicates(tabs);
+      expect(result.duplicateTabs.map((tab) => tab.id)).toEqual([1, 2]);
+    });
+  });
+
+  describe('tab state helpers', () => {
+    it('treats active, pinned, and audible tabs as not stale', () => {
+      const now = Date.now();
+      const old = now - 10 * 24 * 60 * 60 * 1000;
+
+      expect(isTabStale({ ...makeTab(1, 'https://a.com'), lastAccessed: old }, now, 3)).toBe(true);
+      expect(isTabStale({ ...makeTab(2, 'https://b.com'), active: true, lastAccessed: old }, now, 3)).toBe(false);
+      expect(isTabStale({ ...makeTab(3, 'https://c.com'), pinned: true, lastAccessed: old }, now, 3)).toBe(false);
+      expect(isTabStale({ ...makeTab(4, 'https://d.com'), audible: true, lastAccessed: old }, now, 3)).toBe(false);
+      expect(isTabStale(makeTab(5, 'https://e.com'), now, 3)).toBe(false);
+    });
+
+    it('filters duplicate tabs and resolves group identity helpers', () => {
+      const tabs = [
+        makeTab(1, 'https://a.com'),
+        makeTab(2, 'https://a.com'),
+        makeTab(3, 'https://b.com'),
+      ];
+
+      expect(analyzeDuplicates(tabs).duplicateTabs.map((tab: Tab) => tab.id)).toEqual([1, 2]);
+      expect(getProductKey({ productKey: 'product', itemKey: 'item', domain: 'domain' })).toBe('product');
+      expect(getProductKey({ itemKey: 'item', domain: 'domain' })).toBe('item');
+      expect(getProductKey({ domain: 'domain' })).toBe('domain');
+    });
+
+    it('uses a provided favicon or falls back to the first tab URL', () => {
+      expect(getGroupFaviconUrl([
+        { ...makeTab(1, 'https://a.com'), favIconUrl: '  https://cdn.example/icon.png  ' },
+      ])).toBe('https://cdn.example/icon.png');
+
+      expect(getGroupFaviconUrl([makeTab(2, 'https://fallback.example/path')])).toContain(
+        'fallback.example',
+      );
+      expect(getGroupFaviconUrl([])).toContain('pageUrl=');
     });
   });
 });

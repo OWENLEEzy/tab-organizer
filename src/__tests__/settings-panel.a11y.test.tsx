@@ -34,7 +34,7 @@ function SettingsHarness(): React.ReactElement {
         onSetStaleThresholdDays={() => {}}
         onExportSettings={() => {}}
         onImportSettings={async () => {}}
-        onCreateGroup={() => {}}
+        onCreateSection={() => {}}
       />
     </>
   );
@@ -88,7 +88,7 @@ describe('SettingsPanel accessibility', () => {
         onSetStaleThresholdDays={() => {}}
         onExportSettings={() => {}}
         onImportSettings={async () => {}}
-        onCreateGroup={() => {}}
+        onCreateSection={() => {}}
       />,
     );
 

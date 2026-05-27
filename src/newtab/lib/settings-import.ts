@@ -8,8 +8,8 @@ type ImportedSettings = Partial<Omit<AppSettings, 'keyBindings'>> & {
 
 const LANGUAGES = new Set(['en', 'zh', 'system']);
 const KEY_BINDING_KEYS = [
-  'switchSpaceN',
-  'switchSpaceAll',
+  'switchSectionN',
+  'switchSectionAll',
   'cyclePrev',
   'cycleNext',
   'focusSearch',

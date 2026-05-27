@@ -65,8 +65,8 @@ describe('storage extra', () => {
       schemaVersion: 4,
       history: [],
       historyCandidate: null,
-      manualGroups: [],
-      groupAssignments: [],
+      sections: [],
+      sectionAssignments: [],
       viewMode: 'cards',
       groupOrder: { 'a.com': 1 },
       deferred: []
@@ -93,7 +93,7 @@ describe('storage extra', () => {
   it('reads organizer state', async () => {
     const state = await readOrganizerState();
     expect(state.viewMode).toBe('cards');
-    expect(state.manualGroups).toHaveLength(0);
+    expect(state.sections).toHaveLength(0);
   });
 
   it('writeStorage replaces full data', async () => {
@@ -119,14 +119,14 @@ describe('storage extra', () => {
   it('writeOrganizerState updates all fields', async () => {
     await writeOrganizerState({
       viewMode: 'table',
-      manualGroups: [{ id: '1', name: 'Test', order: 0 }],
-      groupAssignments: [{ productKey: 'a', groupId: '1', order: 0 }]
+      sections: [{ id: '1', name: 'Test', order: 0 }],
+      sectionAssignments: [{ productKey: 'a', sectionId: '1', order: 0 }]
     });
     
     const storage = await readStorage();
     expect(storage.viewMode).toBe('table');
-    expect(storage.manualGroups).toHaveLength(1);
-    expect(storage.groupAssignments).toHaveLength(1);
+    expect(storage.sections).toHaveLength(1);
+    expect(storage.sectionAssignments).toHaveLength(1);
   });
 
   it('updateHistoryCandidate handles null', async () => {
@@ -164,11 +164,11 @@ describe('storage extra', () => {
     Object.assign(chromeStorage.data, legacyData);
     
     const storage = await readStorage();
-    expect(storage.schemaVersion).toBe(4);
-    expect(storage.manualGroups).toHaveLength(1);
-    expect(storage.manualGroups[0].id).toBe('s1');
-    expect(storage.groupAssignments).toHaveLength(1);
-    expect(storage.groupAssignments[0].groupId).toBe('s1');
+    expect(storage.schemaVersion).toBe(5);
+    expect(storage.sections).toHaveLength(1);
+    expect(storage.sections[0].id).toBe('s1');
+    expect(storage.sectionAssignments).toHaveLength(1);
+    expect(storage.sectionAssignments[0].sectionId).toBe('s1');
     expect(storage.historyCandidate).not.toBeNull();
     expect(storage.history).toHaveLength(1);
   });

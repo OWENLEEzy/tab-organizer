@@ -35,15 +35,21 @@ export function DashboardShell({
       >
         Skip to main content
       </a>
-      <div className="dashboard-full-width border-b border-border-color bg-bg-surface">
-        <div className={baseGridClass}>{top}</div>
-      </div>
-      <div className="dashboard-full-width border-b border-border-color bg-bg-card/50 backdrop-blur-md z-20">
-        <div className={baseGridClass}>{header}</div>
-      </div>
-      <div className="dashboard-full-width border-b border-border-color">
-        <div className={baseGridClass}>{toolbar}</div>
-      </div>
+      <header>
+        {top ? (
+          <div className="dashboard-full-width border-b border-border-color bg-bg-surface">
+            <div className={baseGridClass}>{top}</div>
+          </div>
+        ) : null}
+        <div className="dashboard-full-width border-b border-border-color bg-bg-card/50 backdrop-blur-md z-20">
+          <div className={baseGridClass}>{header}</div>
+        </div>
+        {toolbar ? (
+          <div className="dashboard-full-width border-b border-border-color">
+            <div className={baseGridClass}>{toolbar}</div>
+          </div>
+        ) : null}
+      </header>
       <div className="dashboard-workspace">
         <div className={workspaceGridClass}>
           <main id="dashboard-main" className="dashboard-primary">{children}</main>

@@ -4,24 +4,24 @@ import { useSettingsStore } from '../../stores/settings-store';
 import { useKeyboard } from './useKeyboard';
 import { flattenVisibleTabs } from '../lib/visible-tabs';
 import { isTabOrganizerPage } from '../../utils/url';
-import type { TabGroup, ManualGroup } from '../../types';
+import type { TabGroup, Section } from '../../types';
 import { useUIState } from './useUIState';
 import { useTabHandlers } from './useTabHandlers';
 import { useI18n } from './useI18n';
-import { DASHBOARD_SPACE_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
-import { isTabStale, filterDuplicateTabs, getProductKey } from '../../lib/tab-utils';
+import { DASHBOARD_SECTION_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
+import { isTabStale, analyzeDuplicates, getProductKey } from '../../lib/tab-utils';
 import { createSortComparator } from '../../lib/tab-grouper';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 
 export interface CommandParsed {
-  type: 'dupes' | 'stale' | 'space' | 'text';
-  spaceToken?: string;
+  type: 'dupes' | 'stale' | 'section' | 'text';
+  sectionToken?: string;
   textQuery: string;
 }
 
-type SpaceTarget = Pick<ManualGroup, 'id' | 'name' | 'order'>;
+type SectionTarget = Pick<Section, 'id' | 'name' | 'order'>;
 
 export function parseSearchQuery(query: string): CommandParsed {
   const trimmed = query.trim().toLowerCase();
@@ -44,29 +44,29 @@ export function parseSearchQuery(query: string): CommandParsed {
     }
   }
   
-  // 3. Match /space:SpaceName, /spac:SpaceName, /s:SpaceName, etc. (with or without slash)
-  const spaceMatch = trimmed.match(/^(\/?(?:space|spac|s):)([^\s]*)(?:\s+(.*))?$/);
-  if (spaceMatch) {
+  // 3. Match /section:SectionName, /sec:SectionName, /s:SectionName, etc. (with or without slash)
+  const sectionMatch = trimmed.match(/^(\/?(?:section|sec|s):)([^\s]*)(?:\s+(.*))?$/);
+  if (sectionMatch) {
     return {
-      type: 'space',
-      spaceToken: spaceMatch[2] || '',
-      textQuery: (spaceMatch[3] || '').trim()
+      type: 'section',
+      sectionToken: sectionMatch[2] || '',
+      textQuery: (sectionMatch[3] || '').trim()
     };
   }
   
   return { type: 'text', textQuery: trimmed };
 }
 
-export function resolveSpaceQueryTarget(token: string, spaces: SpaceTarget[]): SpaceTarget | null {
+export function resolveSectionQueryTarget(token: string, sections: SectionTarget[]): SectionTarget | null {
   const normalizedToken = token.trim().toLowerCase();
   if (!normalizedToken) return null;
 
-  const idMatch = spaces.find((space) => space.id.toLowerCase() === normalizedToken);
+  const idMatch = sections.find((section) => section.id.toLowerCase() === normalizedToken);
   if (idMatch) return idMatch;
 
-  return [...spaces]
+  return [...sections]
     .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
-    .find((space) => space.name.trim().toLowerCase().includes(normalizedToken)) ?? null;
+    .find((section) => section.name.trim().toLowerCase().includes(normalizedToken)) ?? null;
 }
 
 function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void {
@@ -97,10 +97,10 @@ export function useAppLogic() {
     lastClickedIndex,
   } = state;
 
-  const focusSpaceSwitcher = useCallback(() => {
-    dispatch({ type: 'SET_SPACE_SWITCHER_FOCUSED', focused: true });
+  const focusSectionSwitcher = useCallback(() => {
+    dispatch({ type: 'SET_SECTION_SWITCHER_FOCUSED', focused: true });
     window.setTimeout(() => {
-      dispatch({ type: 'SET_SPACE_SWITCHER_FOCUSED', focused: false });
+      dispatch({ type: 'SET_SECTION_SWITCHER_FOCUSED', focused: false });
     }, 100);
   }, [dispatch]);
 
@@ -109,7 +109,7 @@ export function useAppLogic() {
   const settingsStore = useSettingsStore();
 
   const { tabs, products, loading: tabsLoading, viewMode } = tabStore;
-  const { manualGroups, groupAssignments } = tabStore;
+  const { sections, sectionAssignments } = tabStore;
   const { settings } = settingsStore;
 
   // ─── Derived state ──────────────────────────────────────────────────
@@ -124,15 +124,15 @@ export function useAppLogic() {
 
   const assignmentByItemId = useMemo(() => {
     const map = new Map<string, string>();
-    for (const assignment of groupAssignments) {
-      map.set(`product:${assignment.productKey}`, assignment.groupId);
+    for (const assignment of sectionAssignments) {
+      map.set(`product:${assignment.productKey}`, assignment.sectionId);
     }
     return map;
-  }, [groupAssignments]);
+  }, [sectionAssignments]);
 
-  const orderedGroups = useMemo(
-    () => [...manualGroups].sort((a, b) => a.order - b.order),
-    [manualGroups],
+  const orderedSections = useMemo(
+    () => [...sections].sort((a, b) => a.order - b.order),
+    [sections],
   );
 
   // Debounce searchQuery for derived memos — avoids cascading recomputes on every keystroke.
@@ -153,10 +153,10 @@ export function useAppLogic() {
   const filteredProducts = useMemo(() => {
     let result = products;
 
-    if (tabStore.activeSpaceId) {
+    if (tabStore.activeSectionId) {
       result = result.filter(p => {
         const itemKey = groupAssignmentKey(p);
-        return assignmentByItemId.get(itemKey) === tabStore.activeSpaceId;
+        return assignmentByItemId.get(itemKey) === tabStore.activeSectionId;
       });
     }
 
@@ -166,13 +166,13 @@ export function useAppLogic() {
 
     if (!debouncedSearchQuery.trim()) return result;
 
-    // 1. Process /space:SpaceName command
-    if (parsedQuery.type === 'space') {
-      const targetSpace = resolveSpaceQueryTarget(parsedQuery.spaceToken ?? '', orderedGroups);
-      if (targetSpace) {
+    // 1. Process /section:SectionName command
+    if (parsedQuery.type === 'section') {
+      const targetSection = resolveSectionQueryTarget(parsedQuery.sectionToken ?? '', orderedSections);
+      if (targetSection) {
         result = products.filter(p => {
           const itemKey = groupAssignmentKey(p);
-          return assignmentByItemId.get(itemKey) === targetSpace.id;
+          return assignmentByItemId.get(itemKey) === targetSection.id;
         });
       } else {
         result = [];
@@ -185,7 +185,7 @@ export function useAppLogic() {
         .filter(p => p.duplicateCount > 0)
         .map(p => ({
           ...p,
-          tabs: filterDuplicateTabs(p.tabs)
+          tabs: analyzeDuplicates(p.tabs).duplicateTabs
         }))
         .filter(p => p.tabs.length > 0);
     }
@@ -219,30 +219,30 @@ export function useAppLogic() {
       }
     }
     return finalResult;
-  }, [products, debouncedSearchQuery, parsedQuery, tabStore.activeSpaceId, assignmentByItemId, orderedGroups, settings.staleThresholdDays, settings.groupSortBy]);
+  }, [products, debouncedSearchQuery, parsedQuery, tabStore.activeSectionId, assignmentByItemId, orderedSections, settings.staleThresholdDays, settings.groupSortBy]);
 
   const unassignedProducts = useMemo(
     () => filteredProducts.filter((p) => !assignmentByItemId.has(groupAssignmentKey(p))),
     [filteredProducts, assignmentByItemId, groupAssignmentKey],
   );
 
-  const productsByGroup = useMemo(() => {
+  const productsBySection = useMemo(() => {
     const result = new Map<string, TabGroup[]>();
-    for (const group of orderedGroups) {
+    for (const group of orderedSections) {
       result.set(group.id, []);
     }
 
     for (const p of filteredProducts) {
-      const groupId = assignmentByItemId.get(groupAssignmentKey(p));
-      if (!groupId) continue;
-      const bucket = result.get(groupId);
+      const sectionId = assignmentByItemId.get(groupAssignmentKey(p));
+      if (!sectionId) continue;
+      const bucket = result.get(sectionId);
       if (bucket) bucket.push(p);
     }
 
-    for (const [groupId, items] of result) {
+    for (const [sectionId, items] of result) {
       const orderMap = new Map<string, number>();
-      for (const assignment of groupAssignments) {
-        if (assignment.groupId === groupId) {
+      for (const assignment of sectionAssignments) {
+        if (assignment.sectionId === sectionId) {
           orderMap.set(`product:${assignment.productKey}`, assignment.order);
         }
       }
@@ -255,14 +255,14 @@ export function useAppLogic() {
     }
 
     return result;
-  }, [assignmentByItemId, filteredProducts, groupAssignmentKey, orderedGroups, groupAssignments]);
+  }, [assignmentByItemId, filteredProducts, groupAssignmentKey, orderedSections, sectionAssignments]);
 
   const flatChips = useMemo(() => {
     const visualProducts = viewMode === 'table'
       ? [...filteredProducts].sort((a, b) => a.order - b.order)
       : [
           ...unassignedProducts,
-          ...orderedGroups.flatMap((group) => productsByGroup.get(group.id) ?? []),
+          ...orderedSections.flatMap((group) => productsBySection.get(group.id) ?? []),
         ];
 
     const isSearching = debouncedSearchQuery.trim().length > 0;
@@ -278,8 +278,8 @@ export function useAppLogic() {
   }, [
     filteredProducts,
     unassignedProducts,
-    orderedGroups,
-    productsByGroup,
+    orderedSections,
+    productsBySection,
     viewMode,
     settings.maxChipsVisible,
     expandedDomains,
@@ -310,6 +310,7 @@ export function useAppLogic() {
     dispatch,
     showToast,
     flatChips,
+    visibleProducts: filteredProducts,
     selectedUrls,
     selectedTabIds: state.selectedTabIds,
     lastClickedIndex,
@@ -349,26 +350,26 @@ export function useAppLogic() {
 
   useEffect(() => {
     const handleMessage = (message: { type?: string }) => {
-      if (message.type === 'FOCUS_SPACE_SWITCHER') {
-        focusSpaceSwitcher();
+      if (message.type === 'FOCUS_SECTION_SWITCHER') {
+        focusSectionSwitcher();
       }
     };
     chrome.runtime?.onMessage?.addListener(handleMessage);
     return () => {
       chrome.runtime?.onMessage?.removeListener(handleMessage);
     };
-  }, [focusSpaceSwitcher]);
+  }, [focusSectionSwitcher]);
 
   useEffect(() => {
-    if (window.location.hash !== DASHBOARD_SPACE_SWITCHER_FOCUS_HASH) {
+    if (window.location.hash !== DASHBOARD_SECTION_SWITCHER_FOCUS_HASH) {
       return;
     }
 
-    focusSpaceSwitcher();
+    focusSectionSwitcher();
     const cleanUrl = new URL(window.location.href);
     cleanUrl.hash = '';
     window.history.replaceState(null, '', cleanUrl.toString());
-  }, [focusSpaceSwitcher]);
+  }, [focusSectionSwitcher]);
 
   // ─── Keyboard shortcuts ────────────────────────────────────────────
 
@@ -430,34 +431,34 @@ export function useAppLogic() {
         handlers.handleCloseTabAnimated(flatChips[focusedIndex].url);
       }
     },
-    onSwitchSpaceN: (n) => {
-      if (n > 0 && n <= orderedGroups.length) {
-        tabStore.setActiveSpace(orderedGroups[n - 1].id);
+    onSwitchSectionN: (n) => {
+      if (n > 0 && n <= orderedSections.length) {
+        tabStore.setActiveSection(orderedSections[n - 1].id);
       }
     },
-    onSwitchSpaceAll: () => {
-      tabStore.setActiveSpace(null);
+    onSwitchSectionAll: () => {
+      tabStore.setActiveSection(null);
     },
-    onCycleSpacePrev: (() => {
-      const getSpaceIds = (groups: ManualGroup[]) => [null, ...groups.map((g) => g.id)];
+    onCycleSectionPrev: (() => {
+      const getSectionIds = (groups: Section[]) => [null, ...groups.map((g) => g.id)];
       return () => {
-        const ids = getSpaceIds(orderedGroups);
-        const currentIndex = ids.indexOf(tabStore.activeSpaceId);
+        const ids = getSectionIds(orderedSections);
+        const currentIndex = ids.indexOf(tabStore.activeSectionId);
         const nextIndex = (currentIndex - 1 + ids.length) % ids.length;
-        tabStore.setActiveSpace(ids[nextIndex]);
+        tabStore.setActiveSection(ids[nextIndex]);
       };
     })(),
-    onCycleSpaceNext: (() => {
-      const getSpaceIds = (groups: ManualGroup[]) => [null, ...groups.map((g) => g.id)];
+    onCycleSectionNext: (() => {
+      const getSectionIds = (groups: Section[]) => [null, ...groups.map((g) => g.id)];
       return () => {
-        const ids = getSpaceIds(orderedGroups);
-        const currentIndex = ids.indexOf(tabStore.activeSpaceId);
+        const ids = getSectionIds(orderedSections);
+        const currentIndex = ids.indexOf(tabStore.activeSectionId);
         const nextIndex = (currentIndex + 1) % ids.length;
-        tabStore.setActiveSpace(ids[nextIndex]);
+        tabStore.setActiveSection(ids[nextIndex]);
       };
     })(),
     onClearFilter: () => {
-      tabStore.setActiveSpace(null);
+      tabStore.setActiveSection(null);
     },
   }, settings.keyBindings, state.settingsOpen || state.confirmDialog.open || state.promptDialog.open);
 
@@ -471,7 +472,7 @@ export function useAppLogic() {
       totalDupes,
       dashboardCount,
       showEmptyState: products.length === 0,
-      visibleSpaceCount: orderedGroups.length + (products.length === 0 ? 0 : 1),
+      visibleSectionCount: orderedSections.length + (products.length === 0 ? 0 : 1),
       focusedUrl,
       filteredTabCount,
       parsedQuery,
@@ -483,8 +484,8 @@ export function useAppLogic() {
     derived: {
       filteredProducts,
       unassignedProducts,
-      orderedGroups,
-      productsByGroup,
+      orderedSections,
+      productsBySection,
       assignmentByItemId,
       itemIdForProduct,
       flatChips,

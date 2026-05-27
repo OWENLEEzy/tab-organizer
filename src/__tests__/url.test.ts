@@ -25,6 +25,15 @@ describe('isRealTab', () => {
   it('returns false for brave:// URLs', () => {
     expect(isRealTab('brave://settings/')).toBe(false);
   });
+
+  it.each([
+    'chrome-search://local-ntp/local-ntp.html',
+    'devtools://devtools/bundled/inspector.html',
+    'view-source:chrome://version',
+    'view-source:chrome-extension://abc123/index.html',
+  ])('returns false for expanded browser-internal URL %s', (url) => {
+    expect(isRealTab(url)).toBe(false);
+  });
 });
 
 describe('sanitizeUrl', () => {

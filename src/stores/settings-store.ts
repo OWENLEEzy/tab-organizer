@@ -136,8 +136,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const updated: AppSettings = {
       ...prev,
       keyBindings: {
-        switchSpaceN: 'Meta+{n}',
-        switchSpaceAll: 'Meta+0',
+        switchSectionN: 'Meta+{n}',
+        switchSectionAll: 'Meta+0',
         cyclePrev: 'ArrowLeft',
         cycleNext: 'ArrowRight',
         focusSearch: '/',

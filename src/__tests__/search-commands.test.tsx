@@ -74,6 +74,44 @@ describe('TabChip Focus Stealing Prevention', () => {
     const tabButton = screen.getByRole('button', { name: /^GitHub Tab/ });
     expect(document.activeElement).toBe(tabButton);
   });
+
+  it('uses the configured stale threshold for chip stale styling', () => {
+    const now = new Date('2026-05-05T00:00:00Z').getTime();
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+
+    try {
+      const { rerender } = render(
+        <TabChip
+          url="https://github.com"
+          title="GitHub Tab"
+          duplicateCount={1}
+          lastAccessed={now - 4 * 24 * 60 * 60 * 1000}
+          staleThresholdDays={7}
+          onFocus={() => {}}
+          onClose={() => {}}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: /^GitHub Tab/ }).className).not.toContain('opacity-55');
+
+      rerender(
+        <TabChip
+          url="https://github.com"
+          title="GitHub Tab"
+          duplicateCount={1}
+          lastAccessed={now - 4 * 24 * 60 * 60 * 1000}
+          staleThresholdDays={3}
+          onFocus={() => {}}
+          onClose={() => {}}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: /^GitHub Tab/ }).className).toContain('opacity-55');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('SearchBar Commands Menu', () => {
@@ -101,7 +139,7 @@ describe('SearchBar Commands Menu', () => {
     expect(screen.getByText('Quick Commands (type / or choose below)')).toBeInTheDocument();
     expect(screen.getByText('/dupes')).toBeInTheDocument();
     expect(screen.getByText('/stale')).toBeInTheDocument();
-    expect(screen.getByText('/space:')).toBeInTheDocument();
+    expect(screen.getByText('/section:')).toBeInTheDocument();
   });
 
   it('automatically closes command menu when search value matches exactly a complete command', () => {
@@ -145,7 +183,7 @@ describe('SearchBar Commands Menu', () => {
     expect(onChange).toHaveBeenCalledWith('/dupes ');
   });
 
-  it('does NOT append a trailing space when /space: is chosen', async () => {
+  it('does NOT append a trailing space when /section: is chosen', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
 
@@ -161,44 +199,44 @@ describe('SearchBar Commands Menu', () => {
     const input = screen.getByRole('searchbox', { name: 'Search tabs' });
     await user.click(input); // Focuses input and opens menu
 
-    const spaceBtn = screen.getByRole('button', { name: /space:/ });
-    await user.click(spaceBtn);
+    const sectionBtn = screen.getByRole('button', { name: /section:/ });
+    await user.click(sectionBtn);
 
-    expect(onChange).toHaveBeenCalledWith('/space:');
+    expect(onChange).toHaveBeenCalledWith('/section:');
   });
 
-  it('shows manual spaces list as suggestions when /space: or /s: is typed', async () => {
+  it('shows manual sections list as suggestions when /section: or /s: is typed', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
-    const spaces = [
+    const sections = [
       { id: 'w1', name: 'Work' },
       { id: 'w2', name: 'Social' },
     ];
 
     render(
       <SearchBar
-        value="/s:"
+        value="/sec:"
         onChange={onChange}
         resultCount={0}
         totalCount={0}
-        spaces={spaces}
+        sections={sections}
       />
     );
 
     const input = screen.getByRole('searchbox', { name: 'Search tabs' });
     fireEvent.focus(input);
 
-    // Should display stable space-id commands while keeping readable names visible.
-    expect(screen.getByText('/space:w1')).toBeInTheDocument();
-    expect(screen.getByText('/space:w2')).toBeInTheDocument();
+    // Should display stable section-id commands while keeping readable names visible.
+    expect(screen.getByText('/section:w1')).toBeInTheDocument();
+    expect(screen.getByText('/section:w2')).toBeInTheDocument();
     expect(screen.getByText('Work')).toBeInTheDocument();
     expect(screen.getByText('Social')).toBeInTheDocument();
 
-    const workBtn = screen.getByRole('button', { name: /\/space:w1/ });
+    const workBtn = screen.getByRole('button', { name: /\/section:w1/ });
     await user.click(workBtn);
 
-    // Selecting a completed space command appends a space
-    expect(onChange).toHaveBeenCalledWith('/space:w1 ');
+    // Selecting a completed section command appends a space
+    expect(onChange).toHaveBeenCalledWith('/section:w1 ');
   });
 });
 

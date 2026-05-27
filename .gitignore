@@ -6,6 +6,10 @@ dist-zip
 check_results.txt
 e2e_results.txt
 catalog.json
+categorized.json
+duplicates-report.md
+categories/
+duplicates/
 .DS_Store
 docs/superpowers/
 

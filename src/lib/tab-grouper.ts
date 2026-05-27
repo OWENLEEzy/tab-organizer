@@ -1,7 +1,7 @@
-import type { Tab, TabGroup, ManualGroup, CustomGroup, GroupSortOption } from '../types';
+import type { Tab, TabGroup, Section, CustomGroup, GroupSortOption } from '../types';
 import { productForHostname } from '../config/products';
 import { friendlyDomain } from './title-cleaner';
-import { countDuplicates } from './tab-utils';
+import { analyzeDuplicates } from './tab-utils';
 import { getTabDomain } from '../utils/url';
 import { normalizeGroupSortBy } from '../config/group-sort';
 
@@ -151,7 +151,7 @@ export function groupTabsByDomain(
   for (let i = 0; i < sortedKeys.length; i++) {
     const key = sortedKeys[i];
     const groupTabs = groupMap.get(key)!;
-    const { duplicateCount, hasDuplicates } = countDuplicates(groupTabs);
+    const { duplicateCount, hasDuplicates } = analyzeDuplicates(groupTabs);
 
     groups.push({
       id: key,
@@ -175,17 +175,17 @@ export function groupTabsByDomain(
 }
 
 /**
- * Auto-assign a product to a space based on its hostname rules.
+ * Auto-assign a product to a section based on its hostname rules.
  */
-export function autoAssignProductToSpace(
+export function autoAssignProductToSection(
   hostnames: readonly string[],
-  spaces: ManualGroup[]
+  sections: Section[]
 ): string | null {
-  for (const space of spaces) {
-    for (const rule of space.autoRules ?? []) {
+  for (const section of sections) {
+    for (const rule of section.autoRules ?? []) {
       try {
         const re = new RegExp(rule.pattern, 'i');
-        if (hostnames.some((hostname) => re.test(hostname))) return space.id;
+        if (hostnames.some((hostname) => re.test(hostname))) return section.id;
       } catch {
         // Skip invalid regex patterns
       }

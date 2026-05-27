@@ -109,6 +109,38 @@ describe('Chrome favicon rendering', () => {
     expect(container.querySelector('.table-icon')?.getAttribute('src')).toBe(favicon);
   });
 
+  it('keeps product table row order provided by the caller', () => {
+    const first = {
+      ...makeGroup([makeTab({ id: 1, url: 'https://b.example.com/a', favIconUrl: '' })]),
+      id: 'b.example.com',
+      domain: 'b.example.com',
+      friendlyName: 'B Product',
+      order: 10,
+    };
+    const second = {
+      ...makeGroup([makeTab({ id: 2, url: 'https://a.example.com/a', favIconUrl: '' })]),
+      id: 'a.example.com',
+      domain: 'a.example.com',
+      friendlyName: 'A Product',
+      order: 0,
+    };
+
+    const { container } = render(
+      <ProductTable
+        items={[first, second]}
+        groups={[]}
+        assignmentByItemId={new Map()}
+        onMoveItem={() => {}}
+        onCloseProduct={() => {}}
+        onCloseDuplicates={() => {}}
+        onFocusTab={() => {}}
+      />,
+    );
+
+    expect([...container.querySelectorAll('.product-table-name > span:last-child')]
+      .map((node) => node.textContent)).toEqual(['B Product', 'A Product']);
+  });
+
   it('falls back to initials when favicon is missing or fails to load', () => {
     const { container, getAllByText } = render(
       <DomainCard

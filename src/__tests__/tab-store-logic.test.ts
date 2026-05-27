@@ -33,18 +33,18 @@ describe('TabStore Internal Logic', () => {
     vi.clearAllMocks();
     chromeStorage.data = {
         schemaVersion: 4,
-        manualGroups: [],
-        groupAssignments: [],
+        sections: [],
+        sectionAssignments: [],
         groupOrder: {},
         viewMode: 'cards'
     };
   });
 
   it('prunes stale assignments and groupOrder during fetchTabs', async () => {
-    chromeStorage.data['manualGroups'] = [{ id: 'g1', name: 'G1', order: 0 }];
-    chromeStorage.data['groupAssignments'] = [
-        { productKey: 'stale', groupId: 'g1', order: 0 },
-        { productKey: 'youtube', groupId: 'missing-group', order: 1 }
+    chromeStorage.data['sections'] = [{ id: 'g1', name: 'G1', order: 0 }];
+    chromeStorage.data['sectionAssignments'] = [
+        { productKey: 'stale', sectionId: 'g1', order: 0 },
+        { productKey: 'youtube', sectionId: 'missing-group', order: 1 }
     ];
     chromeStorage.data['groupOrder'] = { 'stale-domain': 0 };
     
@@ -56,14 +56,14 @@ describe('TabStore Internal Logic', () => {
     await useTabStore.getState().fetchTabs();
     
     const state = useTabStore.getState();
-    expect(state.groupAssignments).toHaveLength(0); // Both were stale/invalid
+    expect(state.sectionAssignments).toHaveLength(0); // Both were stale/invalid
     expect(chromeStorage.data['groupOrder']).toEqual({}); // stale-domain removed
   });
 
   it('migrates legacy hostname organizer keys to canonical product keys', async () => {
-    chromeStorage.data['manualGroups'] = [{ id: 'g1', name: 'G1', order: 0 }];
-    chromeStorage.data['groupAssignments'] = [
-      { productKey: 'google.com', groupId: 'g1', order: 0 },
+    chromeStorage.data['sections'] = [{ id: 'g1', name: 'G1', order: 0 }];
+    chromeStorage.data['sectionAssignments'] = [
+      { productKey: 'google.com', sectionId: 'g1', order: 0 },
     ];
     chromeStorage.data['groupOrder'] = { 'google.com': 1, google: 3 };
 
@@ -75,23 +75,23 @@ describe('TabStore Internal Logic', () => {
 
     const state = useTabStore.getState();
     expect(state.products[0].domain).toBe('google');
-    expect(state.groupAssignments).toEqual([
-      { productKey: 'google', groupId: 'g1', order: 0 },
+    expect(state.sectionAssignments).toEqual([
+      { productKey: 'google', sectionId: 'g1', order: 0 },
     ]);
     expect(chromeStorage.data['groupOrder']).toEqual({ google: 3 });
-    expect(chromeStorage.data['groupAssignments']).toEqual([
-      { productKey: 'google', groupId: 'g1', order: 0 },
+    expect(chromeStorage.data['sectionAssignments']).toEqual([
+      { productKey: 'google', sectionId: 'g1', order: 0 },
     ]);
   });
 
   it('merges multiple legacy localized keys into one canonical assignment for known brands', async () => {
-    chromeStorage.data['manualGroups'] = [
+    chromeStorage.data['sections'] = [
       { id: 'later', name: 'Later', order: 0 },
       { id: 'research', name: 'Research', order: 1 },
     ];
-    chromeStorage.data['groupAssignments'] = [
-      { productKey: 'google.com', groupId: 'later', order: 2 },
-      { productKey: 'google.co.uk', groupId: 'research', order: 1 },
+    chromeStorage.data['sectionAssignments'] = [
+      { productKey: 'google.com', sectionId: 'later', order: 2 },
+      { productKey: 'google.co.uk', sectionId: 'research', order: 1 },
     ];
     chromeStorage.data['groupOrder'] = { 'google.com': 4, 'google.co.uk': 2 };
 
@@ -102,20 +102,20 @@ describe('TabStore Internal Logic', () => {
 
     await useTabStore.getState().fetchTabs();
 
-    expect(useTabStore.getState().groupAssignments).toEqual([
-      { productKey: 'google', groupId: 'research', order: 1 },
+    expect(useTabStore.getState().sectionAssignments).toEqual([
+      { productKey: 'google', sectionId: 'research', order: 1 },
     ]);
     expect(chromeStorage.data['groupOrder']).toEqual({ google: 2 });
-    expect(chromeStorage.data['groupAssignments']).toEqual([
-      { productKey: 'google', groupId: 'research', order: 1 },
+    expect(chromeStorage.data['sectionAssignments']).toEqual([
+      { productKey: 'google', sectionId: 'research', order: 1 },
     ]);
   });
 
   it('handles duplicate product assignments by keeping only the first one', async () => {
-    chromeStorage.data['manualGroups'] = [{ id: 'g1', name: 'G1', order: 0 }];
-    chromeStorage.data['groupAssignments'] = [
-        { productKey: 'youtube', groupId: 'g1', order: 0 },
-        { productKey: 'youtube', groupId: 'g1', order: 1 }
+    chromeStorage.data['sections'] = [{ id: 'g1', name: 'G1', order: 0 }];
+    chromeStorage.data['sectionAssignments'] = [
+        { productKey: 'youtube', sectionId: 'g1', order: 0 },
+        { productKey: 'youtube', sectionId: 'g1', order: 1 }
     ];
     
     chromeTabs.query.mockResolvedValue([
@@ -124,6 +124,6 @@ describe('TabStore Internal Logic', () => {
 
     await useTabStore.getState().fetchTabs();
     
-    expect(useTabStore.getState().groupAssignments).toHaveLength(1);
+    expect(useTabStore.getState().sectionAssignments).toHaveLength(1);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseSearchQuery, resolveSpaceQueryTarget } from '../newtab/hooks/useAppLogic';
+import { parseSearchQuery, resolveSectionQueryTarget } from '../newtab/hooks/useAppLogic';
 
 describe('parseSearchQuery', () => {
   describe('Duplicate Command parsing (/dupes, /dupe, dupes, dupe)', () => {
@@ -41,41 +41,41 @@ describe('parseSearchQuery', () => {
     });
   });
 
-  describe('Space Command parsing (/space:SpaceName, space:SpaceName)', () => {
-    it('parses space filter with slash and argument', () => {
-      expect(parseSearchQuery('/space:work')).toEqual({ type: 'space', spaceToken: 'work', textQuery: '' });
-      expect(parseSearchQuery('/space:social reddit')).toEqual({ type: 'space', spaceToken: 'social', textQuery: 'reddit' });
+  describe('Section Command parsing (/section:SectionName, section:SectionName)', () => {
+    it('parses section filter with slash and argument', () => {
+      expect(parseSearchQuery('/section:work')).toEqual({ type: 'section', sectionToken: 'work', textQuery: '' });
+      expect(parseSearchQuery('/section:social reddit')).toEqual({ type: 'section', sectionToken: 'social', textQuery: 'reddit' });
     });
 
-    it('parses slash-less space filter with argument', () => {
-      expect(parseSearchQuery('space:personal')).toEqual({ type: 'space', spaceToken: 'personal', textQuery: '' });
-      expect(parseSearchQuery('space:work slack')).toEqual({ type: 'space', spaceToken: 'work', textQuery: 'slack' });
+    it('parses slash-less section filter with argument', () => {
+      expect(parseSearchQuery('section:personal')).toEqual({ type: 'section', sectionToken: 'personal', textQuery: '' });
+      expect(parseSearchQuery('section:work slack')).toEqual({ type: 'section', sectionToken: 'work', textQuery: 'slack' });
     });
 
-    it('parses shorthand /s: and /spac: aliases', () => {
-      expect(parseSearchQuery('/s:work')).toEqual({ type: 'space', spaceToken: 'work', textQuery: '' });
-      expect(parseSearchQuery('/spac:work')).toEqual({ type: 'space', spaceToken: 'work', textQuery: '' });
-      expect(parseSearchQuery('s:work slack')).toEqual({ type: 'space', spaceToken: 'work', textQuery: 'slack' });
-      expect(parseSearchQuery('spac:personal')).toEqual({ type: 'space', spaceToken: 'personal', textQuery: '' });
-      expect(parseSearchQuery('/s:')).toEqual({ type: 'space', spaceToken: '', textQuery: '' });
+    it('parses shorthand /s: and /sec: aliases', () => {
+      expect(parseSearchQuery('/s:work')).toEqual({ type: 'section', sectionToken: 'work', textQuery: '' });
+      expect(parseSearchQuery('/sec:work')).toEqual({ type: 'section', sectionToken: 'work', textQuery: '' });
+      expect(parseSearchQuery('s:work slack')).toEqual({ type: 'section', sectionToken: 'work', textQuery: 'slack' });
+      expect(parseSearchQuery('sec:personal')).toEqual({ type: 'section', sectionToken: 'personal', textQuery: '' });
+      expect(parseSearchQuery('/s:')).toEqual({ type: 'section', sectionToken: '', textQuery: '' });
     });
 
-    it('handles empty space arguments gracefully', () => {
-      expect(parseSearchQuery('/space:')).toEqual({ type: 'space', spaceToken: '', textQuery: '' });
-      expect(parseSearchQuery('space: ')).toEqual({ type: 'space', spaceToken: '', textQuery: '' });
+    it('handles empty section arguments gracefully', () => {
+      expect(parseSearchQuery('/section:')).toEqual({ type: 'section', sectionToken: '', textQuery: '' });
+      expect(parseSearchQuery('section: ')).toEqual({ type: 'section', sectionToken: '', textQuery: '' });
     });
 
-    it('resolves space ids before falling back to normalized names', () => {
-      const spaces = [
-        { id: 'space-work-2', name: 'Work', order: 2 },
-        { id: 'space-work-1', name: 'Work', order: 1 },
-        { id: 'space-social', name: 'Social', order: 0 },
+    it('resolves section ids before falling back to normalized names', () => {
+      const sections = [
+        { id: 'section-work-2', name: 'Work', order: 2 },
+        { id: 'section-work-1', name: 'Work', order: 1 },
+        { id: 'section-social', name: 'Social', order: 0 },
       ];
 
-      expect(resolveSpaceQueryTarget('space-work-2', spaces)?.id).toBe('space-work-2');
-      expect(resolveSpaceQueryTarget('work', spaces)?.id).toBe('space-work-1');
-      expect(resolveSpaceQueryTarget('WORK', spaces)?.id).toBe('space-work-1');
-      expect(resolveSpaceQueryTarget('missing', spaces)).toBeNull();
+      expect(resolveSectionQueryTarget('section-work-2', sections)?.id).toBe('section-work-2');
+      expect(resolveSectionQueryTarget('work', sections)?.id).toBe('section-work-1');
+      expect(resolveSectionQueryTarget('WORK', sections)?.id).toBe('section-work-1');
+      expect(resolveSectionQueryTarget('missing', sections)).toBeNull();
     });
   });
 

@@ -12,6 +12,7 @@ interface DomainCardProps {
   dragHandleProps?: Record<string, unknown>;
   expanded?: boolean;
   maxChipsVisible?: number;
+  staleThresholdDays?: number;
   onCloseDomain: (group: TabGroup) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onCloseTab: (url: string) => void;
@@ -84,6 +85,7 @@ function TabChipRow({
   onClose,
   onChipClick,
   searchQuery,
+  staleThresholdDays,
 }: {
   tab: TabGroup['tabs'][number];
   duplicateCount: number;
@@ -96,6 +98,7 @@ function TabChipRow({
   onClose: (url: string) => void;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   searchQuery?: string;
+  staleThresholdDays?: number;
 }): React.ReactElement {
   return (
     <div className="tab-chip-row cursor-pointer">
@@ -114,6 +117,7 @@ function TabChipRow({
         onChipClick={onChipClick}
         searchQuery={searchQuery}
         lastAccessed={tab.lastAccessed}
+        staleThresholdDays={staleThresholdDays}
         pinned={tab.pinned}
         audible={tab.audible}
       />
@@ -128,6 +132,7 @@ export function DomainCard({
   dragHandleProps,
   expanded = false,
   maxChipsVisible = DEFAULT_MAX_CHIPS,
+  staleThresholdDays = 3,
   onCloseDomain,
   onCloseDuplicates,
   onCloseTab,
@@ -212,23 +217,27 @@ export function DomainCard({
       <div className={`h-0.5 ${statusBarColor}`} />
 
       <div className="border-b border-border-color p-4 bg-bg-surface/20">
-        {/* Header: domain name + badges — drag handle when DnD is active */}
-        <div
-          className={`flex flex-wrap items-center gap-2${dragHandleProps ? ' cursor-grab active:cursor-grabbing' : ''}`}
-          {...dragHandleProps}
-        >
+        {/* Header: domain name + badges — DnD uses a dedicated handle to avoid nested interactive controls. */}
+        <div className="flex flex-wrap items-center gap-2">
           {dragHandleProps && (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="text-text-secondary size-4 shrink-0"
-              aria-hidden="true"
+            <button
+              type="button"
+              className="text-text-secondary hover:text-text-primary focus-visible:ring-accent-primary/40 flex size-6 shrink-0 cursor-grab items-center justify-center rounded-sm transition-colors active:cursor-grabbing focus-visible:ring-2 focus-visible:outline-none"
+              {...dragHandleProps}
+              onClick={(event) => event.preventDefault()}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="size-4"
+                aria-hidden="true"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            </button>
           )}
           {iconFailed || !groupFaviconUrl ? (
             <span
@@ -255,7 +264,7 @@ export function DomainCard({
             {hasDupes && (
               <button
                 type="button"
-                className="flex h-7 items-center gap-1 rounded-sm bg-accent-amber px-2 text-[var(--text-3xs)] font-semibold tracking-wider text-white transition-opacity hover:opacity-90"
+                className="flex h-7 items-center gap-1 rounded-sm bg-accent-amber px-2 text-[var(--text-3xs)] font-semibold tracking-wider text-white transition-opacity hover:opacity-90 rotate-[2deg]"
                 onClick={handleCloseDuplicates}
                 title={t('cardCloseDupesTitle')}
               >
@@ -271,9 +280,9 @@ export function DomainCard({
 
         {/* Tab chips */}
         <div className="flex flex-col gap-0.5">
-          {visibleTabs.map((tab) => (
+          {visibleTabs.map((tab, index) => (
             <TabChipRow
-              key={tab.url}
+              key={tab.id >= 0 ? tab.id : `${tab.url}:${index}`}
               tab={tab}
               duplicateCount={tabUrlCounts.get(tab.url) ?? 1}
               focusedUrl={focusedUrl}
@@ -285,6 +294,7 @@ export function DomainCard({
               onClose={handleCloseTab}
               onChipClick={onChipClick}
               searchQuery={searchQuery}
+              staleThresholdDays={staleThresholdDays}
             />
           ))}
         </div>

@@ -25,12 +25,12 @@ function KeyboardHarness(): React.ReactElement {
     onArrowDown: () => setArrowDownCount((count) => count + 1),
     onEnter: () => setEnterCount((count) => count + 1),
     onDClose: () => setCloseCount((count) => count + 1),
-    onSwitchSpaceN: () => setSwitchCount((count) => count + 1),
-    onCycleSpacePrev: () => setCyclePrevCount((count) => count + 1),
-    onCycleSpaceNext: () => setCycleNextCount((count) => count + 1),
+    onSwitchSectionN: () => setSwitchCount((count) => count + 1),
+    onCycleSectionPrev: () => setCyclePrevCount((count) => count + 1),
+    onCycleSectionNext: () => setCycleNextCount((count) => count + 1),
   }, {
-    switchSpaceN: 'Meta+{n}',
-    switchSpaceAll: 'Meta+0',
+    switchSectionN: 'Meta+{n}',
+    switchSectionAll: 'Meta+0',
     cyclePrev: 'ArrowLeft',
     cycleNext: 'ArrowRight',
     focusSearch: '/',
@@ -95,7 +95,7 @@ describe('useKeyboard', () => {
     expect(screen.getByTestId('close-count')).toHaveTextContent('0');
   });
 
-  it('does not cycle or switch spaces from inputs and interactive controls', async () => {
+  it('does not cycle or switch sections from inputs and interactive controls', async () => {
     const user = userEvent.setup();
 
     render(<KeyboardHarness />);

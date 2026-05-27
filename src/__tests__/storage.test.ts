@@ -12,6 +12,9 @@ import {
   deleteHistorySnapshot,
   clearHistory,
   reconcileOrganizerState,
+  pruneStaleStorage,
+  assignProductToSection,
+  unassignProductFromSections,
 } from '../utils/storage';
 import type { HistorySnapshot } from '../types';
 
@@ -70,14 +73,14 @@ vi.stubGlobal('chrome', {
 describe('readStorage', () => {
   it('returns default schema when storage is empty', async () => {
     const result = await readStorage();
-    expect(result.schemaVersion).toBe(4);
+    expect(result.schemaVersion).toBe(5);
     expect(result.deferred).toEqual([]);
     expect(result.workspaces).toEqual([]);
     expect(result.settings.theme).toBe('clay');
     expect(result.settings.groupSortBy).toBe('count');
     expect(result.groupOrder).toEqual({});
-    expect(result.manualGroups).toEqual([]);
-    expect(result.groupAssignments).toEqual([]);
+    expect(result.sections).toEqual([]);
+    expect(result.sectionAssignments).toEqual([]);
     expect(result.unsortedOverrides).toEqual([]);
     expect(result.viewMode).toBe('cards');
     expect(result.historyCandidate).toBeNull();
@@ -96,19 +99,19 @@ describe('readStorage', () => {
     });
   });
 
-  it('migrates from v0 (no schemaVersion) to v4', async () => {
+  it('migrates from v0 (no schemaVersion) to current schema', async () => {
     storage['deferred'] = [{ id: '1', url: 'https://example.com', title: 'Test', domain: 'example.com', savedAt: '2026-01-01T00:00:00.000Z', completed: false, dismissed: false }];
     const result = await readStorage();
-    expect(result.schemaVersion).toBe(4);
+    expect(result.schemaVersion).toBe(5);
     expect(result.deferred).toHaveLength(1);
     expect(result.groupOrder).toEqual({});
-    expect(result.manualGroups).toEqual([]);
-    expect(result.groupAssignments).toEqual([]);
+    expect(result.sections).toEqual([]);
+    expect(result.sectionAssignments).toEqual([]);
     expect(result.unsortedOverrides).toEqual([]);
     expect(result.viewMode).toBe('cards');
   });
 
-  it('migrates from v3 terminology to v4', async () => {
+  it('migrates from v3 recovery terminology to current schema', async () => {
     storage['schemaVersion'] = 3;
     storage['sections'] = [{ id: 'work', name: 'Work', order: 1 }];
     storage['sectionAssignments'] = [{ productKey: 'github', sectionId: 'work', order: 0 }];
@@ -132,37 +135,95 @@ describe('readStorage', () => {
 
     const result = await readStorage();
 
-    expect(result.schemaVersion).toBe(4);
-    expect(result.manualGroups).toEqual([{ id: 'work', name: 'Work', order: 1 }]);
-    expect(result.groupAssignments).toEqual([{ productKey: 'github', groupId: 'work', order: 0 }]);
+    expect(result.schemaVersion).toBe(5);
+    expect(result.sections).toEqual([{ id: 'work', name: 'Work', order: 1 }]);
+    expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'work', order: 0 }]);
     expect(result.history).toHaveLength(1);
     expect(result.history[0].id).toBe('snap-1');
   });
 
-  it('normalizes v4 product-group organizer state and rejects tabUrl assignments', async () => {
+  it('filters browser-internal tabs from legacy recovery snapshots during migration', async () => {
+    storage['schemaVersion'] = 3;
+    storage['recoveryHistory'] = [{
+      id: 'snap-legacy',
+      capturedAt: '2026-05-05T00:00:00Z',
+      tabCount: 4,
+      products: [{ productKey: 'example.com', label: 'Example', iconDomain: 'example.com', tabCount: 1 }],
+      tabs: [
+        {
+          url: 'chrome://extensions',
+          title: 'Extensions',
+          domain: 'chrome',
+          productKey: 'chrome',
+          productLabel: 'Chrome',
+          iconDomain: 'chrome',
+          favIconUrl: '',
+          capturedAt: '2026-05-05T00:00:00Z',
+        },
+        {
+          url: 'chrome-extension://fake-id/src/newtab/index.html',
+          title: 'Tab Organizer',
+          domain: 'fake-id',
+          productKey: 'fake-id',
+          productLabel: 'Extension',
+          iconDomain: 'fake-id',
+          favIconUrl: '',
+          capturedAt: '2026-05-05T00:00:00Z',
+        },
+        {
+          url: 'devtools://devtools/bundled/inspector.html',
+          title: 'DevTools',
+          domain: 'devtools',
+          productKey: 'devtools',
+          productLabel: 'DevTools',
+          iconDomain: 'devtools',
+          favIconUrl: '',
+          capturedAt: '2026-05-05T00:00:00Z',
+        },
+        {
+          url: 'https://example.com',
+          title: 'Example',
+          domain: 'example.com',
+          productKey: 'example.com',
+          productLabel: 'Example',
+          iconDomain: 'example.com',
+          favIconUrl: '',
+          capturedAt: '2026-05-05T00:00:00Z',
+        },
+      ],
+    }];
+
+    const result = await readStorage();
+
+    expect(result.history).toHaveLength(1);
+    expect(result.history[0].tabs.map((tab) => tab.url)).toEqual(['https://example.com']);
+    expect(result.history[0].tabCount).toBe(1);
+  });
+
+  it('normalizes section organizer state and rejects tabUrl assignments', async () => {
     const rejectedUrlAssignmentType = 'tab' + 'Url';
     storage['schemaVersion'] = 4;
-    storage['manualGroups'] = [
+    storage['sections'] = [
       { id: 'later', name: 'Later', order: 2 },
       { id: 'homepages', name: 'Homepages', order: 1 },
       { id: '', name: 'bad' },
       { id: 'untitled', name: '   ', order: 3 },
     ];
-    storage['groupAssignments'] = [
-      { productKey: 'youtube', groupId: 'later', order: 0 },
-      { itemType: 'product', itemKey: 'github', groupId: 'later', order: 1 },
-      { itemType: rejectedUrlAssignmentType, itemKey: 'https://example.com', groupId: 'later' },
-      { itemType: 'bad', itemKey: 'x', groupId: 'later' },
+    storage['sectionAssignments'] = [
+      { productKey: 'youtube', sectionId: 'later', order: 0 },
+      { itemType: 'product', itemKey: 'github', sectionId: 'later', order: 1 },
+      { itemType: rejectedUrlAssignmentType, itemKey: 'https://example.com', sectionId: 'later' },
+      { itemType: 'bad', itemKey: 'x', sectionId: 'later' },
     ];
     storage['viewMode'] = 'table';
 
     const result = await readStorage();
 
-    expect(result.manualGroups.map((g) => g.id)).toEqual(['homepages', 'later', 'untitled']);
-    expect(result.manualGroups.find((g) => g.id === 'untitled')?.name).toBe('Untitled');
-    expect(result.groupAssignments).toEqual([
-      { productKey: 'youtube', groupId: 'later', order: 0 },
-      { productKey: 'github', groupId: 'later', order: 1 },
+    expect(result.sections.map((g) => g.id)).toEqual(['homepages', 'later', 'untitled']);
+    expect(result.sections.find((g) => g.id === 'untitled')?.name).toBe('Untitled');
+    expect(result.sectionAssignments).toEqual([
+      { productKey: 'youtube', sectionId: 'later', order: 0 },
+      { productKey: 'github', sectionId: 'later', order: 1 },
     ]);
     expect(result.viewMode).toBe('table');
   });
@@ -174,6 +235,21 @@ describe('readStorage', () => {
     const result = await readStorage();
 
     expect(result.unsortedOverrides).toEqual(['github', 'google.com']);
+  });
+
+  it('normalizes malformed sections and assignments to empty lists', async () => {
+    storage['schemaVersion'] = 4;
+    storage['sections'] = 'not-an-array';
+    storage['sectionAssignments'] = 'not-an-array';
+    storage['unsortedOverrides'] = 'not-an-array';
+    storage['viewMode'] = 'invalid';
+
+    const result = await readStorage();
+
+    expect(result.sections).toEqual([]);
+    expect(result.sectionAssignments).toEqual([]);
+    expect(result.unsortedOverrides).toEqual([]);
+    expect(result.viewMode).toBe('cards');
   });
 });
 
@@ -260,6 +336,7 @@ describe('history storage', () => {
     expect(result.history).toHaveLength(1);
     expect(result.history[0].tabs).toHaveLength(80);
   });
+
 
   it('keeps only five history snapshots and skips duplicate URL sets', async () => {
     for (let index = 0; index < 7; index += 1) {
@@ -384,39 +461,102 @@ describe('writeGroupOrder', () => {
   });
 });
 
-describe('reconcileOrganizerState', () => {
-  it('seeds default spaces when manualGroups has never been persisted', async () => {
-    const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
-    expect(state.manualGroups.length).toBeGreaterThan(0);
-    // Check if the default Dev space is present
-    const devSpace = state.manualGroups.find(g => g.id === 'space-dev');
-    expect(devSpace).toBeDefined();
-    expect(devSpace?.emoji).toBe('🛠');
+describe('organizer storage mutations', () => {
+  it('prunes stale order, assignments, and unsorted overrides', async () => {
+    storage['schemaVersion'] = 4;
+    storage['sections'] = [{ id: 'group-1', name: 'Group', order: 0 }];
+    storage['groupOrder'] = { github: 0, stale: 1 };
+    storage['sectionAssignments'] = [
+      { productKey: 'github', sectionId: 'group-1', order: 0 },
+      { productKey: 'stale', sectionId: 'group-1', order: 1 },
+      { productKey: 'github', sectionId: 'missing-group', order: 2 },
+    ];
+    storage['unsortedOverrides'] = ['github', 'stale'];
+
+    await pruneStaleStorage(new Set(['github']));
+    const result = await readStorage();
+
+    expect(result.groupOrder).toEqual({ github: 0 });
+    expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1', order: 0 }]);
+    expect(result.unsortedOverrides).toEqual(['github']);
   });
 
-  it('preserves an intentionally persisted empty manualGroups list', async () => {
+  it('leaves organizer storage untouched when no stale data exists', async () => {
     storage['schemaVersion'] = 4;
-    storage['manualGroups'] = [];
+    storage['sections'] = [{ id: 'group-1', name: 'Group', order: 0 }];
+    storage['groupOrder'] = { github: 0 };
+    storage['sectionAssignments'] = [{ productKey: 'github', sectionId: 'group-1', order: 0 }];
+    storage['unsortedOverrides'] = ['github'];
+
+    await pruneStaleStorage(new Set(['github']));
+    const result = await readStorage();
+
+    expect(result.groupOrder).toEqual({ github: 0 });
+    expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1', order: 0 }]);
+    expect(result.unsortedOverrides).toEqual(['github']);
+  });
+
+  it('assigns and unassigns products by merging with current storage', async () => {
+    storage['schemaVersion'] = 4;
+    storage['sections'] = [{ id: 'group-1', name: 'Group', order: 0 }];
+    storage['sectionAssignments'] = [{ productKey: 'github', sectionId: 'group-1', order: 0 }];
+    storage['unsortedOverrides'] = ['vercel', 'github'];
+
+    let next = await assignProductToSection('vercel', 'group-1');
+    expect(next.sectionAssignments).toEqual([
+      { productKey: 'github', sectionId: 'group-1', order: 0 },
+      { productKey: 'vercel', sectionId: 'group-1', order: 1 },
+    ]);
+    expect(next.unsortedOverrides).toEqual(['github']);
+
+    next = await unassignProductFromSections('vercel');
+    expect(next.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1', order: 0 }]);
+    expect(next.unsortedOverrides).toEqual(['github', 'vercel']);
+  });
+
+  it('does not duplicate an existing unsorted override when unassigning', async () => {
+    storage['schemaVersion'] = 4;
+    storage['unsortedOverrides'] = ['github'];
+
+    const next = await unassignProductFromSections('github');
+
+    expect(next.unsortedOverrides).toEqual(['github']);
+  });
+});
+
+describe('reconcileOrganizerState', () => {
+  it('seeds default sections when sections has never been persisted', async () => {
+    const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
+    expect(state.sections.length).toBeGreaterThan(0);
+    // Check if the default Dev section is present
+    const devSection = state.sections.find(g => g.id === 'section-dev');
+    expect(devSection).toBeDefined();
+    expect(devSection?.emoji).toBe('🛠');
+  });
+
+  it('preserves an intentionally persisted empty sections list', async () => {
+    storage['schemaVersion'] = 4;
+    storage['sections'] = [];
 
     const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
     const result = await readStorage();
 
-    expect(state.manualGroups).toEqual([]);
-    expect(result.manualGroups).toEqual([]);
+    expect(state.sections).toEqual([]);
+    expect(result.sections).toEqual([]);
   });
 
-  it('keeps existing manualGroups if not empty', async () => {
+  it('keeps existing sections if not empty', async () => {
     // Let's seed a custom group in storage first
-    const customGroup = { id: 'custom-id', name: 'My Space', order: 0 };
-    storage['manualGroups'] = [customGroup];
+    const customGroup = { id: 'custom-id', name: 'My Section', order: 0 };
+    storage['sections'] = [customGroup];
 
     const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
-    expect(state.manualGroups).toEqual([customGroup]);
+    expect(state.sections).toEqual([customGroup]);
   });
 
   it('canonicalizes and prunes unsorted overrides during organizer reconcile', async () => {
     storage['schemaVersion'] = 4;
-    storage['manualGroups'] = [{ id: 'g1', name: 'G1', order: 0 }];
+    storage['sections'] = [{ id: 'g1', name: 'G1', order: 0 }];
     storage['unsortedOverrides'] = ['google.com', 'missing-product', 'github'];
 
     const state = await reconcileOrganizerState(

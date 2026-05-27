@@ -57,7 +57,7 @@ export function A11yHarness(): React.ReactElement {
         onSetStaleThresholdDays={() => {}}
         onExportSettings={() => {}}
         onImportSettings={async () => {}}
-        onCreateGroup={() => {}}
+        onCreateSection={() => {}}
       />
     </main>
   );

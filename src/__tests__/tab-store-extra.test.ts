@@ -49,14 +49,14 @@ describe('TabStore Manual Groups & Reordering', () => {
     vi.clearAllMocks();
     chromeStorage.data = {
         schemaVersion: 4,
-        manualGroups: [],
-        groupAssignments: [],
+        sections: [],
+        sectionAssignments: [],
         groupOrder: {},
         viewMode: 'cards'
     };
     useTabStore.setState({
-      manualGroups: [],
-      groupAssignments: [],
+      sections: [],
+      sectionAssignments: [],
       unsortedOverrides: [],
       products: [],
       loading: false,
@@ -65,16 +65,16 @@ describe('TabStore Manual Groups & Reordering', () => {
   });
 
   it('creates, renames and deletes groups', async () => {
-    await useTabStore.getState().createGroup(' New Group ');
-    expect(useTabStore.getState().manualGroups).toHaveLength(1);
-    expect(useTabStore.getState().manualGroups[0].name).toBe('New Group');
-    expect(useTabStore.getState().manualGroups[0].id).toBe('fake-uuid');
+    await useTabStore.getState().createSection(' New Group ');
+    expect(useTabStore.getState().sections).toHaveLength(1);
+    expect(useTabStore.getState().sections[0].name).toBe('New Group');
+    expect(useTabStore.getState().sections[0].id).toBe('fake-uuid');
 
-    await useTabStore.getState().renameGroup('fake-uuid', ' Renamed ');
-    expect(useTabStore.getState().manualGroups[0].name).toBe('Renamed');
+    await useTabStore.getState().renameSection('fake-uuid', ' Renamed ');
+    expect(useTabStore.getState().sections[0].name).toBe('Renamed');
 
-    await useTabStore.getState().deleteGroup('fake-uuid');
-    expect(useTabStore.getState().manualGroups).toHaveLength(0);
+    await useTabStore.getState().deleteSection('fake-uuid');
+    expect(useTabStore.getState().sections).toHaveLength(0);
   });
 
   it('reorders groups', async () => {
@@ -82,8 +82,8 @@ describe('TabStore Manual Groups & Reordering', () => {
         { id: '1', name: 'A', order: 0 },
         { id: '2', name: 'B', order: 1 }
     ];
-    await useTabStore.getState().reorderGroups([groups[1], groups[0]]);
-    const updated = useTabStore.getState().manualGroups;
+    await useTabStore.getState().reorderSections([groups[1], groups[0]]);
+    const updated = useTabStore.getState().sections;
     expect(updated[0].id).toBe('2');
     expect(updated[0].order).toBe(0);
     expect(updated[1].id).toBe('1');

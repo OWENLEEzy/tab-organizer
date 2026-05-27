@@ -3,32 +3,13 @@ import type { HistorySnapshot } from '../../types';
 import { UtilityPanel } from './layout/UtilityPanel';
 import { ActionButton } from './ui/ActionButton';
 import { useI18n } from '../hooks/useI18n';
+import { getSnapshotDateFormatter } from '../lib/date-formatters';
 
 const HistorySnapshotDetails = React.lazy(() =>
   import('./HistorySnapshotDetails').then((module) => ({
     default: module.HistorySnapshotDetails,
   })),
 );
-
-// ─── Helpers ──────────────────────────────────────────────────────────
-
-const EN_SNAPSHOT_FORMATTER = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-});
-
-const ZH_SNAPSHOT_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-});
-
-function getSnapshotDateFormatter(locale: string): Intl.DateTimeFormat {
-  return locale === 'zh' ? ZH_SNAPSHOT_FORMATTER : EN_SNAPSHOT_FORMATTER;
-}
 
 interface HistoryPanelProps {
   snapshots: HistorySnapshot[];

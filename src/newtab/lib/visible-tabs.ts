@@ -1,5 +1,5 @@
 import type { Tab, TabGroup } from '../../types';
-import { dedupeTabsByUrl } from '../../lib/tab-utils';
+import { analyzeDuplicates } from '../../lib/tab-utils';
 
 export interface VisibleTabChip {
   domain: string;
@@ -15,11 +15,11 @@ export function getVisibleTabs(
   visibleTabs: Tab[];
   hiddenTabs: Tab[];
 } {
-  const uniqueTabs = dedupeTabsByUrl(tabs);
-  const hiddenTabs = uniqueTabs.slice(maxChipsVisible);
+  const dedupedTabs = analyzeDuplicates(tabs).dedupedTabs;
+  const hiddenTabs = dedupedTabs.slice(maxChipsVisible);
 
   return {
-    visibleTabs: expanded ? uniqueTabs : uniqueTabs.slice(0, maxChipsVisible),
+    visibleTabs: expanded ? dedupedTabs : dedupedTabs.slice(0, maxChipsVisible),
     hiddenTabs,
   };
 }

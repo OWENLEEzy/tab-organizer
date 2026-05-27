@@ -3,9 +3,18 @@ import { useI18n } from '../hooks/useI18n';
 
 interface FooterProps {
   tabCount: number;
+  duplicateCount: number;
+  alerts?: FooterAlert[];
 }
 
 const POP_DURATION = 300;
+
+export interface FooterAlert {
+  id: string;
+  label: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}
 
 type FooterState = {
   popping: boolean;
@@ -26,7 +35,7 @@ function footerReducer(state: FooterState, action: FooterAction): FooterState {
   }
 }
 
-export function Footer({ tabCount }: FooterProps): React.ReactElement {
+export function Footer({ tabCount, duplicateCount, alerts = [] }: FooterProps): React.ReactElement {
   const [state, dispatch] = useReducer(footerReducer, { popping: false });
   const prevCount = useRef(tabCount);
   const { t } = useI18n();
@@ -48,21 +57,44 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
 
   return (
     <footer className="py-1.5" aria-label="Dashboard footer">
-      <div className="text-text-secondary flex items-center justify-between text-xs font-semibold tracking-wider uppercase">
-        <div className="flex items-center gap-1.5">
-          <span
-            className={`font-body text-text-primary inline-block text-xs font-bold${state.popping ? ' animate-[countPop_0.3s_ease]' : ''}`}
-          >
-            {tabCount}
-          </span>
-          <span className="opacity-70 normal-case">{t('metricTabs')}</span>
+      <div className="text-text-primary flex items-center justify-between gap-4 text-xs font-semibold tracking-wider uppercase">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`font-body text-text-primary inline-block text-xs font-bold${state.popping ? ' animate-[countPop_0.3s_ease]' : ''}`}
+            >
+              {tabCount}
+            </span>
+            <span className="normal-case">{t('metricTabs')}</span>
+          </div>
+          <div className="h-3 w-px bg-border-color" />
+          <div className="flex items-center gap-1.5">
+            <span className="font-body text-text-primary inline-block text-xs font-bold">
+              {duplicateCount}
+            </span>
+            <span className="normal-case">{t('metricDuplicates')}</span>
+          </div>
+          {alerts.map((alert) => (
+            <div key={alert.id} className="inline-flex items-center gap-2 rounded-full border border-border-color/30 bg-bg-card/50 px-2.5 py-0.5">
+              <span className="normal-case text-accent-amber">{alert.label}</span>
+              {alert.actionLabel && alert.onAction ? (
+                <button
+                  type="button"
+                  className="text-[var(--text-3xs)] font-semibold tracking-wide text-accent-primary normal-case hover:underline"
+                  onClick={alert.onAction}
+                >
+                  {alert.actionLabel}
+                </button>
+              ) : null}
+            </div>
+          ))}
         </div>
         <div className="flex items-center gap-4">
           <a
             href={FEEDBACK_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-text-secondary hover:text-accent-blue transition-colors text-xs font-semibold normal-case"
+            className="text-text-primary hover:text-accent-blue transition-colors text-xs font-semibold normal-case"
             aria-label="Give feedback"
           >
             Feedback
@@ -71,7 +103,7 @@ export function Footer({ tabCount }: FooterProps): React.ReactElement {
             href={GITHUB_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-text-secondary hover:text-accent-blue transition-colors flex items-center"
+            className="text-text-primary hover:text-accent-blue transition-colors flex items-center"
             aria-label="View source code on GitHub"
           >
             <svg

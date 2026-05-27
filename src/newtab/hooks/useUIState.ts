@@ -29,7 +29,7 @@ export interface UIState {
     confirmLabel: string;
     onConfirm: (value: string) => void;
   };
-  spaceSwitcherFocused: boolean;
+  sectionSwitcherFocused: boolean;
 }
 
 export type UIAction =
@@ -49,7 +49,7 @@ export type UIAction =
   | { type: 'SET_PROMPT_DIALOG'; dialog: UIState['promptDialog'] }
   | { type: 'CLOSE_PROMPT_DIALOG' }
   | { type: 'RESET_INTERACTION' }
-  | { type: 'SET_SPACE_SWITCHER_FOCUSED'; focused: boolean };
+  | { type: 'SET_SECTION_SWITCHER_FOCUSED'; focused: boolean };
 
 const initialState: UIState = {
   toast: { message: '', visible: false },
@@ -65,7 +65,7 @@ const initialState: UIState = {
   lastClickedIndex: null,
   expandedDomains: new Set(),
   promptDialog: { id: '', open: false, title: '', label: '', initialValue: '', confirmLabel: '', onConfirm: () => {} },
-  spaceSwitcherFocused: false,
+  sectionSwitcherFocused: false,
 };
 
 function uiReducer(state: UIState, action: UIAction): UIState {
@@ -101,9 +101,9 @@ function uiReducer(state: UIState, action: UIAction): UIState {
     case 'CLOSE_PROMPT_DIALOG':
       return { ...state, promptDialog: { ...state.promptDialog, open: false } };
     case 'RESET_INTERACTION':
-      return { ...state, searchQuery: '', settingsOpen: false, focusedIndex: null, selectedUrls: new Set(), selectedTabIds: new Set(), lastClickedIndex: null, spaceSwitcherFocused: false };
-    case 'SET_SPACE_SWITCHER_FOCUSED':
-      return { ...state, spaceSwitcherFocused: action.focused };
+      return { ...state, searchQuery: '', settingsOpen: false, focusedIndex: null, selectedUrls: new Set(), selectedTabIds: new Set(), lastClickedIndex: null, sectionSwitcherFocused: false };
+    case 'SET_SECTION_SWITCHER_FOCUSED':
+      return { ...state, sectionSwitcherFocused: action.focused };
     default:
       return state;
   }

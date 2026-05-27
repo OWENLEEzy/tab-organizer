@@ -1,11 +1,11 @@
 import React, { useCallback, useState } from 'react';
 import { closestCenter, DndContext, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import type { ManualGroup, TabGroup } from '../../types';
+import type { Section, TabGroup } from '../../types';
 import { DomainCard } from './DomainCard';
 import { useI18n } from '../hooks/useI18n';
 
-const UNASSIGNED_GROUP_ID = 'group:unassigned';
+const UNASSIGNED_SECTION_ID = 'section:unassigned';
 
 function productKeyFromDragId(itemId: string): string | null {
   if (!itemId.startsWith('product:')) return null;
@@ -20,6 +20,7 @@ interface DraggableDomainCardProps {
   draggableId: string;
   expanded?: boolean;
   maxChipsVisible: number;
+  staleThresholdDays: number;
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
@@ -38,6 +39,7 @@ function DraggableDomainCard({
   draggableId,
   expanded,
   maxChipsVisible,
+  staleThresholdDays,
   focusedUrl,
   closingUrls,
   selectedUrls,
@@ -60,6 +62,7 @@ function DraggableDomainCard({
         dragHandleProps={{ ...attributes, ...listeners, 'aria-label': `Drag ${label} product` }}
         expanded={expanded}
         maxChipsVisible={maxChipsVisible}
+        staleThresholdDays={staleThresholdDays}
         onCloseDomain={onCloseDomain}
         onCloseDuplicates={onCloseDuplicates}
         onCloseTab={onCloseTab}
@@ -82,19 +85,20 @@ interface DndGroupBoardProps {
   id: string;
   title: string;
   items: TabGroup[];
-  manualGroup?: ManualGroup;
+  section?: Section;
   tabCount: number;
   expandedDomains: Set<string>;
   maxChipsVisible: number;
+  staleThresholdDays: number;
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
   selectedTabIds: Set<number>;
   itemIdForProduct: (p: TabGroup) => string;
-  onRenameGroup?: (group: ManualGroup) => void;
-  onDeleteGroup?: (group: ManualGroup) => void;
+  onRenameSection?: (group: Section) => void;
+  onDeleteSection?: (group: Section) => void;
   onCloseProduct: (p: TabGroup) => void;
-  onCloseManualGroup: (groups: TabGroup[], title: string) => void;
+  onCloseSection: (groups: TabGroup[], title: string) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onCloseTab: (url: string) => void;
   onFocusTab: (url: string) => void;
@@ -107,19 +111,20 @@ function DndGroupBoard({
   id,
   title,
   items,
-  manualGroup,
+  section,
   tabCount,
   expandedDomains,
   maxChipsVisible,
+  staleThresholdDays,
   focusedUrl,
   closingUrls,
   selectedUrls,
   selectedTabIds,
   itemIdForProduct,
-  onRenameGroup,
-  onDeleteGroup,
+  onRenameSection,
+  onDeleteSection,
   onCloseProduct,
-  onCloseManualGroup,
+  onCloseSection,
   onCloseDuplicates,
   onCloseTab,
   onFocusTab,
@@ -132,10 +137,10 @@ function DndGroupBoard({
 
   return (
     <section ref={setNodeRef} className={`organizer-group ${isOver ? 'is-over' : ''}`}>
-      <div className="group-header border-b border-border-light pb-2 mb-5">
+      <div className="group-header">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="font-body text-xs font-semibold uppercase tracking-wider text-text-primary">
+            <h2 className="font-heading text-lg italic text-text-primary">
               {title}
             </h2>
             <span className="rounded-sm bg-surface-light px-2 py-0.5 font-body text-[var(--text-2xs)] font-bold uppercase tracking-widest text-text-secondary">
@@ -143,11 +148,11 @@ function DndGroupBoard({
             </span>
           </div>
           <div className="section-actions flex items-center gap-1">
-            {manualGroup && (
+            {section && (
               <>
                 <button
                   type="button"
-                  onClick={() => onRenameGroup?.(manualGroup)}
+                  onClick={() => onRenameSection?.(section)}
                   className="text-[var(--text-2xs)] font-semibold tracking-wider text-text-secondary hover:text-accent-blue transition-colors"
                 >
                   {t('organizerBtnRename')}
@@ -155,7 +160,7 @@ function DndGroupBoard({
                 <div className="h-3 w-px bg-border-light mx-1" />
                 <button
                   type="button"
-                  onClick={() => onDeleteGroup?.(manualGroup)}
+                  onClick={() => onDeleteSection?.(section)}
                   className="text-[var(--text-2xs)] font-semibold tracking-wider text-text-secondary hover:text-accent-red transition-colors"
                 >
                   {t('organizerBtnDelete')}
@@ -165,7 +170,7 @@ function DndGroupBoard({
             )}
             <button
               type="button"
-              onClick={() => onCloseManualGroup(items, title)}
+              onClick={() => onCloseSection(items, title)}
               className="text-[var(--text-2xs)] font-semibold tracking-wider text-text-secondary hover:text-accent-red transition-colors"
               title={`Close all ${tabCount} tabs in ${title}`}
             >
@@ -182,6 +187,7 @@ function DndGroupBoard({
             draggableId={itemIdForProduct(p)}
             expanded={expandedDomains.has(p.domain)}
             maxChipsVisible={maxChipsVisible}
+            staleThresholdDays={staleThresholdDays}
             focusedUrl={focusedUrl}
             closingUrls={closingUrls}
             selectedUrls={selectedUrls}
@@ -205,22 +211,23 @@ function DndGroupBoard({
 interface DndOrganizerProps {
   filteredProducts: TabGroup[];
   unassignedProducts: TabGroup[];
-  orderedGroups: ManualGroup[];
-  productsByGroup: Map<string, TabGroup[]>;
+  orderedSections: Section[];
+  productsBySection: Map<string, TabGroup[]>;
   assignmentByItemId: Map<string, string>;
   itemIdForProduct: (p: TabGroup) => string;
   expandedDomains: Set<string>;
   maxChipsVisible: number;
+  staleThresholdDays: number;
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
   selectedTabIds: Set<number>;
-  onMoveProductToMain: (productKey: string) => void;
-  onMoveProductToGroup: (productKey: string, groupId: string) => void;
-  onRenameGroup?: (group: ManualGroup) => void;
-  onDeleteGroup?: (group: ManualGroup) => void;
+  onMoveProductToNoSection: (productKey: string) => void;
+  onMoveProductToSection: (productKey: string, sectionId: string) => void;
+  onRenameSection?: (group: Section) => void;
+  onDeleteSection?: (group: Section) => void;
   onCloseProduct: (p: TabGroup) => void;
-  onCloseManualGroup: (groups: TabGroup[], title: string) => void;
+  onCloseSection: (groups: TabGroup[], title: string) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onCloseTab: (url: string) => void;
   onFocusTab: (url: string) => void;
@@ -232,22 +239,23 @@ interface DndOrganizerProps {
 export function DndOrganizer({
   filteredProducts,
   unassignedProducts,
-  orderedGroups,
-  productsByGroup,
+  orderedSections,
+  productsBySection,
   assignmentByItemId,
   itemIdForProduct,
   expandedDomains,
   maxChipsVisible,
+  staleThresholdDays,
   focusedUrl,
   closingUrls,
   selectedUrls,
   selectedTabIds,
-  onMoveProductToMain,
-  onMoveProductToGroup,
-  onRenameGroup,
-  onDeleteGroup,
+  onMoveProductToNoSection,
+  onMoveProductToSection,
+  onRenameSection,
+  onDeleteSection,
   onCloseProduct,
-  onCloseManualGroup,
+  onCloseSection,
   onCloseDuplicates,
   onCloseTab,
   onFocusTab,
@@ -277,35 +285,36 @@ export function DndOrganizer({
       const productKey = productKeyFromDragId(activeId);
       if (!productKey) return;
 
-      if (overId === UNASSIGNED_GROUP_ID) {
-        onMoveProductToMain(productKey);
+      if (overId === UNASSIGNED_SECTION_ID) {
+        onMoveProductToNoSection(productKey);
         return;
       }
 
-      if (overId.startsWith('group:') && overId !== UNASSIGNED_GROUP_ID) {
-        onMoveProductToGroup(productKey, overId.slice('group:'.length));
+      if (overId.startsWith('section:') && overId !== UNASSIGNED_SECTION_ID) {
+        onMoveProductToSection(productKey, overId.slice('section:'.length));
         return;
       }
 
       // Dropped on a card — move to whichever group that card belongs to
       const overGroupId = assignmentByItemId.get(overId);
       if (overGroupId) {
-        onMoveProductToGroup(productKey, overGroupId);
+        onMoveProductToSection(productKey, overGroupId);
       }
     },
-    [assignmentByItemId, onMoveProductToMain, onMoveProductToGroup],
+    [assignmentByItemId, onMoveProductToNoSection, onMoveProductToSection],
   );
 
   const sharedProps = {
     expandedDomains,
     maxChipsVisible,
+    staleThresholdDays,
     focusedUrl,
     closingUrls,
     selectedUrls,
     selectedTabIds,
     itemIdForProduct,
     onCloseProduct,
-    onCloseManualGroup,
+    onCloseSection,
     onCloseDuplicates,
     onCloseTab,
     onFocusTab,
@@ -317,24 +326,24 @@ export function DndOrganizer({
   return (
     <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <DndGroupBoard
-        id={UNASSIGNED_GROUP_ID}
+        id={UNASSIGNED_SECTION_ID}
         title={t('organizerUnsorted')}
         items={unassignedProducts}
         tabCount={unassignedProducts.reduce((sum, p) => sum + p.tabs.length, 0)}
         {...sharedProps}
       />
-      {orderedGroups.map((group) => {
-        const items = productsByGroup.get(group.id) ?? [];
+      {orderedSections.map((group) => {
+        const items = productsBySection.get(group.id) ?? [];
         return (
           <DndGroupBoard
             key={group.id}
-            id={`group:${group.id}`}
+            id={`section:${group.id}`}
             title={group.name}
-            manualGroup={group}
+            section={group}
             items={items}
             tabCount={items.reduce((sum, p) => sum + p.tabs.length, 0)}
-            onRenameGroup={onRenameGroup}
-            onDeleteGroup={onDeleteGroup}
+            onRenameSection={onRenameSection}
+            onDeleteSection={onDeleteSection}
             {...sharedProps}
           />
         );
@@ -345,6 +354,7 @@ export function DndOrganizer({
             group={activeGroup}
             expanded={expandedDomains.has(activeGroup.domain)}
             maxChipsVisible={maxChipsVisible}
+            staleThresholdDays={staleThresholdDays}
             onCloseDomain={onCloseProduct}
             onCloseDuplicates={onCloseDuplicates}
             onCloseTab={onCloseTab}
