@@ -127,14 +127,38 @@ export function DashboardHeader({
                 <SortDropdown value={groupSortBy} onChange={onGroupSortByChange} />
               </>
             ) : null}
-            <div className="h-6 w-px bg-border-light dark:bg-border-dark mx-2" />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          {hasGroups ? (
+            <>
+              <div className="min-w-0 flex-1 md:min-w-[24rem]">
+                <SearchBar
+                  value={searchQuery}
+                  onChange={onSearchChange}
+                  resultCount={resultCount}
+                  totalCount={totalCount}
+                  sections={sections}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                <ActionButton variant="quiet" icon={<RefreshIcon />} onClick={onRefresh} aria-label="Refresh tabs">
+                  {t('refresh')}
+                </ActionButton>
+              </div>
+            </>
+          ) : (
+            <div className="min-w-0 flex-1" />
+          )}
+          <div className="flex flex-wrap items-center gap-2 md:justify-end">
             <ActionButton variant="quiet" icon={<SettingsIcon />} onClick={onOpenSettings} aria-label={t('settings')}>
               {t('settings')}
             </ActionButton>
-            <ActionButton 
-              variant="quiet" 
-              icon={<SidebarIcon />} 
-              onClick={onToggleSidebar} 
+            <ActionButton
+              variant="quiet"
+              icon={<SidebarIcon />}
+              onClick={onToggleSidebar}
               aria-label={isSidebarExpanded ? t('historyHide') : t('historyShow')}
               className={isSidebarExpanded ? 'text-accent-blue bg-accent-blue/5' : ''}
             >
@@ -142,25 +166,6 @@ export function DashboardHeader({
             </ActionButton>
           </div>
         </div>
-
-        {hasGroups ? (
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <div className="min-w-0 flex-1 md:min-w-[24rem]">
-              <SearchBar
-                value={searchQuery}
-                onChange={onSearchChange}
-                resultCount={resultCount}
-                totalCount={totalCount}
-                sections={sections}
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-2 md:justify-end">
-              <ActionButton variant="quiet" icon={<RefreshIcon />} onClick={onRefresh} aria-label="Refresh tabs">
-                {t('refresh')}
-              </ActionButton>
-            </div>
-          </div>
-        ) : null}
       </div>
     </section>
   );

@@ -197,6 +197,7 @@ export const locales = {
     themeObsidian: 'Obsidian Ink',
     themePine: 'Deep Pine',
     themeAmethyst: 'Amethyst Night',
+    themeEmber: 'Roast Ember',
 
     settingsOptionsTitle: 'Interface Options',
     settingsOptionsSound: 'Sound Effects',
@@ -344,8 +345,8 @@ export const locales = {
     metricTabs: '页面',
     metricDuplicates: '重复项',
     metricGroups: '区域',
-    alertExtraTabOrganizerSingle: '1 个多余的整理面板标签',
-    alertExtraTabOrganizerPlural: '{count} 个多余的整理面板标签',
+    alertExtraTabOrganizerSingle: '1 个多余的整理面板页面',
+    alertExtraTabOrganizerPlural: '{count} 个多余的整理面板页面',
     actionCloseExtras: '关闭多余面板',
     alertHighTabCount: '页面数量过高',
     alertHighTabCountDesc: '您当前打开了 {count} 个页面。建议关闭不常用的页面以释放资源。',
@@ -357,7 +358,7 @@ export const locales = {
     cmdDupes: '重复项',
     cmdDupesLabel: '筛选重复的页面',
     cmdDupesDesc: '查找重复的页面并保留当前激活的页面',
-    cmdStale: '闲置标签',
+    cmdStale: '闲置页面',
     cmdStaleLabel: '筛选闲置的页面',
     cmdStaleDesc: '查找超过 3 天未使用的页面',
     cmdSection: '按分区筛选',
@@ -368,8 +369,8 @@ export const locales = {
     cmdHintEnter: '按 Enter / Tab 键',
     searchMatchingSingle: '1 个匹配',
     searchMatchingPlural: '{count} 个匹配',
-    searchMatchingOfSingle: '1 个匹配（共 1 个标签）',
-    searchMatchingOfPlural: '{count} 个匹配（共 {total} 个标签）',
+    searchMatchingOfSingle: '1 个匹配（共 1 个页面）',
+    searchMatchingOfPlural: '{count} 个匹配（共 {total} 个页面）',
     searchKbdHint: '按 / 键搜索',
 
     // Empty States
@@ -461,8 +462,8 @@ export const locales = {
     tableCollapseLabel: '收起 {name}',
 
     // Domain Card
-    cardBtnCloseAllSingle: '关闭 1 个标签',
-    cardBtnCloseAllPlural: '关闭所有 {count} 个标签',
+    cardBtnCloseAllSingle: '关闭 1 个页面',
+    cardBtnCloseAllPlural: '关闭所有 {count} 个页面',
     cardBtnCloseDupesSingle: '清理 1 个重复项',
     cardBtnCloseDupesPlural: '清理 {count} 个重复项',
     cardBtnShowLess: '收起隐藏',
@@ -511,6 +512,7 @@ export const locales = {
     themeObsidian: '黑曜石墨',
     themePine: '暗针长青',
     themeAmethyst: '紫曜晚霞',
+    themeEmber: '焦糖暗火',
 
     settingsOptionsTitle: '交互选项',
     settingsOptionsSound: '清理音效',
@@ -550,7 +552,7 @@ export const locales = {
     settingsShortcutGlobalKey: '全局激活键',
     settingsShortcutOpenDashboard: '打开整理面板',
     settingsShortcutDedupeActive: '去重当前活跃产品',
-    settingsShortcutCloseStale: '一键清理闲置标签',
+    settingsShortcutCloseStale: '一键清理闲置页面',
     settingsShortcutsResetBtn: '重置快捷键',
     settingsShortcutsHint: '键盘快捷键能帮您迅速触发 Tab Organizer 整理流程。双击字段即可对其进行修改。',
 
@@ -588,9 +590,9 @@ export const locales = {
     toastNoDuplicates: '未发现任何重复页面 🧹',
 
     // Sweeps Empty States
-    emptySweepStaleTitle: '没有发现闲置标签',
+    emptySweepStaleTitle: '没有发现闲置页面',
     emptySweepStaleDesc: '您的所有页面最近都很活跃（在过去的 {days} 天内均被访问过）。',
-    emptySweepDupeTitle: '没有发现重复标签',
+    emptySweepDupeTitle: '没有发现重复页面',
     emptySweepDupeDesc: '您的工作区非常干净，没有重复打开的网址！',
     emptySweepSectionTitle: '未匹配到该分区',
     emptySweepSectionDesc: '找不到名为 “{name}” 的分区，或者该分区下目前没有处于打开状态的页面。',
@@ -599,8 +601,8 @@ export const locales = {
     emptySweepSearchDesc: '未找到任何匹配搜索条件 “{query}” 的页面。',
 
     // Additional settings and shortcut options
-    settingsOptionChipsCount: '{count} 个标签',
-    settingsOptionChipsCountDefault: '8 个标签 (默认)',
+    settingsOptionChipsCount: '{count} 个页面',
+    settingsOptionChipsCountDefault: '8 个页面 (默认)',
     settingsOptionDaysCount: '{count} 天',
     settingsOptionDaysCountDefault: '3 天 (默认)',
     settingsRuleRequiredHostname: '必须输入域名',

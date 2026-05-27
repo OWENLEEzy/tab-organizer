@@ -96,9 +96,7 @@ describe('DashboardHeader', () => {
     expect(screen.queryByRole('button', { name: 'Organize' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'New section' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Close All' })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-
-    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+    // Settings is always visible (Layer 3), independent of hasGroups
+    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
   });
 });
