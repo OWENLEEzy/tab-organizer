@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { TabChip } from '../newtab/components/TabChip';
+import { TabChip } from '../newtab/components/tabs/TabChip';
 import { SearchBar } from '../newtab/components/SearchBar';
 import { useKeyboard } from '../newtab/hooks/useKeyboard';
 

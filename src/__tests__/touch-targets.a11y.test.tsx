@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { SearchBar } from '../newtab/components/SearchBar';
 import { SelectionBar } from '../newtab/components/SelectionBar';
-import { TabChip } from '../newtab/components/TabChip';
+import { TabChip } from '../newtab/components/tabs/TabChip';
 import { ActionButton } from '../newtab/components/ui/ActionButton';
 
 function expectTouchHeight(element: HTMLElement): void {

@@ -82,7 +82,7 @@ describe('MotherDuck-inspired layout components', () => {
         title="Open Tabs by Product"
         hasGroups
         dateLabel="Tuesday, May 5, 2026"
-        groupCount={2}
+        sectionCount={2}
         searchQuery=""
         onSearchChange={() => {}}
         resultCount={5}
@@ -103,7 +103,7 @@ describe('MotherDuck-inspired layout components', () => {
 
     expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
     expect(screen.getByText('Tuesday, May 5, 2026')).toBeInTheDocument();
-    expect(screen.getByText('2 groups')).toBeInTheDocument();
+    expect(screen.getByText('2 sections')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'All sections' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: 'Search tabs' })).toBeInTheDocument();
@@ -119,7 +119,7 @@ describe('MotherDuck-inspired layout components', () => {
             title="Open Tabs by Product"
             hasGroups
             dateLabel="Tuesday, May 5, 2026"
-            groupCount={1}
+            sectionCount={1}
             searchQuery=""
             onSearchChange={() => {}}
             resultCount={1}

@@ -1,9 +1,9 @@
 import React from 'react';
-import { SearchBar } from '../SearchBar';
-import { ViewToggle } from '../ViewToggle';
-import { SortDropdown } from '../SortDropdown';
+import { SearchBar } from '../search/SearchBar';
+import { ViewToggle } from '../search/ViewToggle';
+import { SortDropdown } from '../search/SortDropdown';
 import { ActionButton } from '../ui/ActionButton';
-import { SectionSwitcher } from '../SectionSwitcher';
+import { SectionSwitcher } from '../organizer/SectionSwitcher';
 import { useI18n } from '../../hooks/useI18n';
 import { getDateFormatter } from '../../lib/date-formatters';
 import type { GroupSortOption, Section } from '../../../types';
@@ -16,7 +16,7 @@ interface DashboardHeaderProps {
   title: string;
   hasGroups: boolean;
   dateLabel?: string;
-  groupCount: number;
+  sectionCount: number;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   resultCount: number;
@@ -66,7 +66,7 @@ export function DashboardHeader({
   title,
   hasGroups,
   dateLabel,
-  groupCount,
+  sectionCount,
   searchQuery,
   onSearchChange,
   resultCount,
@@ -117,7 +117,7 @@ export function DashboardHeader({
               {title}
             </h1>
             <p className="mt-1 font-body text-xs font-semibold tracking-normal text-text-secondary">
-              {groupCount} {t('metricGroups')}
+              {sectionCount} {t('metricSections')}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">

@@ -17,7 +17,7 @@ import { parseSearchQuery, resolveSectionQueryTarget } from '../lib/search-comma
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
-type SectionTarget = Pick<Section, 'id' | 'name' | 'order'>;
+
 
 function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void {
   const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tab-url]'));

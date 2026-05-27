@@ -1,19 +1,19 @@
 import React from 'react';
 import type { CustomGroup } from '../types';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { LoadingState } from './components/LoadingState';
-import { ProductTableMemo as ProductTable } from './components/ProductTable';
-import { SelectionBar } from './components/SelectionBar';
-import { EmptyState } from './components/EmptyState';
+import { ErrorBoundary } from './components/states/ErrorBoundary';
+import { LoadingState } from './components/states/LoadingState';
+import { ProductTableMemo as ProductTable } from './components/tabs/ProductTable';
+import { SelectionBar } from './components/tabs/SelectionBar';
+import { EmptyState } from './components/states/EmptyState';
 import { Footer } from './components/Footer';
-import { Toast } from './components/Toast';
+import { Toast } from './components/states/Toast';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { PromptDialog } from './components/PromptDialog';
 import { DashboardShell } from './components/layout/DashboardShell';
 import { DashboardHeader } from './components/layout/DashboardHeader';
-import { HistoryPanel } from './components/HistoryPanel';
+import { HistoryPanel } from './components/history/HistoryPanel';
 import type { FooterAlert } from './components/Footer';
-import { useDashboardController } from './controllers/useDashboardController';
+import { useAppLogic } from './controllers/useDashboardController';
 import { useI18n } from './hooks/useI18n';
 import { useTheme } from './hooks/useTheme';
 import { parseImportedSettings } from './lib/settings-import';
@@ -21,17 +21,17 @@ import { parseImportedSettings } from './lib/settings-import';
 // ─── Constants ────────────────────────────────────────────────────────
 
 const SettingsPanel = React.lazy(() =>
-  import('./components/SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
+  import('./components/settings/SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
 );
 
 const DndOrganizer = React.lazy(() =>
-  import('./components/DndOrganizer').then((module) => ({ default: module.DndOrganizer })),
+  import('./components/organizer/DndOrganizer').then((module) => ({ default: module.DndOrganizer })),
 );
 
 // ─── Component ────────────────────────────────────────────────────────
 
 export function App(): React.ReactElement {
-  const { state, stores, derived, handlers, dispatch } = useDashboardController();
+  const { state, stores, derived, handlers, dispatch } = useAppLogic();
   const { t } = useI18n();
 
   const { tabStore, settingsStore } = stores;

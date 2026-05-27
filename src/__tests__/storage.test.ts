@@ -99,6 +99,39 @@ describe('readStorage', () => {
     });
   });
 
+  it('maps legacy space shortcut settings to section shortcut settings', async () => {
+    storage['settings'] = {
+      keyBindings: {
+        switchSpaceN: 'Alt+{n}',
+        switchSpaceAll: 'Alt+0',
+        focusSearch: 'Meta+K',
+      },
+    };
+
+    const result = await readStorage();
+
+    expect(result.settings.keyBindings.switchSectionN).toBe('Alt+{n}');
+    expect(result.settings.keyBindings.switchSectionAll).toBe('Alt+0');
+    expect(result.settings.keyBindings.focusSearch).toBe('Meta+K');
+    expect(result.settings.keyBindings.cyclePrev).toBe('ArrowLeft');
+  });
+
+  it('prefers current section shortcuts over legacy space shortcut settings', async () => {
+    storage['settings'] = {
+      keyBindings: {
+        switchSpaceN: 'Alt+{n}',
+        switchSpaceAll: 'Alt+0',
+        switchSectionN: 'Shift+{n}',
+        switchSectionAll: 'Shift+0',
+      },
+    };
+
+    const result = await readStorage();
+
+    expect(result.settings.keyBindings.switchSectionN).toBe('Shift+{n}');
+    expect(result.settings.keyBindings.switchSectionAll).toBe('Shift+0');
+  });
+
   it('migrates from v0 (no schemaVersion) to current schema', async () => {
     storage['deferred'] = [{ id: '1', url: 'https://example.com', title: 'Test', domain: 'example.com', savedAt: '2026-01-01T00:00:00.000Z', completed: false, dismissed: false }];
     const result = await readStorage();
@@ -496,7 +529,7 @@ describe('organizer storage mutations', () => {
     expect(result.unsortedOverrides).toEqual(['github']);
   });
 
-  it('assigns and unassigns products by merging with current storage', async () => {
+  it('assigns products by clearing No section overrides and moves unassigned products into No section overrides', async () => {
     storage['schemaVersion'] = 4;
     storage['sections'] = [{ id: 'group-1', name: 'Group', order: 0 }];
     storage['sectionAssignments'] = [{ productKey: 'github', sectionId: 'group-1', order: 0 }];
@@ -514,7 +547,7 @@ describe('organizer storage mutations', () => {
     expect(next.unsortedOverrides).toEqual(['github', 'vercel']);
   });
 
-  it('does not duplicate an existing unsorted override when unassigning', async () => {
+  it('does not duplicate an existing No section override when unassigning', async () => {
     storage['schemaVersion'] = 4;
     storage['unsortedOverrides'] = ['github'];
 
@@ -531,7 +564,8 @@ describe('reconcileOrganizerState', () => {
     // Check if the default Dev section is present
     const devSection = state.sections.find(g => g.id === 'section-dev');
     expect(devSection).toBeDefined();
-    expect(devSection?.emoji).toBe('🛠');
+    expect(devSection?.name).toBe('Dev');
+    expect(devSection?.autoRules?.[0]?.pattern).toContain('github');
   });
 
   it('preserves an intentionally persisted empty sections list', async () => {

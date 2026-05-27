@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getHostname, sanitizeUrl } from '../../utils/url';
+import { getHostname, sanitizeUrl } from '../../../lib/url-rules';
 import {
   cleanTitle,
   smartTitle,
   stripTitleNoise,
-} from '../../lib/title-cleaner';
-import { getFaviconUrl } from '../../utils/favicon';
+} from '../../../lib/title-cleaner';
+import { getFaviconUrl } from '../../../utils/favicon';
 
 // ─── Touch device detection ────────────────────────────────────────
 
@@ -207,8 +207,8 @@ export function TabChip({
 
   const chipClasses = useMemo(() => [
     'flex min-h-[var(--spacing-button-icon)] min-w-0 flex-1 items-center gap-2 rounded-chip border border-transparent px-2.5 py-1.5 text-left font-mono text-xs',
-    'cursor-pointer bg-transparent transition-colors duration-150',
-    isSelected ? '' : 'hover:border-border-color hover:bg-bg-surface',
+    'cursor-pointer bg-transparent transition-all duration-[400ms] ease-spring',
+    isSelected ? '' : 'hover:border-border-color hover:bg-bg-surface hover:translate-x-1',
     'focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none',
     duplicateCount > 1 ? 'border-border-duplicate bg-bg-duplicate' : '',
     active && !isSelected ? 'tab-active' : '',
