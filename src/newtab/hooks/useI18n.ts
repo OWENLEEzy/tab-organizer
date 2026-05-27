@@ -1,8 +1,13 @@
+import { useContext } from 'react';
 import { locales } from '../../lib/i18n/locales';
-import { useI18nContext } from '../providers/I18nProvider';
+import { I18nContextForHook } from '../providers/I18nProvider';
 
 export type TranslationKey = keyof typeof locales.en;
 
 export function useI18n() {
-  return useI18nContext();
+  const value = useContext(I18nContextForHook);
+  if (!value) {
+    throw new Error('useI18n must be used within I18nProvider');
+  }
+  return value;
 }

@@ -275,6 +275,15 @@ export default defineConfig([
       ],
     },
   },
+  // Rule 6a: useChromeStorage is allowed to access chrome.storage.onChanged (it's a Chrome-specific adapter)
+  {
+    files: ['src/newtab/hooks/useChromeStorage.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'off',
+      ],
+    },
+  },
 
   // Rule 7: src/lib must stay pure and independent
   {

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useMemo } from 'react';
 import { useSettingsStore } from '../../stores/settings-store';
 import { locales } from '../../lib/i18n/locales';
 import type { TranslationKey } from '../hooks/useI18n';
@@ -38,10 +38,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }): React
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
-export function useI18nContext(): I18nContextValue {
-  const value = useContext(I18nContext);
-  if (!value) {
-    throw new Error('useI18n must be used within I18nProvider');
-  }
-  return value;
-}
+const I18nContextForHook = I18nContext;
+
+export { I18nContextForHook };
