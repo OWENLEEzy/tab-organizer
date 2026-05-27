@@ -9,11 +9,11 @@
   [![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)]()
   [![Chrome](https://img.shields.io/badge/Chrome-Extension-amber.svg)]()
 
-  ### [English](README.md) | [中文说明](README_zh.md) | [Original Project ↗️](https://github.com/OWENLEEzy/tab-out)
+  ### [English](README.md) | [中文说明](docs/README_zh.md) | [Original Project ↗️](https://github.com/OWENLEEzy/tab-out)
 
 </div>
 
-  ### [English](README.md) | [中文说明](README_zh.md) | [Original Project ↗️](https://github.com/OWENLEEzy/tab-out)
+  ### [English](README.md) | [中文说明](docs/README_zh.md) | [Original Project ↗️](https://github.com/OWENLEEzy/tab-out)
 
 </div>
 

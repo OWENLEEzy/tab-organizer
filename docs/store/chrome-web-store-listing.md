@@ -18,7 +18,7 @@ Core features:
 - 100% local storage. No account, no server, no external sync.
 
 ## Privacy Copy
-Tab Organizer stores tab URLs, titles, favicons, product/domain metadata, manual sections, and recent recovery snapshots in `chrome.storage.local` on your device. It does not send this data to any server and does not require an account.
+Tab Organizer stores tab URLs, titles, favicons, product/domain metadata, manual sections, and recent recovery snapshots in `chrome.storage.local` on your device. It does not send this data to any server and does not require an account. The extension requests `tabs`, `storage`, and `favicon` permissions to display tab groups and their icons.
 
 Recovery snapshots are capped to the latest 5 sessions and 80 real web tabs per snapshot. Browser-internal pages, extension pages, and Tab Organizer pages are excluded.
 

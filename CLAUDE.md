@@ -59,8 +59,12 @@ Source of truth: `docs/frontend-design.md` and
   - Amber: duplicate/warning state.
   - Red: destructive close/delete.
   - Sage: success/healthy state.
-- Dark mode is a peer mode, not an afterthought. Add explicit dark behavior for
-  new surfaces.
+  - Terracotta: stale/inactive tabs.
+  - Ink: dark theme accent surfaces.
+- There is no separate dark mode toggle. Dark-background themes (obsidian,
+  pine, amethyst) are presented as equal accent choices alongside the four
+  light-background themes. The `isDark` flag in theme configs is a technical
+  detail that toggles the `.dark` CSS class for Tailwind `dark:` variants.
 - Do not turn the dashboard into cards inside cards or a decorative landing
   page. Preserve a dense, scan-friendly tool surface.
 - Any UI simplification must preserve the user's ability to scan, jump, close,

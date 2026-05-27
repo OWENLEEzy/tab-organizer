@@ -26,7 +26,7 @@
 - Use screenshots from the current build.
 
 ## Privacy Review
-- Confirm permissions are still limited to `tabs` and `storage`.
+- Confirm permissions are still limited to `tabs`, `storage`, and `favicon`.
 - Confirm no account, backend, remote sync, analytics, or tracking is introduced.
 - Confirm recovery snapshots are capped to 5 sessions and 80 tabs each.
 - Confirm delete and clear controls are available for recovery snapshots.
