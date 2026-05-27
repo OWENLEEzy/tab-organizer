@@ -1,4 +1,4 @@
-import type { HistorySnapshot, SavedTab, Tab, TabGroup, Workspace } from '../types';
+import type { HistorySnapshot, Tab, TabGroup } from '../types';
 
 export function makeAppTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
   return {
@@ -25,27 +25,6 @@ export function makeTabGroup(overrides: Partial<TabGroup> & Pick<TabGroup, 'doma
     color: '',
     hasDuplicates: false,
     duplicateCount: 0,
-    ...overrides,
-  };
-}
-
-export function makeSavedTab(overrides: Partial<SavedTab> & Pick<SavedTab, 'id' | 'url' | 'title'>): SavedTab {
-  return {
-    domain: 'example.com',
-    savedAt: '2026-05-08T00:00:00.000Z',
-    completed: false,
-    dismissed: false,
-    ...overrides,
-  };
-}
-
-export function makeWorkspace(overrides: Partial<Workspace> & Pick<Workspace, 'id' | 'name'>): Workspace {
-  return {
-    icon: 'icon',
-    savedTabs: [],
-    createdAt: 1,
-    updatedAt: 1,
-    order: 0,
     ...overrides,
   };
 }

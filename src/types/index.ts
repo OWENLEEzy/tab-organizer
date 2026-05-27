@@ -47,30 +47,6 @@ export interface ProductInfo {
   iconDomain: string;
 }
 
-// ─── Saved for Later ─────────────────────────────────────────────
-
-export interface SavedTab {
-  id: string;
-  url: string;
-  title: string;
-  domain: string;
-  savedAt: string;
-  completed: boolean;
-  dismissed: boolean;
-  completedAt?: string;
-}
-
-// ─── Workspaces ──────────────────────────────────────────────────
-
-export interface Workspace {
-  id: string;
-  name: string;
-  icon: string;
-  savedTabs: SavedTab[];
-  createdAt: number;
-  updatedAt: number;
-  order: number;
-}
 
 // ─── Custom Groups ───────────────────────────────────────────────
 
@@ -169,8 +145,6 @@ export interface AppSettings {
 
 export interface StorageSchema {
   schemaVersion: number;
-  deferred: SavedTab[];
-  workspaces: Workspace[];
   settings: AppSettings;
   groupOrder: Record<string, number>;
   sections: Section[];
@@ -192,17 +166,6 @@ export interface TabState {
   viewMode: ViewMode;
   loading: boolean;
   showAllWindows: boolean;
-}
-
-export interface SavedState {
-  active: SavedTab[];
-  archived: SavedTab[];
-  archiveSearch: string;
-}
-
-export interface WorkspaceState {
-  workspaces: Workspace[];
-  activeWorkspaceId: string | null;
 }
 
 export interface SettingsState extends AppSettings {

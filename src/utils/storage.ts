@@ -1,7 +1,5 @@
 import type {
   StorageSchema,
-  SavedTab,
-  Workspace,
   AppSettings,
   Section,
   SectionAssignment,
@@ -12,13 +10,11 @@ import { historyUrlSignature, shouldReplaceHistoryCandidate } from '../lib/histo
 import { DEFAULT_SECTIONS } from '../config/sections';
 import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
 import { DEFAULT_GROUP_SORT, normalizeGroupSortBy } from '../config/group-sort';
-import { isRealTab } from './url';
+import { isRealTab } from '../lib/url-rules';
 
 const CURRENT_SCHEMA_VERSION = 5;
 const STORAGE_KEYS = [
   'schemaVersion',
-  'deferred',
-  'workspaces',
   'settings',
   'groupOrder',
   'sections',
@@ -32,12 +28,13 @@ const STORAGE_KEYS = [
   'groupAssignments',
   'recoveryCandidate',
   'recoveryHistory',
+  'deferred',
+  'workspaces',
 ] as const;
 
 /**
  * Serial write queue to prevent race conditions during rapid consecutive
- * read-modify-write operations (e.g., checking off multiple saved items).
- * Without this, overlapping reads can cause data loss.
+ * read-modify-write operations.
  */
 let writeQueue: Promise<void> = Promise.resolve();
 
@@ -72,8 +69,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 const EMPTY_SCHEMA: StorageSchema = {
   schemaVersion: CURRENT_SCHEMA_VERSION,
-  deferred: [],
-  workspaces: [],
   settings: DEFAULT_SETTINGS,
   groupOrder: {},
   sections: [],
@@ -372,8 +367,6 @@ function migrate(data: Record<string, unknown>): StorageSchema {
 
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    deferred: Array.isArray(data['deferred']) ? (data['deferred'] as SavedTab[]) : [],
-    workspaces: Array.isArray(data['workspaces']) ? (data['workspaces'] as Workspace[]) : [],
     settings,
     groupOrder: (data['groupOrder'] as Record<string, number> | undefined) ?? {},
     sections: normalizeSections(sections),
@@ -386,7 +379,7 @@ function migrate(data: Record<string, unknown>): StorageSchema {
 }
 
 async function readStorageSnapshot(): Promise<Record<string, unknown>> {
-  return chrome.storage.local.get([...STORAGE_KEYS, 'recoveryCandidate', 'recoveryHistory']);
+  return chrome.storage.local.get([...STORAGE_KEYS]);
 }
 
 function hasOwnStorageKey(data: Record<string, unknown>, key: string): boolean {
@@ -396,8 +389,6 @@ function hasOwnStorageKey(data: Record<string, unknown>, key: string): boolean {
 async function persistStorage(data: StorageSchema): Promise<void> {
   await chrome.storage.local.set({
     schemaVersion: data.schemaVersion,
-    deferred: data.deferred,
-    workspaces: data.workspaces,
     settings: data.settings,
     groupOrder: data.groupOrder,
     sections: data.sections,
@@ -408,9 +399,8 @@ async function persistStorage(data: StorageSchema): Promise<void> {
     history: data.history,
   });
 
-  // Clean up legacy keys. Section data intentionally does not migrate from
-  // manualGroups/groupAssignments; users get the new section schema cleanly.
-  await chrome.storage.local.remove(['manualGroups', 'groupAssignments', 'recoveryCandidate', 'recoveryHistory']);
+  // Clean up legacy keys including deferred/workspaces.
+  await chrome.storage.local.remove(['manualGroups', 'groupAssignments', 'recoveryCandidate', 'recoveryHistory', 'deferred', 'workspaces']);
 }
 
 /**
@@ -449,7 +439,9 @@ export async function updateStorage(
       raw.manualGroups !== undefined ||
       raw.groupAssignments !== undefined ||
       raw.recoveryCandidate !== undefined ||
-      raw.recoveryHistory !== undefined;
+      raw.recoveryHistory !== undefined ||
+      raw.deferred !== undefined ||
+      raw.workspaces !== undefined;
 
     const needsWrite = !isVersionCurrent || hasLegacyKeys || JSON.stringify(nextState) !== JSON.stringify(current);
 
@@ -459,79 +451,6 @@ export async function updateStorage(
   });
 
   return nextState;
-}
-
-/**
- * Get saved tabs (deferred items), split into active and archived.
- * Filters out dismissed items.
- */
-export async function getSavedTabs(): Promise<{
-  active: SavedTab[];
-  archived: SavedTab[];
-}> {
-  const storage = await readStorage();
-  const visible = storage.deferred.filter((t) => !t.dismissed);
-  return {
-    active: visible.filter((t) => !t.completed),
-    archived: visible.filter((t) => t.completed),
-  };
-}
-
-/**
- * Save a tab for later. Creates a new SavedTab entry.
- */
-export async function saveTabForLater(tab: {
-  url: string;
-  title: string;
-}): Promise<SavedTab> {
-  let domain = '';
-  try {
-    domain = new URL(tab.url).hostname;
-  } catch {
-    // Leave domain empty for malformed URLs
-  }
-
-  const savedTab: SavedTab = {
-    id: crypto.randomUUID(),
-    url: tab.url,
-    title: tab.title,
-    domain,
-    savedAt: new Date().toISOString(),
-    completed: false,
-    dismissed: false,
-  };
-
-  await updateStorage((storage) => ({
-    ...storage,
-    deferred: [...storage.deferred, savedTab],
-  }));
-  return savedTab;
-}
-
-/**
- * Mark a saved tab as completed (checked off → archive).
- */
-export async function checkOffSavedTab(id: string): Promise<void> {
-  await updateStorage((storage) => ({
-    ...storage,
-    deferred: storage.deferred.map((t) =>
-      t.id === id
-        ? { ...t, completed: true, completedAt: new Date().toISOString() }
-        : t
-    ),
-  }));
-}
-
-/**
- * Dismiss a saved tab (remove from all views).
- */
-export async function dismissSavedTab(id: string): Promise<void> {
-  await updateStorage((storage) => ({
-    ...storage,
-    deferred: storage.deferred.map((t) =>
-      t.id === id ? { ...t, dismissed: true } : t
-    ),
-  }));
 }
 
 /**
@@ -871,24 +790,6 @@ export async function clearHistory(): Promise<void> {
 export async function readHistory(): Promise<HistorySnapshot[]> {
   const storage = await readStorage();
   return storage.history;
-}
-
-/**
- * Read all workspaces from storage.
- */
-export async function readWorkspaces(): Promise<Workspace[]> {
-  const storage = await readStorage();
-  return storage.workspaces;
-}
-
-/**
- * Replace all workspaces in storage.
- */
-export async function writeWorkspaces(workspaces: Workspace[]): Promise<void> {
-  await updateStorage((storage) => ({
-    ...storage,
-    workspaces,
-  }));
 }
 
 // Export for testing
