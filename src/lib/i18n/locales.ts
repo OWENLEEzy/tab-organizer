@@ -25,6 +25,14 @@ export const locales = {
     sortCount: 'By Tab Count',
     sortByName: 'By Name',
     sortByLastAccessed: 'By Last Used',
+    sortButtonLabel: 'Sort window',
+    sortButtonTooltip: 'Apply current sort to current Chrome window',
+    sortButtonDisabledTooltip: 'Clear filters to sort window',
+    confirmSortTitle: 'Sort current window',
+    confirmSortMessage: 'This will reorder tabs in the current Chrome window to match the dashboard sort order. Pinned tabs will stay pinned. Other windows are unaffected.',
+    confirmSortBtn: 'Sort tabs',
+    toastSortComplete: 'Tabs sorted',
+    toastSortNoTabs: 'No tabs to sort in current window',
 
     // Status Strip Metrics
     metricTabs: 'tabs',
@@ -341,6 +349,14 @@ export const locales = {
     sortCount: '按页面数量',
     sortByName: '按名称',
     sortByLastAccessed: '按最近使用',
+    sortButtonLabel: '整理窗口',
+    sortButtonTooltip: '将当前排序应用到当前 Chrome 窗口',
+    sortButtonDisabledTooltip: '清除筛选后再整理',
+    confirmSortTitle: '整理当前窗口',
+    confirmSortMessage: '将按当前仪表盘排序重排当前 Chrome 窗口的标签页。已固定的标签页保持不动，其他窗口不受影响。',
+    confirmSortBtn: '整理标签页',
+    toastSortComplete: '整理完成',
+    toastSortNoTabs: '当前窗口无标签页可整理',
 
     // Status Strip Metrics
     metricTabs: '页面',
