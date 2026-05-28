@@ -453,6 +453,7 @@ export const useTabStore = create<TabStore>((set) => ({
 
     const onCreated = (): void => refresh();
     const onRemoved = (): void => refresh();
+    const onMoved = (_tabId: number, _info: chrome.tabs.OnMovedInfo): void => refresh();
     const onUpdated = (_tabId: number, info: chrome.tabs.OnUpdatedInfo): void => {
       if (info.url || info.title || info.favIconUrl || info.status === 'complete') {
         refresh();
@@ -461,11 +462,13 @@ export const useTabStore = create<TabStore>((set) => ({
 
     chrome.tabs.onCreated.addListener(onCreated);
     chrome.tabs.onRemoved.addListener(onRemoved);
+    chrome.tabs.onMoved.addListener(onMoved);
     chrome.tabs.onUpdated.addListener(onUpdated);
 
     return () => {
       chrome.tabs.onCreated.removeListener(onCreated);
       chrome.tabs.onRemoved.removeListener(onRemoved);
+      chrome.tabs.onMoved.removeListener(onMoved);
       chrome.tabs.onUpdated.removeListener(onUpdated);
       if (timer) clearTimeout(timer);
     };
@@ -660,9 +663,10 @@ export const useTabStore = create<TabStore>((set) => ({
 
     // 3. Separate pinned from unpinned; filter to real web tabs only
     const pinnedTabs = allTabs.filter((t) => t.pinned);
+    const pinnedRealTabs = pinnedTabs.filter((t) => isRealTab(t.url ?? ''));
     const unpinnedRealTabs = allTabs.filter((t) => !t.pinned && isRealTab(t.url ?? ''));
 
-    if (unpinnedRealTabs.length === 0) {
+    if (pinnedRealTabs.length === 0 && unpinnedRealTabs.length === 0) {
       // Nothing to sort
       return;
     }
@@ -674,31 +678,30 @@ export const useTabStore = create<TabStore>((set) => ({
       productKeyPositions.set(key, i);
     }
 
-    // 5. Map each tab to its product key
     type TabWithProduct = { tab: chrome.tabs.Tab; productKey: string; originalIndex: number };
-    const tabsWithProduct: TabWithProduct[] = [];
+    const customGroups = useSettingsStore.getState().settings.customGroups;
 
-    for (const tab of unpinnedRealTabs) {
-      const url = tab.url ?? '';
-      const hostname = getTabDomain(url);
-      const customGroups = useSettingsStore.getState().settings.customGroups;
-      const product = (() => {
+    const tabsWithProducts = (tabsToSort: chrome.tabs.Tab[]): TabWithProduct[] =>
+      tabsToSort.map((tab) => {
+        const hostname = getTabDomain(tab.url ?? '');
         const normalizedHost = hostname.toLowerCase();
         const customOverride = customGroups?.find(
           (cg) =>
             cg.hostname?.toLowerCase() === normalizedHost ||
             (cg.hostnameEndsWith && normalizedHost.endsWith(cg.hostnameEndsWith.toLowerCase())),
         );
-        return customOverride
+        const product = customOverride
           ? { key: customOverride.groupKey }
           : productForHostname(hostname);
-      })();
-      tabsWithProduct.push({ tab, productKey: product.key, originalIndex: tab.index });
-    }
+        return { tab, productKey: product.key, originalIndex: tab.index };
+      });
 
-    // 6. Sort: known products by dashboard order, unknown products at end keeping original order
-    const sortedTabs = [
-      ...tabsWithProduct
+    // 5. Sort each Chrome tab area independently. Known products follow dashboard order;
+    // unknown products remain at the end in their original order.
+    const sortTabsByProductOrder = (tabsToSort: chrome.tabs.Tab[]): TabWithProduct[] => {
+      const tabsWithProduct = tabsWithProducts(tabsToSort);
+      return [
+        ...tabsWithProduct
         .filter((tp) => productKeyPositions.has(tp.productKey))
         .sort((a, b) => {
           const posA = productKeyPositions.get(a.productKey) ?? Infinity;
@@ -706,35 +709,47 @@ export const useTabStore = create<TabStore>((set) => ({
           if (posA !== posB) return posA - posB;
           return a.originalIndex - b.originalIndex;
         }),
-      ...tabsWithProduct
+        ...tabsWithProduct
         .filter((tp) => !productKeyPositions.has(tp.productKey))
         .sort((a, b) => a.originalIndex - b.originalIndex),
-    ];
+      ];
+    };
 
-    // 7. Build move plan: target positions start after pinned tabs
+    const sortedPinnedTabs = sortTabsByProductOrder(pinnedRealTabs);
+    const sortedUnpinnedTabs = sortTabsByProductOrder(unpinnedRealTabs);
+
+    // 6. Build move plan. Pinned real tabs sort within their current pinned real-tab slots,
+    // while unpinned real tabs sort after the pinned area.
     const pinnedCount = pinnedTabs.length;
     const moves: { id: number; index: number }[] = [];
+    const pinnedRealTargetIndices = pinnedRealTabs
+      .map((tab) => tab.index)
+      .sort((a, b) => a - b);
 
-    for (let i = 0; i < sortedTabs.length; i++) {
-      const tabId = sortedTabs[i].tab.id;
+    for (let i = 0; i < sortedPinnedTabs.length; i++) {
+      const tabId = sortedPinnedTabs[i].tab.id;
+      if (tabId != null) {
+        moves.push({ id: tabId, index: pinnedRealTargetIndices[i] });
+      }
+    }
+
+    for (let i = 0; i < sortedUnpinnedTabs.length; i++) {
+      const tabId = sortedUnpinnedTabs[i].tab.id;
       if (tabId != null) {
         moves.push({ id: tabId, index: pinnedCount + i });
       }
     }
 
-    // 8. Execute moves in batch
+    // 7. Execute moves in batch
     if (moves.length === 0) return;
 
     // Move one at a time to avoid Chrome API conflicts with same-window reordering
     // We use sequential moves preserving relative order
-    const idsToMove = moves.map((m) => m.id);
-    for (let i = 0; i < idsToMove.length; i++) {
-      const id = idsToMove[i];
-      const targetIndex = pinnedCount + i;
+    for (const move of moves) {
       try {
-        await chrome.tabs.move(id, { index: targetIndex });
+        await chrome.tabs.move(move.id, { index: move.index });
       } catch (err) {
-        console.warn('[Tab Organizer] Failed to move tab', id, err);
+        console.warn('[Tab Organizer] Failed to move tab', move.id, err);
       }
     }
   },

@@ -74,8 +74,11 @@ describe('section organizer ids', () => {
 
     expect(toSectionDropId('section-dev')).toBe('section:section-dev');
     expect(fromSectionDropId('section:section-dev')).toBe('section-dev');
-    expect(fromSectionDropId(UNASSIGNED_SECTION_DROP_ID)).toBe('unassigned');
     expect(fromSectionDropId('product:github')).toBeNull();
+  });
+
+  it('maps UNASSIGNED_SECTION_DROP_ID to NO_SECTION_ID', () => {
+    expect(fromSectionDropId(UNASSIGNED_SECTION_DROP_ID)).toBe(NO_SECTION_ID);
   });
 });
 
@@ -108,6 +111,28 @@ describe('buildOrganizerModel', () => {
     expect(model.assignmentByProductItemId.get('product:github')).toBe('section-dev');
     expect(getProductSectionId('example.com', model.assignmentByProductKey)).toBe(NO_SECTION_ID);
   });
+
+  it('includes products in noSectionOverrides in unassignedProducts bucket', () => {
+    const products = [
+      product('github', ['https://github.com/a']),
+      product('youtube', ['https://youtube.com/watch?v=1']),
+    ];
+    // github is assigned, youtube is not assigned
+    const assignments: SectionAssignment[] = [
+      { productKey: 'github', sectionId: 'section-dev', order: 0 },
+    ];
+    // youtube is explicitly moved to No section
+    const model = buildOrganizerModel({
+      sections,
+      products,
+      assignments,
+      noSectionOverrides: ['youtube'],
+      activeSectionId: null,
+    });
+
+    // youtube should still appear in unassignedProducts (not hidden by override)
+    expect(model.unassignedProducts.map((item) => item.productKey)).toContain('youtube');
+  });
 });
 
 describe('autoAssignProducts', () => {
@@ -130,7 +155,80 @@ describe('autoAssignProducts', () => {
       ]),
     });
 
-    expect(next).toEqual([{ productKey: 'vercel', sectionId: 'section-dev', order: 0 }]);
+    expect(next).toEqual([{ productKey: 'vercel', sectionId: 'section-dev', order: 1 }]);
+  });
+
+  it('iterates all rules in a section and assigns on second rule match', () => {
+    const multiRuleSection: Section = {
+      id: 'section-multi',
+      name: 'Multi',
+      order: 0,
+      autoRules: [
+        { pattern: 'nomatch', type: 'hostname' },
+        { pattern: 'github|vercel', type: 'hostname' },
+      ],
+    };
+    const products = [product('github', ['https://github.com/a'])];
+
+    const next = autoAssignProducts({
+      products,
+      sections: [multiRuleSection],
+      assignments: [],
+      noSectionOverrides: [],
+      hostnamesByProductKey: new Map([['github', ['github.com']]]),
+    });
+
+    expect(next).toEqual([{ productKey: 'github', sectionId: 'section-multi', order: 0 }]);
+  });
+
+  it('assigns order based on existing assignments count + new count', () => {
+    const products = [
+      product('github', ['https://github.com/a']),
+      product('vercel', ['https://vercel.com/dashboard']),
+    ];
+    const existingAssignments: SectionAssignment[] = [
+      { productKey: 'existing', sectionId: 'section-dev', order: 0 },
+    ];
+
+    const next = autoAssignProducts({
+      products,
+      sections,
+      assignments: existingAssignments,
+      noSectionOverrides: [],
+      hostnamesByProductKey: new Map([
+        ['github', ['github.com']],
+        ['vercel', ['vercel.com']],
+      ]),
+    });
+
+    // github gets order 1 (existing count = 1, new count in section = 0)
+    // vercel gets order 2 (existing count = 1, new count in section = 1)
+    expect(next).toContainEqual({ productKey: 'github', sectionId: 'section-dev', order: 1 });
+    expect(next).toContainEqual({ productKey: 'vercel', sectionId: 'section-dev', order: 2 });
+  });
+
+  it('skips invalid regex patterns without affecting other rules', () => {
+    const multiRuleSection: Section = {
+      id: 'section-multi',
+      name: 'Multi',
+      order: 0,
+      autoRules: [
+        { pattern: '***invalid', type: 'hostname' }, // invalid regex
+        { pattern: 'github', type: 'hostname' },
+      ],
+    };
+    const products = [product('github', ['https://github.com/a'])];
+
+    const next = autoAssignProducts({
+      products,
+      sections: [multiRuleSection],
+      assignments: [],
+      noSectionOverrides: [],
+      hostnamesByProductKey: new Map([['github', ['github.com']]]),
+    });
+
+    // Should still match the second rule despite the first being invalid
+    expect(next).toEqual([{ productKey: 'github', sectionId: 'section-multi', order: 0 }]);
   });
 });
 
@@ -263,5 +361,29 @@ describe('buildOrganizerModel with activeSectionId', () => {
 
     expect(model.activeSectionIds.has('section-dev')).toBe(true);
     expect(model.activeSectionIds.has('section-media')).toBe(false);
+  });
+});
+
+describe('buildOrganizerModel product.order fallback sorting', () => {
+  it('does not place unassigned products in a section bucket', () => {
+    const products = [
+      product('b', ['https://b.com'], 0),
+      product('a', ['https://a.com'], 2),
+    ];
+    const assignments: SectionAssignment[] = [
+      { productKey: 'a', sectionId: 'section-dev', order: 1 },
+    ];
+
+    const model = buildOrganizerModel({
+      sections,
+      products,
+      assignments,
+      noSectionOverrides: [],
+      activeSectionId: null,
+    });
+
+    const sectionProducts = model.productsBySection.get('section-dev') ?? [];
+    expect(sectionProducts.map((p) => p.productKey)).toEqual(['a']);
+    expect(model.unassignedProducts.map((p) => p.productKey)).toEqual(['b']);
   });
 });

@@ -8,11 +8,16 @@ const chromeTabs = {
   update: vi.fn(),
   create: vi.fn(),
   getCurrent: vi.fn(),
+  move: vi.fn(),
   onCreated: {
     addListener: vi.fn(),
     removeListener: vi.fn(),
   },
   onRemoved: {
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+  },
+  onMoved: {
     addListener: vi.fn(),
     removeListener: vi.fn(),
   },
@@ -144,6 +149,8 @@ describe('useTabStore', () => {
     chromeTabs.onCreated.removeListener.mockClear();
     chromeTabs.onRemoved.addListener.mockClear();
     chromeTabs.onRemoved.removeListener.mockClear();
+    chromeTabs.onMoved.addListener.mockClear();
+    chromeTabs.onMoved.removeListener.mockClear();
     chromeTabs.onUpdated.addListener.mockClear();
     chromeTabs.onUpdated.removeListener.mockClear();
     chromeStorage.get.mockClear();

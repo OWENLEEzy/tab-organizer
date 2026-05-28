@@ -26,6 +26,10 @@ beforeEach(() => {
         addListener: vi.fn(),
         removeListener: vi.fn(),
       },
+      onMoved: {
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+      },
       onUpdated: listenerMock<(tabId: number, info: chrome.tabs.OnUpdatedInfo) => void>(),
     },
   });

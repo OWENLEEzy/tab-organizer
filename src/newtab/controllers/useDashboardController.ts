@@ -396,7 +396,7 @@ export function useDashboardController() {
       focusedUrl,
       filteredTabCount,
       parsedQuery,
-      sortButtonDisabled: parsedQuery.type === 'dupes' || parsedQuery.type === 'stale' || parsedQuery.type === 'section' || debouncedSearchQuery.trim().length > 0,
+      sortButtonDisabled: parsedQuery.type === 'dupes' || parsedQuery.type === 'stale' || parsedQuery.type === 'section' || debouncedSearchQuery.trim().length > 0 || !!tabStore.activeSectionId,
     },
     stores: {
       tabStore,

@@ -60,10 +60,14 @@ export function toSectionDropId(sectionId: string): string {
 /**
  * Decode a section droppable id back to its sectionId.
  * Returns null if the id doesn't match the section pattern.
+ * Maps 'unassigned' → NO_SECTION_ID (the system bucket).
  */
 export function fromSectionDropId(id: string): string | null {
   if (!id.startsWith(SECTION_DROP_PREFIX)) return null;
-  return id.slice(SECTION_DROP_PREFIX.length);
+  const sectionId = id.slice(SECTION_DROP_PREFIX.length);
+  // Map the unassigned drop target to the system bucket
+  if (sectionId === 'unassigned') return NO_SECTION_ID;
+  return sectionId;
 }
 
 /**
@@ -128,7 +132,6 @@ export function buildOrganizerModel(input: BuildOrganizerModelInput): OrganizerM
   const { sections, products, assignments, noSectionOverrides } = input;
 
   const sortedSections = [...sections].sort((a, b) => a.order - b.order);
-  const overrideSet = new Set(noSectionOverrides);
 
   // assignmentByProductItemId: id → sectionId
   const assignmentByProductItemId = new Map<string, string>();
@@ -182,10 +185,11 @@ export function buildOrganizerModel(input: BuildOrganizerModelInput): OrganizerM
     });
   }
 
-  // Unassigned products (no assignment, not in overrides)
+  // Unassigned products — includes products with no assignment, regardless of override status.
+  // noSectionOverrides only blocks auto-assignment; it does not hide products from the No section bucket.
   const unassignedProducts = products.filter((p) => {
     const productKey = getProductKey(p);
-    return !assignmentByProductKey.has(productKey) && !overrideSet.has(productKey);
+    return !assignmentByProductKey.has(productKey);
   });
 
   // Visible sections (have at least one product) — for Cards view
@@ -239,7 +243,8 @@ export interface AutoAssignProductsInput {
  * Rules:
  * - Only products with no existing assignment are candidates
  * - Products in noSectionOverrides are skipped
- * - autoRules are evaluated in section order, first match wins
+ * - All autoRules within each section are evaluated in order; first match wins
+ * - Sections are evaluated in section order (sorted by order field)
  */
 export function autoAssignProducts(input: AutoAssignProductsInput): SectionAssignment[] {
   const { products, sections, assignments, noSectionOverrides, hostnamesByProductKey } = input;
@@ -250,6 +255,12 @@ export function autoAssignProducts(input: AutoAssignProductsInput): SectionAssig
 
   const newAssignments: SectionAssignment[] = [];
 
+  // Pre-compute existing assignment counts per section
+  const existingCountBySection = new Map<string, number>();
+  for (const a of assignments) {
+    existingCountBySection.set(a.sectionId, (existingCountBySection.get(a.sectionId) ?? 0) + 1);
+  }
+
   for (const product of products) {
     const productKey = getProductKey(product);
     if (assignedKeys.has(productKey)) continue;
@@ -258,24 +269,29 @@ export function autoAssignProducts(input: AutoAssignProductsInput): SectionAssig
     const hostnames = hostnamesByProductKey.get(productKey) ?? [productKey];
 
     for (const section of sortedSections) {
-      const rule = section.autoRules?.[0];
-      if (!rule) continue;
+      const rules = section.autoRules ?? [];
+      let matched = false;
 
-      try {
-        const re = new RegExp(rule.pattern, 'i');
-        if (hostnames.some((hostname) => re.test(hostname))) {
-          const existingInSection = newAssignments.filter((a) => a.sectionId === section.id);
-          newAssignments.push({
-            productKey,
-            sectionId: section.id,
-            order: existingInSection.length,
-          });
-          assignedKeys.add(productKey);
-          break;
+      for (const rule of rules) {
+        try {
+          const re = new RegExp(rule.pattern, 'i');
+          if (hostnames.some((hostname) => re.test(hostname))) {
+            const existingCount = existingCountBySection.get(section.id) ?? 0;
+            const newCount = newAssignments.filter((a) => a.sectionId === section.id).length;
+            newAssignments.push({
+              productKey,
+              sectionId: section.id,
+              order: existingCount + newCount,
+            });
+            assignedKeys.add(productKey);
+            matched = true;
+            break;
+          }
+        } catch {
+          // Skip invalid regex patterns without affecting other rules in the same section
         }
-      } catch {
-        // Skip invalid regex patterns
       }
+      if (matched) break;
     }
   }
 

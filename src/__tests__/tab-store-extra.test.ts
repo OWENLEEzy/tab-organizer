@@ -10,6 +10,7 @@ const chromeTabs = {
   update: vi.fn(),
   onCreated: { addListener: vi.fn(), removeListener: vi.fn() },
   onRemoved: { addListener: vi.fn(), removeListener: vi.fn() },
+  onMoved: { addListener: vi.fn(), removeListener: vi.fn() },
   onUpdated: { addListener: vi.fn(), removeListener: vi.fn() },
 };
 
@@ -129,11 +130,13 @@ describe('TabStore Listeners', () => {
         const cleanup = useTabStore.getState().startListeners();
         expect(chromeTabs.onCreated.addListener).toHaveBeenCalled();
         expect(chromeTabs.onRemoved.addListener).toHaveBeenCalled();
+        expect(chromeTabs.onMoved.addListener).toHaveBeenCalled();
         expect(chromeTabs.onUpdated.addListener).toHaveBeenCalled();
-        
+
         cleanup();
         expect(chromeTabs.onCreated.removeListener).toHaveBeenCalled();
         expect(chromeTabs.onRemoved.removeListener).toHaveBeenCalled();
+        expect(chromeTabs.onMoved.removeListener).toHaveBeenCalled();
         expect(chromeTabs.onUpdated.removeListener).toHaveBeenCalled();
     });
 
