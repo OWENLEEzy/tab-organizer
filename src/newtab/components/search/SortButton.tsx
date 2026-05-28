@@ -26,7 +26,7 @@ export function SortButton({ disabled, disabledTooltip, onClick }: SortButtonPro
         icon={<SortIcon />}
         onClick={onClick}
         disabled={disabled}
-        aria-label={disabled ? disabledTooltip : t('sortButtonTooltip')}
+        aria-label={disabled ? disabledTooltip : t('sortButtonLabel')}
         title={disabled ? disabledTooltip : t('sortButtonTooltip')}
       >
         {t('sortButtonLabel')}
