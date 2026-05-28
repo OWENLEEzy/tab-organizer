@@ -81,6 +81,8 @@ interface TabActions {
     sectionAssignments: SectionAssignment[],
     unsortedOverrides?: string[],
   ) => Promise<void>;
+  /** Sort the current Chrome window's real tabs to match the dashboard product order. */
+  sortCurrentWindowTabsByDashboardOrder: (products: TabGroup[]) => Promise<void>;
 }
 
 export type TabStore = {
@@ -646,5 +648,94 @@ export const useTabStore = create<TabStore>((set) => ({
     await writeOrganizerState({ sections, sectionAssignments, unsortedOverrides });
     set({ sections, sectionAssignments, unsortedOverrides });
     await useTabStore.getState().fetchTabs();
+  },
+
+  sortCurrentWindowTabsByDashboardOrder: async (products: TabGroup[]) => {
+    // 1. Get current window
+    const currentWindow = await chrome.windows.getCurrent();
+    const windowId = currentWindow.id;
+
+    // 2. Query all tabs in this window
+    const allTabs = await chrome.tabs.query({ windowId });
+
+    // 3. Separate pinned from unpinned; filter to real web tabs only
+    const pinnedTabs = allTabs.filter((t) => t.pinned);
+    const unpinnedRealTabs = allTabs.filter((t) => !t.pinned && isRealTab(t.url ?? ''));
+
+    if (unpinnedRealTabs.length === 0) {
+      // Nothing to sort
+      return;
+    }
+
+    // 4. Build product-key -> position-in-products map from dashboard order
+    const productKeyPositions = new Map<string, number>();
+    for (let i = 0; i < products.length; i++) {
+      const key = products[i].productKey ?? products[i].domain;
+      productKeyPositions.set(key, i);
+    }
+
+    // 5. Map each tab to its product key
+    type TabWithProduct = { tab: chrome.tabs.Tab; productKey: string; originalIndex: number };
+    const tabsWithProduct: TabWithProduct[] = [];
+
+    for (const tab of unpinnedRealTabs) {
+      const url = tab.url ?? '';
+      const hostname = getTabDomain(url);
+      const customGroups = useSettingsStore.getState().settings.customGroups;
+      const product = (() => {
+        const normalizedHost = hostname.toLowerCase();
+        const customOverride = customGroups?.find(
+          (cg) =>
+            cg.hostname?.toLowerCase() === normalizedHost ||
+            (cg.hostnameEndsWith && normalizedHost.endsWith(cg.hostnameEndsWith.toLowerCase())),
+        );
+        return customOverride
+          ? { key: customOverride.groupKey }
+          : productForHostname(hostname);
+      })();
+      tabsWithProduct.push({ tab, productKey: product.key, originalIndex: tab.index });
+    }
+
+    // 6. Sort: known products by dashboard order, unknown products at end keeping original order
+    const sortedTabs = [
+      ...tabsWithProduct
+        .filter((tp) => productKeyPositions.has(tp.productKey))
+        .sort((a, b) => {
+          const posA = productKeyPositions.get(a.productKey) ?? Infinity;
+          const posB = productKeyPositions.get(b.productKey) ?? Infinity;
+          if (posA !== posB) return posA - posB;
+          return a.originalIndex - b.originalIndex;
+        }),
+      ...tabsWithProduct
+        .filter((tp) => !productKeyPositions.has(tp.productKey))
+        .sort((a, b) => a.originalIndex - b.originalIndex),
+    ];
+
+    // 7. Build move plan: target positions start after pinned tabs
+    const pinnedCount = pinnedTabs.length;
+    const moves: { id: number; index: number }[] = [];
+
+    for (let i = 0; i < sortedTabs.length; i++) {
+      const tabId = sortedTabs[i].tab.id;
+      if (tabId != null) {
+        moves.push({ id: tabId, index: pinnedCount + i });
+      }
+    }
+
+    // 8. Execute moves in batch
+    if (moves.length === 0) return;
+
+    // Move one at a time to avoid Chrome API conflicts with same-window reordering
+    // We use sequential moves preserving relative order
+    const idsToMove = moves.map((m) => m.id);
+    for (let i = 0; i < idsToMove.length; i++) {
+      const id = idsToMove[i];
+      const targetIndex = pinnedCount + i;
+      try {
+        await chrome.tabs.move(id, { index: targetIndex });
+      } catch (err) {
+        console.warn('[Tab Organizer] Failed to move tab', id, err);
+      }
+    }
   },
 }));
