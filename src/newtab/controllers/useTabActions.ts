@@ -424,6 +424,28 @@ export function useTabActions({
     }
   }, [visibleProducts, dispatch, showToast, t]);
 
+  const handleSortWindow = useCallback(() => {
+    dispatch({
+      type: 'SET_CONFIRM_DIALOG',
+      dialog: {
+        id: crypto.randomUUID(),
+        open: true,
+        title: t('confirmSortTitle'),
+        message: t('confirmSortMessage'),
+        confirmLabel: t('confirmSortBtn'),
+        onConfirm: () => {
+          tabStore.sortCurrentWindowTabsByDashboardOrder(visibleProducts).then(() => {
+            showToast(t('toastSortComplete'));
+          }).catch((err) => {
+            console.warn('[Tab Organizer] sortCurrentWindowTabsByDashboardOrder failed:', err);
+            showToast(t('toastSortNoTabs'));
+          });
+          dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
+        },
+      },
+    });
+  }, [dispatch, tabStore, visibleProducts, showToast, t]);
+
   return {
     handleCloseProduct,
     handleCloseSection,
@@ -446,5 +468,6 @@ export function useTabActions({
     handleMoveProductToSection,
     handleSelectStaleTabs,
     handleSelectDuplicateTabs,
+    handleSortWindow,
   };
 }

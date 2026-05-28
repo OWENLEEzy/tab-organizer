@@ -453,6 +453,7 @@ export function useDashboardController() {
       focusedUrl,
       filteredTabCount,
       parsedQuery,
+      sortButtonDisabled: debouncedSearchQuery.trim().length > 0,
     },
     stores: {
       tabStore,

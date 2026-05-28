@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -95,6 +95,8 @@ describe('MotherDuck-inspired layout components', () => {
           onViewModeChange={() => {}}
           groupSortBy="count"
           onGroupSortByChange={() => {}}
+          sortButtonDisabled={false}
+          onSortWindow={vi.fn()}
           onRefresh={() => {}}
           onCreateSection={() => {}}
           onOpenSettings={() => {}}
@@ -134,6 +136,8 @@ describe('MotherDuck-inspired layout components', () => {
               onViewModeChange={() => {}}
               groupSortBy="count"
               onGroupSortByChange={() => {}}
+              sortButtonDisabled={false}
+              onSortWindow={vi.fn()}
               onRefresh={() => {}}
               onCreateSection={() => {}}
               onOpenSettings={() => {}}

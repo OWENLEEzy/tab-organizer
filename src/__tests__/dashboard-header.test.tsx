@@ -33,6 +33,8 @@ describe('DashboardHeader', () => {
         onViewModeChange={onViewModeChange}
         groupSortBy="count"
         onGroupSortByChange={onGroupSortByChange}
+        sortButtonDisabled={false}
+        onSortWindow={vi.fn()}
         onRefresh={() => {}}
         onCreateSection={onCreateSection}
         onOpenSettings={onOpenSettings}
@@ -86,6 +88,8 @@ describe('DashboardHeader', () => {
         onViewModeChange={() => {}}
         groupSortBy="count"
         onGroupSortByChange={onGroupSortByChange}
+        sortButtonDisabled={false}
+        onSortWindow={vi.fn()}
         onRefresh={() => {}}
         onCreateSection={() => {}}
         onOpenSettings={onOpenSettings}

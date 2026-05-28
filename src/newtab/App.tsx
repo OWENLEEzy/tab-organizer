@@ -114,6 +114,8 @@ export function App(): React.ReactElement {
             activeSectionId={tabStore.activeSectionId}
             onSectionChange={tabStore.setActiveSection}
             isSectionSwitcherFocused={state.sectionSwitcherFocused}
+            sortButtonDisabled={state.sortButtonDisabled}
+            onSortWindow={handlers.handleSortWindow}
           />
         }
         isSidebarExpanded={state.isSidebarExpanded}
