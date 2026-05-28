@@ -10,10 +10,10 @@ import { useI18n } from '../hooks/useI18n';
 import { DASHBOARD_SECTION_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
 import { isTabStale } from '../../lib/staleness';
 import { analyzeDuplicates } from '../../lib/duplicate-analysis';
-import { getProductKey } from '../../lib/product-key';
 import { createSortComparator } from '../../lib/tab-grouper';
 import { parseSearchQuery, resolveSectionQueryTarget } from '../lib/search-commands';
 import { useChromeStorageSync } from './useChromeStorageSync';
+import { buildOrganizerModel, toProductItemId } from '../../lib/section-organizer';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -62,49 +62,25 @@ export function useDashboardController() {
   const { sections, sectionAssignments } = tabStore;
   const { settings } = settingsStore;
 
-  // ─── Derived state ──────────────────────────────────────────────────
+  // ─── Organizer model (single source of truth for section/assignment state) ─────
 
-  const itemIdForProduct = useCallback((p: TabGroup) => {
-    return `product:${getProductKey(p)}`;
+  // Sort once — used by organizerModel and filteredProducts
+  const sortedProducts = useMemo(() => {
+    const sortComparator = createSortComparator(settings.groupSortBy ?? 'count');
+    return [...products].sort(sortComparator);
+  }, [products, settings.groupSortBy]);
+
+  const organizerModel = useMemo(() => buildOrganizerModel({
+    sections,
+    products: sortedProducts,
+    assignments: sectionAssignments,
+    noSectionOverrides: tabStore.unsortedOverrides,
+    activeSectionId: tabStore.activeSectionId,
+  }), [sections, sortedProducts, sectionAssignments, tabStore.unsortedOverrides, tabStore.activeSectionId]);
+
+  const itemIdForProduct = useCallback((product: TabGroup) => {
+    return toProductItemId(product.productKey ?? product.itemKey ?? product.domain);
   }, []);
-
-  // Inline helper — avoids an extra useCallback allocation per render.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const groupAssignmentKey = (p: TabGroup) => `product:${getProductKey(p)}`;
-
-  const assignmentByItemId = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const assignment of sectionAssignments) {
-      map.set(`product:${assignment.productKey}`, assignment.sectionId);
-    }
-    return map;
-  }, [sectionAssignments]);
-
-  const manageableSections = useMemo(
-    () => [...sections].sort((a, b) => a.order - b.order),
-    [sections],
-  );
-
-  const navigationProductsBySection = useMemo(() => {
-    const result = new Map<string, TabGroup[]>();
-    for (const section of manageableSections) {
-      result.set(section.id, []);
-    }
-
-    for (const product of products) {
-      const sectionId = assignmentByItemId.get(groupAssignmentKey(product));
-      if (!sectionId) continue;
-      const bucket = result.get(sectionId);
-      if (bucket) bucket.push(product);
-    }
-
-    return result;
-  }, [assignmentByItemId, products, groupAssignmentKey, manageableSections]);
-
-  const contentSections = useMemo(
-    () => manageableSections.filter((section) => (navigationProductsBySection.get(section.id)?.length ?? 0) > 0),
-    [manageableSections, navigationProductsBySection],
-  );
 
   // Debounce searchQuery for derived memos — avoids cascading recomputes on every keystroke.
   const searchQueryRef = useRef(searchQuery);
@@ -122,28 +98,24 @@ export function useDashboardController() {
   );
 
   const filteredProducts = useMemo(() => {
-    let result = products;
+    let result = sortedProducts;
 
     if (tabStore.activeSectionId) {
-      result = result.filter(p => {
-        const itemKey = groupAssignmentKey(p);
-        return assignmentByItemId.get(itemKey) === tabStore.activeSectionId;
+      result = result.filter((product) => {
+        const productKey = product.productKey ?? product.itemKey ?? product.domain;
+        return organizerModel.assignmentByProductKey.get(productKey) === tabStore.activeSectionId;
       });
     }
-
-    // Apply sort order
-    const sortComparator = createSortComparator(settings.groupSortBy ?? 'count');
-    result = [...result].sort(sortComparator);
 
     if (!debouncedSearchQuery.trim()) return result;
 
     // 1. Process /section:SectionName command
     if (parsedQuery.type === 'section') {
-      const targetSection = resolveSectionQueryTarget(parsedQuery.sectionToken ?? '', contentSections);
+      const targetSection = resolveSectionQueryTarget(parsedQuery.sectionToken ?? '', organizerModel.visibleSections);
       if (targetSection) {
-        result = products.filter(p => {
-          const itemKey = groupAssignmentKey(p);
-          return assignmentByItemId.get(itemKey) === targetSection.id;
+        result = sortedProducts.filter(p => {
+          const productKey = p.productKey ?? p.itemKey ?? p.domain;
+          return organizerModel.assignmentByProductKey.get(productKey) === targetSection.id;
         });
       } else {
         result = [];
@@ -190,55 +162,24 @@ export function useDashboardController() {
       }
     }
     return finalResult;
-  }, [products, debouncedSearchQuery, parsedQuery, tabStore.activeSectionId, assignmentByItemId, contentSections, settings.staleThresholdDays, settings.groupSortBy]);
+  }, [sortedProducts, debouncedSearchQuery, parsedQuery, tabStore.activeSectionId, organizerModel, settings.staleThresholdDays]);
 
-  const unassignedProducts = useMemo(
-    () => filteredProducts.filter((p) => !assignmentByItemId.has(groupAssignmentKey(p))),
-    [filteredProducts, assignmentByItemId, groupAssignmentKey],
-  );
+  // ─── Visible OrganizerModel (filtered products projected through the model) ───
 
-  const productsBySection = useMemo(() => {
-    const result = new Map<string, TabGroup[]>();
-    for (const section of manageableSections) {
-      result.set(section.id, []);
-    }
-
-    for (const product of filteredProducts) {
-      const sectionId = assignmentByItemId.get(groupAssignmentKey(product));
-      if (!sectionId) continue;
-      const bucket = result.get(sectionId);
-      if (bucket) bucket.push(product);
-    }
-
-    for (const [sectionId, items] of result) {
-      const orderMap = new Map<string, number>();
-      for (const assignment of sectionAssignments) {
-        if (assignment.sectionId === sectionId) {
-          orderMap.set(`product:${assignment.productKey}`, assignment.order);
-        }
-      }
-
-      items.sort((a, b) => {
-        const aOrder = orderMap.get(groupAssignmentKey(a)) ?? a.order;
-        const bOrder = orderMap.get(groupAssignmentKey(b)) ?? b.order;
-        return aOrder - bOrder;
-      });
-    }
-
-    return result;
-  }, [assignmentByItemId, filteredProducts, groupAssignmentKey, manageableSections, sectionAssignments]);
-
-  const sectionNavigationIds = useMemo(
-    () => [null, ...contentSections.map((section) => section.id)] as (string | null)[],
-    [contentSections],
-  );
+  const visibleOrganizerModel = useMemo(() => buildOrganizerModel({
+    sections: organizerModel.sections,
+    products: filteredProducts,
+    assignments: sectionAssignments,
+    noSectionOverrides: tabStore.unsortedOverrides,
+    activeSectionId: tabStore.activeSectionId,
+  }), [organizerModel.sections, filteredProducts, sectionAssignments, tabStore.unsortedOverrides, tabStore.activeSectionId]);
 
   const flatChips = useMemo(() => {
     const visualProducts = viewMode === 'table'
       ? [...filteredProducts].sort((a, b) => a.order - b.order)
       : [
-          ...unassignedProducts,
-          ...contentSections.flatMap((section) => productsBySection.get(section.id) ?? []),
+          ...visibleOrganizerModel.unassignedProducts,
+          ...visibleOrganizerModel.visibleSections.flatMap((section) => visibleOrganizerModel.productsBySection.get(section.id) ?? []),
         ];
 
     const isSearching = debouncedSearchQuery.trim().length > 0;
@@ -253,9 +194,7 @@ export function useDashboardController() {
     );
   }, [
     filteredProducts,
-    unassignedProducts,
-    contentSections,
-    productsBySection,
+    visibleOrganizerModel,
     viewMode,
     settings.maxChipsVisible,
     expandedDomains,
@@ -411,8 +350,8 @@ export function useDashboardController() {
       }
     },
     onSwitchSectionN: (n) => {
-      if (n > 0 && n <= contentSections.length) {
-        tabStore.setActiveSection(contentSections[n - 1].id);
+      if (n > 0 && n <= visibleOrganizerModel.visibleSections.length) {
+        tabStore.setActiveSection(visibleOrganizerModel.visibleSections[n - 1].id);
       }
     },
     onSwitchSectionAll: () => {
@@ -420,7 +359,7 @@ export function useDashboardController() {
     },
     onCycleSectionPrev: (() => {
       return () => {
-        const ids = sectionNavigationIds;
+        const ids = visibleOrganizerModel.navigationSections;
         const currentIndex = ids.indexOf(tabStore.activeSectionId);
         const nextIndex = (currentIndex - 1 + ids.length) % ids.length;
         tabStore.setActiveSection(ids[nextIndex]);
@@ -428,7 +367,7 @@ export function useDashboardController() {
     })(),
     onCycleSectionNext: (() => {
       return () => {
-        const ids = sectionNavigationIds;
+        const ids = visibleOrganizerModel.navigationSections;
         const currentIndex = ids.indexOf(tabStore.activeSectionId);
         const nextIndex = (currentIndex + 1) % ids.length;
         tabStore.setActiveSection(ids[nextIndex]);
@@ -449,11 +388,11 @@ export function useDashboardController() {
       totalDupes,
       dashboardCount,
       showEmptyState: products.length === 0,
-      visibleSectionCount: contentSections.length,
+      visibleSectionCount: visibleOrganizerModel.visibleSections.length,
       focusedUrl,
       filteredTabCount,
       parsedQuery,
-      sortButtonDisabled: debouncedSearchQuery.trim().length > 0,
+      sortButtonDisabled: parsedQuery.type === 'dupes' || parsedQuery.type === 'stale' || parsedQuery.type === 'section' || debouncedSearchQuery.trim().length > 0,
     },
     stores: {
       tabStore,
@@ -461,12 +400,12 @@ export function useDashboardController() {
     },
     derived: {
       filteredProducts,
-      unassignedProducts,
-      manageableSections,
-      contentSections,
-      sectionNavigationIds,
-      productsBySection,
-      assignmentByItemId,
+      unassignedProducts: visibleOrganizerModel.unassignedProducts,
+      manageableSections: visibleOrganizerModel.sections,
+      contentSections: visibleOrganizerModel.visibleSections,
+      sectionNavigationIds: visibleOrganizerModel.navigationSections,
+      productsBySection: visibleOrganizerModel.productsBySection,
+      assignmentByItemId: visibleOrganizerModel.assignmentByProductItemId,
       itemIdForProduct,
       flatChips,
     },

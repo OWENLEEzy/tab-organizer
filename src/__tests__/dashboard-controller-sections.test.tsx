@@ -161,4 +161,24 @@ describe('dashboard section semantics', () => {
       expect(screen.getByRole('button', { name: 'Personal' })).toBeInTheDocument();
     });
   });
+
+  it('keeps section projections consistent after filtering and navigation', async () => {
+    chromeStorageData.sections = [
+      { id: 'section-dev', name: 'Dev', order: 0 },
+      { id: 'section-empty', name: 'Empty', order: 1 },
+    ];
+    chromeStorageData.sectionAssignments = [
+      { productKey: 'github', sectionId: 'section-dev', order: 0 },
+    ];
+    (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeChromeTab(1, 'https://github.com/OWENLEEzy/tab-organizer', 'Repo'),
+      makeChromeTab(2, 'https://example.com/docs', 'Docs'),
+    ]);
+
+    renderApp();
+
+    await waitFor(() => expect(screen.getByText('1 sections')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Dev' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Empty' })).not.toBeInTheDocument();
+  });
 });
