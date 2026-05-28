@@ -40,7 +40,7 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
       { id: 3, url: 'https://example.com', pinned: false, index: 2 } as chrome.tabs.Tab,
     ]);
 
-    const products = [{ domain: 'github.com', productKey: 'github', tabs: [] }];
+    const products = [{ id: '1', domain: 'github.com', productKey: 'github', friendlyName: 'GitHub', collapsed: false, order: 0, color: '', tabs: [] }];
 
     await useTabStore.getState().sortCurrentWindowTabsByDashboardOrder(products);
 
@@ -57,8 +57,8 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
     ]);
 
     const products = [
-      { domain: 'github.com', productKey: 'github', tabs: [] },
-      { domain: 'example.com', productKey: 'example', tabs: [] },
+      { id: '1', domain: 'github.com', productKey: 'github', friendlyName: 'GitHub', collapsed: false, order: 0, color: '', tabs: [] },
+      { id: '2', domain: 'example.com', productKey: 'example', friendlyName: 'Example', collapsed: false, order: 1, color: '', tabs: [] },
     ];
 
     await useTabStore.getState().sortCurrentWindowTabsByDashboardOrder(products);

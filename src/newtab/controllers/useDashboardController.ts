@@ -8,6 +8,7 @@ import { useUIState } from '../hooks/useUIState';
 import { useTabActions } from './useTabActions';
 import { useI18n } from '../hooks/useI18n';
 import { DASHBOARD_SECTION_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
+import { useNow } from '../hooks/useNow';
 import { isTabStale } from '../../lib/staleness';
 import { analyzeDuplicates } from '../../lib/duplicate-analysis';
 import { createSortComparator } from '../../lib/tab-grouper';
@@ -84,7 +85,9 @@ export function useDashboardController() {
 
   // Debounce searchQuery for derived memos — avoids cascading recomputes on every keystroke.
   const searchQueryRef = useRef(searchQuery);
-  searchQueryRef.current = searchQuery;
+  useEffect(() => {
+    searchQueryRef.current = searchQuery;
+  }, [searchQuery]);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
   useEffect(() => {
     const id = window.setTimeout(() => setDebouncedSearchQuery(searchQueryRef.current), 150);
@@ -96,6 +99,9 @@ export function useDashboardController() {
     () => parseSearchQuery(debouncedSearchQuery),
     [debouncedSearchQuery],
   );
+
+  // Capture timestamp once per second — used for /stale search command.
+  const staleTimestamp = useNow();
 
   const filteredProducts = useMemo(() => {
     let result = sortedProducts;
@@ -135,12 +141,10 @@ export function useDashboardController() {
 
     // 3. Process /stale command
     if (parsedQuery.type === 'stale') {
-      const stableNow = Math.floor(Date.now() / 1000) * 1000;
-
       result = result
         .map(p => ({
           ...p,
-          tabs: p.tabs.filter(t => isTabStale(t, stableNow, settings.staleThresholdDays ?? 3))
+          tabs: p.tabs.filter(t => isTabStale(t, staleTimestamp, settings.staleThresholdDays ?? 3))
         }))
         .filter(p => p.tabs.length > 0);
     }
@@ -162,7 +166,7 @@ export function useDashboardController() {
       }
     }
     return finalResult;
-  }, [sortedProducts, debouncedSearchQuery, parsedQuery, tabStore.activeSectionId, organizerModel, settings.staleThresholdDays]);
+  }, [sortedProducts, debouncedSearchQuery, parsedQuery, staleTimestamp, tabStore.activeSectionId, organizerModel, settings.staleThresholdDays]);
 
   // ─── Visible OrganizerModel (filtered products projected through the model) ───
 

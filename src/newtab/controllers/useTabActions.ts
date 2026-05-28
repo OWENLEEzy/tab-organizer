@@ -437,7 +437,7 @@ export function useTabActions({
           tabStore.sortCurrentWindowTabsByDashboardOrder(visibleProducts).then(() => {
             showToast(t('toastSortComplete'));
           }).catch((err) => {
-            console.warn('[Tab Organizer] sortCurrentWindowTabsByDashboardOrder failed:', err);
+            console.error('[Tab Organizer] sortCurrentWindowTabsByDashboardOrder failed:', err);
             showToast(t('toastSortNoTabs'));
           });
           dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });

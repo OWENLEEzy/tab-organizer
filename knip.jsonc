@@ -8,7 +8,8 @@
     "src/**/*.{ts,tsx}"
   ],
   "ignore": [
-    "src/**/*.test.{ts,tsx}",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
     "src/__tests__/**",
     "src/a11y/**",
     "src/e2e/**"
@@ -20,5 +21,8 @@
     "react",
     "react-dom",
     "zustand"
-  ]
+  ],
+  "ignoreIssues": {
+    "src/lib/section-organizer.ts": ["exports"]
+  }
 }
