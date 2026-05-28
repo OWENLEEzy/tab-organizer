@@ -1,14 +1,18 @@
 import { create } from 'zustand';
 import type { Section, HistorySnapshot, SectionAssignment, Tab, TabGroup, ViewMode, CustomGroup } from '../types';
-import { groupTabsByDomain, autoAssignProductToSection } from '../lib/tab-grouper';
+import { groupTabsByDomain } from '../lib/tab-grouper';
+import {
+  assignProductToSection as assignProductToSectionModel,
+  autoAssignProducts,
+  deleteSectionAndUnassignProducts,
+  moveProductToNoSection,
+} from '../lib/section-organizer';
 import {
   clearHistory,
   deleteHistorySnapshot,
-  assignProductToSection,
   promoteHistorySnapshot,
   readHistory,
   reconcileOrganizerState,
-  unassignProductFromSections,
   writeGroupOrder,
   writeOrganizerState,
 } from '../utils/storage';
@@ -224,29 +228,20 @@ export const useTabStore = create<TabStore>((set) => ({
       const groupOrder = organizerState.groupOrder;
       const productGroups = groupTabsByDomain(mapped, groupOrder, customGroups);
       const sections = orderedSections(organizerState.sections);
-      const unsortedOverrideSet = new Set(organizerState.unsortedOverrides);
-      
+
       let sectionAssignments = organizerState.sectionAssignments;
       let hasNewAssignments = false;
-      const assignedKeys = new Set(sectionAssignments.map((a) => a.productKey));
+      const newAssignments = autoAssignProducts({
+        products: productGroups,
+        sections,
+        assignments: sectionAssignments,
+        noSectionOverrides: organizerState.unsortedOverrides,
+        hostnamesByProductKey,
+      });
 
-      for (const product of productGroups) {
-        const productKey = product.productKey ?? product.domain;
-        if (!assignedKeys.has(productKey) && !unsortedOverrideSet.has(productKey)) {
-          const sectionId = autoAssignProductToSection(
-            hostnamesByProductKey.get(productKey) ?? [productKey],
-            sections,
-          );
-          if (sectionId) {
-            const existingInGroup = sectionAssignments.filter((a) => a.sectionId === sectionId);
-            sectionAssignments = [
-              ...sectionAssignments,
-              { productKey, sectionId: sectionId, order: existingInGroup.length }
-            ];
-            hasNewAssignments = true;
-            assignedKeys.add(productKey);
-          }
-        }
+      if (newAssignments.length > 0) {
+        sectionAssignments = [...sectionAssignments, ...newAssignments];
+        hasNewAssignments = true;
       }
 
       if (hasNewAssignments) {
@@ -527,18 +522,14 @@ export const useTabStore = create<TabStore>((set) => ({
 
   deleteSection: async (sectionId: string) => {
     const state = useTabStore.getState();
-    const removedProductKeys = state.sectionAssignments
-      .filter((assignment) => assignment.sectionId === sectionId)
-      .map((assignment) => assignment.productKey);
+    const { assignments: nextAssignments, overrides: nextOverrides } = deleteSectionAndUnassignProducts(
+      state.sectionAssignments,
+      state.unsortedOverrides,
+      sectionId,
+    );
     const nextSections = state.sections
       .filter((section) => section.id !== sectionId)
       .map((section, index) => ({ ...section, order: index }));
-    const nextAssignments = state.sectionAssignments
-      .filter((assignment) => assignment.sectionId !== sectionId);
-    const nextOverrides = [
-      ...state.unsortedOverrides,
-      ...removedProductKeys.filter((productKey) => !state.unsortedOverrides.includes(productKey)),
-    ];
 
     set({
       sections: nextSections,
@@ -560,14 +551,23 @@ export const useTabStore = create<TabStore>((set) => ({
   },
 
   moveProductToSection: async (productKey: string, sectionId: string) => {
-    const { sectionAssignments, unsortedOverrides } = await assignProductToSection(productKey, sectionId);
-    set({ sectionAssignments, unsortedOverrides });
+    const state = useTabStore.getState();
+    const nextAssignments = assignProductToSectionModel(state.sectionAssignments, productKey, sectionId);
+    const nextOverrides = state.unsortedOverrides.filter((k) => k !== productKey);
+    set({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
+    await writeOrganizerState({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
     await useTabStore.getState().fetchTabs();
   },
 
   moveProductToNoSection: async (productKey: string) => {
-    const { sectionAssignments, unsortedOverrides } = await unassignProductFromSections(productKey);
-    set({ sectionAssignments, unsortedOverrides });
+    const state = useTabStore.getState();
+    const { assignments: nextAssignments, overrides: nextOverrides } = moveProductToNoSection(
+      state.sectionAssignments,
+      state.unsortedOverrides,
+      productKey,
+    );
+    set({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
+    await writeOrganizerState({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
     await useTabStore.getState().fetchTabs();
   },
 
