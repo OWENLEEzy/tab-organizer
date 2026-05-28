@@ -16,6 +16,9 @@
   "ignoreDependencies": [
     "@dnd-kit/core",
     "@dnd-kit/sortable",
-    "@dnd-kit/utilities"
+    "@dnd-kit/utilities",
+    "react",
+    "react-dom",
+    "zustand"
   ]
 }
