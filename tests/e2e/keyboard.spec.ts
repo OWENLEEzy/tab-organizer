@@ -79,7 +79,7 @@ test.describe('Keyboard Navigation', () => {
         document.activeElement.blur();
       }
     });
-    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+4' : 'Control+4');
+    await page.keyboard.press('Meta+4');
 
     await expect(page.getByRole('button', { name: 'Later' })).toHaveAttribute('tabindex', '0');
     await expect(page.getByRole('heading', { name: 'YouTube' })).toBeVisible();
