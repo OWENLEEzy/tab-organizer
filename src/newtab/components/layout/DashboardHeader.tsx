@@ -1,6 +1,7 @@
 import React from 'react';
 import { SearchBar } from '../search/SearchBar';
 import { ViewToggle } from '../search/ViewToggle';
+import { SortButton } from '../search/SortButton';
 import { SortDropdown } from '../search/SortDropdown';
 import { ActionButton } from '../ui/ActionButton';
 import { SectionSwitcher } from '../organizer/SectionSwitcher';
@@ -25,6 +26,8 @@ interface DashboardHeaderProps {
   onViewModeChange: (mode: 'cards' | 'table') => void;
   groupSortBy: GroupSortOption;
   onGroupSortByChange: (sortBy: GroupSortOption) => void;
+  sortButtonDisabled: boolean;
+  onSortWindow: () => void;
   onRefresh: () => void;
   onCreateSection: () => void;
   onOpenSettings: () => void;
@@ -75,6 +78,8 @@ export function DashboardHeader({
   onViewModeChange,
   groupSortBy,
   onGroupSortByChange,
+  sortButtonDisabled,
+  onSortWindow,
   onRefresh,
   onCreateSection,
   onOpenSettings,
@@ -125,6 +130,11 @@ export function DashboardHeader({
               <>
                 <ViewToggle value={viewMode} onChange={onViewModeChange} />
                 <SortDropdown value={groupSortBy} onChange={onGroupSortByChange} />
+                <SortButton
+                  disabled={sortButtonDisabled}
+                  disabledTooltip={t('sortButtonDisabledTooltip')}
+                  onClick={onSortWindow}
+                />
               </>
             ) : null}
           </div>
