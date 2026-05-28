@@ -10,7 +10,10 @@ import {
   fromProductItemId,
   fromSectionDropId,
   getProductSectionId,
+  isAssignedToSection,
+  isNoSection,
   moveProductToNoSection,
+  parseDropId,
   toProductItemId,
   toSectionDropId,
 } from '../lib/section-organizer';
@@ -151,5 +154,114 @@ describe('assignment mutations', () => {
     const deleted = deleteSectionAndUnassignProducts(assigned, ['existing'], 'section-dev');
     expect(deleted.assignments).toEqual([{ productKey: 'youtube', sectionId: 'section-media', order: 0 }]);
     expect(deleted.overrides).toEqual(['existing', 'github']);
+  });
+});
+
+describe('parseDropId', () => {
+  it('parses product drop ids', () => {
+    expect(parseDropId('product:github')).toEqual({ type: 'product', productKey: 'github' });
+    expect(parseDropId('product:youtube')).toEqual({ type: 'product', productKey: 'youtube' });
+  });
+
+  it('parses section drop ids', () => {
+    expect(parseDropId('section:section-dev')).toEqual({ type: 'section', sectionId: 'section-dev' });
+    expect(parseDropId('section:section-media')).toEqual({ type: 'section', sectionId: 'section-media' });
+  });
+
+  it('normalizes unassigned section to NO_SECTION_ID', () => {
+    expect(parseDropId('section:unassigned')).toEqual({ type: 'section', sectionId: NO_SECTION_ID });
+  });
+
+  it('returns null for unknown ids', () => {
+    expect(parseDropId('unknown:id')).toBeNull();
+    expect(parseDropId('')).toBeNull();
+  });
+});
+
+describe('isNoSection', () => {
+  it('returns true for NO_SECTION_ID', () => {
+    expect(isNoSection(NO_SECTION_ID)).toBe(true);
+  });
+
+  it('returns false for real section ids', () => {
+    expect(isNoSection('section-dev')).toBe(false);
+  });
+});
+
+describe('isAssignedToSection', () => {
+  it('returns true for products assigned to a real section', () => {
+    const assignmentByProductKey = new Map([['github', 'section-dev']]);
+    expect(isAssignedToSection('github', assignmentByProductKey)).toBe(true);
+  });
+
+  it('returns false for products in NO_SECTION_ID', () => {
+    const assignmentByProductKey = new Map([['github', NO_SECTION_ID]]);
+    expect(isAssignedToSection('github', assignmentByProductKey)).toBe(false);
+  });
+
+  it('returns false for unassigned products', () => {
+    const assignmentByProductKey = new Map<string, string>();
+    expect(isAssignedToSection('github', assignmentByProductKey)).toBe(false);
+  });
+});
+
+describe('getProductSectionId', () => {
+  it('returns section id for assigned products', () => {
+    const assignmentByProductKey = new Map([['github', 'section-dev']]);
+    expect(getProductSectionId('github', assignmentByProductKey)).toBe('section-dev');
+  });
+
+  it('returns NO_SECTION_ID for unassigned products', () => {
+    const assignmentByProductKey = new Map<string, string>();
+    expect(getProductSectionId('github', assignmentByProductKey)).toBe(NO_SECTION_ID);
+  });
+});
+
+describe('autoAssignProducts edge cases', () => {
+  it('returns empty when all products already assigned', () => {
+    const products = [product('github', ['https://github.com/a'])];
+    const assignments: SectionAssignment[] = [{ productKey: 'github', sectionId: 'section-dev', order: 0 }];
+
+    const next = autoAssignProducts({
+      products,
+      sections,
+      assignments,
+      noSectionOverrides: [],
+      hostnamesByProductKey: new Map([['github', ['github.com']]]),
+    });
+
+    expect(next).toEqual([]);
+  });
+
+  it('returns empty when no section rules match', () => {
+    const products = [product('unknown', ['https://unknown.com/a'])];
+
+    const next = autoAssignProducts({
+      products,
+      sections,
+      assignments: [],
+      noSectionOverrides: [],
+      hostnamesByProductKey: new Map([['unknown', ['unknown.com']]]),
+    });
+
+    expect(next).toEqual([]);
+  });
+});
+
+describe('buildOrganizerModel with activeSectionId', () => {
+  it('populates activeSectionIds for sections with products', () => {
+    const products = [product('github', ['https://github.com/a'])];
+    const assignments: SectionAssignment[] = [{ productKey: 'github', sectionId: 'section-dev', order: 0 }];
+
+    const model = buildOrganizerModel({
+      sections,
+      products,
+      assignments,
+      noSectionOverrides: [],
+      activeSectionId: 'section-dev',
+    });
+
+    expect(model.activeSectionIds.has('section-dev')).toBe(true);
+    expect(model.activeSectionIds.has('section-media')).toBe(false);
   });
 });
