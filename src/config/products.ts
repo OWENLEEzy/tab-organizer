@@ -162,5 +162,3 @@ export function productForHostname(hostname: string): ProductInfo {
 
   return fallbackProductForHostname(normalized);
 }
-
-export const KNOWN_PRODUCT_KEYS = new Set(PRODUCT_RULES.map((rule) => rule.key));

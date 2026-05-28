@@ -166,7 +166,7 @@ export default defineConfig([
     },
   },
 
-  // Rule 3: readStorage/updateStorage restricted — stores should use domain adapters
+  // Rule 3: readStorage restricted — stores should use domain adapters
   {
     files: ['src/stores/**/*.ts'],
     ignores: ['src/__tests__/**'],
@@ -177,8 +177,8 @@ export default defineConfig([
           patterns: [
             {
               group: ['**/utils/storage'],
-              importNames: ['readStorage', 'updateStorage'],
-              message: 'Stores must use domain readers/writers (readSettings, readGroupOrder, readWorkspaces, writeWorkspaces, etc.) instead of readStorage/updateStorage.',
+              importNames: ['readStorage'],
+              message: 'Stores must use domain readers/writers (readSettings, readGroupOrder, readWorkspaces, writeWorkspaces, etc.) instead of readStorage.',
             },
           ],
         },
@@ -206,7 +206,7 @@ export default defineConfig([
     },
   },
 
-  // Rule 5: Components must not import stores directly
+  // Rule 5: Components must not import stores, controllers, storage, or access chrome APIs
   {
     files: ['src/newtab/components/**/*.tsx'],
     rules: {
@@ -216,25 +216,125 @@ export default defineConfig([
           patterns: [
             {
               group: ['**/stores/*'],
-              message: 'Components must not import stores directly. Pass data and handlers via props from the page orchestrator (App.tsx).',
+              message: 'Components must not import stores. Pass data and callbacks from controllers/App.',
+            },
+            {
+              group: ['**/newtab/controllers/*', '**/controllers/*'],
+              message: 'Components must not import controllers. Controllers compose components, never the reverse.',
+            },
+            {
+              group: ['**/utils/storage'],
+              message: 'Components must not import storage utilities. Use props and controller actions.',
             },
           ],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.name='chrome']",
+          message: 'Components must not access chrome.* APIs. Route Chrome interactions through controllers or stores.',
+        },
+        {
+          selector: "MemberExpression[object.object.name='chrome']",
+          message: 'Components must not access chrome.* APIs. Route Chrome interactions through controllers or stores.',
         },
       ],
     },
   },
 
-  // Rule 6: Components must not import storage utilities
+  // Rule 6: Pure newtab hooks must not import stores, storage, or access chrome APIs
   {
-    files: ['src/newtab/components/**/*.tsx'],
+    files: ['src/newtab/hooks/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             {
+              group: ['**/stores/*'],
+              message: 'Pure newtab hooks must not import stores. Move orchestration to src/newtab/controllers.',
+            },
+            {
               group: ['**/utils/storage'],
-              message: 'Components must not import storage utilities. Data flows through stores and props, not direct storage access.',
+              message: 'Pure newtab hooks must not import storage utilities. Move persistence orchestration to controllers or stores.',
+            },
+          ],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.name='chrome']",
+          message: 'Pure newtab hooks must not access chrome.* APIs. Move runtime coordination to controllers.',
+        },
+        {
+          selector: "MemberExpression[object.object.name='chrome']",
+          message: 'Pure newtab hooks must not access chrome.* APIs. Move runtime coordination to controllers.',
+        },
+      ],
+    },
+  },
+  // Rule 7: src/lib must stay pure and independent
+  {
+    files: ['src/lib/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../utils/*', '**/utils/*'],
+              message: 'src/lib is pure domain logic and must not import src/utils adapters.',
+            },
+            {
+              group: ['../stores/*', '**/stores/*'],
+              message: 'src/lib must not import stores.',
+            },
+            {
+              group: ['../newtab/*', '**/newtab/*'],
+              message: 'src/lib must not import newtab modules.',
+            },
+            {
+              group: ['react', 'react-dom', 'zustand'],
+              message: 'src/lib must stay framework-independent.',
+            },
+          ],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.name='chrome']",
+          message: 'src/lib must not access chrome.* APIs.',
+        },
+        {
+          selector: "MemberExpression[object.object.name='chrome']",
+          message: 'src/lib must not access chrome.* APIs.',
+        },
+      ],
+    },
+  },
+
+  // Rule 8: src/utils is adapter layer without app imports
+  {
+    files: ['src/utils/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../stores/*', '**/stores/*'],
+              message: 'src/utils is an adapter layer and must not import stores.',
+            },
+            {
+              group: ['../newtab/*', '**/newtab/*'],
+              message: 'src/utils is an adapter layer and must not import newtab modules.',
+            },
+            {
+              group: ['react', 'react-dom', 'zustand'],
+              message: 'src/utils must stay framework-independent.',
             },
           ],
         },

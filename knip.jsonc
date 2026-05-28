@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/newtab/main.tsx",
+    "src/background/index.ts"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}"
+  ],
+  "ignore": [
+    "src/**/*.test.{ts,tsx}",
+    "src/__tests__/**",
+    "src/a11y/**",
+    "src/e2e/**"
+  ],
+  "ignoreDependencies": [
+    "@dnd-kit/core",
+    "@dnd-kit/sortable",
+    "@dnd-kit/utilities",
+    "react",
+    "react-dom",
+    "zustand"
+  ]
+}

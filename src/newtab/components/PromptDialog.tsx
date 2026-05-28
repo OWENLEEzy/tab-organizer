@@ -112,7 +112,7 @@ export function PromptDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="prompt-dialog-title"
-        className="border border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-sm animate-[fadeUp_0.3s_ease_both] p-6 shadow-2xl rounded-card"
+        className="border border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-sm animate-[fadeUp_var(--motion-enter)_ease_both] p-6 shadow-2xl rounded-card"
       >
         <h3
           id="prompt-dialog-title"

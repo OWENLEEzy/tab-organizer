@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isRealTab, sanitizeUrl, getHostname } from '../utils/url';
+import { isRealTab, sanitizeUrl, getHostname } from '../lib/url-rules';
 
 describe('isRealTab', () => {
   it('returns true for https URLs', () => {

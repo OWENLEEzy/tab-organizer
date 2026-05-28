@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
-import { DomainCard } from '../newtab/components/DomainCard';
-import { ProductTable } from '../newtab/components/ProductTable';
-import { TabChip } from '../newtab/components/TabChip';
+import { I18nProvider } from '../newtab/providers/I18nProvider';
+import { DomainCard } from '../newtab/components/tabs/DomainCard';
+import { ProductTable } from '../newtab/components/tabs/ProductTable';
+import { TabChip } from '../newtab/components/tabs/TabChip';
 import type { Tab, TabGroup } from '../types';
 
 afterEach(() => {
@@ -47,14 +48,16 @@ describe('Chrome favicon rendering', () => {
   it('renders a tab chip with the Chrome-provided favicon URL', () => {
     const favicon = 'https://api-docs.deepseek.com/favicon.ico';
     const { container } = render(
-      <TabChip
-        url="https://api-docs.deepseek.com/quick_start/token_usage"
-        title="Token Usage - Api Docs"
-        favIconUrl={favicon}
-        duplicateCount={1}
-        onFocus={() => {}}
-        onClose={() => {}}
-      />,
+      <I18nProvider>
+        <TabChip
+          url="https://api-docs.deepseek.com/quick_start/token_usage"
+          title="Token Usage - Api Docs"
+          favIconUrl={favicon}
+          duplicateCount={1}
+          onFocus={() => {}}
+          onClose={() => {}}
+        />
+      </I18nProvider>,
     );
 
     expect(container.querySelector('img')?.getAttribute('src')).toBe(favicon);
@@ -68,16 +71,18 @@ describe('Chrome favicon rendering', () => {
     ]);
 
     const { container } = render(
-      <DomainCard
-        group={group}
-        onCloseDomain={() => {}}
-        onCloseDuplicates={() => {}}
-        onCloseTab={() => {}}
-        onFocusTab={() => {}}
-      />,
+      <I18nProvider>
+        <DomainCard
+          group={group}
+          onCloseDomain={() => {}}
+          onCloseDuplicates={() => {}}
+          onCloseTab={() => {}}
+          onFocusTab={() => {}}
+        />
+      </I18nProvider>,
     );
 
-    expect(container.querySelector('img')?.getAttribute('src')).toBe(favicon);
+    expect(container.querySelector('.app-card .border-b img.favicon')?.getAttribute('src')).toBe(favicon);
   });
 
   it('renders a product table row with the first Chrome-provided favicon URL in the group', () => {
@@ -88,22 +93,24 @@ describe('Chrome favicon rendering', () => {
     ]);
 
     const { container } = render(
-      <ProductTable
-        items={[group]}
-        groups={[]}
-        assignmentByItemId={new Map()}
-        onMoveItem={() => {}}
-        onCloseProduct={() => {}}
-        onCloseDuplicates={() => {}}
-        onFocusTab={() => {}}
-        expandedDomains={new Set()}
-        onToggleExpanded={() => {}}
-        onCloseTab={() => {}}
-        onChipClick={() => {}}
-        selectedUrls={new Set()}
-        closingUrls={new Set()}
-        focusedUrl={null}
-      />,
+      <I18nProvider>
+        <ProductTable
+          items={[group]}
+          sections={[]}
+          assignmentByItemId={new Map()}
+          onMoveItem={() => {}}
+          onCloseProduct={() => {}}
+          onCloseDuplicates={() => {}}
+          onFocusTab={() => {}}
+          expandedDomains={new Set()}
+          onToggleExpanded={() => {}}
+          onCloseTab={() => {}}
+          onChipClick={() => {}}
+          selectedUrls={new Set()}
+          closingUrls={new Set()}
+          focusedUrl={null}
+        />
+      </I18nProvider>,
     );
 
     expect(container.querySelector('.table-icon')?.getAttribute('src')).toBe(favicon);
@@ -126,15 +133,17 @@ describe('Chrome favicon rendering', () => {
     };
 
     const { container } = render(
-      <ProductTable
-        items={[first, second]}
-        groups={[]}
-        assignmentByItemId={new Map()}
-        onMoveItem={() => {}}
-        onCloseProduct={() => {}}
-        onCloseDuplicates={() => {}}
-        onFocusTab={() => {}}
-      />,
+      <I18nProvider>
+        <ProductTable
+          items={[first, second]}
+          sections={[]}
+          assignmentByItemId={new Map()}
+          onMoveItem={() => {}}
+          onCloseProduct={() => {}}
+          onCloseDuplicates={() => {}}
+          onFocusTab={() => {}}
+        />
+      </I18nProvider>,
     );
 
     expect([...container.querySelectorAll('.product-table-name > span:last-child')]
@@ -143,13 +152,15 @@ describe('Chrome favicon rendering', () => {
 
   it('falls back to initials when favicon is missing or fails to load', () => {
     const { container, getAllByText } = render(
-      <DomainCard
-        group={makeGroup([makeTab({ url: 'https://api-docs.deepseek.com/a', favIconUrl: '' })])}
-        onCloseDomain={() => {}}
-        onCloseDuplicates={() => {}}
-        onCloseTab={() => {}}
-        onFocusTab={() => {}}
-      />,
+      <I18nProvider>
+        <DomainCard
+          group={makeGroup([makeTab({ url: 'https://api-docs.deepseek.com/a', favIconUrl: '' })])}
+          onCloseDomain={() => {}}
+          onCloseDuplicates={() => {}}
+          onCloseTab={() => {}}
+          onFocusTab={() => {}}
+        />
+      </I18nProvider>,
     );
 
     expect(container.querySelector('img')).toBeNull();
@@ -158,14 +169,16 @@ describe('Chrome favicon rendering', () => {
 
   it('falls back to a tab initial when a tab favicon image fails', () => {
     const { container, getByText } = render(
-      <TabChip
-        url="https://api-docs.deepseek.com/quick_start/token_usage"
-        title="DeepSeek usage"
-        favIconUrl="https://api-docs.deepseek.com/missing.ico"
-        duplicateCount={1}
-        onFocus={() => {}}
-        onClose={() => {}}
-      />,
+      <I18nProvider>
+        <TabChip
+          url="https://api-docs.deepseek.com/quick_start/token_usage"
+          title="DeepSeek usage"
+          favIconUrl="https://api-docs.deepseek.com/missing.ico"
+          duplicateCount={1}
+          onFocus={() => {}}
+          onClose={() => {}}
+        />
+      </I18nProvider>,
     );
 
     const img = container.querySelector('img');

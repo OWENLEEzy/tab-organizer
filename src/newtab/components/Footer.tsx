@@ -4,6 +4,8 @@ import { useI18n } from '../hooks/useI18n';
 interface FooterProps {
   tabCount: number;
   duplicateCount: number;
+  groupCount?: number;
+  sectionCount?: number;
   alerts?: FooterAlert[];
 }
 
@@ -35,7 +37,13 @@ function footerReducer(state: FooterState, action: FooterAction): FooterState {
   }
 }
 
-export function Footer({ tabCount, duplicateCount, alerts = [] }: FooterProps): React.ReactElement {
+export function Footer({
+  tabCount,
+  duplicateCount,
+  groupCount = 0,
+  sectionCount = 0,
+  alerts = [],
+}: FooterProps): React.ReactElement {
   const [state, dispatch] = useReducer(footerReducer, { popping: false });
   const prevCount = useRef(tabCount);
   const { t } = useI18n();
@@ -61,7 +69,7 @@ export function Footer({ tabCount, duplicateCount, alerts = [] }: FooterProps): 
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-1.5">
             <span
-              className={`font-body text-text-primary inline-block text-xs font-bold${state.popping ? ' animate-[countPop_0.3s_ease]' : ''}`}
+              className={`font-body text-text-primary inline-block text-xs font-bold${state.popping ? ' animate-[countPop_var(--motion-count-pop)_ease]' : ''}`}
             >
               {tabCount}
             </span>
@@ -70,10 +78,26 @@ export function Footer({ tabCount, duplicateCount, alerts = [] }: FooterProps): 
           <div className="h-3 w-px bg-border-color" />
           <div className="flex items-center gap-1.5">
             <span className="font-body text-text-primary inline-block text-xs font-bold">
-              {duplicateCount}
+              {groupCount}
             </span>
-            <span className="normal-case">{t('metricDuplicates')}</span>
+            <span className="normal-case">{t('metricGroups')}</span>
           </div>
+          <div className="h-3 w-px bg-border-color" />
+          <div className="flex items-center gap-1.5">
+            <span className="font-body text-text-primary inline-block text-xs font-bold">
+              {sectionCount}
+            </span>
+            <span className="normal-case">{t('metricSections')}</span>
+          </div>
+          <div className="h-3 w-px bg-border-color" />
+          {duplicateCount > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="font-body text-text-primary inline-block text-xs font-bold">
+                {duplicateCount}
+              </span>
+              <span className="normal-case">{t('metricDuplicates')}</span>
+            </div>
+          )}
           {alerts.map((alert) => (
             <div key={alert.id} className="inline-flex items-center gap-2 rounded-full border border-border-color/30 bg-bg-card/50 px-2.5 py-0.5">
               <span className="normal-case text-accent-amber">{alert.label}</span>

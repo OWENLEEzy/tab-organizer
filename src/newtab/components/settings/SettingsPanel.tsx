@@ -1,12 +1,11 @@
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
-import type { CustomGroup, AppSettings, Section } from '../../types';
-import { ACCENT_OPTIONS, type AccentKey } from '../../config/themes';
-import { useI18n } from '../hooks/useI18n';
+import type { CustomGroup, AppSettings, Section } from '../../../types';
+import { ACCENT_OPTIONS, type AccentKey } from '../../../config/themes';
+import { useI18n } from '../../hooks/useI18n';
 
 // ─── Constants ────────────────────────────────────────────────────────
 
 const DEFAULT_EMPTY_GROUPS: Section[] = [];
-const FALLBACK_APP_VERSION = '2.0.0';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -42,6 +41,8 @@ interface SettingsPanelProps {
   keyBindings?: AppSettings['keyBindings'];
   onUpdateKeyBinding?: (key: keyof AppSettings['keyBindings'], binding: string) => void;
   onResetKeyBindings?: () => void;
+  // App version
+  appVersion: string;
 }
 
 type TabId = 'general' | 'custom-groups' | 'sections' | 'shortcuts';
@@ -50,11 +51,6 @@ interface TabItem {
   id: TabId;
   label: string;
   icon: React.ReactNode;
-}
-
-function getAppVersion(): string {
-  if (typeof chrome === 'undefined') return FALLBACK_APP_VERSION;
-  return chrome.runtime?.getManifest?.().version ?? FALLBACK_APP_VERSION;
 }
 
 // ─── Component ────────────────────────────────────────────────────────
@@ -87,12 +83,12 @@ export function SettingsPanel({
   keyBindings,
   onUpdateKeyBinding = () => {},
   onResetKeyBindings = () => {},
+  appVersion,
 }: SettingsPanelProps): React.ReactElement | null {
   const panelRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('general');
   const { t } = useI18n();
-  const appVersion = getAppVersion();
 
   const onCloseEffect = useEffectEvent(onClose);
 
@@ -242,7 +238,7 @@ export function SettingsPanel({
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
-        className="border border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-2xl animate-[fadeUp_0.3s_ease_both] overflow-hidden max-h-[85vh] h-[550px] rounded-card shadow-2xl flex"
+        className="border border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-2xl animate-[fadeUp_var(--motion-enter)_ease_both] overflow-hidden max-h-[85vh] h-[550px] rounded-card shadow-2xl flex"
       >
         {/* Left Column - Navigation */}
         <div className="w-48 border-r border-border-light/40 dark:border-border-dark/40 bg-surface-light/40 dark:bg-surface-dark/40 flex flex-col p-4 gap-1 shrink-0 select-none overflow-y-auto">

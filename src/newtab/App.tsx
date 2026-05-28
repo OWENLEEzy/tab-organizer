@@ -1,121 +1,53 @@
 import React from 'react';
-import type { CustomGroup } from '../types';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { LoadingState } from './components/LoadingState';
-import { ProductTableMemo as ProductTable } from './components/ProductTable';
-import { SelectionBar } from './components/SelectionBar';
-import { EmptyState } from './components/EmptyState';
+import { ErrorBoundary } from './components/states/ErrorBoundary';
+import { LoadingState } from './components/states/LoadingState';
+import { ProductTableMemo as ProductTable } from './components/tabs/ProductTable';
+import { SelectionBar } from './components/tabs/SelectionBar';
+import { EmptyState } from './components/states/EmptyState';
 import { Footer } from './components/Footer';
-import { Toast } from './components/Toast';
+import { Toast } from './components/states/Toast';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { PromptDialog } from './components/PromptDialog';
 import { DashboardShell } from './components/layout/DashboardShell';
 import { DashboardHeader } from './components/layout/DashboardHeader';
-import { HistoryPanel } from './components/HistoryPanel';
+import { HistoryPanel } from './components/history/HistoryPanel';
 import type { FooterAlert } from './components/Footer';
-import { useAppLogic } from './hooks/useAppLogic';
+import { useDashboardController } from './controllers/useDashboardController';
 import { useI18n } from './hooks/useI18n';
 import { useTheme } from './hooks/useTheme';
-import { parseImportedSettings } from './lib/settings-import';
+import { useSettingsImportExport } from './controllers/useSettingsImportExport';
 
 // ─── Constants ────────────────────────────────────────────────────────
 
 const SettingsPanel = React.lazy(() =>
-  import('./components/SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
+  import('./components/settings/SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
 );
 
 const DndOrganizer = React.lazy(() =>
-  import('./components/DndOrganizer').then((module) => ({ default: module.DndOrganizer })),
+  import('./components/organizer/DndOrganizer').then((module) => ({ default: module.DndOrganizer })),
 );
 
 // ─── Component ────────────────────────────────────────────────────────
 
 export function App(): React.ReactElement {
-  const { state, stores, derived, handlers, dispatch } = useAppLogic();
+  const { state, stores, derived, handlers, dispatch } = useDashboardController();
   const { t } = useI18n();
 
   const { tabStore, settingsStore } = stores;
   const { settings } = settingsStore;
   const { history, viewMode } = tabStore;
 
+  const appVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
+    ? chrome.runtime.getManifest().version
+    : '2.0.0';
+
   useTheme(settings.theme);
 
-  const handleExportConfig = () => {
-    const config = {
-      version: '1.0',
-      settings: settingsStore.settings,
-      sections: tabStore.sections,
-      sectionAssignments: tabStore.sectionAssignments,
-    };
-    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    try {
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `tab-organizer-settings-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-    handlers.showToast(t('toastSettingsExported'));
-  };
-
-  const handleImportConfig = async (jsonText: string) => {
-    try {
-      const parsed = JSON.parse(jsonText);
-      if (!parsed || typeof parsed !== 'object') {
-        throw new Error('Invalid JSON');
-      }
-
-      // Version validation for migration support
-      const configVersion = parsed.version;
-      if (typeof configVersion !== 'string' || !/^\d+\.\d+$/.test(configVersion)) {
-        throw new Error('Invalid or missing config version');
-      }
-
-      // Restore preferences
-      if (parsed.settings && typeof parsed.settings === 'object') {
-        const importedSettings = parseImportedSettings(parsed.settings);
-        if (importedSettings.theme) await settingsStore.setTheme(importedSettings.theme);
-        if (importedSettings.soundEnabled !== undefined && importedSettings.soundEnabled !== settingsStore.settings.soundEnabled) await settingsStore.toggleSound();
-        if (importedSettings.confettiEnabled !== undefined && importedSettings.confettiEnabled !== settingsStore.settings.confettiEnabled) await settingsStore.toggleConfetti();
-        if (importedSettings.maxChipsVisible !== undefined) await settingsStore.setMaxChipsVisible(importedSettings.maxChipsVisible);
-        if (importedSettings.staleThresholdDays !== undefined) await settingsStore.setStaleThresholdDays(importedSettings.staleThresholdDays);
-        if (importedSettings.groupSortBy) await settingsStore.setGroupSortBy(importedSettings.groupSortBy);
-
-        if (importedSettings.customGroups) {
-          // Clear all existing custom groups (parallel)
-          await Promise.all(settingsStore.settings.customGroups.map(cg =>
-            settingsStore.removeCustomGroup(cg.groupKey)
-          ));
-          // Add imported custom groups (parallel)
-          await Promise.all(importedSettings.customGroups.map((cg: CustomGroup) =>
-            settingsStore.addCustomGroup(cg)
-          ));
-        }
-
-        if (importedSettings.keyBindings) {
-          const updates: Promise<void>[] = [];
-          for (const [key, binding] of Object.entries(importedSettings.keyBindings)) {
-            updates.push(settingsStore.updateKeyBinding(key as keyof typeof settings.keyBindings, binding));
-          }
-          await Promise.all(updates);
-        }
-      }
-
-      // Restore sections and assignments
-      if (Array.isArray(parsed.sections)) {
-        const sections = parsed.sections;
-        const sectionAssignments = Array.isArray(parsed.sectionAssignments) ? parsed.sectionAssignments : [];
-        await tabStore.importBackup(sections, sectionAssignments);
-      }
-
-      handlers.showToast(t('toastSettingsImported'));
-    } catch (err) {
-      console.error('[Tab Organizer] Failed to import settings:', err);
-      handlers.showToast(t('toastImportFailed'));
-    }
-  };
+  const { handleExportConfig, handleImportConfig } = useSettingsImportExport({
+    settingsStore,
+    tabStore,
+    showToast: handlers.showToast,
+  });
 
   if (state.loading || state.tabsLoading) {
     return <LoadingState />;
@@ -163,7 +95,7 @@ export function App(): React.ReactElement {
           <DashboardHeader
             title={t('titleOpenTabs')}
             hasGroups={!state.showEmptyState}
-            groupCount={state.visibleSectionCount}
+            sectionCount={state.visibleSectionCount}
             searchQuery={state.searchQuery}
             onSearchChange={(q) => dispatch({ type: 'SET_SEARCH_QUERY', query: q })}
             resultCount={state.filteredTabCount}
@@ -177,8 +109,8 @@ export function App(): React.ReactElement {
             onOpenSettings={() => dispatch({ type: 'SET_SETTINGS_OPEN', open: true })}
             isSidebarExpanded={state.isSidebarExpanded}
             onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
-            sections={derived.orderedSections}
-            sectionIds={[null, ...derived.orderedSections.map((g) => g.id)]}
+            sections={derived.contentSections}
+            sectionIds={derived.sectionNavigationIds}
             activeSectionId={tabStore.activeSectionId}
             onSectionChange={tabStore.setActiveSection}
             isSectionSwitcherFocused={state.sectionSwitcherFocused}
@@ -196,7 +128,7 @@ export function App(): React.ReactElement {
           />
         }
         toolbar={null}
-        footer={<Footer tabCount={state.totalTabs} duplicateCount={state.totalDupes} alerts={footerAlerts} />}
+        footer={<Footer tabCount={state.totalTabs} duplicateCount={state.totalDupes} groupCount={derived.filteredProducts.length} sectionCount={state.visibleSectionCount} alerts={footerAlerts} />}
       >
         <div id="main-content" tabIndex={-1} className="active-section">
           {state.showEmptyState ? (
@@ -206,7 +138,7 @@ export function App(): React.ReactElement {
                 {state.parsedQuery.type === 'dupes' && (
                 <div
                   role="alert"
-                  className="rounded-card border-accent-amber/20 from-accent-amber/[0.04] to-accent-amber/[0.09] mb-4 flex animate-[fadeUp_0.5s_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
+                  className="rounded-card border-accent-amber/20 from-accent-amber/[0.04] to-accent-amber/[0.09] mb-4 flex animate-[fadeUp_var(--motion-banner)_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
                 >
                   <div className="flex items-center gap-4">
                     <div className="bg-accent-amber/10 flex size-9 shrink-0 items-center justify-center rounded-full">
@@ -238,7 +170,7 @@ export function App(): React.ReactElement {
                   <button
                     type="button"
                     onClick={() => handlers.handleSelectDuplicateTabs()}
-                    className="rounded-chip bg-accent-amber font-body focus-visible:ring-accent-amber/50 min-h-[var(--spacing-button-height)] cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
+                    className="rounded-chip bg-accent-amber font-body focus-visible:ring-accent-amber/50 min-h-[var(--spacing-button-height)] cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-[var(--motion-standard)] hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
                   >
                     {t('sweepDupeBtn')}
                   </button>
@@ -248,7 +180,7 @@ export function App(): React.ReactElement {
               {state.parsedQuery.type === 'stale' && (
                 <div
                   role="alert"
-                  className="rounded-card border-accent-blue/20 from-accent-blue/[0.04] to-accent-blue/[0.09] mb-4 flex animate-[fadeUp_0.5s_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
+                  className="rounded-card border-accent-blue/20 from-accent-blue/[0.04] to-accent-blue/[0.09] mb-4 flex animate-[fadeUp_var(--motion-banner)_ease_both] items-center justify-between border bg-gradient-to-br px-6 py-4"
                 >
                   <div className="flex items-center gap-4">
                     <div className="bg-accent-blue/10 flex size-9 shrink-0 items-center justify-center rounded-full">
@@ -280,7 +212,7 @@ export function App(): React.ReactElement {
                   <button
                     type="button"
                     onClick={() => handlers.handleSelectStaleTabs(settings.staleThresholdDays ?? 3)}
-                    className="rounded-chip bg-accent-blue font-body focus-visible:ring-accent-primary/50 min-h-[var(--spacing-button-height)] cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-200 hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
+                    className="rounded-chip bg-accent-blue font-body focus-visible:ring-accent-primary/50 min-h-[var(--spacing-button-height)] cursor-pointer px-5 py-2 text-xs font-semibold whitespace-nowrap text-white transition-all duration-[var(--motion-standard)] hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none"
                   >
                     {t('sweepStaleBtn')}
                   </button>
@@ -288,7 +220,7 @@ export function App(): React.ReactElement {
               )}
 
               {derived.filteredProducts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center animate-[fadeIn_0.3s_ease]">
+                <div className="flex flex-col items-center justify-center py-16 text-center animate-[fadeIn_var(--motion-enter)_ease]">
                   <div className="bg-surface-light dark:bg-surface-dark mb-4 flex size-16 items-center justify-center rounded-full border border-dashed border-border-light dark:border-border-dark text-text-secondary">
                     {state.parsedQuery.type === 'stale' ? (
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-8 text-accent-blue"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
@@ -322,7 +254,7 @@ export function App(): React.ReactElement {
               ) : viewMode === 'table' ? (
                 <ProductTable
                   items={derived.filteredProducts}
-                  groups={derived.orderedSections}
+                  sections={derived.manageableSections}
                   assignmentByItemId={derived.assignmentByItemId}
                   onMoveItem={handlers.handleMoveTableItem}
                   onCloseProduct={handlers.handleCloseProduct}
@@ -345,7 +277,7 @@ export function App(): React.ReactElement {
                     <DndOrganizer
                       filteredProducts={derived.filteredProducts}
                       unassignedProducts={derived.unassignedProducts}
-                      orderedSections={derived.orderedSections}
+                      orderedSections={derived.contentSections}
                       productsBySection={derived.productsBySection}
                       assignmentByItemId={derived.assignmentByItemId}
                       itemIdForProduct={derived.itemIdForProduct}
@@ -368,6 +300,7 @@ export function App(): React.ReactElement {
                       onChipClick={handlers.handleChipClick}
                       onToggleExpanded={handlers.handleToggleExpanded}
                       searchQuery={state.searchQuery}
+                      activeSectionId={tabStore.activeSectionId}
                     />
                   </React.Suspense>
                 </ErrorBoundary>
@@ -437,6 +370,7 @@ export function App(): React.ReactElement {
             keyBindings={settings.keyBindings}
             onUpdateKeyBinding={settingsStore.updateKeyBinding}
             onResetKeyBindings={settingsStore.resetKeyBindings}
+            appVersion={appVersion}
           />
         </React.Suspense>
       )}

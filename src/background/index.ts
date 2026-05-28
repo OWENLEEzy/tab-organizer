@@ -1,5 +1,5 @@
 import { updateBadge } from '../utils/badge';
-import { getTabDomain, isRealTab } from '../utils/url';
+import { getTabDomain, isRealTab } from '../lib/url-rules';
 import { getDashboardFocusUrl, getDashboardUrl, isDashboardUrl } from './dashboard';
 import { buildHistorySnapshot } from '../lib/history-snapshots';
 import { promoteHistoryCandidate, updateHistoryCandidate } from '../utils/storage';
@@ -146,7 +146,7 @@ refreshBadge();
 void captureHistoryCandidate();
 
 chrome.commands.onCommand.addListener((command) => {
-  if (command === 'open-section-switcher') {
+  if (command === 'open-space-switcher') {
     void openTabOrganizerDashboard({ focusSectionSwitcher: true });
   }
 });

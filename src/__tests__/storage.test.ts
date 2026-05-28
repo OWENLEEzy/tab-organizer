@@ -1,9 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   readStorage,
-  saveTabForLater,
-  checkOffSavedTab,
-  dismissSavedTab,
   writeGroupOrder,
   writeSettings,
   updateHistoryCandidate,
@@ -74,8 +71,6 @@ describe('readStorage', () => {
   it('returns default schema when storage is empty', async () => {
     const result = await readStorage();
     expect(result.schemaVersion).toBe(5);
-    expect(result.deferred).toEqual([]);
-    expect(result.workspaces).toEqual([]);
     expect(result.settings.theme).toBe('clay');
     expect(result.settings.groupSortBy).toBe('count');
     expect(result.groupOrder).toEqual({});
@@ -99,11 +94,42 @@ describe('readStorage', () => {
     });
   });
 
+  it('maps legacy space shortcut settings to section shortcut settings', async () => {
+    storage['settings'] = {
+      keyBindings: {
+        switchSpaceN: 'Alt+{n}',
+        switchSpaceAll: 'Alt+0',
+        focusSearch: 'Meta+K',
+      },
+    };
+
+    const result = await readStorage();
+
+    expect(result.settings.keyBindings.switchSectionN).toBe('Alt+{n}');
+    expect(result.settings.keyBindings.switchSectionAll).toBe('Alt+0');
+    expect(result.settings.keyBindings.focusSearch).toBe('Meta+K');
+    expect(result.settings.keyBindings.cyclePrev).toBe('ArrowLeft');
+  });
+
+  it('prefers current section shortcuts over legacy space shortcut settings', async () => {
+    storage['settings'] = {
+      keyBindings: {
+        switchSpaceN: 'Alt+{n}',
+        switchSpaceAll: 'Alt+0',
+        switchSectionN: 'Shift+{n}',
+        switchSectionAll: 'Shift+0',
+      },
+    };
+
+    const result = await readStorage();
+
+    expect(result.settings.keyBindings.switchSectionN).toBe('Shift+{n}');
+    expect(result.settings.keyBindings.switchSectionAll).toBe('Shift+0');
+  });
+
   it('migrates from v0 (no schemaVersion) to current schema', async () => {
-    storage['deferred'] = [{ id: '1', url: 'https://example.com', title: 'Test', domain: 'example.com', savedAt: '2026-01-01T00:00:00.000Z', completed: false, dismissed: false }];
     const result = await readStorage();
     expect(result.schemaVersion).toBe(5);
-    expect(result.deferred).toHaveLength(1);
     expect(result.groupOrder).toEqual({});
     expect(result.sections).toEqual([]);
     expect(result.sectionAssignments).toEqual([]);
@@ -372,39 +398,6 @@ describe('history storage', () => {
   });
 });
 
-describe('saveTabForLater', () => {
-  it('creates a SavedTab and persists it', async () => {
-    const saved = await saveTabForLater({ url: 'https://github.com/test', title: 'Test Repo' });
-    expect(saved.url).toBe('https://github.com/test');
-    expect(saved.title).toBe('Test Repo');
-    expect(saved.domain).toBe('github.com');
-    expect(saved.completed).toBe(false);
-    expect(saved.dismissed).toBe(false);
-
-    const storage2 = await readStorage();
-    expect(storage2.deferred).toHaveLength(1);
-  });
-});
-
-describe('checkOffSavedTab', () => {
-  it('marks a saved tab as completed', async () => {
-    const saved = await saveTabForLater({ url: 'https://example.com', title: 'Test' });
-    await checkOffSavedTab(saved.id);
-    const result = await readStorage();
-    expect(result.deferred[0].completed).toBe(true);
-    expect(result.deferred[0].completedAt).toBeDefined();
-  });
-});
-
-describe('dismissSavedTab', () => {
-  it('marks a saved tab as dismissed', async () => {
-    const saved = await saveTabForLater({ url: 'https://example.com', title: 'Test' });
-    await dismissSavedTab(saved.id);
-    const result = await readStorage();
-    expect(result.deferred[0].dismissed).toBe(true);
-  });
-});
-
 describe('writeGroupOrder', () => {
   it('persists group ordering to storage', async () => {
     await writeGroupOrder({ 'github.com': 1, 'google.com': 0 });
@@ -414,8 +407,6 @@ describe('writeGroupOrder', () => {
 
   it('does not clobber unrelated settings when another write lands first', async () => {
     storage['schemaVersion'] = 4;
-    storage['deferred'] = [];
-    storage['workspaces'] = [];
     storage['settings'] = DEFAULT_SETTINGS;
     storage['groupOrder'] = {};
 
@@ -430,8 +421,6 @@ describe('writeGroupOrder', () => {
       if (readCount === 1) {
         const staleSnapshot = {
           schemaVersion: 4,
-          deferred: [],
-          workspaces: [],
           settings: DEFAULT_SETTINGS,
           groupOrder: {},
         };
@@ -496,7 +485,7 @@ describe('organizer storage mutations', () => {
     expect(result.unsortedOverrides).toEqual(['github']);
   });
 
-  it('assigns and unassigns products by merging with current storage', async () => {
+  it('assigns products by clearing No section overrides and moves unassigned products into No section overrides', async () => {
     storage['schemaVersion'] = 4;
     storage['sections'] = [{ id: 'group-1', name: 'Group', order: 0 }];
     storage['sectionAssignments'] = [{ productKey: 'github', sectionId: 'group-1', order: 0 }];
@@ -514,7 +503,7 @@ describe('organizer storage mutations', () => {
     expect(next.unsortedOverrides).toEqual(['github', 'vercel']);
   });
 
-  it('does not duplicate an existing unsorted override when unassigning', async () => {
+  it('does not duplicate an existing No section override when unassigning', async () => {
     storage['schemaVersion'] = 4;
     storage['unsortedOverrides'] = ['github'];
 
@@ -531,7 +520,8 @@ describe('reconcileOrganizerState', () => {
     // Check if the default Dev section is present
     const devSection = state.sections.find(g => g.id === 'section-dev');
     expect(devSection).toBeDefined();
-    expect(devSection?.emoji).toBe('🛠');
+    expect(devSection?.name).toBe('Dev');
+    expect(devSection?.autoRules?.[0]?.pattern).toContain('github');
   });
 
   it('preserves an intentionally persisted empty sections list', async () => {

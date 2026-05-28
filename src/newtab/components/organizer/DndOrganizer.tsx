@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import { closestCenter, DndContext, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import type { Section, TabGroup } from '../../types';
-import { DomainCard } from './DomainCard';
-import { useI18n } from '../hooks/useI18n';
+import type { Section, TabGroup } from '../../../types';
+import { DomainCard } from '../tabs/DomainCard';
+import { useI18n } from '../../hooks/useI18n';
 
 const UNASSIGNED_SECTION_ID = 'section:unassigned';
 
@@ -138,16 +138,17 @@ function DndGroupBoard({
   return (
     <section ref={setNodeRef} className={`organizer-group ${isOver ? 'is-over' : ''}`}>
       <div className="group-header">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="font-heading text-lg italic text-text-primary">
+        <div className="flex items-center gap-4 mb-1">
+          <div className="flex items-baseline gap-3 shrink-0">
+            <h2 className="font-heading text-xl italic text-text-primary font-normal">
               {title}
             </h2>
-            <span className="rounded-sm bg-surface-light px-2 py-0.5 font-body text-[var(--text-2xs)] font-bold uppercase tracking-widest text-text-secondary">
+            <span className="font-mono text-[0.65rem] font-bold uppercase tracking-[0.1em] text-text-muted">
               {tabCount}
             </span>
           </div>
-          <div className="section-actions flex items-center gap-1">
+          <div className="flex-1 h-[1px] bg-gradient-to-r from-border-color to-transparent opacity-80 mt-1"></div>
+          <div className="section-actions flex items-center gap-1 shrink-0">
             {section && (
               <>
                 <button
@@ -234,6 +235,7 @@ interface DndOrganizerProps {
   onChipClick: (url: string, event: React.MouseEvent) => void;
   onToggleExpanded: (domain: string) => void;
   searchQuery?: string;
+  activeSectionId?: string | null;
 }
 
 export function DndOrganizer({
@@ -262,6 +264,7 @@ export function DndOrganizer({
   onChipClick,
   onToggleExpanded,
   searchQuery = '',
+  activeSectionId = null,
 }: DndOrganizerProps): React.ReactElement {
   const { t } = useI18n();
   const [activeGroup, setActiveGroup] = useState<TabGroup | null>(null);
@@ -325,29 +328,37 @@ export function DndOrganizer({
 
   return (
     <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <DndGroupBoard
-        id={UNASSIGNED_SECTION_ID}
-        title={t('organizerUnsorted')}
-        items={unassignedProducts}
-        tabCount={unassignedProducts.reduce((sum, p) => sum + p.tabs.length, 0)}
-        {...sharedProps}
-      />
-      {orderedSections.map((group) => {
-        const items = productsBySection.get(group.id) ?? [];
-        return (
+      <div className="organizer-flow">
+        {(!activeSectionId || activeSectionId === UNASSIGNED_SECTION_ID) && unassignedProducts.length > 0 && (
           <DndGroupBoard
-            key={group.id}
-            id={`section:${group.id}`}
-            title={group.name}
-            section={group}
-            items={items}
-            tabCount={items.reduce((sum, p) => sum + p.tabs.length, 0)}
-            onRenameSection={onRenameSection}
-            onDeleteSection={onDeleteSection}
+            id={UNASSIGNED_SECTION_ID}
+            title={t('organizerUnsorted')}
+            items={unassignedProducts}
+            tabCount={unassignedProducts.reduce((sum, p) => sum + p.tabs.length, 0)}
             {...sharedProps}
           />
-        );
-      })}
+        )}
+        {orderedSections.map((group) => {
+          if (activeSectionId && activeSectionId !== group.id) return null;
+          
+          const items = productsBySection.get(group.id) ?? [];
+          if (items.length === 0) return null;
+
+          return (
+            <DndGroupBoard
+              key={group.id}
+              id={`section:${group.id}`}
+              title={group.name}
+              section={group}
+              items={items}
+              tabCount={items.reduce((sum, p) => sum + p.tabs.length, 0)}
+              onRenameSection={onRenameSection}
+              onDeleteSection={onDeleteSection}
+              {...sharedProps}
+            />
+          );
+        })}
+      </div>
       <DragOverlay>
         {activeGroup ? (
           <DomainCard

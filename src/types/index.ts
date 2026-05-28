@@ -47,30 +47,6 @@ export interface ProductInfo {
   iconDomain: string;
 }
 
-// ─── Saved for Later ─────────────────────────────────────────────
-
-export interface SavedTab {
-  id: string;
-  url: string;
-  title: string;
-  domain: string;
-  savedAt: string;
-  completed: boolean;
-  dismissed: boolean;
-  completedAt?: string;
-}
-
-// ─── Workspaces ──────────────────────────────────────────────────
-
-export interface Workspace {
-  id: string;
-  name: string;
-  icon: string;
-  savedTabs: SavedTab[];
-  createdAt: number;
-  updatedAt: number;
-  order: number;
-}
 
 // ─── Custom Groups ───────────────────────────────────────────────
 
@@ -96,7 +72,7 @@ export interface LandingPagePattern {
 
 export type ViewMode = 'cards' | 'table';
 
-export interface SectionAutoRule {
+interface SectionAutoRule {
   pattern: string;
   type: 'hostname';
 }
@@ -169,44 +145,15 @@ export interface AppSettings {
 
 export interface StorageSchema {
   schemaVersion: number;
-  deferred: SavedTab[];
-  workspaces: Workspace[];
   settings: AppSettings;
   groupOrder: Record<string, number>;
   sections: Section[];
   sectionAssignments: SectionAssignment[];
-  /** Product keys explicitly moved to Unsorted by the user — immune to auto-assignment. */
+  /** Product keys explicitly moved to No section by the user — immune to auto-assignment. */
   unsortedOverrides: string[];
   viewMode: ViewMode;
   historyCandidate: HistorySnapshot | null;
   history: HistorySnapshot[];
-}
-
-// ─── Store Types ─────────────────────────────────────────────────
-
-export interface TabState {
-  tabs: Tab[];
-  products: TabGroup[];
-  sections: Section[];
-  sectionAssignments: SectionAssignment[];
-  viewMode: ViewMode;
-  loading: boolean;
-  showAllWindows: boolean;
-}
-
-export interface SavedState {
-  active: SavedTab[];
-  archived: SavedTab[];
-  archiveSearch: string;
-}
-
-export interface WorkspaceState {
-  workspaces: Workspace[];
-  activeWorkspaceId: string | null;
-}
-
-export interface SettingsState extends AppSettings {
-  _hydrated: boolean;
 }
 
 // ─── Component Props ─────────────────────────────────────────────

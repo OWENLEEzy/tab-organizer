@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { groupTabsByDomain, autoAssignProductToSection, createSortComparator } from '../lib/tab-grouper';
+import { LOCAL_FILES_PRODUCT_KEY } from '../lib/url-rules';
 import type { Tab, Section, TabGroup } from '../types';
 
 function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
@@ -108,7 +109,7 @@ describe('groupTabsByDomain', () => {
     ];
 
     const groups = groupTabsByDomain(tabs);
-    const localGroup = groups.find((g) => g.domain === 'local-files');
+    const localGroup = groups.find((g) => g.domain === LOCAL_FILES_PRODUCT_KEY);
 
     expect(localGroup).toBeDefined();
     expect(localGroup!.tabs).toHaveLength(2);

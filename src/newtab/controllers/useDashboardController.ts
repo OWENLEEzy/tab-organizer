@@ -1,73 +1,23 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTabStore } from '../../stores/tab-store';
 import { useSettingsStore } from '../../stores/settings-store';
-import { useKeyboard } from './useKeyboard';
+import { useKeyboard } from '../hooks/useKeyboard';
 import { flattenVisibleTabs } from '../lib/visible-tabs';
-import { isTabOrganizerPage } from '../../utils/url';
-import type { TabGroup, Section } from '../../types';
-import { useUIState } from './useUIState';
-import { useTabHandlers } from './useTabHandlers';
-import { useI18n } from './useI18n';
+import type { TabGroup } from '../../types';
+import { useUIState } from '../hooks/useUIState';
+import { useTabActions } from './useTabActions';
+import { useI18n } from '../hooks/useI18n';
 import { DASHBOARD_SECTION_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
-import { isTabStale, analyzeDuplicates, getProductKey } from '../../lib/tab-utils';
+import { isTabStale } from '../../lib/staleness';
+import { analyzeDuplicates } from '../../lib/duplicate-analysis';
+import { getProductKey } from '../../lib/product-key';
 import { createSortComparator } from '../../lib/tab-grouper';
+import { parseSearchQuery, resolveSectionQueryTarget } from '../lib/search-commands';
+import { useChromeStorageSync } from './useChromeStorageSync';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 
-export interface CommandParsed {
-  type: 'dupes' | 'stale' | 'section' | 'text';
-  sectionToken?: string;
-  textQuery: string;
-}
-
-type SectionTarget = Pick<Section, 'id' | 'name' | 'order'>;
-
-export function parseSearchQuery(query: string): CommandParsed {
-  const trimmed = query.trim().toLowerCase();
-  
-  // 1. Match /dupe, /dupes, dupe, or dupes
-  const dupeMatch = trimmed.match(/^(\/?dupes?)(?:\s+(.*))?$/);
-  if (dupeMatch) {
-    const term = dupeMatch[1];
-    if (term.startsWith('/') || term === 'dupe' || term === 'dupes') {
-      return { type: 'dupes', textQuery: (dupeMatch[2] || '').trim() };
-    }
-  }
-  
-  // 2. Match /stale, /stales, stale, or stales
-  const staleMatch = trimmed.match(/^(\/?stales?)(?:\s+(.*))?$/);
-  if (staleMatch) {
-    const term = staleMatch[1];
-    if (term.startsWith('/') || term === 'stale' || term === 'stales') {
-      return { type: 'stale', textQuery: (staleMatch[2] || '').trim() };
-    }
-  }
-  
-  // 3. Match /section:SectionName, /sec:SectionName, /s:SectionName, etc. (with or without slash)
-  const sectionMatch = trimmed.match(/^(\/?(?:section|sec|s):)([^\s]*)(?:\s+(.*))?$/);
-  if (sectionMatch) {
-    return {
-      type: 'section',
-      sectionToken: sectionMatch[2] || '',
-      textQuery: (sectionMatch[3] || '').trim()
-    };
-  }
-  
-  return { type: 'text', textQuery: trimmed };
-}
-
-export function resolveSectionQueryTarget(token: string, sections: SectionTarget[]): SectionTarget | null {
-  const normalizedToken = token.trim().toLowerCase();
-  if (!normalizedToken) return null;
-
-  const idMatch = sections.find((section) => section.id.toLowerCase() === normalizedToken);
-  if (idMatch) return idMatch;
-
-  return [...sections]
-    .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))
-    .find((section) => section.name.trim().toLowerCase().includes(normalizedToken)) ?? null;
-}
 
 function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void {
   const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tab-url]'));
@@ -84,9 +34,9 @@ function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void
   }
 }
 
-export function useAppLogic() {
+export function useDashboardController() {
   const [loading, setLoading] = React.useState(true);
-  
+
   // ─── Modular Hooks ──────────────────────────────────────────────────
   const { state, dispatch, showToast } = useUIState();
   const {
@@ -130,9 +80,30 @@ export function useAppLogic() {
     return map;
   }, [sectionAssignments]);
 
-  const orderedSections = useMemo(
+  const manageableSections = useMemo(
     () => [...sections].sort((a, b) => a.order - b.order),
     [sections],
+  );
+
+  const navigationProductsBySection = useMemo(() => {
+    const result = new Map<string, TabGroup[]>();
+    for (const section of manageableSections) {
+      result.set(section.id, []);
+    }
+
+    for (const product of products) {
+      const sectionId = assignmentByItemId.get(groupAssignmentKey(product));
+      if (!sectionId) continue;
+      const bucket = result.get(sectionId);
+      if (bucket) bucket.push(product);
+    }
+
+    return result;
+  }, [assignmentByItemId, products, groupAssignmentKey, manageableSections]);
+
+  const contentSections = useMemo(
+    () => manageableSections.filter((section) => (navigationProductsBySection.get(section.id)?.length ?? 0) > 0),
+    [manageableSections, navigationProductsBySection],
   );
 
   // Debounce searchQuery for derived memos — avoids cascading recomputes on every keystroke.
@@ -168,7 +139,7 @@ export function useAppLogic() {
 
     // 1. Process /section:SectionName command
     if (parsedQuery.type === 'section') {
-      const targetSection = resolveSectionQueryTarget(parsedQuery.sectionToken ?? '', orderedSections);
+      const targetSection = resolveSectionQueryTarget(parsedQuery.sectionToken ?? '', contentSections);
       if (targetSection) {
         result = products.filter(p => {
           const itemKey = groupAssignmentKey(p);
@@ -219,7 +190,7 @@ export function useAppLogic() {
       }
     }
     return finalResult;
-  }, [products, debouncedSearchQuery, parsedQuery, tabStore.activeSectionId, assignmentByItemId, orderedSections, settings.staleThresholdDays, settings.groupSortBy]);
+  }, [products, debouncedSearchQuery, parsedQuery, tabStore.activeSectionId, assignmentByItemId, contentSections, settings.staleThresholdDays, settings.groupSortBy]);
 
   const unassignedProducts = useMemo(
     () => filteredProducts.filter((p) => !assignmentByItemId.has(groupAssignmentKey(p))),
@@ -228,15 +199,15 @@ export function useAppLogic() {
 
   const productsBySection = useMemo(() => {
     const result = new Map<string, TabGroup[]>();
-    for (const group of orderedSections) {
-      result.set(group.id, []);
+    for (const section of manageableSections) {
+      result.set(section.id, []);
     }
 
-    for (const p of filteredProducts) {
-      const sectionId = assignmentByItemId.get(groupAssignmentKey(p));
+    for (const product of filteredProducts) {
+      const sectionId = assignmentByItemId.get(groupAssignmentKey(product));
       if (!sectionId) continue;
       const bucket = result.get(sectionId);
-      if (bucket) bucket.push(p);
+      if (bucket) bucket.push(product);
     }
 
     for (const [sectionId, items] of result) {
@@ -255,14 +226,19 @@ export function useAppLogic() {
     }
 
     return result;
-  }, [assignmentByItemId, filteredProducts, groupAssignmentKey, orderedSections, sectionAssignments]);
+  }, [assignmentByItemId, filteredProducts, groupAssignmentKey, manageableSections, sectionAssignments]);
+
+  const sectionNavigationIds = useMemo(
+    () => [null, ...contentSections.map((section) => section.id)] as (string | null)[],
+    [contentSections],
+  );
 
   const flatChips = useMemo(() => {
     const visualProducts = viewMode === 'table'
       ? [...filteredProducts].sort((a, b) => a.order - b.order)
       : [
           ...unassignedProducts,
-          ...orderedSections.flatMap((group) => productsBySection.get(group.id) ?? []),
+          ...contentSections.flatMap((section) => productsBySection.get(section.id) ?? []),
         ];
 
     const isSearching = debouncedSearchQuery.trim().length > 0;
@@ -278,7 +254,7 @@ export function useAppLogic() {
   }, [
     filteredProducts,
     unassignedProducts,
-    orderedSections,
+    contentSections,
     productsBySection,
     viewMode,
     settings.maxChipsVisible,
@@ -293,10 +269,7 @@ export function useAppLogic() {
     [filteredProducts],
   );
 
-  const dashboardCount = useMemo(
-    () => tabs.filter((t) => isTabOrganizerPage(t.url)).length,
-    [tabs],
-  );
+  const dashboardCount = tabStore.dashboardCount;
 
   const totalDupes = useMemo(
     () => products.reduce((sum, p) => sum + p.duplicateCount, 0),
@@ -305,7 +278,7 @@ export function useAppLogic() {
 
   // ─── Handlers ──────────────────────────────────────────────────────
   const { t } = useI18n();
-  const handlers = useTabHandlers({
+  const handlers = useTabActions({
     settings,
     dispatch,
     showToast,
@@ -335,6 +308,12 @@ export function useAppLogic() {
     const cleanup = tabStore.startListeners();
     return cleanup;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useChromeStorageSync({
+    fetchSettings: settingsStore.fetchSettings,
+    fetchTabs: tabStore.fetchTabs,
+    fetchHistory: tabStore.fetchHistory,
+  });
 
   useEffect(() => {
     if (searchQuery.trim().length > 0) {
@@ -432,26 +411,24 @@ export function useAppLogic() {
       }
     },
     onSwitchSectionN: (n) => {
-      if (n > 0 && n <= orderedSections.length) {
-        tabStore.setActiveSection(orderedSections[n - 1].id);
+      if (n > 0 && n <= contentSections.length) {
+        tabStore.setActiveSection(contentSections[n - 1].id);
       }
     },
     onSwitchSectionAll: () => {
       tabStore.setActiveSection(null);
     },
     onCycleSectionPrev: (() => {
-      const getSectionIds = (groups: Section[]) => [null, ...groups.map((g) => g.id)];
       return () => {
-        const ids = getSectionIds(orderedSections);
+        const ids = sectionNavigationIds;
         const currentIndex = ids.indexOf(tabStore.activeSectionId);
         const nextIndex = (currentIndex - 1 + ids.length) % ids.length;
         tabStore.setActiveSection(ids[nextIndex]);
       };
     })(),
     onCycleSectionNext: (() => {
-      const getSectionIds = (groups: Section[]) => [null, ...groups.map((g) => g.id)];
       return () => {
-        const ids = getSectionIds(orderedSections);
+        const ids = sectionNavigationIds;
         const currentIndex = ids.indexOf(tabStore.activeSectionId);
         const nextIndex = (currentIndex + 1) % ids.length;
         tabStore.setActiveSection(ids[nextIndex]);
@@ -472,7 +449,7 @@ export function useAppLogic() {
       totalDupes,
       dashboardCount,
       showEmptyState: products.length === 0,
-      visibleSectionCount: orderedSections.length + (products.length === 0 ? 0 : 1),
+      visibleSectionCount: contentSections.length,
       focusedUrl,
       filteredTabCount,
       parsedQuery,
@@ -484,7 +461,9 @@ export function useAppLogic() {
     derived: {
       filteredProducts,
       unassignedProducts,
-      orderedSections,
+      manageableSections,
+      contentSections,
+      sectionNavigationIds,
       productsBySection,
       assignmentByItemId,
       itemIdForProduct,

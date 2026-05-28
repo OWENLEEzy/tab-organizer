@@ -1,5 +1,5 @@
 import React from 'react';
-import type { HistorySnapshot } from '../../types';
+import type { HistorySnapshot } from '../../../types';
 
 export function HistorySnapshotDetails({
   snapshot,

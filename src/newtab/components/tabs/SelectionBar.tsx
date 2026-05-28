@@ -1,6 +1,6 @@
 import React from 'react';
-import { ActionButton } from './ui/ActionButton';
-import { useI18n } from '../hooks/useI18n';
+import { ActionButton } from '../ui/ActionButton';
+import { useI18n } from '../../hooks/useI18n';
 
 // ─── Types ────────────────────────────────────────────────────────────
 

@@ -30,6 +30,7 @@ export const locales = {
     metricTabs: 'tabs',
     metricDuplicates: 'duplicates',
     metricGroups: 'groups',
+    metricSections: 'sections',
     alertExtraTabOrganizerSingle: '1 extra dashboard tab',
     alertExtraTabOrganizerPlural: '{count} extra dashboard tabs',
     actionCloseExtras: 'Close extras',
@@ -344,7 +345,8 @@ export const locales = {
     // Status Strip Metrics
     metricTabs: '页面',
     metricDuplicates: '重复项',
-    metricGroups: '区域',
+    metricGroups: '分组',
+    metricSections: '分区',
     alertExtraTabOrganizerSingle: '1 个多余的整理面板页面',
     alertExtraTabOrganizerPlural: '{count} 个多余的整理面板页面',
     actionCloseExtras: '关闭多余面板',

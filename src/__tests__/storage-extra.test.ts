@@ -1,15 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { 
-  writeOrganizerState, 
-  updateHistoryCandidate, 
-  readHistory, 
+import {
+  writeOrganizerState,
+  updateHistoryCandidate,
+  readHistory,
   promoteHistoryCandidate,
   readStorage,
   readGroupOrder,
   clearGroupOrder,
   readOrganizerState,
   writeStorage,
-  getSavedTabs
 } from '../utils/storage';
 import type { HistorySnapshot, StorageSchema } from '../types';
 
@@ -69,7 +68,6 @@ describe('storage extra', () => {
       sectionAssignments: [],
       viewMode: 'cards',
       groupOrder: { 'a.com': 1 },
-      deferred: []
     };
     vi.clearAllMocks();
   });
@@ -101,19 +99,6 @@ describe('storage extra', () => {
     await writeStorage(newData);
     const storage = await readStorage();
     expect(storage.viewMode).toBe('table');
-  });
-
-  it('getSavedTabs returns active and archived', async () => {
-    chromeStorage.data['deferred'] = [
-        { id: '1', url: 'u1', title: 'T1', completed: false, dismissed: false },
-        { id: '2', url: 'u2', title: 'T2', completed: true, dismissed: false },
-        { id: '3', url: 'u3', title: 'T3', completed: false, dismissed: true }
-    ];
-    const result = await getSavedTabs();
-    expect(result.active).toHaveLength(1);
-    expect(result.active[0].id).toBe('1');
-    expect(result.archived).toHaveLength(1);
-    expect(result.archived[0].id).toBe('2');
   });
 
   it('writeOrganizerState updates all fields', async () => {

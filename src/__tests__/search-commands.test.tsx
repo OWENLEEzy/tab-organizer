@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { TabChip } from '../newtab/components/TabChip';
-import { SearchBar } from '../newtab/components/SearchBar';
+import { I18nProvider } from '../newtab/providers/I18nProvider';
+import { TabChip } from '../newtab/components/tabs/TabChip';
+import { SearchBar } from '../newtab/components/search/SearchBar';
 import { useKeyboard } from '../newtab/hooks/useKeyboard';
 
 afterEach(() => {
@@ -14,42 +15,43 @@ describe('TabChip Focus Stealing Prevention', () => {
   it('does not natively focus tab chip when an input field is currently active', () => {
     const onFocus = vi.fn();
 
-    // Create a container with an input and the tab chip
     const { container } = render(
-      <div>
-        <input aria-label="Mock search bar" data-testid="search-input" />
-        <TabChip
-          url="https://github.com"
-          title="GitHub Tab"
-          duplicateCount={1}
-          isFocused={true}
-          onFocus={onFocus}
-          onClose={() => {}}
-        />
-      </div>
+      <I18nProvider>
+        <div>
+          <input aria-label="Mock search bar" data-testid="search-input" />
+          <TabChip
+            url="https://github.com"
+            title="GitHub Tab"
+            duplicateCount={1}
+            isFocused={true}
+            onFocus={onFocus}
+            onClose={() => {}}
+          />
+        </div>
+      </I18nProvider>,
     );
 
     const input = screen.getByTestId('search-input') as HTMLInputElement;
     input.focus();
     expect(document.activeElement).toBe(input);
 
-    // Force re-render of TabChip to trigger the isFocused useEffect
     render(
-      <div>
-        <input aria-label="Mock search bar" data-testid="search-input" />
-        <TabChip
-          url="https://github.com"
-          title="GitHub Tab"
-          duplicateCount={1}
-          isFocused={true}
-          onFocus={onFocus}
-          onClose={() => {}}
-        />
-      </div>,
+      <I18nProvider>
+        <div>
+          <input aria-label="Mock search bar" data-testid="search-input" />
+          <TabChip
+            url="https://github.com"
+            title="GitHub Tab"
+            duplicateCount={1}
+            isFocused={true}
+            onFocus={onFocus}
+            onClose={() => {}}
+          />
+        </div>
+      </I18nProvider>,
       { container }
     );
 
-    // The focus should still remain in the input and not have been stolen by the TabChip
     expect(document.activeElement).toBe(input);
   });
 
@@ -57,20 +59,21 @@ describe('TabChip Focus Stealing Prevention', () => {
     const onFocus = vi.fn();
 
     render(
-      <div>
-        <button data-testid="non-input">Some Button</button>
-        <TabChip
-          url="https://github.com"
-          title="GitHub Tab"
-          duplicateCount={1}
-          isFocused={true}
-          onFocus={onFocus}
-          onClose={() => {}}
-        />
-      </div>
+      <I18nProvider>
+        <div>
+          <button data-testid="non-input">Some Button</button>
+          <TabChip
+            url="https://github.com"
+            title="GitHub Tab"
+            duplicateCount={1}
+            isFocused={true}
+            onFocus={onFocus}
+            onClose={() => {}}
+          />
+        </div>
+      </I18nProvider>,
     );
 
-    // The tab chip button should get native DOM focus
     const tabButton = screen.getByRole('button', { name: /^GitHub Tab/ });
     expect(document.activeElement).toBe(tabButton);
   });
@@ -82,29 +85,33 @@ describe('TabChip Focus Stealing Prevention', () => {
 
     try {
       const { rerender } = render(
-        <TabChip
-          url="https://github.com"
-          title="GitHub Tab"
-          duplicateCount={1}
-          lastAccessed={now - 4 * 24 * 60 * 60 * 1000}
-          staleThresholdDays={7}
-          onFocus={() => {}}
-          onClose={() => {}}
-        />,
+        <I18nProvider>
+          <TabChip
+            url="https://github.com"
+            title="GitHub Tab"
+            duplicateCount={1}
+            lastAccessed={now - 4 * 24 * 60 * 60 * 1000}
+            staleThresholdDays={7}
+            onFocus={() => {}}
+            onClose={() => {}}
+          />
+        </I18nProvider>,
       );
 
       expect(screen.getByRole('button', { name: /^GitHub Tab/ }).className).not.toContain('opacity-55');
 
       rerender(
-        <TabChip
-          url="https://github.com"
-          title="GitHub Tab"
-          duplicateCount={1}
-          lastAccessed={now - 4 * 24 * 60 * 60 * 1000}
-          staleThresholdDays={3}
-          onFocus={() => {}}
-          onClose={() => {}}
-        />,
+        <I18nProvider>
+          <TabChip
+            url="https://github.com"
+            title="GitHub Tab"
+            duplicateCount={1}
+            lastAccessed={now - 4 * 24 * 60 * 60 * 1000}
+            staleThresholdDays={3}
+            onFocus={() => {}}
+            onClose={() => {}}
+          />
+        </I18nProvider>,
       );
 
       expect(screen.getByRole('button', { name: /^GitHub Tab/ }).className).toContain('opacity-55');
@@ -119,23 +126,22 @@ describe('SearchBar Commands Menu', () => {
     const onChange = vi.fn();
 
     render(
-      <SearchBar
-        value=""
-        onChange={onChange}
-        resultCount={0}
-        totalCount={0}
-      />
+      <I18nProvider>
+        <SearchBar
+          value=""
+          onChange={onChange}
+          resultCount={0}
+          totalCount={0}
+        />
+      </I18nProvider>,
     );
 
     const input = screen.getByRole('searchbox', { name: 'Search tabs' });
-    
-    // Suggestion panel should be absent initially
+
     expect(screen.queryByText('Quick Commands (type / or choose below)')).not.toBeInTheDocument();
 
-    // Focus input
     fireEvent.focus(input);
 
-    // Suggestion panel should appear automatically
     expect(screen.getByText('Quick Commands (type / or choose below)')).toBeInTheDocument();
     expect(screen.getByText('/dupes')).toBeInTheDocument();
     expect(screen.getByText('/stale')).toBeInTheDocument();
@@ -146,18 +152,19 @@ describe('SearchBar Commands Menu', () => {
     const onChange = vi.fn();
 
     render(
-      <SearchBar
-        value="/dupes"
-        onChange={onChange}
-        resultCount={0}
-        totalCount={0}
-      />
+      <I18nProvider>
+        <SearchBar
+          value="/dupes"
+          onChange={onChange}
+          resultCount={0}
+          totalCount={0}
+        />
+      </I18nProvider>,
     );
 
     const input = screen.getByRole('searchbox', { name: 'Search tabs' });
     fireEvent.focus(input);
 
-    // Suggestion panel should NOT be visible because "/dupes" is an exact match
     expect(screen.queryByText('Quick Commands')).not.toBeInTheDocument();
   });
 
@@ -166,16 +173,18 @@ describe('SearchBar Commands Menu', () => {
     const onChange = vi.fn();
 
     render(
-      <SearchBar
-        value=""
-        onChange={onChange}
-        resultCount={0}
-        totalCount={0}
-      />
+      <I18nProvider>
+        <SearchBar
+          value=""
+          onChange={onChange}
+          resultCount={0}
+          totalCount={0}
+        />
+      </I18nProvider>,
     );
 
     const input = screen.getByRole('searchbox', { name: 'Search tabs' });
-    await user.click(input); // Focuses input and opens menu
+    await user.click(input);
 
     const dupesBtn = screen.getByRole('button', { name: /dupes/ });
     await user.click(dupesBtn);
@@ -188,16 +197,18 @@ describe('SearchBar Commands Menu', () => {
     const onChange = vi.fn();
 
     render(
-      <SearchBar
-        value=""
-        onChange={onChange}
-        resultCount={0}
-        totalCount={0}
-      />
+      <I18nProvider>
+        <SearchBar
+          value=""
+          onChange={onChange}
+          resultCount={0}
+          totalCount={0}
+        />
+      </I18nProvider>,
     );
 
     const input = screen.getByRole('searchbox', { name: 'Search tabs' });
-    await user.click(input); // Focuses input and opens menu
+    await user.click(input);
 
     const sectionBtn = screen.getByRole('button', { name: /section:/ });
     await user.click(sectionBtn);
@@ -214,19 +225,20 @@ describe('SearchBar Commands Menu', () => {
     ];
 
     render(
-      <SearchBar
-        value="/sec:"
-        onChange={onChange}
-        resultCount={0}
-        totalCount={0}
-        sections={sections}
-      />
+      <I18nProvider>
+        <SearchBar
+          value="/sec:"
+          onChange={onChange}
+          resultCount={0}
+          totalCount={0}
+          sections={sections}
+        />
+      </I18nProvider>,
     );
 
     const input = screen.getByRole('searchbox', { name: 'Search tabs' });
     fireEvent.focus(input);
 
-    // Should display stable section-id commands while keeping readable names visible.
     expect(screen.getByText('/section:w1')).toBeInTheDocument();
     expect(screen.getByText('/section:w2')).toBeInTheDocument();
     expect(screen.getByText('Work')).toBeInTheDocument();
@@ -235,7 +247,6 @@ describe('SearchBar Commands Menu', () => {
     const workBtn = screen.getByRole('button', { name: /\/section:w1/ });
     await user.click(workBtn);
 
-    // Selecting a completed section command appends a space
     expect(onChange).toHaveBeenCalledWith('/section:w1 ');
   });
 });
@@ -253,10 +264,12 @@ function KeyboardBlurHarness(): React.ReactElement {
   });
 
   return (
-    <div>
-      <input aria-label="Search tabs" data-testid="search-input" />
-      <output data-testid="arrow-down-count">{arrowDownCount}</output>
-    </div>
+    <I18nProvider>
+      <div>
+        <input aria-label="Search tabs" data-testid="search-input" />
+        <output data-testid="arrow-down-count">{arrowDownCount}</output>
+      </div>
+    </I18nProvider>
   );
 }
 
@@ -269,10 +282,8 @@ describe('useKeyboard ArrowDown Blur Behavior', () => {
     input.focus();
     expect(document.activeElement).toBe(input);
 
-    // Send ArrowDown inside the input
     await user.keyboard('{ArrowDown}');
 
-    // Expect the input to have been blurred (activeElement is no longer the input)
     expect(document.activeElement).not.toBe(input);
     expect(screen.getByTestId('arrow-down-count')).toHaveTextContent('1');
   });

@@ -1,10 +1,15 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DashboardHeader } from '../newtab/components/layout/DashboardHeader';
+import { I18nProvider } from '../newtab/providers/I18nProvider';
 
 afterEach(() => {
   cleanup();
 });
+
+function renderWithI18n(element: React.ReactElement) {
+  return render(<I18nProvider>{element}</I18nProvider>);
+}
 
 describe('DashboardHeader', () => {
   it('wires search and command actions without owning dashboard state', () => {
@@ -14,12 +19,12 @@ describe('DashboardHeader', () => {
     const onOpenSettings = vi.fn();
     const onGroupSortByChange = vi.fn();
 
-    render(
+    renderWithI18n(
       <DashboardHeader
         title="Open Tabs by Product"
         hasGroups
         dateLabel="Tuesday, May 5, 2026"
-        groupCount={2}
+        sectionCount={2}
         searchQuery=""
         onSearchChange={onSearchChange}
         resultCount={6}
@@ -40,6 +45,7 @@ describe('DashboardHeader', () => {
 
     expect(screen.getByText('Tuesday, May 5, 2026')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
+    expect(screen.getByText('2 sections')).toBeInTheDocument();
 
     const viewToggle = screen.getByLabelText('View mode');
     const hardcodedHeightClass = ['h', '[44px]'].join('-');
@@ -66,12 +72,12 @@ describe('DashboardHeader', () => {
     const onOpenSettings = vi.fn();
     const onGroupSortByChange = vi.fn();
 
-    render(
+    renderWithI18n(
       <DashboardHeader
         title="Open Tabs by Product"
         hasGroups={false}
         dateLabel="Tuesday, May 5, 2026"
-        groupCount={0}
+        sectionCount={0}
         searchQuery=""
         onSearchChange={() => {}}
         resultCount={0}
@@ -92,7 +98,7 @@ describe('DashboardHeader', () => {
 
     expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
     expect(screen.queryByRole('searchbox', { name: 'Search tabs' })).not.toBeInTheDocument();
-    expect(screen.queryByText('0 Groups')).not.toBeInTheDocument();
+    expect(screen.queryByText('0 groups')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Organize' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'New section' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Close All' })).not.toBeInTheDocument();

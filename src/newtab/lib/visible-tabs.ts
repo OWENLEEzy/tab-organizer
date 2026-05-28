@@ -1,5 +1,5 @@
 import type { Tab, TabGroup } from '../../types';
-import { analyzeDuplicates } from '../../lib/tab-utils';
+import { analyzeDuplicates } from '../../lib/duplicate-analysis';
 
 export interface VisibleTabChip {
   domain: string;

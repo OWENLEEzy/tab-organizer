@@ -64,4 +64,28 @@ test.describe('Search & Filter', () => {
     const searchInput = page.getByRole('searchbox', { name: 'search tabs' });
     await expect(searchInput).toBeFocused();
   });
+
+  test('filters products with /section:<id>', async ({ page }) => {
+    await page.getByRole('button', { name: 'New section' }).click();
+    const dialog = page.locator('[role="dialog"]');
+    await dialog.getByLabel('Section Name').fill('Later');
+    await dialog.getByRole('button', { name: 'Create Section' }).click();
+
+    await page.getByRole('button', { name: 'Table' }).click();
+    const youtubeRow = page.getByRole('row', { name: /YouTube/ });
+    const sectionSelect = youtubeRow.locator('select');
+    const laterValue = await sectionSelect.evaluate((select) => {
+      const element = select as HTMLSelectElement;
+      return [...element.options].find((option) => option.textContent === 'Later')?.value ?? '';
+    });
+    await sectionSelect.selectOption(laterValue);
+
+    await page.getByRole('button', { name: 'Cards' }).click();
+    const searchInput = page.getByRole('searchbox', { name: 'search tabs' });
+    await searchInput.fill(`/section:${laterValue}`);
+    await page.waitForTimeout(300);
+
+    await expect(page.getByRole('heading', { name: 'YouTube' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'GitHub' })).not.toBeVisible();
+  });
 });

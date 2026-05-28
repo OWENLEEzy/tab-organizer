@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getHostname, sanitizeUrl } from '../../utils/url';
+import { getHostname, sanitizeUrl } from '../../../lib/url-rules';
 import {
   cleanTitle,
   smartTitle,
   stripTitleNoise,
-} from '../../lib/title-cleaner';
-import { getFaviconUrl } from '../../utils/favicon';
+} from '../../../lib/title-cleaner';
+import { getFaviconUrl } from '../../../utils/favicon';
 
 // ─── Touch device detection ────────────────────────────────────────
 
@@ -131,7 +131,7 @@ function HighlightedText({ text, highlight = '' }: { text: string; highlight?: s
 
 // ─── Component ────────────────────────────────────────────────────────
 
-export function TabChip({
+function TabChipComponent({
   url,
   title,
   favIconUrl = '',
@@ -207,8 +207,8 @@ export function TabChip({
 
   const chipClasses = useMemo(() => [
     'flex min-h-[var(--spacing-button-icon)] min-w-0 flex-1 items-center gap-2 rounded-chip border border-transparent px-2.5 py-1.5 text-left font-mono text-xs',
-    'cursor-pointer bg-transparent transition-colors duration-150',
-    isSelected ? '' : 'hover:border-border-color hover:bg-bg-surface',
+    'cursor-pointer bg-transparent transition-all duration-[var(--motion-toast)] ease-spring',
+    isSelected ? '' : 'hover:border-border-color hover:bg-bg-surface hover:translate-x-1',
     'focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none',
     duplicateCount > 1 ? 'border-border-duplicate bg-bg-duplicate' : '',
     active && !isSelected ? 'tab-active' : '',
@@ -216,7 +216,7 @@ export function TabChip({
     isClosing ? 'chip-closing' : '',
     isSelected ? 'ring-2 ring-accent-primary border-accent-primary bg-accent-primary/[0.12]' : '',
     isStale && !isSelected
-      ? 'opacity-55 saturate-[0.15] bg-bg-surface/40 border-dashed border-border-color hover:opacity-100 hover:saturate-100 hover:border-transparent transition-all duration-200'
+      ? 'opacity-55 saturate-[0.15] bg-bg-surface/40 border-dashed border-border-color hover:opacity-100 hover:saturate-100 hover:border-transparent transition-all duration-[var(--motion-standard)]'
       : '',
   ]
     .filter(Boolean)
@@ -280,10 +280,10 @@ export function TabChip({
 
       {/* Action buttons — always visible on touch, visible on hover for desktop */}
       {!isSelected && (
-        <div className={`ml-auto flex shrink-0 items-center gap-1 transition-opacity duration-150 ${isTouch ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`}>
+        <div className={`ml-auto flex shrink-0 items-center gap-1 transition-opacity duration-[var(--motion-fast)] ${isTouch ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`}>
           <button
             type="button"
-            className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-red/40 flex size-[var(--spacing-button-icon)] min-w-auto cursor-pointer items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
+            className="rounded-chip text-text-secondary hover:bg-accent-red/10 hover:text-accent-red focus-visible:ring-accent-red/40 flex size-[var(--spacing-button-icon)] min-w-auto cursor-pointer items-center justify-center transition-colors duration-[var(--motion-fast)] focus-visible:ring-2 focus-visible:outline-none"
             onClick={handleClose}
             title="Close this tab"
             aria-label={`Close ${displayLabel}`}
@@ -296,4 +296,26 @@ export function TabChip({
   );
 }
 
-export const TabChipMemo = React.memo(TabChip);
+function areTabChipPropsEqual(prev: TabChipProps, next: TabChipProps): boolean {
+  return (
+    prev.url === next.url &&
+    prev.title === next.title &&
+    prev.favIconUrl === next.favIconUrl &&
+    prev.duplicateCount === next.duplicateCount &&
+    prev.active === next.active &&
+    prev.isFocused === next.isFocused &&
+    prev.isClosing === next.isClosing &&
+    prev.isSelected === next.isSelected &&
+    prev.selectionMode === next.selectionMode &&
+    prev.searchQuery === next.searchQuery &&
+    prev.lastAccessed === next.lastAccessed &&
+    prev.staleThresholdDays === next.staleThresholdDays &&
+    prev.pinned === next.pinned &&
+    prev.audible === next.audible &&
+    prev.onFocus === next.onFocus &&
+    prev.onClose === next.onClose &&
+    prev.onChipClick === next.onChipClick
+  );
+}
+
+export const TabChip = React.memo(TabChipComponent, areTabChipPropsEqual);

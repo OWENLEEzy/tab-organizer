@@ -1,7 +1,5 @@
 import type {
   StorageSchema,
-  SavedTab,
-  Workspace,
   AppSettings,
   Section,
   SectionAssignment,
@@ -12,13 +10,31 @@ import { historyUrlSignature, shouldReplaceHistoryCandidate } from '../lib/histo
 import { DEFAULT_SECTIONS } from '../config/sections';
 import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
 import { DEFAULT_GROUP_SORT, normalizeGroupSortBy } from '../config/group-sort';
-import { isRealTab } from './url';
+
+function isRealTab(url: string): boolean {
+  const browserInternalPrefixes = [
+    'chrome://',
+    'chrome-extension://',
+    'chrome-search://',
+    'devtools://',
+    'about:',
+    'edge://',
+    'brave://',
+  ];
+  const normalized = url.trim().toLowerCase();
+  const target = normalized.startsWith('view-source:')
+    ? normalized.slice('view-source:'.length)
+    : normalized;
+
+  return (
+    target !== '' &&
+    !browserInternalPrefixes.some((prefix) => target.startsWith(prefix))
+  );
+}
 
 const CURRENT_SCHEMA_VERSION = 5;
 const STORAGE_KEYS = [
   'schemaVersion',
-  'deferred',
-  'workspaces',
   'settings',
   'groupOrder',
   'sections',
@@ -36,8 +52,7 @@ const STORAGE_KEYS = [
 
 /**
  * Serial write queue to prevent race conditions during rapid consecutive
- * read-modify-write operations (e.g., checking off multiple saved items).
- * Without this, overlapping reads can cause data loss.
+ * read-modify-write operations.
  */
 let writeQueue: Promise<void> = Promise.resolve();
 
@@ -54,7 +69,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   confettiEnabled: true,
   maxChipsVisible: 8,
   staleThresholdDays: 3,
-  customGroups: [],
+  customGroups: [
+    { hostnameEndsWith: '.substack.com', groupKey: 'substack', groupLabel: "Author's Substack" },
+    { hostnameEndsWith: '.github.io', groupKey: 'github-pages', groupLabel: 'GitHub Pages' },
+  ],
   landingPagePatterns: [],
   keyBindings: {
     switchSectionN: 'Meta+{n}',
@@ -69,8 +87,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 const EMPTY_SCHEMA: StorageSchema = {
   schemaVersion: CURRENT_SCHEMA_VERSION,
-  deferred: [],
-  workspaces: [],
   settings: DEFAULT_SETTINGS,
   groupOrder: {},
   sections: [],
@@ -83,6 +99,43 @@ const EMPTY_SCHEMA: StorageSchema = {
 
 function isViewMode(value: unknown): value is ViewMode {
   return value === 'cards' || value === 'table';
+}
+
+type LegacyKeyBindings = Partial<AppSettings['keyBindings']> & {
+  switchSpaceN?: unknown;
+  switchSpaceAll?: unknown;
+};
+
+function normalizeKeyBindings(value: unknown): AppSettings['keyBindings'] {
+  const defaults = DEFAULT_SETTINGS.keyBindings;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return defaults;
+  }
+
+  const candidate = value as LegacyKeyBindings;
+  const switchSectionN = typeof candidate.switchSectionN === 'string'
+    ? candidate.switchSectionN
+    : typeof candidate.switchSpaceN === 'string'
+      ? candidate.switchSpaceN
+      : typeof candidate.switchSpaceN === 'number'
+        ? String(candidate.switchSpaceN)
+        : defaults.switchSectionN;
+  const switchSectionAll = typeof candidate.switchSectionAll === 'string'
+    ? candidate.switchSectionAll
+    : typeof candidate.switchSpaceAll === 'string'
+      ? candidate.switchSpaceAll
+      : typeof candidate.switchSpaceAll === 'number'
+        ? String(candidate.switchSpaceAll)
+        : defaults.switchSectionAll;
+
+  return {
+    switchSectionN,
+    switchSectionAll,
+    cyclePrev: typeof candidate.cyclePrev === 'string' ? candidate.cyclePrev : defaults.cyclePrev,
+    cycleNext: typeof candidate.cycleNext === 'string' ? candidate.cycleNext : defaults.cycleNext,
+    focusSearch: typeof candidate.focusSearch === 'string' ? candidate.focusSearch : defaults.focusSearch,
+    clearFilter: typeof candidate.clearFilter === 'string' ? candidate.clearFilter : defaults.clearFilter,
+  };
 }
 
 function normalizeSections(value: unknown): Section[] {
@@ -153,7 +206,7 @@ function normalizeUnsortedOverrides(value: unknown): string[] {
 /**
  * Prune assignments that point to non-existent groups or products.
  */
-export function pruneAssignments(
+function pruneAssignments(
   assignments: SectionAssignment[],
   groups: Section[],
   currentProductKeys: Set<string>,
@@ -327,12 +380,11 @@ function migrate(data: Record<string, unknown>): StorageSchema {
     ...rawSettings,
     theme: isAccentKey(rawSettings.theme) ? rawSettings.theme : DEFAULT_ACCENT,
     groupSortBy: normalizeGroupSortBy(rawSettings.groupSortBy),
+    keyBindings: normalizeKeyBindings(rawSettings.keyBindings),
   };
 
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    deferred: Array.isArray(data['deferred']) ? (data['deferred'] as SavedTab[]) : [],
-    workspaces: Array.isArray(data['workspaces']) ? (data['workspaces'] as Workspace[]) : [],
     settings,
     groupOrder: (data['groupOrder'] as Record<string, number> | undefined) ?? {},
     sections: normalizeSections(sections),
@@ -345,7 +397,7 @@ function migrate(data: Record<string, unknown>): StorageSchema {
 }
 
 async function readStorageSnapshot(): Promise<Record<string, unknown>> {
-  return chrome.storage.local.get([...STORAGE_KEYS, 'recoveryCandidate', 'recoveryHistory']);
+  return chrome.storage.local.get([...STORAGE_KEYS]);
 }
 
 function hasOwnStorageKey(data: Record<string, unknown>, key: string): boolean {
@@ -355,8 +407,6 @@ function hasOwnStorageKey(data: Record<string, unknown>, key: string): boolean {
 async function persistStorage(data: StorageSchema): Promise<void> {
   await chrome.storage.local.set({
     schemaVersion: data.schemaVersion,
-    deferred: data.deferred,
-    workspaces: data.workspaces,
     settings: data.settings,
     groupOrder: data.groupOrder,
     sections: data.sections,
@@ -367,8 +417,7 @@ async function persistStorage(data: StorageSchema): Promise<void> {
     history: data.history,
   });
 
-  // Clean up legacy keys. Section data intentionally does not migrate from
-  // manualGroups/groupAssignments; users get the new section schema cleanly.
+  // Clean up legacy keys.
   await chrome.storage.local.remove(['manualGroups', 'groupAssignments', 'recoveryCandidate', 'recoveryHistory']);
 }
 
@@ -392,7 +441,7 @@ export async function writeStorage(data: StorageSchema): Promise<void> {
  * Safely update storage by reading the latest state inside the write queue.
  * This prevents stale read snapshots from overwriting unrelated keys.
  */
-export async function updateStorage(
+async function updateStorage(
   updater: (current: StorageSchema) => StorageSchema | Promise<StorageSchema>
 ): Promise<StorageSchema> {
   let nextState = EMPTY_SCHEMA;
@@ -418,79 +467,6 @@ export async function updateStorage(
   });
 
   return nextState;
-}
-
-/**
- * Get saved tabs (deferred items), split into active and archived.
- * Filters out dismissed items.
- */
-export async function getSavedTabs(): Promise<{
-  active: SavedTab[];
-  archived: SavedTab[];
-}> {
-  const storage = await readStorage();
-  const visible = storage.deferred.filter((t) => !t.dismissed);
-  return {
-    active: visible.filter((t) => !t.completed),
-    archived: visible.filter((t) => t.completed),
-  };
-}
-
-/**
- * Save a tab for later. Creates a new SavedTab entry.
- */
-export async function saveTabForLater(tab: {
-  url: string;
-  title: string;
-}): Promise<SavedTab> {
-  let domain = '';
-  try {
-    domain = new URL(tab.url).hostname;
-  } catch {
-    // Leave domain empty for malformed URLs
-  }
-
-  const savedTab: SavedTab = {
-    id: crypto.randomUUID(),
-    url: tab.url,
-    title: tab.title,
-    domain,
-    savedAt: new Date().toISOString(),
-    completed: false,
-    dismissed: false,
-  };
-
-  await updateStorage((storage) => ({
-    ...storage,
-    deferred: [...storage.deferred, savedTab],
-  }));
-  return savedTab;
-}
-
-/**
- * Mark a saved tab as completed (checked off → archive).
- */
-export async function checkOffSavedTab(id: string): Promise<void> {
-  await updateStorage((storage) => ({
-    ...storage,
-    deferred: storage.deferred.map((t) =>
-      t.id === id
-        ? { ...t, completed: true, completedAt: new Date().toISOString() }
-        : t
-    ),
-  }));
-}
-
-/**
- * Dismiss a saved tab (remove from all views).
- */
-export async function dismissSavedTab(id: string): Promise<void> {
-  await updateStorage((storage) => ({
-    ...storage,
-    deferred: storage.deferred.map((t) =>
-      t.id === id ? { ...t, dismissed: true } : t
-    ),
-  }));
 }
 
 /**
@@ -726,6 +702,8 @@ export async function unassignProductFromSections(productKey: string): Promise<{
     const sectionAssignments = storage.sectionAssignments.filter(
       (assignment) => assignment.productKey !== productKey,
     );
+    // Moving a product group to No section is an explicit user choice. Keep it
+    // out of auto-rules until the user assigns it to a section again.
     const unsortedOverrides = storage.unsortedOverrides.includes(productKey)
       ? storage.unsortedOverrides
       : [...storage.unsortedOverrides, productKey];
@@ -829,24 +807,3 @@ export async function readHistory(): Promise<HistorySnapshot[]> {
   const storage = await readStorage();
   return storage.history;
 }
-
-/**
- * Read all workspaces from storage.
- */
-export async function readWorkspaces(): Promise<Workspace[]> {
-  const storage = await readStorage();
-  return storage.workspaces;
-}
-
-/**
- * Replace all workspaces in storage.
- */
-export async function writeWorkspaces(workspaces: Workspace[]): Promise<void> {
-  await updateStorage((storage) => ({
-    ...storage,
-    workspaces,
-  }));
-}
-
-// Export for testing
-export { EMPTY_SCHEMA, CURRENT_SCHEMA_VERSION };

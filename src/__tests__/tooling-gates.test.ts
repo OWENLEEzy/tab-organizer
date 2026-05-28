@@ -60,7 +60,7 @@ describe('tooling gates', () => {
 
     expect(eslintConfig).toContain("files: ['src/stores/**/*.ts']");
     expect(eslintConfig).toContain("group: ['**/utils/storage']");
-    expect(eslintConfig).toContain("importNames: ['readStorage', 'updateStorage']");
+    expect(eslintConfig).toContain("importNames: ['readStorage']");
   });
 
   it('lets e2e checks avoid unrelated local port conflicts', () => {
@@ -70,5 +70,45 @@ describe('tooling gates', () => {
     expect(runner).toContain('findAvailablePort(4173)');
     expect(runner).toContain('PLAYWRIGHT_BASE_URL');
     expect(config).toContain('process.env.PLAYWRIGHT_BASE_URL');
+  });
+
+  it('runs the full check in pull request CI', () => {
+    const ciWorkflow = fs.readFileSync(path.join(repoRoot, '.github/workflows/ci.yml'), 'utf8');
+
+    expect(ciWorkflow).toContain('pull_request:');
+    expect(ciWorkflow).toContain('node-version: 22');
+    expect(ciWorkflow).toContain('npm ci');
+    expect(ciWorkflow).toContain('npm run check');
+  });
+});
+
+describe('architecture lint guardrails', () => {
+  const eslintConfig = fs.readFileSync(path.join(repoRoot, 'eslint.config.js'), 'utf8');
+
+  it('prevents presentational components from importing stores, controllers, storage, or chrome APIs', () => {
+    expect(eslintConfig).toContain("files: ['src/newtab/components/**/*.tsx']");
+    expect(eslintConfig).toContain("group: ['**/stores/*']");
+    expect(eslintConfig).toContain("group: ['**/newtab/controllers/*', '**/controllers/*']");
+    expect(eslintConfig).toContain("group: ['**/utils/storage']");
+    expect(eslintConfig).toContain("MemberExpression[object.name='chrome']");
+  });
+
+  it('keeps pure newtab hooks free of stores, storage, and chrome APIs', () => {
+    expect(eslintConfig).toContain("files: ['src/newtab/hooks/**/*.{ts,tsx}']");
+    expect(eslintConfig).toContain("group: ['**/stores/*']");
+    expect(eslintConfig).toContain("group: ['**/utils/storage']");
+  });
+
+  it('keeps src/lib pure and independent from utils and app layers', () => {
+    expect(eslintConfig).toContain("files: ['src/lib/**/*.{ts,tsx}']");
+    expect(eslintConfig).toContain("group: ['../utils/*', '**/utils/*']");
+    expect(eslintConfig).toContain("group: ['../stores/*', '**/stores/*']");
+    expect(eslintConfig).toContain("group: ['../newtab/*', '**/newtab/*']");
+  });
+
+  it('keeps src/utils as adapter layer without app imports', () => {
+    expect(eslintConfig).toContain("files: ['src/utils/**/*.{ts,tsx}']");
+    expect(eslintConfig).toContain("group: ['../stores/*', '**/stores/*']");
+    expect(eslintConfig).toContain("group: ['../newtab/*', '**/newtab/*']");
   });
 });

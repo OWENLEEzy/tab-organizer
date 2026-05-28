@@ -1,6 +1,6 @@
 import React from 'react';
-import type { GroupSortOption } from '../../types';
-import { useI18n } from '../hooks/useI18n';
+import type { GroupSortOption } from '../../../types';
+import { useI18n } from '../../hooks/useI18n';
 
 interface SortDropdownProps {
   value: GroupSortOption;

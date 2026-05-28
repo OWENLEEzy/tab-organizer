@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import type { HistorySnapshot } from '../../types';
-import { UtilityPanel } from './layout/UtilityPanel';
-import { ActionButton } from './ui/ActionButton';
-import { useI18n } from '../hooks/useI18n';
-import { getSnapshotDateFormatter } from '../lib/date-formatters';
+import type { HistorySnapshot } from '../../../types';
+import { UtilityPanel } from '../layout/UtilityPanel';
+import { ActionButton } from '../ui/ActionButton';
+import { useI18n } from '../../hooks/useI18n';
+import { getSnapshotDateFormatter } from '../../lib/date-formatters';
 
 const HistorySnapshotDetails = React.lazy(() =>
   import('./HistorySnapshotDetails').then((module) => ({

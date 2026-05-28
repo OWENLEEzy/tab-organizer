@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HistoryPanel } from '../newtab/components/HistoryPanel';
+import { I18nProvider } from '../newtab/providers/I18nProvider';
+import { HistoryPanel } from '../newtab/components/history/HistoryPanel';
 import type { HistorySnapshot } from '../types';
 
 function makeSnapshot(): HistorySnapshot {
@@ -47,13 +48,15 @@ describe('HistoryPanel', () => {
     const user = userEvent.setup();
 
     render(
-      <HistoryPanel
-        snapshots={[makeSnapshot()]}
-        onRestoreSnapshot={vi.fn()}
-        onRestoreProduct={vi.fn()}
-        onDeleteSnapshot={vi.fn()}
-        onClearSnapshots={vi.fn()}
-      />,
+      <I18nProvider>
+        <HistoryPanel
+          snapshots={[makeSnapshot()]}
+          onRestoreSnapshot={vi.fn()}
+          onRestoreProduct={vi.fn()}
+          onDeleteSnapshot={vi.fn()}
+          onClearSnapshots={vi.fn()}
+        />
+      </I18nProvider>,
     );
 
     expect(screen.getByText('History')).toBeInTheDocument();
@@ -71,13 +74,15 @@ describe('HistoryPanel', () => {
     const onRestoreSnapshot = vi.fn();
 
     render(
-      <HistoryPanel
-        snapshots={[makeSnapshot()]}
-        onRestoreSnapshot={onRestoreSnapshot}
-        onRestoreProduct={vi.fn()}
-        onDeleteSnapshot={vi.fn()}
-        onClearSnapshots={vi.fn()}
-      />,
+      <I18nProvider>
+        <HistoryPanel
+          snapshots={[makeSnapshot()]}
+          onRestoreSnapshot={onRestoreSnapshot}
+          onRestoreProduct={vi.fn()}
+          onDeleteSnapshot={vi.fn()}
+          onClearSnapshots={vi.fn()}
+        />
+      </I18nProvider>,
     );
 
     expect(onRestoreSnapshot).not.toHaveBeenCalled();

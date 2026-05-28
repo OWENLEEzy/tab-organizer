@@ -1,10 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import {
-  analyzeDuplicates,
-  getGroupFaviconUrl,
-  getProductKey,
-  isTabStale,
-} from '../lib/tab-utils';
+import { analyzeDuplicates } from '../lib/duplicate-analysis';
+import { isTabStale } from '../lib/staleness';
+import { getProductKey } from '../lib/product-key';
+import { getGroupFaviconSource } from '../lib/group-favicon';
 import type { Tab } from '../types';
 
 function makeTab(id: number, url: string): Tab {
@@ -124,14 +122,14 @@ describe('tab-utils', () => {
     });
 
     it('uses a provided favicon or falls back to the first tab URL', () => {
-      expect(getGroupFaviconUrl([
+      expect(getGroupFaviconSource([
         { ...makeTab(1, 'https://a.com'), favIconUrl: '  https://cdn.example/icon.png  ' },
       ])).toBe('https://cdn.example/icon.png');
 
-      expect(getGroupFaviconUrl([makeTab(2, 'https://fallback.example/path')])).toContain(
-        'fallback.example',
+      expect(getGroupFaviconSource([makeTab(2, 'https://fallback.example/path')])).toBe(
+        'https://fallback.example/path',
       );
-      expect(getGroupFaviconUrl([])).toContain('pageUrl=');
+      expect(getGroupFaviconSource([])).toBe('');
     });
   });
 });

@@ -1,4 +1,4 @@
-import { CONFETTI } from './constants';
+import { CLOSE_CONFETTI } from './close-effect-constants';
 
 /**
  * Shoot a burst of confetti particles from screen coordinates (x, y).
@@ -15,7 +15,7 @@ export function shootConfetti(x: number, y: number): void {
       gravity,
       durationRange,
       rotation,
-    } = CONFETTI;
+    } = CLOSE_CONFETTI;
 
     for (let i = 0; i < particleCount; i++) {
       const el = document.createElement('div');
