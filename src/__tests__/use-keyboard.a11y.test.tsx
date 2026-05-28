@@ -19,6 +19,7 @@ function KeyboardHarness(): React.ReactElement {
   const [cyclePrevCount, setCyclePrevCount] = useState(0);
   const [cycleNextCount, setCycleNextCount] = useState(0);
   const [switchCount, setSwitchCount] = useState(0);
+  const [clearFilterCount, setClearFilterCount] = useState(0);
 
   useKeyboard({
     onSearch: () => {},
@@ -30,6 +31,7 @@ function KeyboardHarness(): React.ReactElement {
     onSwitchSectionN: () => setSwitchCount((count) => count + 1),
     onCycleSectionPrev: () => setCyclePrevCount((count) => count + 1),
     onCycleSectionNext: () => setCycleNextCount((count) => count + 1),
+    onClearFilter: () => setClearFilterCount((count) => count + 1),
   }, {
     switchSectionN: 'Meta+{n}',
     switchSectionAll: 'Meta+0',
@@ -55,6 +57,7 @@ function KeyboardHarness(): React.ReactElement {
       <output data-testid="cycle-prev-count">{cyclePrevCount}</output>
       <output data-testid="cycle-next-count">{cycleNextCount}</output>
       <output data-testid="switch-count">{switchCount}</output>
+      <output data-testid="clear-filter-count">{clearFilterCount}</output>
       {dialogOpen && (
         <div role="dialog" aria-modal="true" aria-label="Keyboard test dialog">
           <button type="button">Dialog action</button>
@@ -146,6 +149,83 @@ describe('useKeyboard', () => {
 
     expect(event.defaultPrevented).toBe(true);
     expect(screen.getByTestId('arrow-down-count')).toHaveTextContent('1');
+  });
+
+  it('honors a custom non-Escape clear filter shortcut outside inputs', async () => {
+    const user = userEvent.setup();
+
+    function CustomClearFilterHarness(): React.ReactElement {
+      const [clearFilterCount, setClearFilterCount] = useState(0);
+
+      useKeyboard({
+        onSearch: () => {},
+        onEscape: () => false,
+        onArrowUp: () => {},
+        onArrowDown: () => {},
+        onEnter: () => {},
+        onDClose: () => {},
+        onClearFilter: () => setClearFilterCount((count) => count + 1),
+      }, {
+        switchSectionN: 'Meta+{n}',
+        switchSectionAll: 'Meta+0',
+        cyclePrev: 'ArrowLeft',
+        cycleNext: 'ArrowRight',
+        focusSearch: '/',
+        clearFilter: 'Control+L',
+      });
+
+      return (
+        <div>
+          <input aria-label="Editable field" />
+          <output data-testid="clear-filter-count">{clearFilterCount}</output>
+        </div>
+      );
+    }
+
+    render(<CustomClearFilterHarness />);
+
+    await user.keyboard('{Control>}l{/Control}');
+
+    expect(screen.getByTestId('clear-filter-count')).toHaveTextContent('1');
+  });
+
+  it('does not run custom clear filter shortcut from editable fields', async () => {
+    const user = userEvent.setup();
+
+    function CustomClearFilterHarness(): React.ReactElement {
+      const [clearFilterCount, setClearFilterCount] = useState(0);
+
+      useKeyboard({
+        onSearch: () => {},
+        onEscape: () => false,
+        onArrowUp: () => {},
+        onArrowDown: () => {},
+        onEnter: () => {},
+        onDClose: () => {},
+        onClearFilter: () => setClearFilterCount((count) => count + 1),
+      }, {
+        switchSectionN: 'Meta+{n}',
+        switchSectionAll: 'Meta+0',
+        cyclePrev: 'ArrowLeft',
+        cycleNext: 'ArrowRight',
+        focusSearch: '/',
+        clearFilter: 'Control+L',
+      });
+
+      return (
+        <div>
+          <input aria-label="Editable field" />
+          <output data-testid="clear-filter-count">{clearFilterCount}</output>
+        </div>
+      );
+    }
+
+    render(<CustomClearFilterHarness />);
+
+    await user.click(screen.getByRole('textbox', { name: 'Editable field' }));
+    await user.keyboard('{Control>}l{/Control}');
+
+    expect(screen.getByTestId('clear-filter-count')).toHaveTextContent('0');
   });
 });
 
