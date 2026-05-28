@@ -168,6 +168,7 @@ function DndGroupBoard({
                 <div className="h-3 w-px bg-border-light mx-1" />
               </>
             )}
+            {tabCount > 0 && (
             <button
               type="button"
               onClick={() => onCloseSection(items, title)}
@@ -176,6 +177,7 @@ function DndGroupBoard({
             >
               {t('organizerBtnCloseAll')}
             </button>
+)}
           </div>
         </div>
       </div>
@@ -337,9 +339,8 @@ export function DndOrganizer({
         )}
         {orderedSections.map((group) => {
           if (activeSectionId && activeSectionId !== group.id) return null;
-          
+
           const items = productsBySection.get(group.id) ?? [];
-          if (items.length === 0) return null;
 
           return (
             <DndGroupBoard
