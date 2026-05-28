@@ -2,16 +2,15 @@ import React, { useCallback, useState } from 'react';
 import { closestCenter, DndContext, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import type { Section, TabGroup } from '../../../types';
+import {
+  NO_SECTION_ID,
+  UNASSIGNED_SECTION_DROP_ID,
+  fromProductItemId,
+  fromSectionDropId,
+  toSectionDropId,
+} from '../../../lib/section-organizer';
 import { DomainCard } from '../tabs/DomainCard';
 import { useI18n } from '../../hooks/useI18n';
-
-const UNASSIGNED_SECTION_ID = 'section:unassigned';
-
-function productKeyFromDragId(itemId: string): string | null {
-  if (!itemId.startsWith('product:')) return null;
-  const productKey = itemId.slice('product:'.length);
-  return productKey === '' ? null : productKey;
-}
 
 // ─── Draggable card wrapper ────────────────────────────────────────────
 
@@ -283,25 +282,23 @@ export function DndOrganizer({
       const { active, over } = event;
       if (!over || active.id === over.id) return;
 
-      const activeId = String(active.id);
-      const overId = String(over.id);
-      const productKey = productKeyFromDragId(activeId);
+      const productKey = fromProductItemId(String(active.id));
       if (!productKey) return;
 
-      if (overId === UNASSIGNED_SECTION_ID) {
+      const overId = String(over.id);
+      const sectionDropId = fromSectionDropId(overId);
+      if (sectionDropId === NO_SECTION_ID) {
         onMoveProductToNoSection(productKey);
         return;
       }
-
-      if (overId.startsWith('section:') && overId !== UNASSIGNED_SECTION_ID) {
-        onMoveProductToSection(productKey, overId.slice('section:'.length));
+      if (sectionDropId) {
+        onMoveProductToSection(productKey, sectionDropId);
         return;
       }
 
-      // Dropped on a card — move to whichever group that card belongs to
-      const overGroupId = assignmentByItemId.get(overId);
-      if (overGroupId) {
-        onMoveProductToSection(productKey, overGroupId);
+      const overSectionId = assignmentByItemId.get(overId);
+      if (overSectionId) {
+        onMoveProductToSection(productKey, overSectionId);
       }
     },
     [assignmentByItemId, onMoveProductToNoSection, onMoveProductToSection],
@@ -329,9 +326,9 @@ export function DndOrganizer({
   return (
     <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="organizer-flow">
-        {(!activeSectionId || activeSectionId === UNASSIGNED_SECTION_ID) && unassignedProducts.length > 0 && (
+        {(!activeSectionId || activeSectionId === UNASSIGNED_SECTION_DROP_ID) && unassignedProducts.length > 0 && (
           <DndGroupBoard
-            id={UNASSIGNED_SECTION_ID}
+            id={UNASSIGNED_SECTION_DROP_ID}
             title={t('organizerUnsorted')}
             items={unassignedProducts}
             tabCount={unassignedProducts.reduce((sum, p) => sum + p.tabs.length, 0)}
@@ -347,7 +344,7 @@ export function DndOrganizer({
           return (
             <DndGroupBoard
               key={group.id}
-              id={`section:${group.id}`}
+              id={toSectionDropId(group.id)}
               title={group.name}
               section={group}
               items={items}
