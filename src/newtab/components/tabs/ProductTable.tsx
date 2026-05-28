@@ -10,7 +10,7 @@ import { useI18n } from '../../hooks/useI18n';
 
 interface ProductTableProps {
   items: TabGroup[];
-  groups: Section[];
+  sections: Section[];
   assignmentByItemId: Map<string, string>;
   onMoveItem: (p: TabGroup, sectionId: string) => void;
   onCloseProduct: (p: TabGroup) => void;
@@ -78,7 +78,7 @@ function RowIcon({ group }: { group: TabGroup }): React.ReactElement {
 
 export function ProductTable({
   items,
-  groups,
+  sections,
   assignmentByItemId,
   onMoveItem,
   onCloseProduct,
@@ -160,9 +160,9 @@ export function ProductTable({
                       className="w-full"
                     >
                       <option value="">{t('tableUnsorted')}</option>
-                      {groups.map((g) => (
-                        <option key={g.id} value={g.id}>
-                          {g.name}
+                      {sections.map((section) => (
+                        <option key={section.id} value={section.id}>
+                          {section.name}
                         </option>
                       ))}
                     </select>

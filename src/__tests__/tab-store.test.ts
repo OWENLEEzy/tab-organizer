@@ -597,6 +597,75 @@ describe('useTabStore', () => {
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
   });
 
+  it('keeps products in No section when deleting their section', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+    });
+    chromeStorage.data['sections'] = [
+      {
+        id: 'section-dev',
+        name: 'Dev',
+        order: 0,
+        autoRules: [{ pattern: 'linear', type: 'hostname' }],
+      },
+      {
+        id: 'section-work',
+        name: 'Work',
+        order: 1,
+        autoRules: [{ pattern: 'linear', type: 'hostname' }],
+      },
+    ];
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(51, 'https://linear.app/acme/issue/TAB-1'),
+    ]);
+
+    await useTabStore.getState().fetchTabs();
+    expect(useTabStore.getState().sectionAssignments).toEqual([
+      { productKey: 'linear.app', sectionId: 'section-dev', order: 0 },
+    ]);
+
+    await useTabStore.getState().deleteSection('section-dev');
+
+    expect(useTabStore.getState().sectionAssignments).toEqual([]);
+    expect(useTabStore.getState().unsortedOverrides).toEqual(['linear.app']);
+
+    await useTabStore.getState().fetchTabs();
+
+    expect(useTabStore.getState().sectionAssignments).toEqual([]);
+    expect(useTabStore.getState().unsortedOverrides).toEqual(['linear.app']);
+  });
+
+  it('imports backup unsorted overrides so No section choices survive refresh', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+    });
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(61, 'https://mail.google.com/mail/u/0/#inbox'),
+    ]);
+
+    await useTabStore.getState().importBackup([], [], ['gmail']);
+    await useTabStore.getState().fetchTabs();
+
+    expect(useTabStore.getState().sectionAssignments).toEqual([]);
+    expect(useTabStore.getState().unsortedOverrides).toEqual(['gmail']);
+  });
+
+  it('tracks dashboard tab count before filtering real tabs', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+    });
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(1, 'chrome-extension://fake-id/src/newtab/index.html'),
+      makeChromeTab(2, 'chrome-extension://fake-id/src/newtab/index.html?x=1'),
+      makeChromeTab(3, 'https://github.com/OWENLEEzy/tab-organizer'),
+    ]);
+
+    await useTabStore.getState().fetchTabs();
+
+    expect(useTabStore.getState().tabs).toHaveLength(1);
+    expect(useTabStore.getState().dashboardCount).toBe(2);
+  });
+
   it('restores and manages history snapshots', async () => {
     const snapshot = makeStoredHistorySnapshot('1', ['https://example.com/a', 'https://example.com/b']);
     chromeStorage.data['history'] = [snapshot];

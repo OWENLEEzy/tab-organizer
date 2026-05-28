@@ -96,7 +96,7 @@ describe('Chrome favicon rendering', () => {
       <I18nProvider>
         <ProductTable
           items={[group]}
-          groups={[]}
+          sections={[]}
           assignmentByItemId={new Map()}
           onMoveItem={() => {}}
           onCloseProduct={() => {}}
@@ -136,7 +136,7 @@ describe('Chrome favicon rendering', () => {
       <I18nProvider>
         <ProductTable
           items={[first, second]}
-          groups={[]}
+          sections={[]}
           assignmentByItemId={new Map()}
           onMoveItem={() => {}}
           onCloseProduct={() => {}}

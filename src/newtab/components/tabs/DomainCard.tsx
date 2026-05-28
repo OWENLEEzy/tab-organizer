@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import type { TabGroup } from '../../../types';
 import { TabChip } from './TabChip';
 import { getVisibleTabs } from '../../lib/visible-tabs';
+import { analyzeDuplicates } from '../../../lib/duplicate-analysis';
 import { getGroupFaviconSource } from '../../../lib/group-favicon';
 import { getFaviconUrl } from '../../../utils/favicon';
 import { useI18n } from '../../hooks/useI18n';
@@ -159,16 +160,16 @@ export function DomainCard({
   const iconFailed = groupFaviconUrl !== '' && failedFaviconUrl === groupFaviconUrl;
   const initial = displayName.trim().charAt(0).toUpperCase() || '?';
 
-  // Count URL occurrences to detect duplicates (Map is faster than plain object)
-  const { tabUrlCounts, dupeUrls, totalExtras } = useMemo(() => {
+  const duplicateAnalysis = useMemo(() => analyzeDuplicates(tabs), [tabs]);
+  const tabUrlCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const tab of tabs) {
       counts.set(tab.url, (counts.get(tab.url) ?? 0) + 1);
     }
-    const dupes = [...counts.entries()].filter(([, c]) => c > 1);
-    const extras = dupes.reduce((sum, [, c]) => sum + c - 1, 0);
-    return { tabUrlCounts: counts, dupeUrls: dupes, totalExtras: extras };
+    return counts;
   }, [tabs]);
+  const dupeUrls = duplicateAnalysis.duplicateUrls.map((url) => [url, tabUrlCounts.get(url) ?? 0] as const);
+  const totalExtras = duplicateAnalysis.duplicateCount;
 
   const hasDupes = dupeUrls.length > 0;
 

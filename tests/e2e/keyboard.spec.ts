@@ -57,4 +57,26 @@ test.describe('Keyboard Navigation', () => {
     const focusedChip = page.locator('[data-tab-url]').first();
     await expect(focusedChip).toHaveClass(/ring-2/);
   });
+
+  test('section shortcuts switch only through sections with content', async ({ page }) => {
+    await page.getByRole('button', { name: 'New section' }).click();
+    const dialog = page.locator('[role="dialog"]');
+    await dialog.getByLabel('Section Name').fill('Later');
+    await dialog.getByRole('button', { name: 'Create Section' }).click();
+
+    await page.getByRole('button', { name: 'Table' }).click();
+    const youtubeRow = page.getByRole('row', { name: /YouTube/ });
+    const sectionSelect = youtubeRow.locator('select');
+    const laterValue = await sectionSelect.evaluate((select) => {
+      const element = select as HTMLSelectElement;
+      return [...element.options].find((option) => option.textContent === 'Later')?.value ?? '';
+    });
+    await sectionSelect.selectOption(laterValue);
+
+    await page.getByRole('button', { name: 'Cards' }).click();
+    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+1' : 'Control+1');
+
+    await expect(page.getByRole('button', { name: 'Later' })).toHaveAttribute('tabindex', '0');
+    await expect(page.getByRole('heading', { name: 'YouTube' })).toBeVisible();
+  });
 });

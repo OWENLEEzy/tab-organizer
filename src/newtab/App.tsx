@@ -50,6 +50,7 @@ export function App(): React.ReactElement {
       settings: settingsStore.settings,
       sections: tabStore.sections,
       sectionAssignments: tabStore.sectionAssignments,
+      unsortedOverrides: tabStore.unsortedOverrides,
     };
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -111,7 +112,10 @@ export function App(): React.ReactElement {
       if (Array.isArray(parsed.sections)) {
         const sections = parsed.sections;
         const sectionAssignments = Array.isArray(parsed.sectionAssignments) ? parsed.sectionAssignments : [];
-        await tabStore.importBackup(sections, sectionAssignments);
+        const unsortedOverrides = Array.isArray(parsed.unsortedOverrides)
+          ? (parsed.unsortedOverrides as unknown[]).filter((value): value is string => typeof value === 'string')
+          : [];
+        await tabStore.importBackup(sections, sectionAssignments, unsortedOverrides);
       }
 
       handlers.showToast(t('toastSettingsImported'));
@@ -181,8 +185,8 @@ export function App(): React.ReactElement {
             onOpenSettings={() => dispatch({ type: 'SET_SETTINGS_OPEN', open: true })}
             isSidebarExpanded={state.isSidebarExpanded}
             onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
-            sections={derived.activeHeaderSections}
-            sectionIds={[null, ...derived.activeHeaderSections.map((g) => g.id)]}
+            sections={derived.contentSections}
+            sectionIds={derived.sectionNavigationIds}
             activeSectionId={tabStore.activeSectionId}
             onSectionChange={tabStore.setActiveSection}
             isSectionSwitcherFocused={state.sectionSwitcherFocused}
@@ -200,7 +204,7 @@ export function App(): React.ReactElement {
           />
         }
         toolbar={null}
-        footer={<Footer tabCount={state.totalTabs} duplicateCount={state.totalDupes} groupCount={derived.filteredProducts.length} sectionCount={derived.orderedSections.length} alerts={footerAlerts} />}
+        footer={<Footer tabCount={state.totalTabs} duplicateCount={state.totalDupes} groupCount={derived.filteredProducts.length} sectionCount={state.visibleSectionCount} alerts={footerAlerts} />}
       >
         <div id="main-content" tabIndex={-1} className="active-section">
           {state.showEmptyState ? (
@@ -326,7 +330,7 @@ export function App(): React.ReactElement {
               ) : viewMode === 'table' ? (
                 <ProductTable
                   items={derived.filteredProducts}
-                  groups={derived.orderedSections}
+                  sections={derived.manageableSections}
                   assignmentByItemId={derived.assignmentByItemId}
                   onMoveItem={handlers.handleMoveTableItem}
                   onCloseProduct={handlers.handleCloseProduct}
@@ -349,7 +353,7 @@ export function App(): React.ReactElement {
                     <DndOrganizer
                       filteredProducts={derived.filteredProducts}
                       unassignedProducts={derived.unassignedProducts}
-                      orderedSections={derived.orderedSections}
+                      orderedSections={derived.contentSections}
                       productsBySection={derived.productsBySection}
                       assignmentByItemId={derived.assignmentByItemId}
                       itemIdForProduct={derived.itemIdForProduct}

@@ -71,6 +71,15 @@ describe('tooling gates', () => {
     expect(runner).toContain('PLAYWRIGHT_BASE_URL');
     expect(config).toContain('process.env.PLAYWRIGHT_BASE_URL');
   });
+
+  it('runs the full check in pull request CI', () => {
+    const ciWorkflow = fs.readFileSync(path.join(repoRoot, '.github/workflows/ci.yml'), 'utf8');
+
+    expect(ciWorkflow).toContain('pull_request:');
+    expect(ciWorkflow).toContain('node-version: 22');
+    expect(ciWorkflow).toContain('npm ci');
+    expect(ciWorkflow).toContain('npm run check');
+  });
 });
 
 describe('architecture lint guardrails', () => {

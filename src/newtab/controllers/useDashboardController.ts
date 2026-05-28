@@ -3,8 +3,7 @@ import { useTabStore } from '../../stores/tab-store';
 import { useSettingsStore } from '../../stores/settings-store';
 import { useKeyboard } from '../hooks/useKeyboard';
 import { flattenVisibleTabs } from '../lib/visible-tabs';
-import { isTabOrganizerPage } from '../../utils/browser-url';
-import type { TabGroup, Section } from '../../types';
+import type { TabGroup } from '../../types';
 import { useUIState } from '../hooks/useUIState';
 import { useTabActions } from './useTabActions';
 import { useI18n } from '../hooks/useI18n';
@@ -36,7 +35,7 @@ function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void
 
 export function useAppLogic() {
   const [loading, setLoading] = React.useState(true);
-  
+
   // ─── Modular Hooks ──────────────────────────────────────────────────
   const { state, dispatch, showToast } = useUIState();
   const {
@@ -83,20 +82,6 @@ export function useAppLogic() {
   const orderedSections = useMemo(
     () => [...sections].sort((a, b) => a.order - b.order),
     [sections],
-  );
-
-  const globalProductsBySection = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const p of products) {
-       const sectionId = assignmentByItemId.get(groupAssignmentKey(p));
-       if (sectionId) counts.set(sectionId, (counts.get(sectionId) || 0) + 1);
-    }
-    return counts;
-  }, [products, assignmentByItemId, groupAssignmentKey]);
-
-  const activeHeaderSections = useMemo(
-    () => orderedSections.filter((s) => (globalProductsBySection.get(s.id) ?? 0) > 0),
-    [orderedSections, globalProductsBySection]
   );
 
   // Debounce searchQuery for derived memos — avoids cascading recomputes on every keystroke.
@@ -190,17 +175,22 @@ export function useAppLogic() {
     [filteredProducts, assignmentByItemId, groupAssignmentKey],
   );
 
+  const manageableSections = useMemo(
+    () => [...sections].sort((a, b) => a.order - b.order),
+    [sections],
+  );
+
   const productsBySection = useMemo(() => {
     const result = new Map<string, TabGroup[]>();
-    for (const group of orderedSections) {
-      result.set(group.id, []);
+    for (const section of manageableSections) {
+      result.set(section.id, []);
     }
 
-    for (const p of filteredProducts) {
-      const sectionId = assignmentByItemId.get(groupAssignmentKey(p));
+    for (const product of filteredProducts) {
+      const sectionId = assignmentByItemId.get(groupAssignmentKey(product));
       if (!sectionId) continue;
       const bucket = result.get(sectionId);
-      if (bucket) bucket.push(p);
+      if (bucket) bucket.push(product);
     }
 
     for (const [sectionId, items] of result) {
@@ -219,14 +209,24 @@ export function useAppLogic() {
     }
 
     return result;
-  }, [assignmentByItemId, filteredProducts, groupAssignmentKey, orderedSections, sectionAssignments]);
+  }, [assignmentByItemId, filteredProducts, groupAssignmentKey, manageableSections, sectionAssignments]);
+
+  const contentSections = useMemo(
+    () => manageableSections.filter((section) => (productsBySection.get(section.id)?.length ?? 0) > 0),
+    [manageableSections, productsBySection],
+  );
+
+  const sectionNavigationIds = useMemo(
+    () => [null, ...contentSections.map((section) => section.id)] as (string | null)[],
+    [contentSections],
+  );
 
   const flatChips = useMemo(() => {
     const visualProducts = viewMode === 'table'
       ? [...filteredProducts].sort((a, b) => a.order - b.order)
       : [
           ...unassignedProducts,
-          ...orderedSections.flatMap((group) => productsBySection.get(group.id) ?? []),
+          ...contentSections.flatMap((section) => productsBySection.get(section.id) ?? []),
         ];
 
     const isSearching = debouncedSearchQuery.trim().length > 0;
@@ -242,7 +242,7 @@ export function useAppLogic() {
   }, [
     filteredProducts,
     unassignedProducts,
-    orderedSections,
+    contentSections,
     productsBySection,
     viewMode,
     settings.maxChipsVisible,
@@ -257,10 +257,7 @@ export function useAppLogic() {
     [filteredProducts],
   );
 
-  const dashboardCount = useMemo(
-    () => tabs.filter((t) => isTabOrganizerPage(t.url)).length,
-    [tabs],
-  );
+  const dashboardCount = tabStore.dashboardCount;
 
   const totalDupes = useMemo(
     () => products.reduce((sum, p) => sum + p.duplicateCount, 0),
@@ -396,26 +393,24 @@ export function useAppLogic() {
       }
     },
     onSwitchSectionN: (n) => {
-      if (n > 0 && n <= orderedSections.length) {
-        tabStore.setActiveSection(orderedSections[n - 1].id);
+      if (n > 0 && n <= contentSections.length) {
+        tabStore.setActiveSection(contentSections[n - 1].id);
       }
     },
     onSwitchSectionAll: () => {
       tabStore.setActiveSection(null);
     },
     onCycleSectionPrev: (() => {
-      const getSectionIds = (groups: Section[]) => [null, ...groups.map((g) => g.id)];
       return () => {
-        const ids = getSectionIds(orderedSections);
+        const ids = sectionNavigationIds;
         const currentIndex = ids.indexOf(tabStore.activeSectionId);
         const nextIndex = (currentIndex - 1 + ids.length) % ids.length;
         tabStore.setActiveSection(ids[nextIndex]);
       };
     })(),
     onCycleSectionNext: (() => {
-      const getSectionIds = (groups: Section[]) => [null, ...groups.map((g) => g.id)];
       return () => {
-        const ids = getSectionIds(orderedSections);
+        const ids = sectionNavigationIds;
         const currentIndex = ids.indexOf(tabStore.activeSectionId);
         const nextIndex = (currentIndex + 1) % ids.length;
         tabStore.setActiveSection(ids[nextIndex]);
@@ -436,7 +431,7 @@ export function useAppLogic() {
       totalDupes,
       dashboardCount,
       showEmptyState: products.length === 0,
-      visibleSectionCount: orderedSections.length + (products.length === 0 ? 0 : 1),
+      visibleSectionCount: contentSections.length,
       focusedUrl,
       filteredTabCount,
       parsedQuery,
@@ -448,8 +443,9 @@ export function useAppLogic() {
     derived: {
       filteredProducts,
       unassignedProducts,
-      orderedSections,
-      activeHeaderSections,
+      manageableSections,
+      contentSections,
+      sectionNavigationIds,
       productsBySection,
       assignmentByItemId,
       itemIdForProduct,
