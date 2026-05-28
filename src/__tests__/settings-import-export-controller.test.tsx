@@ -118,4 +118,26 @@ describe('useSettingsImportExport', () => {
     );
     expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Settings imported'));
   });
+
+  it('imports legacy manual group backups into section state', async () => {
+    const { settingsStore, tabStore } = makeStores();
+    const showToast = vi.fn();
+    const { result } = renderHook(
+      () => useSettingsImportExport({ settingsStore, tabStore, showToast }),
+      { wrapper },
+    );
+
+    await result.current.handleImportConfig(JSON.stringify({
+      version: '1.0',
+      manualGroups: [{ id: 'legacy-later', name: 'Later', order: 0 }],
+      groupAssignments: [{ productKey: 'github', groupId: 'legacy-later', order: 0 }],
+    }));
+
+    expect(tabStore.importBackup).toHaveBeenCalledWith(
+      [{ id: 'legacy-later', name: 'Later', order: 0, emoji: undefined, autoRules: undefined }],
+      [{ productKey: 'github', sectionId: 'legacy-later', order: 0 }],
+      [],
+    );
+    expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Settings imported'));
+  });
 });

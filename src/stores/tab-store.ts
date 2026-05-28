@@ -622,16 +622,19 @@ export const useTabStore = create<TabStore>((set) => ({
     try {
       const currentTab = await chrome.tabs.getCurrent();
       const currentTabId = currentTab?.id ?? -1;
-      const allTabs = useTabStore.getState().tabs;
+      const allTabs = await chrome.tabs.query({});
       const extraDashboards = allTabs
-        .filter((t) => t.isDashboard && t.id !== currentTabId)
-        .map((t) => t.url);
+        .filter((tab) => tab.id != null && tab.id !== currentTabId && isTabOrganizerPage(tab.url ?? ''))
+        .map((tab) => tab.id)
+        .filter((id): id is number => id != null);
 
       if (extraDashboards.length > 0) {
-        await useTabStore.getState().closeTabsExact(extraDashboards);
+        await chrome.tabs.remove(extraDashboards);
       }
     } catch (err: unknown) {
       console.warn('[Tab Organizer] Failed to close extra dashboards:', err);
+    } finally {
+      await useTabStore.getState().fetchTabs();
     }
   },
 

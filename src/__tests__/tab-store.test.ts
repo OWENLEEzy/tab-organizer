@@ -691,18 +691,17 @@ describe('useTabStore', () => {
   });
 
   it('closes extra dashboard pages and tolerates cleanup failures', async () => {
-    const closeTabsExact = vi.fn().mockResolvedValue(undefined);
-    chromeTabs.getCurrent.mockResolvedValue({ id: 1 });
-    useTabStore.setState({
-      closeTabsExact,
-      tabs: [
-        { id: 1, url: 'chrome-extension://fake-id/src/newtab/index.html', title: '', favIconUrl: '', domain: '', windowId: 1, active: true, isDashboard: true, isDuplicate: false, isLandingPage: false, duplicateCount: 0 },
-        { id: 2, url: 'chrome-extension://fake-id/src/newtab/index.html?x=1', title: '', favIconUrl: '', domain: '', windowId: 1, active: false, isDashboard: true, isDuplicate: false, isLandingPage: false, duplicateCount: 0 },
-      ],
-    });
+    chromeTabs.getCurrent.mockResolvedValue(makeChromeTab(1, 'chrome-extension://fake-id/src/newtab/index.html'));
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(1, 'chrome-extension://fake-id/src/newtab/index.html'),
+      makeChromeTab(2, 'chrome-extension://fake-id/src/newtab/index.html?x=1'),
+      makeChromeTab(3, 'https://example.com'),
+    ]);
+    chromeTabs.remove.mockResolvedValue(undefined);
 
     await useTabStore.getState().closeExtraDashboards();
-    expect(closeTabsExact).toHaveBeenCalledWith(['chrome-extension://fake-id/src/newtab/index.html?x=1']);
+    expect(chromeTabs.remove).toHaveBeenCalledWith([2]);
+    expect(useTabStore.getState().fetchTabs).toHaveBeenCalledTimes(1);
 
     chromeTabs.getCurrent.mockRejectedValueOnce(new Error('missing'));
     await expect(useTabStore.getState().closeExtraDashboards()).resolves.not.toThrow();

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { CustomGroup } from '../../types';
+import type { CustomGroup, Section, SectionAssignment } from '../../types';
 import type { SettingsStore } from '../../stores/settings-store';
 import type { TabStore } from '../../stores/tab-store';
 import { parseImportedSettings } from '../lib/settings-import';
@@ -9,6 +9,70 @@ interface UseSettingsImportExportOptions {
   settingsStore: SettingsStore;
   tabStore: TabStore;
   showToast: (message: string) => void;
+}
+
+type LegacyGroupAssignment = {
+  productKey?: unknown;
+  itemType?: unknown;
+  itemKey?: unknown;
+  groupId?: unknown;
+  sectionId?: unknown;
+  order?: unknown;
+};
+
+type ImportedAutoRule = NonNullable<Section['autoRules']>[number];
+
+function normalizeImportedSections(value: unknown): Section[] | null {
+  if (!Array.isArray(value)) return null;
+
+  return value
+    .filter((section): section is Record<string, unknown> => (
+      section != null &&
+      typeof section === 'object' &&
+      typeof (section as Record<string, unknown>).id === 'string' &&
+      typeof (section as Record<string, unknown>).name === 'string'
+    ))
+    .map((section, index) => ({
+      id: section.id as string,
+      name: (section.name as string).trim() || 'Untitled',
+      order: Number.isFinite(section.order) ? Number(section.order) : index,
+      emoji: typeof section.emoji === 'string' ? section.emoji : undefined,
+      autoRules: Array.isArray(section.autoRules)
+        ? section.autoRules.filter((rule): rule is ImportedAutoRule => (
+            rule != null &&
+            typeof rule === 'object' &&
+            (rule as Record<string, unknown>).type === 'hostname' &&
+            typeof (rule as Record<string, unknown>).pattern === 'string'
+          ))
+        : undefined,
+    }));
+}
+
+function normalizeImportedAssignments(value: unknown): SectionAssignment[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((assignment): assignment is LegacyGroupAssignment => assignment != null && typeof assignment === 'object')
+    .flatMap((assignment, index): SectionAssignment[] => {
+      const productKey = typeof assignment.productKey === 'string'
+        ? assignment.productKey
+        : assignment.itemType === 'product' && typeof assignment.itemKey === 'string'
+          ? assignment.itemKey
+          : '';
+      const sectionId = typeof assignment.sectionId === 'string'
+        ? assignment.sectionId
+        : typeof assignment.groupId === 'string'
+          ? assignment.groupId
+          : '';
+
+      if (!productKey || !sectionId) return [];
+
+      return [{
+        productKey,
+        sectionId,
+        order: Number.isFinite(assignment.order) ? Number(assignment.order) : index,
+      }];
+    });
 }
 
 export function useSettingsImportExport({
@@ -78,13 +142,18 @@ export function useSettingsImportExport({
         }
       }
 
-      if (Array.isArray(parsed.sections)) {
-        const sections = parsed.sections;
-        const sectionAssignments = Array.isArray(parsed.sectionAssignments) ? parsed.sectionAssignments : [];
+      const importedSections = normalizeImportedSections(parsed.sections)
+        ?? normalizeImportedSections(parsed.manualGroups);
+
+      if (importedSections) {
+        const rawAssignments = Array.isArray(parsed.sectionAssignments)
+          ? parsed.sectionAssignments
+          : parsed.groupAssignments;
+        const sectionAssignments = normalizeImportedAssignments(rawAssignments);
         const unsortedOverrides = Array.isArray(parsed.unsortedOverrides)
           ? (parsed.unsortedOverrides as unknown[]).filter((value): value is string => typeof value === 'string')
           : [];
-        await tabStore.importBackup(sections, sectionAssignments, unsortedOverrides);
+        await tabStore.importBackup(importedSections, sectionAssignments, unsortedOverrides);
       }
 
       showToast(t('toastSettingsImported'));
