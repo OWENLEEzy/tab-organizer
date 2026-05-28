@@ -118,6 +118,7 @@ export function useSettingsImportExport({
       if (parsed.settings && typeof parsed.settings === 'object') {
         const importedSettings = parseImportedSettings(parsed.settings);
         if (importedSettings.theme) await settingsStore.setTheme(importedSettings.theme);
+        if (importedSettings.language) await settingsStore.setLanguage(importedSettings.language);
         if (importedSettings.soundEnabled !== undefined && importedSettings.soundEnabled !== settingsStore.settings.soundEnabled) await settingsStore.toggleSound();
         if (importedSettings.confettiEnabled !== undefined && importedSettings.confettiEnabled !== settingsStore.settings.confettiEnabled) await settingsStore.toggleConfetti();
         if (importedSettings.maxChipsVisible !== undefined) await settingsStore.setMaxChipsVisible(importedSettings.maxChipsVisible);

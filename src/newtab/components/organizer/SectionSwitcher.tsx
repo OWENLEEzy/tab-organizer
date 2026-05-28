@@ -100,7 +100,7 @@ export function SectionSwitcher({
       <button
         type="button"
         onClick={onCreateSection}
-        tabIndex={-1}
+        tabIndex={0}
         className="px-3 py-1.5 rounded-chip text-xs font-medium text-text-muted hover:bg-bg-surface hover:text-text-primary transition-colors duration-[var(--motion-fast)] border border-dashed border-border-color flex items-center justify-center focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none"
         aria-label={t('sectionSwitcherNew')}
         title={t('sectionSwitcherNew')}

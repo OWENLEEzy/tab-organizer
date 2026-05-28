@@ -40,6 +40,7 @@ function makeStores() {
     removeCustomGroup: vi.fn(async () => {}),
     addCustomGroup: vi.fn(async () => {}),
     updateKeyBinding: vi.fn(async () => {}),
+    setLanguage: vi.fn(async () => {}),
   } as unknown as SettingsStore;
 
   const tabStore = {
@@ -100,6 +101,7 @@ describe('useSettingsImportExport', () => {
         soundEnabled: false,
         maxChipsVisible: 12,
         customGroups: [{ groupKey: 'new', groupLabel: 'New', hostname: 'new.test' }],
+        language: 'zh',
       },
       sections: [{ id: 'later', name: 'Later', order: 0 }],
       sectionAssignments: [{ productKey: 'github', sectionId: 'later', order: 0 }],
@@ -107,6 +109,7 @@ describe('useSettingsImportExport', () => {
     }));
 
     await waitFor(() => expect(settingsStore.setTheme).toHaveBeenCalledWith('sage'));
+    expect(settingsStore.setLanguage).toHaveBeenCalledWith('zh');
     expect(settingsStore.toggleSound).toHaveBeenCalledTimes(1);
     expect(settingsStore.setMaxChipsVisible).toHaveBeenCalledWith(12);
     expect(settingsStore.removeCustomGroup).toHaveBeenCalledWith('old');

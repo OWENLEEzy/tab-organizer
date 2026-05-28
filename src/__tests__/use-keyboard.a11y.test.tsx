@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useKeyboard } from '../newtab/hooks/useKeyboard';
+import { I18nProvider } from '../newtab/providers/I18nProvider';
+import { SectionSwitcher } from '../newtab/components/organizer/SectionSwitcher';
 
 afterEach(() => {
   cleanup();
@@ -144,5 +146,30 @@ describe('useKeyboard', () => {
 
     expect(event.defaultPrevented).toBe(true);
     expect(screen.getByTestId('arrow-down-count')).toHaveTextContent('1');
+  });
+});
+
+describe('SectionSwitcher', () => {
+  it('keeps the new section button keyboard reachable', async () => {
+    const user = userEvent.setup();
+    const onCreateSection = vi.fn();
+
+    render(
+      <I18nProvider>
+        <SectionSwitcher
+          sections={[{ id: 'section-dev', name: 'Dev', order: 0 }]}
+          activeSectionId={null}
+          onChange={() => {}}
+          onCreateSection={onCreateSection}
+        />
+      </I18nProvider>,
+    );
+
+    await user.tab();
+    await user.tab();
+    await user.tab();
+    await user.keyboard('{Enter}');
+
+    expect(onCreateSection).toHaveBeenCalledTimes(1);
   });
 });
