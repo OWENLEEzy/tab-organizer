@@ -1,4 +1,4 @@
-export const LOCAL_FILES_KEY = 'local-files';
+export const LOCAL_FILES_PRODUCT_KEY = 'local-files';
 
 /**
  * Check if a URL is a real web page (not browser-internal).
@@ -48,7 +48,7 @@ export function getHostname(url: string): string {
  */
 export function getTabDomain(url: string): string {
   if (!url) return '';
-  if (url.startsWith('file://')) return LOCAL_FILES_KEY;
+  if (url.startsWith('file://')) return LOCAL_FILES_PRODUCT_KEY;
   return getHostname(url);
 }
 

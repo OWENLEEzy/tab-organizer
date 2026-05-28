@@ -1,4 +1,4 @@
-import { SOUND } from './constants';
+import { CLOSE_SOUND } from './close-effect-constants';
 
 /**
  * Play a swoosh sound effect using the Web Audio API.
@@ -11,7 +11,7 @@ export function playCloseSound(): void {
     const ctx = new AudioCtx();
     const t = ctx.currentTime;
 
-    const { duration, envelope, filter, gain, contextCleanup } = SOUND;
+    const { duration, envelope, filter, gain, contextCleanup } = CLOSE_SOUND;
 
     // Create noise buffer with shaped envelope
     const buffer = ctx.createBuffer(1, Math.round(ctx.sampleRate * duration), ctx.sampleRate);

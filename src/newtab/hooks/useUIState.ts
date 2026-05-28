@@ -1,6 +1,6 @@
 import { useReducer, useRef, useCallback } from 'react';
 
-export interface UIState {
+interface UIState {
   toast: { message: string; visible: boolean };
   searchQuery: string;
   confirmDialog: {

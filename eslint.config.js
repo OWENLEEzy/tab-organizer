@@ -166,7 +166,7 @@ export default defineConfig([
     },
   },
 
-  // Rule 3: readStorage/updateStorage restricted — stores should use domain adapters
+  // Rule 3: readStorage restricted — stores should use domain adapters
   {
     files: ['src/stores/**/*.ts'],
     ignores: ['src/__tests__/**'],
@@ -177,8 +177,8 @@ export default defineConfig([
           patterns: [
             {
               group: ['**/utils/storage'],
-              importNames: ['readStorage', 'updateStorage'],
-              message: 'Stores must use domain readers/writers (readSettings, readGroupOrder, readWorkspaces, writeWorkspaces, etc.) instead of readStorage/updateStorage.',
+              importNames: ['readStorage'],
+              message: 'Stores must use domain readers/writers (readSettings, readGroupOrder, readWorkspaces, writeWorkspaces, etc.) instead of readStorage.',
             },
           ],
         },
@@ -275,16 +275,6 @@ export default defineConfig([
       ],
     },
   },
-  // Rule 6a: useChromeStorage is allowed to access chrome.storage.onChanged (it's a Chrome-specific adapter)
-  {
-    files: ['src/newtab/hooks/useChromeStorage.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'off',
-      ],
-    },
-  },
-
   // Rule 7: src/lib must stay pure and independent
   {
     files: ['src/lib/**/*.{ts,tsx}'],

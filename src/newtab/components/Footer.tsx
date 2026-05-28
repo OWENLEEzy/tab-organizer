@@ -69,7 +69,7 @@ export function Footer({
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-1.5">
             <span
-              className={`font-body text-text-primary inline-block text-xs font-bold${state.popping ? ' animate-[countPop_0.3s_ease]' : ''}`}
+              className={`font-body text-text-primary inline-block text-xs font-bold${state.popping ? ' animate-[countPop_var(--motion-count-pop)_ease]' : ''}`}
             >
               {tabCount}
             </span>

@@ -14,7 +14,6 @@ test.describe('Hybrid Organizer', () => {
     await dialog.getByLabel('Section Name').fill('Later');
     await dialog.getByRole('button', { name: 'Create Section' }).click();
     await expect(dialog).not.toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Later' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Table' }).click();
     const youtubeRow = page.getByRole('row', { name: /YouTube/ });
@@ -29,6 +28,7 @@ test.describe('Hybrid Organizer', () => {
     expect(laterValue).not.toBe('');
     await sectionSelect.selectOption(laterValue);
     await expect(sectionSelect).toHaveValue(laterValue);
+    await expect(page.getByText(/4 sections/)).toBeVisible();
 
     await page.reload();
     await expect(page.getByRole('button', { name: 'Table' })).toHaveClass(/is-active/);
@@ -72,12 +72,12 @@ test.describe('Hybrid Organizer', () => {
     });
 
     await sectionSelect.selectOption(laterValue);
-    await expect(page.getByText(/1 sections/)).toBeVisible();
+    await expect(page.getByText(/4 sections/)).toBeVisible();
 
     await sectionSelect.selectOption('');
-    await expect(page.getByText(/0 sections/)).toBeVisible();
+    await expect(page.getByText(/3 sections/)).toBeVisible();
 
     await page.getByRole('button', { name: 'Cards' }).click();
-    await expect(page.getByRole('heading', { name: 'Unsorted' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'No section' })).toBeVisible();
   });
 });

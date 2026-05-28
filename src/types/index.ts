@@ -72,7 +72,7 @@ export interface LandingPagePattern {
 
 export type ViewMode = 'cards' | 'table';
 
-export interface SectionAutoRule {
+interface SectionAutoRule {
   pattern: string;
   type: 'hostname';
 }
@@ -154,22 +154,6 @@ export interface StorageSchema {
   viewMode: ViewMode;
   historyCandidate: HistorySnapshot | null;
   history: HistorySnapshot[];
-}
-
-// ─── Store Types ─────────────────────────────────────────────────
-
-export interface TabState {
-  tabs: Tab[];
-  products: TabGroup[];
-  sections: Section[];
-  sectionAssignments: SectionAssignment[];
-  viewMode: ViewMode;
-  loading: boolean;
-  showAllWindows: boolean;
-}
-
-export interface SettingsState extends AppSettings {
-  _hydrated: boolean;
 }
 
 // ─── Component Props ─────────────────────────────────────────────

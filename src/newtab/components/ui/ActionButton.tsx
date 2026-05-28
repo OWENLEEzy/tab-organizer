@@ -27,7 +27,7 @@ export function ActionButton({
       type={type}
       className={[
         'action-button inline-flex cursor-pointer items-center justify-center gap-2 rounded-chip border border-border-light',
-        'font-body text-xs font-semibold tracking-wide transition-colors duration-150',
+        'font-body text-xs font-semibold tracking-wide transition-colors duration-[var(--motion-fast)]',
         'focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none',
         'disabled:cursor-not-allowed disabled:opacity-50 dark:border-border-dark',
         variantClasses[variant],

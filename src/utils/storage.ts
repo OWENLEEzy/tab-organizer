@@ -10,7 +10,27 @@ import { historyUrlSignature, shouldReplaceHistoryCandidate } from '../lib/histo
 import { DEFAULT_SECTIONS } from '../config/sections';
 import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
 import { DEFAULT_GROUP_SORT, normalizeGroupSortBy } from '../config/group-sort';
-import { isRealTab } from '../lib/url-rules';
+
+function isRealTab(url: string): boolean {
+  const browserInternalPrefixes = [
+    'chrome://',
+    'chrome-extension://',
+    'chrome-search://',
+    'devtools://',
+    'about:',
+    'edge://',
+    'brave://',
+  ];
+  const normalized = url.trim().toLowerCase();
+  const target = normalized.startsWith('view-source:')
+    ? normalized.slice('view-source:'.length)
+    : normalized;
+
+  return (
+    target !== '' &&
+    !browserInternalPrefixes.some((prefix) => target.startsWith(prefix))
+  );
+}
 
 const CURRENT_SCHEMA_VERSION = 5;
 const STORAGE_KEYS = [
@@ -28,8 +48,6 @@ const STORAGE_KEYS = [
   'groupAssignments',
   'recoveryCandidate',
   'recoveryHistory',
-  'deferred',
-  'workspaces',
 ] as const;
 
 /**
@@ -188,7 +206,7 @@ function normalizeUnsortedOverrides(value: unknown): string[] {
 /**
  * Prune assignments that point to non-existent groups or products.
  */
-export function pruneAssignments(
+function pruneAssignments(
   assignments: SectionAssignment[],
   groups: Section[],
   currentProductKeys: Set<string>,
@@ -399,8 +417,8 @@ async function persistStorage(data: StorageSchema): Promise<void> {
     history: data.history,
   });
 
-  // Clean up legacy keys including deferred/workspaces.
-  await chrome.storage.local.remove(['manualGroups', 'groupAssignments', 'recoveryCandidate', 'recoveryHistory', 'deferred', 'workspaces']);
+  // Clean up legacy keys.
+  await chrome.storage.local.remove(['manualGroups', 'groupAssignments', 'recoveryCandidate', 'recoveryHistory']);
 }
 
 /**
@@ -423,7 +441,7 @@ export async function writeStorage(data: StorageSchema): Promise<void> {
  * Safely update storage by reading the latest state inside the write queue.
  * This prevents stale read snapshots from overwriting unrelated keys.
  */
-export async function updateStorage(
+async function updateStorage(
   updater: (current: StorageSchema) => StorageSchema | Promise<StorageSchema>
 ): Promise<StorageSchema> {
   let nextState = EMPTY_SCHEMA;
@@ -439,9 +457,7 @@ export async function updateStorage(
       raw.manualGroups !== undefined ||
       raw.groupAssignments !== undefined ||
       raw.recoveryCandidate !== undefined ||
-      raw.recoveryHistory !== undefined ||
-      raw.deferred !== undefined ||
-      raw.workspaces !== undefined;
+      raw.recoveryHistory !== undefined;
 
     const needsWrite = !isVersionCurrent || hasLegacyKeys || JSON.stringify(nextState) !== JSON.stringify(current);
 
@@ -791,6 +807,3 @@ export async function readHistory(): Promise<HistorySnapshot[]> {
   const storage = await readStorage();
   return storage.history;
 }
-
-// Export for testing
-export { EMPTY_SCHEMA, CURRENT_SCHEMA_VERSION };

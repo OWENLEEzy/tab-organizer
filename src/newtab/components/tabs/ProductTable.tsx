@@ -3,8 +3,7 @@ import type { Section, TabGroup } from '../../../types';
 import { TabChip } from './TabChip';
 import { analyzeDuplicates } from '../../../lib/duplicate-analysis';
 import { getProductKey } from '../../../lib/product-key';
-import { getGroupFaviconSource } from '../../../lib/group-favicon';
-import { getFaviconUrl } from '../../../utils/favicon';
+import { getTabGroupIconUrl } from './favicon';
 import { ActionButton } from '../ui/ActionButton';
 import { useI18n } from '../../hooks/useI18n';
 
@@ -36,7 +35,7 @@ function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
       viewBox="0 0 24 24"
       strokeWidth={2}
       stroke="currentColor"
-      className={`size-4 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`}
+      className={`size-4 transition-transform duration-[var(--motion-standard)] ${expanded ? 'rotate-90' : ''}`}
       aria-hidden="true"
     >
       <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
@@ -52,10 +51,7 @@ function RowIcon({ group }: { group: TabGroup }): React.ReactElement {
   const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
   const label = group.friendlyName || group.domain;
   const initial = label.trim().charAt(0).toUpperCase() || '?';
-  const faviconUrl = useMemo(
-    () => getFaviconUrl(getGroupFaviconSource(group.tabs)),
-    [group.tabs],
-  );
+  const faviconUrl = useMemo(() => getTabGroupIconUrl(group.tabs), [group.tabs]);
   const failed = faviconUrl !== '' && failedFaviconUrl === faviconUrl;
 
   if (failed || !faviconUrl) {

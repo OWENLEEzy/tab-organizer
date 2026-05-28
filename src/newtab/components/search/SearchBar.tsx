@@ -237,7 +237,7 @@ export function SearchBar({
                     onChange(finalCmd);
                     setSelectedIndex(0);
                   }}
-                  className={`flex items-center justify-between rounded px-2.5 py-2 text-left transition-colors duration-100 cursor-pointer ${
+                  className={`flex items-center justify-between rounded px-2.5 py-2 text-left transition-colors duration-[var(--motion-instant)] cursor-pointer ${
                     active
                       ? 'bg-accent-blue/10 text-accent-blue'
                       : 'hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark'

@@ -60,7 +60,7 @@ describe('tooling gates', () => {
 
     expect(eslintConfig).toContain("files: ['src/stores/**/*.ts']");
     expect(eslintConfig).toContain("group: ['**/utils/storage']");
-    expect(eslintConfig).toContain("importNames: ['readStorage', 'updateStorage']");
+    expect(eslintConfig).toContain("importNames: ['readStorage']");
   });
 
   it('lets e2e checks avoid unrelated local port conflicts', () => {

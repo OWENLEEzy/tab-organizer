@@ -74,7 +74,12 @@ test.describe('Keyboard Navigation', () => {
     await sectionSelect.selectOption(laterValue);
 
     await page.getByRole('button', { name: 'Cards' }).click();
-    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+1' : 'Control+1');
+    await page.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    });
+    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+4' : 'Control+4');
 
     await expect(page.getByRole('button', { name: 'Later' })).toHaveAttribute('tabindex', '0');
     await expect(page.getByRole('heading', { name: 'YouTube' })).toBeVisible();

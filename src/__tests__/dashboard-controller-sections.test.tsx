@@ -136,4 +136,29 @@ describe('dashboard section semantics', () => {
     expect(within(select).getByRole('option', { name: 'Later' })).toBeInTheDocument();
     expect(within(select).getByRole('option', { name: 'Empty' })).toBeInTheDocument();
   });
+
+  it('allows navigating to another section after switching to one section', async () => {
+    // Two sections with content; switch to A, then switch to B — both should
+    // appear in section navigation regardless of activeSectionId.
+    chromeStorageData.sections = [
+      { id: 'work', name: 'Work', order: 0 },
+      { id: 'personal', name: 'Personal', order: 1 },
+    ];
+    chromeStorageData.sectionAssignments = [
+      { productKey: 'github', sectionId: 'work', order: 0 },
+      { productKey: 'example.com', sectionId: 'personal', order: 0 },
+    ];
+    (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeChromeTab(1, 'https://github.com/OWENLEEzy/tab-organizer', 'Repo'),
+      makeChromeTab(2, 'https://example.com/docs', 'Example Docs'),
+    ]);
+
+    renderApp();
+
+    // Both sections visible in section switcher
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Personal' })).toBeInTheDocument();
+    });
+  });
 });

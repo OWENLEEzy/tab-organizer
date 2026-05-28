@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getTabDomain } from '../lib/url-rules';
+import { getTabDomain, LOCAL_FILES_PRODUCT_KEY } from '../lib/url-rules';
 import { isTabOrganizerPage } from '../utils/browser-url';
 
 describe('isTabOrganizerPage extra', () => {
@@ -24,7 +24,7 @@ describe('isTabOrganizerPage extra', () => {
 
 describe('getTabDomain extra', () => {
   it('returns local-files for file://', () => {
-    expect(getTabDomain('file:///path/to/file')).toBe('local-files');
+    expect(getTabDomain('file:///path/to/file')).toBe(LOCAL_FILES_PRODUCT_KEY);
   });
 
   it('returns empty string for empty URL', () => {

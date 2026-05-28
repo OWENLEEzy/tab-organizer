@@ -13,6 +13,7 @@ import { analyzeDuplicates } from '../../lib/duplicate-analysis';
 import { getProductKey } from '../../lib/product-key';
 import { createSortComparator } from '../../lib/tab-grouper';
 import { parseSearchQuery, resolveSectionQueryTarget } from '../lib/search-commands';
+import { useChromeStorageSync } from './useChromeStorageSync';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -33,7 +34,7 @@ function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void
   }
 }
 
-export function useAppLogic() {
+export function useDashboardController() {
   const [loading, setLoading] = React.useState(true);
 
   // ─── Modular Hooks ──────────────────────────────────────────────────
@@ -79,9 +80,30 @@ export function useAppLogic() {
     return map;
   }, [sectionAssignments]);
 
-  const orderedSections = useMemo(
+  const manageableSections = useMemo(
     () => [...sections].sort((a, b) => a.order - b.order),
     [sections],
+  );
+
+  const navigationProductsBySection = useMemo(() => {
+    const result = new Map<string, TabGroup[]>();
+    for (const section of manageableSections) {
+      result.set(section.id, []);
+    }
+
+    for (const product of products) {
+      const sectionId = assignmentByItemId.get(groupAssignmentKey(product));
+      if (!sectionId) continue;
+      const bucket = result.get(sectionId);
+      if (bucket) bucket.push(product);
+    }
+
+    return result;
+  }, [assignmentByItemId, products, groupAssignmentKey, manageableSections]);
+
+  const contentSections = useMemo(
+    () => manageableSections.filter((section) => (navigationProductsBySection.get(section.id)?.length ?? 0) > 0),
+    [manageableSections, navigationProductsBySection],
   );
 
   // Debounce searchQuery for derived memos — avoids cascading recomputes on every keystroke.
@@ -117,7 +139,7 @@ export function useAppLogic() {
 
     // 1. Process /section:SectionName command
     if (parsedQuery.type === 'section') {
-      const targetSection = resolveSectionQueryTarget(parsedQuery.sectionToken ?? '', orderedSections);
+      const targetSection = resolveSectionQueryTarget(parsedQuery.sectionToken ?? '', contentSections);
       if (targetSection) {
         result = products.filter(p => {
           const itemKey = groupAssignmentKey(p);
@@ -168,16 +190,11 @@ export function useAppLogic() {
       }
     }
     return finalResult;
-  }, [products, debouncedSearchQuery, parsedQuery, tabStore.activeSectionId, assignmentByItemId, orderedSections, settings.staleThresholdDays, settings.groupSortBy]);
+  }, [products, debouncedSearchQuery, parsedQuery, tabStore.activeSectionId, assignmentByItemId, contentSections, settings.staleThresholdDays, settings.groupSortBy]);
 
   const unassignedProducts = useMemo(
     () => filteredProducts.filter((p) => !assignmentByItemId.has(groupAssignmentKey(p))),
     [filteredProducts, assignmentByItemId, groupAssignmentKey],
-  );
-
-  const manageableSections = useMemo(
-    () => [...sections].sort((a, b) => a.order - b.order),
-    [sections],
   );
 
   const productsBySection = useMemo(() => {
@@ -210,11 +227,6 @@ export function useAppLogic() {
 
     return result;
   }, [assignmentByItemId, filteredProducts, groupAssignmentKey, manageableSections, sectionAssignments]);
-
-  const contentSections = useMemo(
-    () => manageableSections.filter((section) => (productsBySection.get(section.id)?.length ?? 0) > 0),
-    [manageableSections, productsBySection],
-  );
 
   const sectionNavigationIds = useMemo(
     () => [null, ...contentSections.map((section) => section.id)] as (string | null)[],
@@ -296,6 +308,12 @@ export function useAppLogic() {
     const cleanup = tabStore.startListeners();
     return cleanup;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useChromeStorageSync({
+    fetchSettings: settingsStore.fetchSettings,
+    fetchTabs: tabStore.fetchTabs,
+    fetchHistory: tabStore.fetchHistory,
+  });
 
   useEffect(() => {
     if (searchQuery.trim().length > 0) {

@@ -3,8 +3,7 @@ import type { TabGroup } from '../../../types';
 import { TabChip } from './TabChip';
 import { getVisibleTabs } from '../../lib/visible-tabs';
 import { analyzeDuplicates } from '../../../lib/duplicate-analysis';
-import { getGroupFaviconSource } from '../../../lib/group-favicon';
-import { getFaviconUrl } from '../../../utils/favicon';
+import { getTabGroupIconUrl } from './favicon';
 import { useI18n } from '../../hooks/useI18n';
 
 // ─── Types ────────────────────────────────────────────────────────────
@@ -129,7 +128,7 @@ function TabChipRow({
 
 // ─── Component ────────────────────────────────────────────────────────
 
-export function DomainCard({
+function DomainCardComponent({
   group,
   dragHandleProps,
   expanded = false,
@@ -153,10 +152,7 @@ export function DomainCard({
   const displayName = group.friendlyName || group.domain;
   const selectionMode = (selectedUrls?.size ?? 0) > 0 || (selectedTabIds?.size ?? 0) > 0;
   const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
-  const groupFaviconUrl = useMemo(
-    () => getFaviconUrl(getGroupFaviconSource(tabs)),
-    [tabs],
-  );
+  const groupFaviconUrl = useMemo(() => getTabGroupIconUrl(tabs), [tabs]);
   const iconFailed = groupFaviconUrl !== '' && failedFaviconUrl === groupFaviconUrl;
   const initial = displayName.trim().charAt(0).toUpperCase() || '?';
 
@@ -305,7 +301,7 @@ export function DomainCard({
         {extraCount > 0 && (
           <button
             type="button"
-            className="w-full mt-1.5 py-1.5 text-[10px] font-mono tracking-wider text-text-muted border border-dashed border-border-color rounded hover:text-text-primary bg-transparent cursor-pointer transition-colors duration-150"
+            className="w-full mt-1.5 py-1.5 text-[10px] font-mono tracking-wider text-text-muted border border-dashed border-border-color rounded hover:text-text-primary bg-transparent cursor-pointer transition-colors duration-[var(--motion-fast)]"
             onClick={handleExpand}
             aria-expanded={expanded}
             aria-label={
@@ -326,7 +322,7 @@ export function DomainCard({
         <div className="mt-3 flex flex-wrap gap-2 border-t border-border-color pt-3">
           <button
             type="button"
-            className="rounded-chip text-text-secondary font-body hover:bg-bg-surface hover:text-accent-red focus-visible:ring-accent-primary/40 inline-flex min-h-[var(--spacing-button-height)] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
+            className="rounded-chip text-text-secondary font-body hover:bg-bg-surface hover:text-accent-red focus-visible:ring-accent-primary/40 inline-flex min-h-[var(--spacing-button-height)] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-[var(--motion-fast)] focus-visible:ring-2 focus-visible:outline-none"
             onClick={handleCloseDomain}
           >
             <CloseAllIcon />
@@ -336,7 +332,7 @@ export function DomainCard({
           {hasDupes && (
             <button
               type="button"
-              className="rounded-chip text-text-secondary font-body hover:bg-accent-amber/10 hover:text-accent-amber focus-visible:ring-accent-primary/40 inline-flex min-h-[var(--spacing-button-height)] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
+              className="rounded-chip text-text-secondary font-body hover:bg-accent-amber/10 hover:text-accent-amber focus-visible:ring-accent-primary/40 inline-flex min-h-[var(--spacing-button-height)] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-[var(--motion-fast)] focus-visible:ring-2 focus-visible:outline-none"
               onClick={handleCloseDuplicates}
             >
               <DedupIcon />
@@ -349,4 +345,4 @@ export function DomainCard({
   );
 }
 
-export const DomainCardMemo = React.memo(DomainCard);
+export const DomainCard = React.memo(DomainCardComponent);

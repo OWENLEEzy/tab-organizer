@@ -238,7 +238,7 @@ export function SettingsPanel({
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
-        className="border border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-2xl animate-[fadeUp_0.3s_ease_both] overflow-hidden max-h-[85vh] h-[550px] rounded-card shadow-2xl flex"
+        className="border border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-2xl animate-[fadeUp_var(--motion-enter)_ease_both] overflow-hidden max-h-[85vh] h-[550px] rounded-card shadow-2xl flex"
       >
         {/* Left Column - Navigation */}
         <div className="w-48 border-r border-border-light/40 dark:border-border-dark/40 bg-surface-light/40 dark:bg-surface-dark/40 flex flex-col p-4 gap-1 shrink-0 select-none overflow-y-auto">

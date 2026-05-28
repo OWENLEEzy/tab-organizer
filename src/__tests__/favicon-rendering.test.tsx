@@ -82,7 +82,7 @@ describe('Chrome favicon rendering', () => {
       </I18nProvider>,
     );
 
-    expect(container.querySelector('img')?.getAttribute('src')).toBe(favicon);
+    expect(container.querySelector('.app-card .border-b img.favicon')?.getAttribute('src')).toBe(favicon);
   });
 
   it('renders a product table row with the first Chrome-provided favicon URL in the group', () => {

@@ -83,6 +83,7 @@ test.describe('Search & Filter', () => {
     await page.getByRole('button', { name: 'Cards' }).click();
     const searchInput = page.getByRole('searchbox', { name: 'search tabs' });
     await searchInput.fill(`/section:${laterValue}`);
+    await page.waitForTimeout(300);
 
     await expect(page.getByRole('heading', { name: 'YouTube' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'GitHub' })).not.toBeVisible();

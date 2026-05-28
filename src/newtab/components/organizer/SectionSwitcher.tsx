@@ -72,7 +72,7 @@ export function SectionSwitcher({
         type="button"
         onClick={() => onChange(null)}
         tabIndex={activeSectionId === null ? 0 : -1}
-        className={`px-4 py-1.5 rounded-chip text-xs transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none ${
+        className={`px-4 py-1.5 rounded-chip text-xs transition-colors duration-[var(--motion-fast)] focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none ${
           activeSectionId === null
             ? 'border border-[var(--border-accent-subtle)] bg-[var(--bg-accent-subtle)] text-text-primary font-semibold'
             : 'border border-transparent text-text-secondary hover:bg-bg-surface font-medium'
@@ -87,7 +87,7 @@ export function SectionSwitcher({
           type="button"
           onClick={() => onChange(section.id)}
           tabIndex={activeSectionId === section.id ? 0 : -1}
-          className={`px-4 py-1.5 rounded-chip text-xs transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none ${
+          className={`px-4 py-1.5 rounded-chip text-xs transition-colors duration-[var(--motion-fast)] focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none ${
             activeSectionId === section.id
               ? 'border border-[var(--border-accent-subtle)] bg-[var(--bg-accent-subtle)] text-text-primary font-semibold'
               : 'border border-transparent text-text-secondary hover:bg-bg-surface font-medium'
@@ -101,7 +101,7 @@ export function SectionSwitcher({
         type="button"
         onClick={onCreateSection}
         tabIndex={-1}
-        className="px-3 py-1.5 rounded-chip text-xs font-medium text-text-muted hover:bg-bg-surface hover:text-text-primary transition-colors duration-150 border border-dashed border-border-color flex items-center justify-center focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none"
+        className="px-3 py-1.5 rounded-chip text-xs font-medium text-text-muted hover:bg-bg-surface hover:text-text-primary transition-colors duration-[var(--motion-fast)] border border-dashed border-border-color flex items-center justify-center focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none"
         aria-label={t('sectionSwitcherNew')}
         title={t('sectionSwitcherNew')}
       >

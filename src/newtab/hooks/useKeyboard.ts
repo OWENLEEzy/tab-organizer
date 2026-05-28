@@ -93,7 +93,7 @@ function matchesKeyBinding(e: KeyboardEvent, binding: string, nPlaceholder?: str
 /**
  * Register global keyboard shortcuts for the new tab page.
  *
- * Uses a ref-based callback pattern (same as useChromeStorage) to avoid
+ * Uses a ref-based callback pattern to avoid
  * stale closures — the listener is registered once and always calls the
  * latest action callbacks without re-subscribing.
  *
