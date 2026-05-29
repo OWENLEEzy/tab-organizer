@@ -244,7 +244,7 @@ export const useTabStore = create<TabStore>((set) => ({
         products: productGroups,
         sections,
         assignments: sectionAssignments,
-        noSectionOverrides: organizerState.unsectionedProductKeys,
+        unsectionedProductKeys: organizerState.unsectionedProductKeys,
         hostnamesByProductKey,
       });
 

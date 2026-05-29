@@ -27,13 +27,13 @@ export function getVisibleTabs(
 export function flattenVisibleTabs(
   groups: readonly TabGroup[],
   maxChipsVisible: number,
-  expandedDomains: ReadonlySet<string>,
+  expandedProductGroups: ReadonlySet<string>,
 ): VisibleTabChip[] {
   return groups.flatMap((group) => {
     const { visibleTabs } = getVisibleTabs(
       group.tabs,
       maxChipsVisible,
-      expandedDomains.has(group.domain),
+      expandedProductGroups.has(group.domain),
     );
 
     return visibleTabs.map((tab) => ({

@@ -263,7 +263,7 @@ export function App(): React.ReactElement {
                   onCloseProduct={handlers.handleCloseProduct}
                   onCloseDuplicates={handlers.handleCloseDuplicates}
                   onFocusTab={handlers.handleFocusTab}
-                  expandedProductGroups={state.expandedDomains}
+                  expandedProductGroups={state.expandedProductGroups}
                   onToggleProductGroupExpanded={handlers.handleToggleExpanded}
                   onCloseTab={handlers.handleCloseTabAnimated}
                   onChipClick={handlers.handleChipClick}
@@ -284,7 +284,7 @@ export function App(): React.ReactElement {
                       productsBySection={derived.productsBySection}
                       assignmentByItemId={derived.assignmentByItemId}
                       itemIdForProduct={derived.itemIdForProduct}
-                      expandedProductGroups={state.expandedDomains}
+                      expandedProductGroups={state.expandedProductGroups}
                       maxChipsVisible={settings.maxChipsVisible}
                       staleThresholdDays={settings.staleThresholdDays ?? 3}
                       focusedUrl={state.focusedUrl}

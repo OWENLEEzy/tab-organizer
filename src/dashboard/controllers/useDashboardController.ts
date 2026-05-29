@@ -45,7 +45,7 @@ export function useDashboardController() {
   const {
     searchQuery,
     focusedIndex,
-    expandedDomains,
+    expandedProductGroups,
     selectedUrls,
     lastClickedIndex,
   } = state;
@@ -77,7 +77,7 @@ export function useDashboardController() {
     sections,
     products: sortedProducts,
     assignments: sectionAssignments,
-    noSectionOverrides: tabStore.unsectionedProductKeys,
+    unsectionedProductKeys: tabStore.unsectionedProductKeys,
     activeSectionId: tabStore.activeSectionId,
   }), [sections, sortedProducts, sectionAssignments, tabStore.unsectionedProductKeys, tabStore.activeSectionId]);
 
@@ -176,7 +176,7 @@ export function useDashboardController() {
     sections: structureOrganizerModel.sections,
     products: filteredProducts,
     assignments: sectionAssignments,
-    noSectionOverrides: tabStore.unsectionedProductKeys,
+    unsectionedProductKeys: tabStore.unsectionedProductKeys,
     activeSectionId: tabStore.activeSectionId,
   }), [structureOrganizerModel.sections, filteredProducts, sectionAssignments, tabStore.unsectionedProductKeys, tabStore.activeSectionId]);
 
@@ -198,7 +198,7 @@ export function useDashboardController() {
     const isSearching = debouncedSearchQuery.trim().length > 0;
     const activeExpanded = isSearching
       ? new Set(visualProducts.map(p => p.domain))
-      : expandedDomains;
+      : expandedProductGroups;
 
     return flattenVisibleTabs(
       visualProducts,
@@ -212,7 +212,7 @@ export function useDashboardController() {
     contentOrganizerModel.visibleSections,
     viewMode,
     settings.maxChipsVisible,
-    expandedDomains,
+    expandedProductGroups,
     debouncedSearchQuery,
   ]);
 

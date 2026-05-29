@@ -217,8 +217,8 @@ export function useTabActions({
 
   const handleToggleExpanded = useCallback((domain: string) => {
     dispatch({
-      type: 'SET_EXPANDED_DOMAINS',
-      domains: (prev) => {
+      type: 'SET_EXPANDED_PRODUCT_GROUPS',
+      productGroups: (prev) => {
         const next = new Set(prev);
         if (next.has(domain)) {
           next.delete(domain);
