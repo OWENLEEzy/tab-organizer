@@ -161,7 +161,7 @@ describe('useTabStore', () => {
       products: [],
       sections: [],
       sectionAssignments: [],
-      unsortedOverrides: [],
+      unsectionedProductKeys: [],
       viewMode: 'cards',
       loading: false,
       error: null,
@@ -342,10 +342,10 @@ describe('useTabStore', () => {
       { productKey: 'gmail', sectionId: 'section-work', order: 0 },
     ]);
 
-    await useTabStore.getState().moveProductToNoSection('gmail');
+    await useTabStore.getState().moveProductToUnsectioned('gmail');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
-    expect(chromeStorage.data['unsortedOverrides']).toEqual(['gmail']);
+    expect(chromeStorage.data['unsectionedProductKeys']).toEqual(['gmail']);
 
     await useTabStore.getState().fetchTabs();
 
@@ -375,7 +375,7 @@ describe('useTabStore', () => {
       sectionAssignments: [],
     });
 
-    await useTabStore.getState().moveProductToSection('github', 'later');
+    await useTabStore.getState().moveProductGroupToSection('github', 'later');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([
       { productKey: 'github', sectionId: 'later', order: 0 },
@@ -383,19 +383,19 @@ describe('useTabStore', () => {
     expect(chromeStorage.data['sectionAssignments']).toEqual([
       { productKey: 'github', sectionId: 'later', order: 0 },
     ]);
-    expect(chromeStorage.data['unsortedOverrides']).toEqual([]);
+    expect(chromeStorage.data['unsectionedProductKeys']).toEqual([]);
 
-    await useTabStore.getState().moveProductToNoSection('github');
+    await useTabStore.getState().moveProductToUnsectioned('github');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
-    expect(chromeStorage.data['unsortedOverrides']).toEqual(['github']);
+    expect(chromeStorage.data['unsectionedProductKeys']).toEqual(['github']);
 
-    await useTabStore.getState().moveProductToSection('github', 'later');
+    await useTabStore.getState().moveProductGroupToSection('github', 'later');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([
       { productKey: 'github', sectionId: 'later', order: 0 },
     ]);
-    expect(chromeStorage.data['unsortedOverrides']).toEqual([]);
+    expect(chromeStorage.data['unsectionedProductKeys']).toEqual([]);
   });
 
   it('preserves concurrent product moves based on the latest organizer storage state', async () => {
@@ -403,18 +403,18 @@ describe('useTabStore', () => {
       fetchTabs: vi.fn().mockResolvedValue(undefined),
       sections: [{ id: 'later', name: 'Later', order: 0 }],
       sectionAssignments: [],
-      unsortedOverrides: [],
+      unsectionedProductKeys: [],
     });
     chromeStorage.data = {
       schemaVersion: 4,
       sections: [{ id: 'later', name: 'Later', order: 0 }],
       sectionAssignments: [],
-      unsortedOverrides: [],
+      unsectionedProductKeys: [],
     };
 
     await Promise.all([
-      useTabStore.getState().moveProductToSection('github', 'later'),
-      useTabStore.getState().moveProductToSection('vercel', 'later'),
+      useTabStore.getState().moveProductGroupToSection('github', 'later'),
+      useTabStore.getState().moveProductGroupToSection('vercel', 'later'),
     ]);
 
     expect(useTabStore.getState().sectionAssignments.map((assignment) => assignment.productKey).sort()).toEqual([
@@ -628,7 +628,7 @@ describe('useTabStore', () => {
     await useTabStore.getState().deleteSection('section-dev');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
-    expect(useTabStore.getState().unsortedOverrides).toEqual(['linear.app']);
+    expect(useTabStore.getState().unsectionedProductKeys).toEqual(['linear.app']);
   });
 
   it('keeps products in No section when deleting their section', async () => {
@@ -661,12 +661,12 @@ describe('useTabStore', () => {
     await useTabStore.getState().deleteSection('section-dev');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
-    expect(useTabStore.getState().unsortedOverrides).toEqual(['linear.app']);
+    expect(useTabStore.getState().unsectionedProductKeys).toEqual(['linear.app']);
 
     await useTabStore.getState().fetchTabs();
 
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
-    expect(useTabStore.getState().unsortedOverrides).toEqual(['linear.app']);
+    expect(useTabStore.getState().unsectionedProductKeys).toEqual(['linear.app']);
   });
 
   it('imports backup unsorted overrides so No section choices survive refresh', async () => {
@@ -681,7 +681,7 @@ describe('useTabStore', () => {
     await useTabStore.getState().fetchTabs();
 
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
-    expect(useTabStore.getState().unsortedOverrides).toEqual(['gmail']);
+    expect(useTabStore.getState().unsectionedProductKeys).toEqual(['gmail']);
   });
 
   it('tracks dashboard tab count before filtering real tabs', async () => {

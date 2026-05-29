@@ -150,7 +150,7 @@ export interface StorageSchema {
   sections: Section[];
   sectionAssignments: SectionAssignment[];
   /** Product keys explicitly moved to No section by the user — immune to auto-assignment. */
-  unsortedOverrides: string[];
+  unsectionedProductKeys: string[];
   viewMode: ViewMode;
   recoveryCandidate: RecoverySnapshot | null;
   recoverySnapshots: RecoverySnapshot[];

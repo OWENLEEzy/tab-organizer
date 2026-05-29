@@ -9,6 +9,7 @@ const ORGANIZER_KEYS = new Set([
   'groupOrder',
   'sections',
   'sectionAssignments',
+  'unsectionedProductKeys',
   'unsortedOverrides',
   'viewMode',
   'manualGroups',
@@ -27,7 +28,7 @@ const HISTORY_KEYS = new Set([
 interface ChromeStorageSyncOptions {
   fetchSettings: () => Promise<void>;
   fetchTabs: () => Promise<void>;
-  fetchHistory: () => Promise<void>;
+  fetchRecovery: () => Promise<void>;
 }
 
 function hasChangedKey(changes: StorageChanges, keys: Set<string>): boolean {
@@ -37,12 +38,12 @@ function hasChangedKey(changes: StorageChanges, keys: Set<string>): boolean {
 export function useChromeStorageSync({
   fetchSettings,
   fetchTabs,
-  fetchHistory,
+  fetchRecovery,
 }: ChromeStorageSyncOptions): void {
-  const callbacksRef = useRef({ fetchSettings, fetchTabs, fetchHistory });
+  const callbacksRef = useRef({ fetchSettings, fetchTabs, fetchRecovery });
 
   useEffect(() => {
-    callbacksRef.current = { fetchSettings, fetchTabs, fetchHistory };
+    callbacksRef.current = { fetchSettings, fetchTabs, fetchRecovery };
   });
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export function useChromeStorageSync({
         void callbacks.fetchTabs();
       }
       if (hasChangedKey(changes, HISTORY_KEYS)) {
-        void callbacks.fetchHistory();
+        void callbacks.fetchRecovery();
       }
     };
 

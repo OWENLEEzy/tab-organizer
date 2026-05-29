@@ -76,9 +76,9 @@ export function useDashboardController() {
     sections,
     products: sortedProducts,
     assignments: sectionAssignments,
-    noSectionOverrides: tabStore.unsortedOverrides,
+    noSectionOverrides: tabStore.unsectionedProductKeys,
     activeSectionId: tabStore.activeSectionId,
-  }), [sections, sortedProducts, sectionAssignments, tabStore.unsortedOverrides, tabStore.activeSectionId]);
+  }), [sections, sortedProducts, sectionAssignments, tabStore.unsectionedProductKeys, tabStore.activeSectionId]);
 
   const itemIdForProduct = useCallback((product: TabGroup) => {
     return toProductItemId(product.productKey ?? product.itemKey ?? product.domain);
@@ -175,9 +175,9 @@ export function useDashboardController() {
     sections: structureOrganizerModel.sections,
     products: filteredProducts,
     assignments: sectionAssignments,
-    noSectionOverrides: tabStore.unsortedOverrides,
+    noSectionOverrides: tabStore.unsectionedProductKeys,
     activeSectionId: tabStore.activeSectionId,
-  }), [structureOrganizerModel.sections, filteredProducts, sectionAssignments, tabStore.unsortedOverrides, tabStore.activeSectionId]);
+  }), [structureOrganizerModel.sections, filteredProducts, sectionAssignments, tabStore.unsectionedProductKeys, tabStore.activeSectionId]);
 
   const cardsSections = useMemo(() => {
     return structureOrganizerModel.sections.filter((section) => {
@@ -250,7 +250,7 @@ export function useDashboardController() {
       await Promise.all([
         tabStore.fetchTabs(),
         settingsStore.fetchSettings(),
-        tabStore.fetchHistory(),
+        tabStore.fetchRecovery(),
       ]);
       setLoading(false);
     }
@@ -265,7 +265,7 @@ export function useDashboardController() {
   useChromeStorageSync({
     fetchSettings: settingsStore.fetchSettings,
     fetchTabs: tabStore.fetchTabs,
-    fetchHistory: tabStore.fetchHistory,
+    fetchRecovery: tabStore.fetchRecovery,
   });
 
   useEffect(() => {

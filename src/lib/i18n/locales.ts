@@ -149,7 +149,7 @@ export const locales = {
     tableHeaderTabs: 'Tabs',
     tableHeaderDuplicates: 'Duplicates',
     tableHeaderActions: 'Actions',
-    tableUnsorted: 'Unsorted',
+    tableUnsectioned: 'Unsorted',
     tableBtnClose: 'Close',
     tableBtnDedupe: 'Dedupe',
     tableExpandLabel: 'Expand {name}',
@@ -167,7 +167,7 @@ export const locales = {
     cardShowMoreLabel: 'Show {count} more tabs',
 
     // DnD Organizer
-    organizerUnsorted: 'No section',
+    organizerUnsectioned: 'No section',
     organizerBtnRename: 'Rename',
     organizerBtnDelete: 'Delete',
     organizerBtnCloseAll: 'Close all',
@@ -473,7 +473,7 @@ export const locales = {
     tableHeaderTabs: '页面数量',
     tableHeaderDuplicates: '重复项',
     tableHeaderActions: '操作',
-    tableUnsorted: '未分配分区',
+    tableUnsectioned: '未分配分区',
     tableBtnClose: '关闭',
     tableBtnDedupe: '去重',
     tableExpandLabel: '展开 {name}',
@@ -491,7 +491,7 @@ export const locales = {
     cardShowMoreLabel: '显示额外的 {count} 个页面',
 
     // DnD Organizer
-    organizerUnsorted: '未分配分区',
+    organizerUnsectioned: '未分配分区',
     organizerBtnRename: '重命名',
     organizerBtnDelete: '删除分区',
     organizerBtnCloseAll: '关闭全部',

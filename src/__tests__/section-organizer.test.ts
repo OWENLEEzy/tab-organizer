@@ -12,7 +12,7 @@ import {
   getProductSectionId,
   isAssignedToSection,
   isNoSection,
-  moveProductToNoSection,
+  moveProductToUnsectioned,
   parseDropId,
   toProductItemId,
   toSectionDropId,
@@ -245,7 +245,7 @@ describe('assignment mutations', () => {
     ]);
     expect(assignments).toEqual([{ productKey: 'github', sectionId: 'section-dev', order: 0 }]);
 
-    const moved = moveProductToNoSection(assigned, [], 'youtube');
+    const moved = moveProductToUnsectioned(assigned, [], 'youtube');
     expect(moved.assignments).toEqual([{ productKey: 'github', sectionId: 'section-dev', order: 0 }]);
     expect(moved.overrides).toEqual(['youtube']);
 

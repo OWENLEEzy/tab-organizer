@@ -361,8 +361,8 @@ export function useTabActions({
   const handleMoveTableItem = useCallback((p: TabGroup, sectionId: string) => {
     const productKey = getProductKey(p);
     const move = sectionId
-      ? tabStore.moveProductToSection(productKey, sectionId)
-      : tabStore.moveProductToNoSection(productKey);
+      ? tabStore.moveProductGroupToSection(productKey, sectionId)
+      : tabStore.moveProductToUnsectioned(productKey);
 
     move.then(() => {
       showToast(sectionId ? t('toastMovedToGroup') : t('toastMovedToUnsorted'));
@@ -370,13 +370,13 @@ export function useTabActions({
   }, [tabStore, showToast, t]);
 
   const handleMoveProductToNoSection = useCallback((productKey: string) => {
-    tabStore.moveProductToNoSection(productKey).then(() => {
+    tabStore.moveProductToUnsectioned(productKey).then(() => {
       showToast(t('toastMovedToUnsorted'));
     });
   }, [tabStore, showToast, t]);
 
   const handleMoveProductToSection = useCallback((productKey: string, sectionId: string) => {
-    tabStore.moveProductToSection(productKey, sectionId).then(() => {
+    tabStore.moveProductGroupToSection(productKey, sectionId).then(() => {
       showToast(t('toastMovedToGroup'));
     });
   }, [tabStore, showToast, t]);

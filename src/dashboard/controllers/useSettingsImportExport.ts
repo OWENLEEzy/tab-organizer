@@ -88,7 +88,7 @@ export function useSettingsImportExport({
       settings: settingsStore.settings,
       sections: tabStore.sections,
       sectionAssignments: tabStore.sectionAssignments,
-      unsortedOverrides: tabStore.unsortedOverrides,
+      unsectionedProductKeys: tabStore.unsectionedProductKeys,
     };
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -151,10 +151,11 @@ export function useSettingsImportExport({
           ? parsed.sectionAssignments
           : parsed.groupAssignments;
         const sectionAssignments = normalizeImportedAssignments(rawAssignments);
-        const unsortedOverrides = Array.isArray(parsed.unsortedOverrides)
-          ? (parsed.unsortedOverrides as unknown[]).filter((value): value is string => typeof value === 'string')
+        const rawUnsectioned = parsed.unsectionedProductKeys ?? parsed.unsortedOverrides;
+        const unsectionedProductKeys = Array.isArray(rawUnsectioned)
+          ? (rawUnsectioned as unknown[]).filter((value): value is string => typeof value === 'string')
           : [];
-        await tabStore.importBackup(importedSections, sectionAssignments, unsortedOverrides);
+        await tabStore.importBackup(importedSections, sectionAssignments, unsectionedProductKeys);
       }
 
       showToast(t('toastSettingsImported'));

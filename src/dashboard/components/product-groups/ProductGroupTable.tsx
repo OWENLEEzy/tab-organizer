@@ -156,7 +156,7 @@ export function ProductGroupTable({
                       aria-label={`Move ${p.friendlyName || p.domain}`}
                       className="w-full"
                     >
-                      <option value="">{t('tableUnsorted')}</option>
+                      <option value="">{t('tableUnsectioned')}</option>
                       {sections.map((section) => (
                         <option key={section.id} value={section.id}>
                           {section.name}

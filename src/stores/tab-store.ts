@@ -5,7 +5,7 @@ import {
   assignProductToSection as assignProductToSectionModel,
   autoAssignProducts,
   deleteSectionAndUnassignProducts,
-  moveProductToNoSection,
+  moveProductToUnsectioned,
 } from '../lib/section-organizer';
 import {
   clearRecoverySnapshots,
@@ -58,9 +58,9 @@ interface TabActions {
   /** Reorder sections and persist the new order. */
   reorderSections: (groups: Section[]) => Promise<void>;
   /** Assign a product group to a section. */
-  moveProductToSection: (productKey: string, sectionId: string) => Promise<void>;
+  moveProductGroupToSection: (productKey: string, sectionId: string) => Promise<void>;
   /** Remove a product group assignment. */
-  moveProductToNoSection: (productKey: string) => Promise<void>;
+  moveProductToUnsectioned: (productKey: string) => Promise<void>;
   /** Persist the visible organizer layout mode. */
   setViewMode: (viewMode: ViewMode) => Promise<void>;
   /** Clear the current error state. */
@@ -83,7 +83,7 @@ interface TabActions {
   importBackup: (
     sections: Section[],
     sectionAssignments: SectionAssignment[],
-    unsortedOverrides?: string[],
+    unsectionedProductKeys?: string[],
   ) => Promise<void>;
   /** Sort the current Chrome window's real tabs to match the dashboard product order. */
   sortCurrentWindowTabsByDashboardOrder: (products: TabGroup[]) => Promise<void>;
@@ -94,7 +94,7 @@ export type TabStore = {
   products: TabGroup[];
   sections: Section[];
   sectionAssignments: SectionAssignment[];
-  unsortedOverrides: string[];
+  unsectionedProductKeys: string[];
   recoverySnapshots: RecoverySnapshot[];
   viewMode: ViewMode;
   loading: boolean;
@@ -202,7 +202,7 @@ export const useTabStore = create<TabStore>((set) => ({
   products: [],
   sections: [],
   sectionAssignments: [],
-  unsortedOverrides: [],
+  unsectionedProductKeys: [],
   recoverySnapshots: [],
   viewMode: 'cards',
   loading: false,
@@ -235,7 +235,7 @@ export const useTabStore = create<TabStore>((set) => ({
         products: productGroups,
         sections,
         assignments: sectionAssignments,
-        noSectionOverrides: organizerState.unsortedOverrides,
+        noSectionOverrides: organizerState.unsectionedProductKeys,
         hostnamesByProductKey,
       });
 
@@ -257,7 +257,7 @@ export const useTabStore = create<TabStore>((set) => ({
         products,
         sections,
         sectionAssignments,
-        unsortedOverrides: organizerState.unsortedOverrides,
+        unsectionedProductKeys: organizerState.unsectionedProductKeys,
         viewMode: organizerState.viewMode,
         loading: false,
         dashboardCount,
@@ -527,7 +527,7 @@ export const useTabStore = create<TabStore>((set) => ({
     const state = useTabStore.getState();
     const { assignments: nextAssignments, overrides: nextOverrides } = deleteSectionAndUnassignProducts(
       state.sectionAssignments,
-      state.unsortedOverrides,
+      state.unsectionedProductKeys,
       sectionId,
     );
     const nextSections = state.sections
@@ -537,12 +537,12 @@ export const useTabStore = create<TabStore>((set) => ({
     set({
       sections: nextSections,
       sectionAssignments: nextAssignments,
-      unsortedOverrides: nextOverrides,
+      unsectionedProductKeys: nextOverrides,
     });
     await writeOrganizerState({
       sections: nextSections,
       sectionAssignments: nextAssignments,
-      unsortedOverrides: nextOverrides,
+      unsectionedProductKeys: nextOverrides,
     });
     await useTabStore.getState().fetchTabs();
   },
@@ -553,24 +553,24 @@ export const useTabStore = create<TabStore>((set) => ({
     await writeOrganizerState({ sections: nextSections });
   },
 
-  moveProductToSection: async (productKey: string, sectionId: string) => {
+  moveProductGroupToSection: async (productKey: string, sectionId: string) => {
     const state = useTabStore.getState();
     const nextAssignments = assignProductToSectionModel(state.sectionAssignments, productKey, sectionId);
-    const nextOverrides = state.unsortedOverrides.filter((k) => k !== productKey);
-    set({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
-    await writeOrganizerState({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
+    const nextOverrides = state.unsectionedProductKeys.filter((k) => k !== productKey);
+    set({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
+    await writeOrganizerState({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
     await useTabStore.getState().fetchTabs();
   },
 
-  moveProductToNoSection: async (productKey: string) => {
+  moveProductToUnsectioned: async (productKey: string) => {
     const state = useTabStore.getState();
-    const { assignments: nextAssignments, overrides: nextOverrides } = moveProductToNoSection(
+    const { assignments: nextAssignments, overrides: nextOverrides } = moveProductToUnsectioned(
       state.sectionAssignments,
-      state.unsortedOverrides,
+      state.unsectionedProductKeys,
       productKey,
     );
-    set({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
-    await writeOrganizerState({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
+    set({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
+    await writeOrganizerState({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
     await useTabStore.getState().fetchTabs();
   },
 
@@ -646,10 +646,10 @@ export const useTabStore = create<TabStore>((set) => ({
   importBackup: async (
     sections: Section[],
     sectionAssignments: SectionAssignment[],
-    unsortedOverrides: string[] = [],
+    unsectionedProductKeys: string[] = [],
   ) => {
-    await writeOrganizerState({ sections, sectionAssignments, unsortedOverrides });
-    set({ sections, sectionAssignments, unsortedOverrides });
+    await writeOrganizerState({ sections, sectionAssignments, unsectionedProductKeys });
+    set({ sections, sectionAssignments, unsectionedProductKeys });
     await useTabStore.getState().fetchTabs();
   },
 

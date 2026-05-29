@@ -58,7 +58,7 @@ describe('TabStore Manual Groups & Reordering', () => {
     useTabStore.setState({
       sections: [],
       sectionAssignments: [],
-      unsortedOverrides: [],
+      unsectionedProductKeys: [],
       products: [],
       loading: false,
       error: null

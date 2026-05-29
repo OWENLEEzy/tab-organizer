@@ -76,7 +76,7 @@ describe('readStorage', () => {
     expect(result.groupOrder).toEqual({});
     expect(result.sections).toEqual([]);
     expect(result.sectionAssignments).toEqual([]);
-    expect(result.unsortedOverrides).toEqual([]);
+    expect(result.unsectionedProductKeys).toEqual([]);
     expect(result.viewMode).toBe('cards');
     expect(result.historyCandidate).toBeNull();
     expect(result.history).toEqual([]);
@@ -133,7 +133,7 @@ describe('readStorage', () => {
     expect(result.groupOrder).toEqual({});
     expect(result.sections).toEqual([]);
     expect(result.sectionAssignments).toEqual([]);
-    expect(result.unsortedOverrides).toEqual([]);
+    expect(result.unsectionedProductKeys).toEqual([]);
     expect(result.viewMode).toBe('cards');
   });
 
@@ -260,7 +260,7 @@ describe('readStorage', () => {
 
     const result = await readStorage();
 
-    expect(result.unsortedOverrides).toEqual(['github', 'google.com']);
+    expect(result.unsectionedProductKeys).toEqual(['github', 'google.com']);
   });
 
   it('normalizes malformed sections and assignments to empty lists', async () => {
@@ -274,7 +274,7 @@ describe('readStorage', () => {
 
     expect(result.sections).toEqual([]);
     expect(result.sectionAssignments).toEqual([]);
-    expect(result.unsortedOverrides).toEqual([]);
+    expect(result.unsectionedProductKeys).toEqual([]);
     expect(result.viewMode).toBe('cards');
   });
 });
@@ -467,7 +467,7 @@ describe('organizer storage mutations', () => {
 
     expect(result.groupOrder).toEqual({ github: 0 });
     expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1', order: 0 }]);
-    expect(result.unsortedOverrides).toEqual(['github']);
+    expect(result.unsectionedProductKeys).toEqual(['github']);
   });
 
   it('leaves organizer storage untouched when no stale data exists', async () => {
@@ -482,7 +482,7 @@ describe('organizer storage mutations', () => {
 
     expect(result.groupOrder).toEqual({ github: 0 });
     expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1', order: 0 }]);
-    expect(result.unsortedOverrides).toEqual(['github']);
+    expect(result.unsectionedProductKeys).toEqual(['github']);
   });
 
   it('assigns products by clearing No section overrides and moves unassigned products into No section overrides', async () => {
@@ -496,11 +496,11 @@ describe('organizer storage mutations', () => {
       { productKey: 'github', sectionId: 'group-1', order: 0 },
       { productKey: 'vercel', sectionId: 'group-1', order: 1 },
     ]);
-    expect(next.unsortedOverrides).toEqual(['github']);
+    expect(next.unsectionedProductKeys).toEqual(['github']);
 
     next = await unassignProductFromSections('vercel');
     expect(next.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1', order: 0 }]);
-    expect(next.unsortedOverrides).toEqual(['github', 'vercel']);
+    expect(next.unsectionedProductKeys).toEqual(['github', 'vercel']);
   });
 
   it('does not duplicate an existing No section override when unassigning', async () => {
@@ -509,7 +509,7 @@ describe('organizer storage mutations', () => {
 
     const next = await unassignProductFromSections('github');
 
-    expect(next.unsortedOverrides).toEqual(['github']);
+    expect(next.unsectionedProductKeys).toEqual(['github']);
   });
 });
 
@@ -555,7 +555,7 @@ describe('reconcileOrganizerState', () => {
     );
     const result = await readStorage();
 
-    expect(state.unsortedOverrides).toEqual(['google', 'github']);
-    expect(result.unsortedOverrides).toEqual(['google', 'github']);
+    expect(state.unsectionedProductKeys).toEqual(['google', 'github']);
+    expect(result.unsectionedProductKeys).toEqual(['google', 'github']);
   });
 });

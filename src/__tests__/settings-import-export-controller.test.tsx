@@ -46,7 +46,7 @@ function makeStores() {
   const tabStore = {
     sections: [{ id: 'work', name: 'Work', order: 0 }],
     sectionAssignments: [{ productKey: 'github', sectionId: 'work', order: 0 }],
-    unsortedOverrides: [],
+    unsectionedProductKeys: [],
     importBackup: vi.fn(async () => {}),
   } as unknown as TabStore;
 
@@ -105,7 +105,7 @@ describe('useSettingsImportExport', () => {
       },
       sections: [{ id: 'later', name: 'Later', order: 0 }],
       sectionAssignments: [{ productKey: 'github', sectionId: 'later', order: 0 }],
-      unsortedOverrides: ['youtube'],
+      unsectionedProductKeys: ['youtube'],
     }));
 
     await waitFor(() => expect(settingsStore.setTheme).toHaveBeenCalledWith('sage'));

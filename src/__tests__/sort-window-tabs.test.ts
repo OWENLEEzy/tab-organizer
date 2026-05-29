@@ -8,7 +8,7 @@ beforeEach(() => {
   chromeStorageData.settings = { groupSortBy: 'count', customGroups: [] };
   chromeStorageData.sections = [];
   chromeStorageData.sectionAssignments = [];
-  chromeStorageData.unsortedOverrides = [];
+  chromeStorageData.unsectionedProductKeys = [];
   chromeStorageData.viewMode = 'cards';
 
   vi.stubGlobal('chrome', {

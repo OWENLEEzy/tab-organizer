@@ -331,7 +331,7 @@ export function DndOrganizer({
         {(!activeSectionId || activeSectionId === UNASSIGNED_SECTION_DROP_ID) && unassignedProducts.length > 0 && (
           <DndGroupBoard
             id={UNASSIGNED_SECTION_DROP_ID}
-            title={t('organizerUnsorted')}
+            title={t('organizerUnsectioned')}
             items={unassignedProducts}
             tabCount={unassignedProducts.reduce((sum, p) => sum + p.tabs.length, 0)}
             {...sharedProps}
