@@ -356,6 +356,25 @@ export default defineConfig([
     },
   },
 
+  // Rule 9: Stores must use Chrome adapters, not raw chrome.* APIs
+  {
+    files: ['src/stores/**/*.{ts,tsx}'],
+    ignores: ['src/stores/tab-store.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.name='chrome']",
+          message: 'Stores must use src/utils Chrome adapters instead of raw chrome.* APIs.',
+        },
+        {
+          selector: "MemberExpression[object.object.name='chrome']",
+          message: 'Stores must use src/utils Chrome adapters instead of raw chrome.* APIs.',
+        },
+      ],
+    },
+  },
+
   // Rule 8: UI Design Guardrails
   {
     files: ['src/dashboard/components/**/*.tsx', 'src/dashboard/App.tsx'],

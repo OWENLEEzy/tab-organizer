@@ -111,6 +111,16 @@ describe('architecture lint guardrails', () => {
     expect(eslintConfig).toContain("group: ['../stores/*', '**/stores/*']");
     expect(eslintConfig).toContain("group: ['../dashboard/*', '**/dashboard/*']");
   });
+
+  it('prevents stores from using raw chrome.* APIs', () => {
+    expect(eslintConfig).toContain("files: ['src/stores/**/*.{ts,tsx}']");
+    expect(eslintConfig).toContain("Stores must use src/utils Chrome adapters instead of raw chrome.* APIs.");
+  });
+
+  it('ships chrome adapter modules', () => {
+    expect(fs.existsSync(path.join(repoRoot, 'src/utils/chrome-tabs.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(repoRoot, 'src/utils/chrome-runtime.ts'))).toBe(true);
+  });
 });
 
 describe('source naming governance', () => {
@@ -158,33 +168,56 @@ describe('source naming governance', () => {
   });
 
   it('does not reintroduce unsortedOverrides as a property or variable name', () => {
-    const legacyMigrationFiles = [
+    const legacyCleanupFiles = [
       'src/utils/storage.ts',
-      'src/dashboard/controllers/useSettingsImportExport.ts',
-      'src/dashboard/controllers/useChromeStorageSync.ts',
-      'src/__tests__/storage.test.ts',
     ];
     const offenders = sourceFiles.filter((file) => {
       if (file.includes('tooling-gates')) return false;
-      if (legacyMigrationFiles.some((legacy) => file.endsWith(legacy))) return false;
+      if (legacyCleanupFiles.some((legacy) => file.endsWith(legacy))) return false;
       return fs.readFileSync(file, 'utf8').includes('unsortedOverrides');
     });
     expect(offenders).toEqual([]);
   });
 
   it('does not use workspace terminology except for literal Google Workspace brand references', () => {
-    const legacyFiles = [
-      'src/dashboard/controllers/useChromeStorageSync.ts',
-      'src/__tests__/tab-store.test.ts',
-    ];
     const offenders = sourceFiles.filter((file) => {
       if (file.includes('tooling-gates')) return false;
       if (file.includes('AGENTS.md') || file.includes('CLAUDE.md')) return false;
-      if (legacyFiles.some((legacy) => file.endsWith(legacy))) return false;
       const content = fs.readFileSync(file, 'utf8');
       return /\bworkspace\b/i.test(content) && !/Google\s+Workspace/i.test(content);
     });
     expect(offenders).toEqual([]);
+  });
+
+  it('does not use legacy architecture terminology', () => {
+    const forbiddenTerms = [
+      'DndOrganizer',
+      'components/organizer',
+      'expandedDomains',
+      'noSectionOverrides',
+      'unsortedOverrides',
+      'manualGroups',
+      'groupAssignments',
+      'historyCandidate',
+      'recoveryHistory',
+    ];
+
+    // Files that legitimately use legacy terms for cleanup or destructive-reset testing.
+    const legacyCleanupFiles = [
+      'src/utils/storage.ts',
+      'src/__tests__/storage.test.ts',
+      'src/__tests__/storage-extra.test.ts',
+      'src/__tests__/settings-import-export-controller.test.tsx',
+    ];
+
+    for (const term of forbiddenTerms) {
+      const offenders = sourceFiles.filter((file) => {
+        if (file.includes('tooling-gates')) return false;
+        if (legacyCleanupFiles.some((legacy) => file.endsWith(legacy))) return false;
+        return fs.readFileSync(file, 'utf8').includes(term);
+      });
+      expect(offenders, `Found legacy term "${term}" in: ${offenders.join(', ')}`).toEqual([]);
+    }
   });
 });
 
