@@ -3,17 +3,17 @@ import {
   readStorage,
   writeGroupOrder,
   writeSettings,
-  updateHistoryCandidate,
-  promoteHistoryCandidate,
-  promoteHistorySnapshot,
-  deleteHistorySnapshot,
-  clearHistory,
+  updateRecoveryCandidate,
+  promoteRecoveryCandidate,
+  promoteRecoverySnapshot,
+  deleteRecoverySnapshot,
+  clearRecoverySnapshots,
   reconcileOrganizerState,
   pruneStaleStorage,
   assignProductToSection,
   unassignProductFromSections,
 } from '../utils/storage';
-import type { HistorySnapshot } from '../types';
+import type { RecoverySnapshot } from '../types';
 
 // Mock chrome.storage.local
 const storage: Record<string, unknown> = {};
@@ -78,8 +78,8 @@ describe('readStorage', () => {
     expect(result.sectionAssignments).toEqual([]);
     expect(result.unsectionedProductKeys).toEqual([]);
     expect(result.viewMode).toBe('cards');
-    expect(result.historyCandidate).toBeNull();
-    expect(result.history).toEqual([]);
+    expect(result.recoveryCandidate).toBeNull();
+    expect(result.recoverySnapshots).toEqual([]);
   });
 
   it('normalizes legacy and unknown group sort settings', async () => {
@@ -164,8 +164,8 @@ describe('readStorage', () => {
     expect(result.schemaVersion).toBe(5);
     expect(result.sections).toEqual([{ id: 'work', name: 'Work', order: 1 }]);
     expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'work', order: 0 }]);
-    expect(result.history).toHaveLength(1);
-    expect(result.history[0].id).toBe('snap-1');
+    expect(result.recoverySnapshots).toHaveLength(1);
+    expect(result.recoverySnapshots[0].id).toBe('snap-1');
   });
 
   it('filters browser-internal tabs from legacy recovery snapshots during migration', async () => {
@@ -221,9 +221,9 @@ describe('readStorage', () => {
 
     const result = await readStorage();
 
-    expect(result.history).toHaveLength(1);
-    expect(result.history[0].tabs.map((tab) => tab.url)).toEqual(['https://example.com']);
-    expect(result.history[0].tabCount).toBe(1);
+    expect(result.recoverySnapshots).toHaveLength(1);
+    expect(result.recoverySnapshots[0].tabs.map((tab) => tab.url)).toEqual(['https://example.com']);
+    expect(result.recoverySnapshots[0].tabCount).toBe(1);
   });
 
   it('normalizes section organizer state and rejects tabUrl assignments', async () => {
@@ -279,7 +279,7 @@ describe('readStorage', () => {
   });
 });
 
-function makeSnapshot(id: string, urls: string[]): HistorySnapshot {
+function makeSnapshot(id: string, urls: string[]): RecoverySnapshot {
   return {
     id,
     capturedAt: `2026-05-05T00:00:0${id}.000Z`,
@@ -307,94 +307,94 @@ function makeSnapshot(id: string, urls: string[]): HistorySnapshot {
   };
 }
 
-describe('history storage', () => {
+describe('recovery storage', () => {
   it('safely ignores null direct snapshot promotions', async () => {
-    const promoted = await promoteHistorySnapshot(null);
+    const promoted = await promoteRecoverySnapshot(null);
     const result = await readStorage();
 
     expect(promoted).toBe(false);
-    expect(result.history).toEqual([]);
-    expect(result.historyCandidate).toBeNull();
+    expect(result.recoverySnapshots).toEqual([]);
+    expect(result.recoveryCandidate).toBeNull();
   });
 
   it('directly promotes snapshots with signature dedupe and five item cap', async () => {
     for (let index = 0; index < 6; index += 1) {
-      await promoteHistorySnapshot(makeSnapshot(String(index), [`https://example.com/${index}`]));
+      await promoteRecoverySnapshot(makeSnapshot(String(index), [`https://example.com/${index}`]));
     }
 
     let result = await readStorage();
-    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['5', '4', '3', '2', '1']);
+    expect(result.recoverySnapshots.map((snapshot) => snapshot.id)).toEqual(['5', '4', '3', '2', '1']);
 
-    const promoted = await promoteHistorySnapshot(makeSnapshot('duplicate', ['https://example.com/3']));
+    const promoted = await promoteRecoverySnapshot(makeSnapshot('duplicate', ['https://example.com/3']));
     result = await readStorage();
 
     expect(promoted).toBe(true);
-    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['duplicate', '5', '4', '2', '1']);
-    expect(result.historyCandidate?.id).toBe('duplicate');
+    expect(result.recoverySnapshots.map((snapshot) => snapshot.id)).toEqual(['duplicate', '5', '4', '2', '1']);
+    expect(result.recoveryCandidate?.id).toBe('duplicate');
   });
 
   it('does not duplicate the latest URL signature when directly promoted again', async () => {
-    await promoteHistorySnapshot(makeSnapshot('1', ['https://example.com/1']));
+    await promoteRecoverySnapshot(makeSnapshot('1', ['https://example.com/1']));
 
-    const promoted = await promoteHistorySnapshot(makeSnapshot('same-url', ['https://example.com/1']));
+    const promoted = await promoteRecoverySnapshot(makeSnapshot('same-url', ['https://example.com/1']));
     const result = await readStorage();
 
     expect(promoted).toBe(false);
-    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['1']);
-    expect(result.historyCandidate?.id).toBe('same-url');
+    expect(result.recoverySnapshots.map((snapshot) => snapshot.id)).toEqual(['1']);
+    expect(result.recoveryCandidate?.id).toBe('same-url');
   });
 
   it('stores a bounded latest candidate and promotes it to history on startup', async () => {
     const tooManyTabs = Array.from({ length: 85 }, (_, index) => `https://example.com/${index}`);
     const candidate = makeSnapshot('1', tooManyTabs);
 
-    await updateHistoryCandidate(candidate);
+    await updateRecoveryCandidate(candidate);
     let result = await readStorage();
 
-    expect(result.historyCandidate?.tabs).toHaveLength(80);
-    expect(result.historyCandidate?.tabCount).toBe(80);
-    expect(result.history).toHaveLength(0);
+    expect(result.recoveryCandidate?.tabs).toHaveLength(80);
+    expect(result.recoveryCandidate?.tabCount).toBe(80);
+    expect(result.recoverySnapshots).toHaveLength(0);
 
-    const promoted = await promoteHistoryCandidate();
+    const promoted = await promoteRecoveryCandidate();
     result = await readStorage();
 
     expect(promoted).toBe(true);
-    expect(result.history).toHaveLength(1);
-    expect(result.history[0].tabs).toHaveLength(80);
+    expect(result.recoverySnapshots).toHaveLength(1);
+    expect(result.recoverySnapshots[0].tabs).toHaveLength(80);
   });
 
 
   it('keeps only five history snapshots and skips duplicate URL sets', async () => {
     for (let index = 0; index < 7; index += 1) {
-      await updateHistoryCandidate(makeSnapshot(String(index), [`https://example.com/${index}`]));
-      await promoteHistoryCandidate();
+      await updateRecoveryCandidate(makeSnapshot(String(index), [`https://example.com/${index}`]));
+      await promoteRecoveryCandidate();
     }
 
     let result = await readStorage();
-    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['6', '5', '4', '3', '2']);
+    expect(result.recoverySnapshots.map((snapshot) => snapshot.id)).toEqual(['6', '5', '4', '3', '2']);
 
-    await updateHistoryCandidate(makeSnapshot('duplicate', ['https://example.com/6']));
-    const promoted = await promoteHistoryCandidate();
+    await updateRecoveryCandidate(makeSnapshot('duplicate', ['https://example.com/6']));
+    const promoted = await promoteRecoveryCandidate();
     result = await readStorage();
 
     expect(promoted).toBe(false);
-    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['6', '5', '4', '3', '2']);
+    expect(result.recoverySnapshots.map((snapshot) => snapshot.id)).toEqual(['6', '5', '4', '3', '2']);
   });
 
   it('deletes one history snapshot and clears history', async () => {
-    await updateHistoryCandidate(makeSnapshot('1', ['https://example.com/1']));
-    await promoteHistoryCandidate();
-    await updateHistoryCandidate(makeSnapshot('2', ['https://example.com/2']));
-    await promoteHistoryCandidate();
+    await updateRecoveryCandidate(makeSnapshot('1', ['https://example.com/1']));
+    await promoteRecoveryCandidate();
+    await updateRecoveryCandidate(makeSnapshot('2', ['https://example.com/2']));
+    await promoteRecoveryCandidate();
 
-    await deleteHistorySnapshot('1');
+    await deleteRecoverySnapshot('1');
     let result = await readStorage();
-    expect(result.history.map((snapshot) => snapshot.id)).toEqual(['2']);
+    expect(result.recoverySnapshots.map((snapshot) => snapshot.id)).toEqual(['2']);
 
-    await clearHistory();
+    await clearRecoverySnapshots();
     result = await readStorage();
-    expect(result.history).toEqual([]);
-    expect(result.historyCandidate).toBeNull();
+    expect(result.recoverySnapshots).toEqual([]);
+    expect(result.recoveryCandidate).toBeNull();
   });
 });
 

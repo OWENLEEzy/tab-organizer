@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTabStore } from '../stores/tab-store';
-import type { HistorySnapshot } from '../types';
+import type { RecoverySnapshot } from '../types';
 
 const chromeTabs = {
   query: vi.fn(),
@@ -95,7 +95,7 @@ function makeChromeTab(
   } as chrome.tabs.Tab;
 }
 
-function makeStoredHistorySnapshot(id: string, urls: string[]): HistorySnapshot {
+function makeStoredRecoverySnapshot(id: string, urls: string[]): RecoverySnapshot {
   return {
     id,
     capturedAt: `2026-05-05T00:00:0${id}.000Z`,
@@ -122,14 +122,14 @@ function makeStoredHistorySnapshot(id: string, urls: string[]): HistorySnapshot 
 }
 
 function expectProtectedBeforeRemove(expectedRemoveArg: number | number[]): void {
-  const history = chromeStorage.data['history'] as HistorySnapshot[];
+  const history = chromeStorage.data['recoverySnapshots'] as RecoverySnapshot[];
   expect(history).toHaveLength(1);
   expect(history[0].tabs.map((tab) => tab.url)).toEqual([
     'https://github.com/OWENLEEzy/tab-out',
     'https://github.com/OWENLEEzy/tab-out',
     'https://vercel.com',
   ]);
-  expect(chromeStorage.data['historyCandidate']).toEqual(history[0]);
+  expect(chromeStorage.data['recoveryCandidate']).toEqual(history[0]);
   expect(chromeTabs.remove).toHaveBeenCalledWith(expectedRemoveArg);
   expect(chromeStorage.set.mock.invocationCallOrder[0]).toBeLessThan(
     chromeTabs.remove.mock.invocationCallOrder[0],
@@ -239,7 +239,7 @@ describe('useTabStore', () => {
   });
 
   it('promotes the current pre-close tabs even when the stored candidate is stale', async () => {
-    chromeStorage.data['historyCandidate'] = makeStoredHistorySnapshot('stale', [
+    chromeStorage.data['recoveryCandidate'] = makeStoredRecoverySnapshot('stale', [
       'https://old.example.com',
     ]);
     chromeTabs.query.mockResolvedValue([
@@ -250,7 +250,7 @@ describe('useTabStore', () => {
 
     await useTabStore.getState().closeTabByUrl('https://github.com/OWENLEEzy/tab-out');
 
-    const history = chromeStorage.data['history'] as HistorySnapshot[];
+    const history = chromeStorage.data['recoverySnapshots'] as RecoverySnapshot[];
     expect(history[0].tabs.map((tab) => tab.url)).toEqual([
       'https://github.com/OWENLEEzy/tab-out',
       'https://vercel.com',
@@ -516,25 +516,25 @@ describe('useTabStore', () => {
   });
 
   it('refreshes tabs when restoring history fails mid-create', async () => {
-    const snapshot = makeStoredHistorySnapshot('1', ['https://example.com/a', 'https://example.com/b']);
-    chromeStorage.data['history'] = [snapshot];
+    const snapshot = makeStoredRecoverySnapshot('1', ['https://example.com/a', 'https://example.com/b']);
+    chromeStorage.data['recoverySnapshots'] = [snapshot];
     chromeTabs.create.mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('create failed'));
     const fetchTabs = vi.fn().mockResolvedValue(undefined);
     useTabStore.setState({ fetchTabs });
 
-    await expect(useTabStore.getState().restoreHistorySnapshot('1')).rejects.toThrow('create failed');
+    await expect(useTabStore.getState().restoreRecoverySnapshot('1')).rejects.toThrow('create failed');
 
     expect(fetchTabs).toHaveBeenCalled();
   });
 
   it('refreshes tabs when restoring a history product fails mid-create', async () => {
-    const snapshot = makeStoredHistorySnapshot('1', ['https://example.com/a']);
-    chromeStorage.data['history'] = [snapshot];
+    const snapshot = makeStoredRecoverySnapshot('1', ['https://example.com/a']);
+    chromeStorage.data['recoverySnapshots'] = [snapshot];
     chromeTabs.create.mockRejectedValueOnce(new Error('create failed'));
     const fetchTabs = vi.fn().mockResolvedValue(undefined);
     useTabStore.setState({ fetchTabs });
 
-    await expect(useTabStore.getState().restoreHistoryProduct('1', 'example.com')).rejects.toThrow(
+    await expect(useTabStore.getState().restoreRecoveryProduct('1', 'example.com')).rejects.toThrow(
       'create failed',
     );
 
@@ -542,10 +542,10 @@ describe('useTabStore', () => {
   });
 
   it('ignores missing history snapshots during restore', async () => {
-    chromeStorage.data['history'] = [];
+    chromeStorage.data['recoverySnapshots'] = [];
 
-    await useTabStore.getState().restoreHistorySnapshot('missing');
-    await useTabStore.getState().restoreHistoryProduct('missing', 'example.com');
+    await useTabStore.getState().restoreRecoverySnapshot('missing');
+    await useTabStore.getState().restoreRecoveryProduct('missing', 'example.com');
 
     expect(chromeTabs.create).not.toHaveBeenCalled();
   });
@@ -701,27 +701,27 @@ describe('useTabStore', () => {
   });
 
   it('restores and manages history snapshots', async () => {
-    const snapshot = makeStoredHistorySnapshot('1', ['https://example.com/a', 'https://example.com/b']);
-    chromeStorage.data['history'] = [snapshot];
+    const snapshot = makeStoredRecoverySnapshot('1', ['https://example.com/a', 'https://example.com/b']);
+    chromeStorage.data['recoverySnapshots'] = [snapshot];
     chromeTabs.create.mockResolvedValue({});
     const fetchTabs = vi.fn().mockResolvedValue(undefined);
     useTabStore.setState({ fetchTabs });
 
-    await useTabStore.getState().fetchHistory();
-    expect(useTabStore.getState().history).toEqual([snapshot]);
+    await useTabStore.getState().fetchRecovery();
+    expect(useTabStore.getState().recoverySnapshots).toEqual([snapshot]);
 
-    await useTabStore.getState().restoreHistorySnapshot('1');
+    await useTabStore.getState().restoreRecoverySnapshot('1');
     expect(chromeTabs.create).toHaveBeenCalledTimes(2);
 
-    await useTabStore.getState().restoreHistoryProduct('1', 'example.com');
+    await useTabStore.getState().restoreRecoveryProduct('1', 'example.com');
     expect(chromeTabs.create).toHaveBeenCalledTimes(4);
 
-    await useTabStore.getState().deleteHistorySnapshot('1');
-    expect(useTabStore.getState().history).toEqual([]);
+    await useTabStore.getState().deleteRecoverySnapshot('1');
+    expect(useTabStore.getState().recoverySnapshots).toEqual([]);
 
-    chromeStorage.data['history'] = [snapshot];
-    await useTabStore.getState().clearHistory();
-    expect(useTabStore.getState().history).toEqual([]);
+    chromeStorage.data['recoverySnapshots'] = [snapshot];
+    await useTabStore.getState().clearRecovery();
+    expect(useTabStore.getState().recoverySnapshots).toEqual([]);
   });
 
   it('closes extra dashboard pages and tolerates cleanup failures', async () => {

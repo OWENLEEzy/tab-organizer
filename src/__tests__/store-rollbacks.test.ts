@@ -72,14 +72,14 @@ describe('Store Rollbacks & Errors Final', () => {
     chromeStorage.set.mockRejectedValueOnce(new Error('fail'));
     chromeTabs.query.mockResolvedValueOnce([makeChromeTab({ id: 1, url: 'https://a.com' })]);
     await useTabStore.getState().closeTabByUrl('https://a.com');
-    expect(spy).toHaveBeenCalledWith(expect.stringContaining('Failed to protect history before closing tabs'), expect.any(Error));
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining('Failed to protect recovery before closing tabs'), expect.any(Error));
 
     spy.mockRestore();
   });
 
-  it('TabStore restoreHistorySnapshot handles null snapshot', async () => {
-    chromeStorage.data['history'] = [];
-    await useTabStore.getState().restoreHistorySnapshot('non-existent');
+  it('TabStore restoreRecoverySnapshot handles null snapshot', async () => {
+    chromeStorage.data['recoverySnapshots'] = [];
+    await useTabStore.getState().restoreRecoverySnapshot('non-existent');
     expect(chrome.tabs.create).not.toHaveBeenCalled();
   });
 });
