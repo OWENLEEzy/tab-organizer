@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
-import { SearchBar } from '../newtab/components/search/SearchBar';
-import { SelectionBar } from '../newtab/components/tabs/SelectionBar';
-import { TabChip } from '../newtab/components/tabs/TabChip';
-import { ActionButton } from '../newtab/components/ui/ActionButton';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
+import { SearchBar } from '../dashboard/components/search/SearchBar';
+import { SelectionBar } from '../dashboard/components/tabs/SelectionBar';
+import { TabChip } from '../dashboard/components/tabs/TabChip';
+import { ActionButton } from '../dashboard/components/ui/ActionButton';
 
 function expectTouchHeight(element: HTMLElement): void {
   const className = element.className;

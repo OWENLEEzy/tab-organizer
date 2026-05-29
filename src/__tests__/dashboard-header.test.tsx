@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DashboardHeader } from '../newtab/components/layout/DashboardHeader';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
+import { DashboardHeader } from '../dashboard/components/layout/DashboardHeader';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
 
 afterEach(() => {
   cleanup();
@@ -14,7 +14,7 @@ function renderWithI18n(element: React.ReactElement) {
 describe('DashboardHeader', () => {
   it('wires search and command actions without owning dashboard state', () => {
     const onSearchChange = vi.fn();
-    const onViewModeChange = vi.fn();
+
     const onCreateSection = vi.fn();
     const onOpenSettings = vi.fn();
     const onGroupSortByChange = vi.fn();
@@ -28,8 +28,6 @@ describe('DashboardHeader', () => {
         onSearchChange={onSearchChange}
         resultCount={6}
         totalCount={12}
-        viewMode="cards"
-        onViewModeChange={onViewModeChange}
         groupSortBy="count"
         onGroupSortByChange={onGroupSortByChange}
         sortButtonDisabled={false}
@@ -47,12 +45,7 @@ describe('DashboardHeader', () => {
     expect(screen.getByText('Tuesday, May 5, 2026')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
 
-    const viewToggle = screen.getByLabelText('View mode');
     const hardcodedHeightClass = ['h', '[44px]'].join('-');
-    expect(viewToggle).toHaveClass('view-toggle');
-    expect(viewToggle).not.toHaveClass(hardcodedHeightClass);
-    expect(screen.getByRole('button', { name: 'Cards' })).not.toHaveClass('h-[var(--spacing-button-height)]');
-    expect(screen.getByRole('button', { name: 'Table' })).not.toHaveClass('h-[var(--spacing-button-height)]');
     expect(screen.getByRole('combobox', { name: 'Sort order' })).not.toHaveClass(hardcodedHeightClass);
     expect(screen.getByRole('button', { name: 'New section' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Close All' })).not.toBeInTheDocument();
@@ -81,8 +74,6 @@ describe('DashboardHeader', () => {
         onSearchChange={() => {}}
         resultCount={0}
         totalCount={0}
-        viewMode="cards"
-        onViewModeChange={() => {}}
         groupSortBy="count"
         onGroupSortByChange={onGroupSortByChange}
         sortButtonDisabled={false}

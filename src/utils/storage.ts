@@ -4,9 +4,9 @@ import type {
   Section,
   SectionAssignment,
   ViewMode,
-  HistorySnapshot,
+  RecoverySnapshot,
 } from '../types';
-import { historyUrlSignature, shouldReplaceHistoryCandidate } from '../lib/history-snapshots';
+import { recoveryUrlSignature, shouldReplaceRecoveryCandidate } from '../lib/recovery-snapshots';
 import { DEFAULT_SECTIONS } from '../config/sections';
 import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
 import { DEFAULT_GROUP_SORT, normalizeGroupSortBy } from '../config/group-sort';
@@ -39,14 +39,16 @@ const STORAGE_KEYS = [
   'groupOrder',
   'sections',
   'sectionAssignments',
+  'unsectionedProductKeys',
   'unsortedOverrides',
   'viewMode',
-  'historyCandidate',
-  'history',
+  'recoveryCandidate',
+  'recoverySnapshots',
   // Legacy keys cleaned after the section storage reset.
   'manualGroups',
   'groupAssignments',
-  'recoveryCandidate',
+  'historyCandidate',
+  'history',
   'recoveryHistory',
 ] as const;
 
@@ -91,10 +93,10 @@ const EMPTY_SCHEMA: StorageSchema = {
   groupOrder: {},
   sections: [],
   sectionAssignments: [],
-  unsortedOverrides: [],
+  unsectionedProductKeys: [],
   viewMode: 'cards',
-  historyCandidate: null,
-  history: [],
+  recoveryCandidate: null,
+  recoverySnapshots: [],
 };
 
 function isViewMode(value: unknown): value is ViewMode {
@@ -187,7 +189,7 @@ function normalizeAssignments(value: unknown): SectionAssignment[] {
     });
 }
 
-function normalizeUnsortedOverrides(value: unknown): string[] {
+function normalizeUnsectionedProductKeys(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   const seen = new Set<string>();
   const overrides: string[] = [];
@@ -288,7 +290,7 @@ function reconcileAssignments(
     .map(({ originalIndex: _originalIndex, ...assignment }) => assignment);
 }
 
-function reconcileUnsortedOverrides(
+function reconcileUnsectionedProductKeys(
   overrides: string[],
   currentProductKeys: Set<string>,
   legacyKeyMap: Map<string, string>,
@@ -306,9 +308,9 @@ function reconcileUnsortedOverrides(
   return nextOverrides;
 }
 
-function normalizeHistorySnapshot(value: unknown): HistorySnapshot | null {
+function normalizeRecoverySnapshot(value: unknown): RecoverySnapshot | null {
   if (!value || typeof value !== 'object') return null;
-  const candidate = value as Partial<HistorySnapshot>;
+  const candidate = value as Partial<RecoverySnapshot>;
   if (
     typeof candidate.id !== 'string' ||
     typeof candidate.capturedAt !== 'string' ||
@@ -320,7 +322,7 @@ function normalizeHistorySnapshot(value: unknown): HistorySnapshot | null {
 
   const tabs = candidate.tabs
     .filter((tab) => tab && typeof tab === 'object')
-    .map((tab) => tab as HistorySnapshot['tabs'][number])
+    .map((tab) => tab as RecoverySnapshot['tabs'][number])
     .filter((tab) => typeof tab.url === 'string' && isRealTab(tab.url) && typeof tab.productKey === 'string')
     .slice(0, 80);
 
@@ -328,7 +330,7 @@ function normalizeHistorySnapshot(value: unknown): HistorySnapshot | null {
 
   const products = candidate.products
     .filter((product) => product && typeof product === 'object')
-    .map((product) => product as HistorySnapshot['products'][number])
+    .map((product) => product as RecoverySnapshot['products'][number])
     .filter((product) => typeof product.productKey === 'string' && typeof product.label === 'string');
 
   return {
@@ -340,15 +342,15 @@ function normalizeHistorySnapshot(value: unknown): HistorySnapshot | null {
   };
 }
 
-function normalizeHistory(value: unknown): HistorySnapshot[] {
+function normalizeRecoverySnapshots(value: unknown): RecoverySnapshot[] {
   if (!Array.isArray(value)) return [];
-  const result: HistorySnapshot[] = [];
+  const result: RecoverySnapshot[] = [];
   const seen = new Set<string>();
 
   for (const item of value) {
-    const snapshot = normalizeHistorySnapshot(item);
+    const snapshot = normalizeRecoverySnapshot(item);
     if (!snapshot) continue;
-    const signature = historyUrlSignature(snapshot);
+    const signature = recoveryUrlSignature(snapshot);
     if (seen.has(signature)) continue;
     seen.add(signature);
     result.push(snapshot);
@@ -367,12 +369,13 @@ function migrate(data: Record<string, unknown>): StorageSchema {
 
   const sections = data['sections'];
   const sectionAssignments = data['sectionAssignments'];
-  let historyCandidate = data['historyCandidate'];
-  let history = data['history'];
+  // Read from legacy keys and promote to canonical names
+  let recoveryCandidate = data['recoveryCandidate'] ?? data['historyCandidate'];
+  let recoverySnapshots = data['recoverySnapshots'] ?? data['recoveryHistory'] ?? data['history'];
 
   if (version < 4) {
-    if (data['recoveryCandidate']) historyCandidate = data['recoveryCandidate'];
-    if (data['recoveryHistory']) history = data['recoveryHistory'];
+    if (data['recoveryCandidate']) recoveryCandidate = data['recoveryCandidate'];
+    if (data['recoveryHistory']) recoverySnapshots = data['recoveryHistory'];
   }
 
   const rawSettings = { ...DEFAULT_SETTINGS, ...(data['settings'] as Partial<AppSettings> | undefined) };
@@ -389,10 +392,12 @@ function migrate(data: Record<string, unknown>): StorageSchema {
     groupOrder: (data['groupOrder'] as Record<string, number> | undefined) ?? {},
     sections: normalizeSections(sections),
     sectionAssignments: normalizeAssignments(sectionAssignments),
-    unsortedOverrides: normalizeUnsortedOverrides(data['unsortedOverrides']),
+    unsectionedProductKeys: normalizeUnsectionedProductKeys(
+      data['unsectionedProductKeys'] ?? data['unsortedOverrides'],
+    ),
     viewMode: isViewMode(data['viewMode']) ? data['viewMode'] : 'cards',
-    historyCandidate: normalizeHistorySnapshot(historyCandidate),
-    history: normalizeHistory(history),
+    recoveryCandidate: normalizeRecoverySnapshot(recoveryCandidate),
+    recoverySnapshots: normalizeRecoverySnapshots(recoverySnapshots),
   };
 }
 
@@ -400,9 +405,6 @@ async function readStorageSnapshot(): Promise<Record<string, unknown>> {
   return chrome.storage.local.get([...STORAGE_KEYS]);
 }
 
-function hasOwnStorageKey(data: Record<string, unknown>, key: string): boolean {
-  return Object.prototype.hasOwnProperty.call(data, key);
-}
 
 async function persistStorage(data: StorageSchema): Promise<void> {
   await chrome.storage.local.set({
@@ -411,14 +413,17 @@ async function persistStorage(data: StorageSchema): Promise<void> {
     groupOrder: data.groupOrder,
     sections: data.sections,
     sectionAssignments: data.sectionAssignments,
-    unsortedOverrides: data.unsortedOverrides,
+    unsectionedProductKeys: data.unsectionedProductKeys,
     viewMode: data.viewMode,
-    historyCandidate: data.historyCandidate,
-    history: data.history,
+    recoveryCandidate: data.recoveryCandidate,
+    recoverySnapshots: data.recoverySnapshots,
   });
 
   // Clean up legacy keys.
-  await chrome.storage.local.remove(['manualGroups', 'groupAssignments', 'recoveryCandidate', 'recoveryHistory']);
+  await chrome.storage.local.remove([
+    'manualGroups', 'groupAssignments', 'historyCandidate', 'history',
+    'unsortedOverrides',
+  ]);
 }
 
 /**
@@ -456,8 +461,8 @@ async function updateStorage(
     const hasLegacyKeys =
       raw.manualGroups !== undefined ||
       raw.groupAssignments !== undefined ||
-      raw.recoveryCandidate !== undefined ||
-      raw.recoveryHistory !== undefined;
+      raw.historyCandidate !== undefined ||
+      raw.history !== undefined;
 
     const needsWrite = !isVersionCurrent || hasLegacyKeys || JSON.stringify(nextState) !== JSON.stringify(current);
 
@@ -525,14 +530,14 @@ export async function pruneStaleStorage(currentProductKeys: Set<string>): Promis
       current.sections,
       currentProductKeys
     );
-    const nextOverrides = current.unsortedOverrides.filter((productKey) =>
+    const nextOverrides = current.unsectionedProductKeys.filter((productKey) =>
       currentProductKeys.has(productKey)
     );
 
     if (
       staleKeys.length === 0 &&
       nextAssignments.length === current.sectionAssignments.length &&
-      nextOverrides.length === current.unsortedOverrides.length
+      nextOverrides.length === current.unsectionedProductKeys.length
     ) {
       return current;
     }
@@ -548,7 +553,7 @@ export async function pruneStaleStorage(currentProductKeys: Set<string>): Promis
       ...current,
       groupOrder: cleanedOrder,
       sectionAssignments: nextAssignments,
-      unsortedOverrides: nextOverrides,
+      unsectionedProductKeys: nextOverrides,
     };
   }).catch((err: unknown) => {
     console.warn('[Tab Organizer] Failed to prune stale organizer storage:', err);
@@ -562,19 +567,16 @@ export async function reconcileOrganizerState(
   groupOrder: Record<string, number>;
   sections: Section[];
   sectionAssignments: SectionAssignment[];
-  unsortedOverrides: string[];
+  unsectionedProductKeys: string[];
   viewMode: ViewMode;
 }> {
   let nextStorage: StorageSchema;
 
   try {
-    const raw = await readStorageSnapshot();
-    const hasSections = hasOwnStorageKey(raw, 'sections');
-    const shouldSeedDefaultSections = !hasSections;
-
     nextStorage = await updateStorage((current) => {
       let currentSections = current.sections;
-      if (shouldSeedDefaultSections && currentSections.length === 0) {
+
+      if (currentSections.length === 0) {
         currentSections = DEFAULT_SECTIONS;
       }
 
@@ -589,8 +591,8 @@ export async function reconcileOrganizerState(
         currentProductKeys,
         legacyKeyMap,
       );
-      const unsortedOverrides = reconcileUnsortedOverrides(
-        current.unsortedOverrides,
+      const unsectionedProductKeys = reconcileUnsectionedProductKeys(
+        current.unsectionedProductKeys,
         currentProductKeys,
         legacyKeyMap,
       );
@@ -599,7 +601,7 @@ export async function reconcileOrganizerState(
         currentSections === current.sections &&
         JSON.stringify(groupOrder) === JSON.stringify(current.groupOrder) &&
         JSON.stringify(sectionAssignments) === JSON.stringify(current.sectionAssignments) &&
-        JSON.stringify(unsortedOverrides) === JSON.stringify(current.unsortedOverrides)
+        JSON.stringify(unsectionedProductKeys) === JSON.stringify(current.unsectionedProductKeys)
       ) {
         return current;
       }
@@ -609,7 +611,7 @@ export async function reconcileOrganizerState(
         sections: currentSections,
         groupOrder,
         sectionAssignments,
-        unsortedOverrides,
+        unsectionedProductKeys,
       };
     });
   } catch (err: unknown) {
@@ -621,7 +623,7 @@ export async function reconcileOrganizerState(
     groupOrder: nextStorage.groupOrder,
     sections: nextStorage.sections,
     sectionAssignments: nextStorage.sectionAssignments,
-    unsortedOverrides: nextStorage.unsortedOverrides,
+    unsectionedProductKeys: nextStorage.unsectionedProductKeys,
     viewMode: nextStorage.viewMode,
   };
 }
@@ -630,7 +632,7 @@ export async function readOrganizerState(): Promise<{
   groupOrder: Record<string, number>;
   sections: Section[];
   sectionAssignments: SectionAssignment[];
-  unsortedOverrides: string[];
+  unsectionedProductKeys: string[];
   viewMode: ViewMode;
 }> {
   const storage = await readStorage();
@@ -638,7 +640,7 @@ export async function readOrganizerState(): Promise<{
     groupOrder: storage.groupOrder,
     sections: storage.sections,
     sectionAssignments: storage.sectionAssignments,
-    unsortedOverrides: storage.unsortedOverrides,
+    unsectionedProductKeys: storage.unsectionedProductKeys,
     viewMode: storage.viewMode,
   };
 }
@@ -646,25 +648,25 @@ export async function readOrganizerState(): Promise<{
 export async function writeOrganizerState(state: {
   sections?: Section[];
   sectionAssignments?: SectionAssignment[];
-  unsortedOverrides?: string[];
+  unsectionedProductKeys?: string[];
   viewMode?: ViewMode;
 }): Promise<void> {
   await updateStorage((storage) => ({
     ...storage,
     sections: state.sections ?? storage.sections,
     sectionAssignments: state.sectionAssignments ?? storage.sectionAssignments,
-    unsortedOverrides: state.unsortedOverrides ?? storage.unsortedOverrides,
+    unsectionedProductKeys: state.unsectionedProductKeys ?? storage.unsectionedProductKeys,
     viewMode: state.viewMode ?? storage.viewMode,
   }));
 }
 
 export async function assignProductToSection(productKey: string, sectionId: string): Promise<{
   sectionAssignments: SectionAssignment[];
-  unsortedOverrides: string[];
+  unsectionedProductKeys: string[];
 }> {
   let nextState = {
     sectionAssignments: [] as SectionAssignment[],
-    unsortedOverrides: [] as string[],
+    unsectionedProductKeys: [] as string[],
   };
 
   await updateStorage((storage) => {
@@ -675,14 +677,14 @@ export async function assignProductToSection(productKey: string, sectionId: stri
       ...storage.sectionAssignments.filter((assignment) => assignment.productKey !== productKey),
       { productKey, sectionId, order: existingInGroup.length },
     ];
-    const unsortedOverrides = storage.unsortedOverrides.filter((key) => key !== productKey);
+    const unsectionedProductKeys = storage.unsectionedProductKeys.filter((key) => key !== productKey);
 
-    nextState = { sectionAssignments, unsortedOverrides };
+    nextState = { sectionAssignments, unsectionedProductKeys };
 
     return {
       ...storage,
       sectionAssignments,
-      unsortedOverrides,
+      unsectionedProductKeys,
     };
   });
 
@@ -691,11 +693,11 @@ export async function assignProductToSection(productKey: string, sectionId: stri
 
 export async function unassignProductFromSections(productKey: string): Promise<{
   sectionAssignments: SectionAssignment[];
-  unsortedOverrides: string[];
+  unsectionedProductKeys: string[];
 }> {
   let nextState = {
     sectionAssignments: [] as SectionAssignment[],
-    unsortedOverrides: [] as string[],
+    unsectionedProductKeys: [] as string[],
   };
 
   await updateStorage((storage) => {
@@ -704,69 +706,69 @@ export async function unassignProductFromSections(productKey: string): Promise<{
     );
     // Moving a product group to No section is an explicit user choice. Keep it
     // out of auto-rules until the user assigns it to a section again.
-    const unsortedOverrides = storage.unsortedOverrides.includes(productKey)
-      ? storage.unsortedOverrides
-      : [...storage.unsortedOverrides, productKey];
+    const unsectionedProductKeys = storage.unsectionedProductKeys.includes(productKey)
+      ? storage.unsectionedProductKeys
+      : [...storage.unsectionedProductKeys, productKey];
 
-    nextState = { sectionAssignments, unsortedOverrides };
+    nextState = { sectionAssignments, unsectionedProductKeys };
 
     return {
       ...storage,
       sectionAssignments,
-      unsortedOverrides,
+      unsectionedProductKeys,
     };
   });
 
   return nextState;
 }
 
-export async function updateHistoryCandidate(snapshot: HistorySnapshot | null): Promise<void> {
+export async function updateRecoveryCandidate(snapshot: RecoverySnapshot | null): Promise<void> {
   await updateStorage((storage) => {
     if (snapshot == null) {
-      return { ...storage, historyCandidate: null };
+      return { ...storage, recoveryCandidate: null };
     }
 
-    const normalized = normalizeHistorySnapshot(snapshot);
-    if (!normalized || !shouldReplaceHistoryCandidate(storage.historyCandidate, normalized)) {
+    const normalized = normalizeRecoverySnapshot(snapshot);
+    if (!normalized || !shouldReplaceRecoveryCandidate(storage.recoveryCandidate, normalized)) {
       return storage;
     }
 
-    return { ...storage, historyCandidate: normalized };
+    return { ...storage, recoveryCandidate: normalized };
   });
 }
 
 function promoteSnapshotInStorage(
   storage: StorageSchema,
-  snapshot: HistorySnapshot | null,
+  snapshot: RecoverySnapshot | null,
 ): { next: StorageSchema; promoted: boolean } {
-  const normalized = normalizeHistorySnapshot(snapshot);
+  const normalized = normalizeRecoverySnapshot(snapshot);
   if (!normalized) return { next: storage, promoted: false };
 
-  const signature = historyUrlSignature(normalized);
-  const latest = storage.history[0] ?? null;
-  if (latest && historyUrlSignature(latest) === signature) {
+  const signature = recoveryUrlSignature(normalized);
+  const latest = storage.recoverySnapshots[0] ?? null;
+  if (latest && recoveryUrlSignature(latest) === signature) {
     return {
-      next: { ...storage, historyCandidate: normalized },
+      next: { ...storage, recoveryCandidate: normalized },
       promoted: false,
     };
   }
 
-  const history = [
+  const recoverySnapshots = [
     normalized,
-    ...storage.history.filter((item) => historyUrlSignature(item) !== signature),
+    ...storage.recoverySnapshots.filter((item) => recoveryUrlSignature(item) !== signature),
   ].slice(0, 5);
 
   return {
     next: {
       ...storage,
-      historyCandidate: normalized,
-      history,
+      recoveryCandidate: normalized,
+      recoverySnapshots,
     },
     promoted: true,
   };
 }
 
-export async function promoteHistorySnapshot(snapshot: HistorySnapshot | null): Promise<boolean> {
+export async function promoteRecoverySnapshot(snapshot: RecoverySnapshot | null): Promise<boolean> {
   let promoted = false;
   await updateStorage((storage) => {
     const result = promoteSnapshotInStorage(storage, snapshot);
@@ -777,10 +779,10 @@ export async function promoteHistorySnapshot(snapshot: HistorySnapshot | null): 
   return promoted;
 }
 
-export async function promoteHistoryCandidate(): Promise<boolean> {
+export async function promoteRecoveryCandidate(): Promise<boolean> {
   let promoted = false;
   await updateStorage((storage) => {
-    const result = promoteSnapshotInStorage(storage, storage.historyCandidate);
+    const result = promoteSnapshotInStorage(storage, storage.recoveryCandidate);
     promoted = result.promoted;
     return result.next;
   });
@@ -788,22 +790,22 @@ export async function promoteHistoryCandidate(): Promise<boolean> {
   return promoted;
 }
 
-export async function deleteHistorySnapshot(id: string): Promise<void> {
+export async function deleteRecoverySnapshot(id: string): Promise<void> {
   await updateStorage((storage) => ({
     ...storage,
-    history: storage.history.filter((snapshot) => snapshot.id !== id),
+    recoverySnapshots: storage.recoverySnapshots.filter((snapshot) => snapshot.id !== id),
   }));
 }
 
-export async function clearHistory(): Promise<void> {
+export async function clearRecoverySnapshots(): Promise<void> {
   await updateStorage((storage) => ({
     ...storage,
-    historyCandidate: null,
-    history: [],
+    recoveryCandidate: null,
+    recoverySnapshots: [],
   }));
 }
 
-export async function readHistory(): Promise<HistorySnapshot[]> {
+export async function readRecoverySnapshots(): Promise<RecoverySnapshot[]> {
   const storage = await readStorage();
-  return storage.history;
+  return storage.recoverySnapshots;
 }

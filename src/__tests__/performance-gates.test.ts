@@ -29,7 +29,7 @@ describe('performance gates', () => {
   });
 
   it('lazy-loads panels that are not needed for the initial dashboard view', () => {
-    const appSource = fs.readFileSync(path.join(repoRoot, 'src/newtab/App.tsx'), 'utf8');
+    const appSource = fs.readFileSync(path.join(repoRoot, 'src/dashboard/App.tsx'), 'utf8');
 
     expect(appSource).not.toContain("import { SettingsPanel }");
     expect(appSource).not.toContain("import { RecoveryPanel }");

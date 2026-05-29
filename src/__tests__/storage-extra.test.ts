@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   writeOrganizerState,
-  updateHistoryCandidate,
-  readHistory,
-  promoteHistoryCandidate,
+  updateRecoveryCandidate,
+  readRecoverySnapshots,
+  promoteRecoveryCandidate,
   readStorage,
   readGroupOrder,
   clearGroupOrder,
   readOrganizerState,
   writeStorage,
 } from '../utils/storage';
-import type { HistorySnapshot, StorageSchema } from '../types';
+import type { RecoverySnapshot, StorageSchema } from '../types';
 
 const chromeStorage = {
   data: {} as Record<string, unknown>,
@@ -34,16 +34,16 @@ vi.stubGlobal('chrome', {
   },
 });
 
-const validSnapshot: HistorySnapshot = { 
-    id: '1', 
-    tabs: [{ 
-        url: 'https://a.com', 
-        title: 'A', 
-        domain: 'a.com', 
-        productKey: 'a', 
-        productLabel: 'A', 
-        iconDomain: 'a.com', 
-        favIconUrl: '', 
+const validSnapshot: RecoverySnapshot = {
+    id: '1',
+    tabs: [{
+        url: 'https://a.com',
+        title: 'A',
+        domain: 'a.com',
+        productKey: 'a',
+        productLabel: 'A',
+        iconDomain: 'a.com',
+        favIconUrl: '',
         capturedAt: new Date().toISOString(),
         windowId: 1,
         active: false
@@ -62,8 +62,8 @@ describe('storage extra', () => {
   beforeEach(() => {
     chromeStorage.data = {
       schemaVersion: 4,
-      history: [],
-      historyCandidate: null,
+      recoverySnapshots: [],
+      recoveryCandidate: null,
       sections: [],
       sectionAssignments: [],
       viewMode: 'cards',
@@ -72,18 +72,18 @@ describe('storage extra', () => {
     vi.clearAllMocks();
   });
 
-  it('handles invalid history snapshot structure', async () => {
-    // This targets line 128 in storage.ts
+  it('handles invalid recovery snapshot structure', async () => {
+    // This targets normalizeRecoverySnapshot in storage.ts
     const invalid = { id: 123 }; // id should be string
-    chromeStorage.data['historyCandidate'] = invalid;
+    chromeStorage.data['recoveryCandidate'] = invalid;
     const storage = await readStorage();
-    expect(storage.historyCandidate).toBeNull();
+    expect(storage.recoveryCandidate).toBeNull();
   });
 
   it('reads and clears group order', async () => {
     const order = await readGroupOrder();
     expect(order).toEqual({ 'a.com': 1 });
-    
+
     await clearGroupOrder();
     expect(await readGroupOrder()).toEqual({});
   });
@@ -107,35 +107,35 @@ describe('storage extra', () => {
       sections: [{ id: '1', name: 'Test', order: 0 }],
       sectionAssignments: [{ productKey: 'a', sectionId: '1', order: 0 }]
     });
-    
+
     const storage = await readStorage();
     expect(storage.viewMode).toBe('table');
     expect(storage.sections).toHaveLength(1);
     expect(storage.sectionAssignments).toHaveLength(1);
   });
 
-  it('updateHistoryCandidate handles null', async () => {
-    chromeStorage.data['historyCandidate'] = validSnapshot;
-    await updateHistoryCandidate(null);
+  it('updateRecoveryCandidate handles null', async () => {
+    chromeStorage.data['recoveryCandidate'] = validSnapshot;
+    await updateRecoveryCandidate(null);
     const storage = await readStorage();
-    expect(storage.historyCandidate).toBeNull();
+    expect(storage.recoveryCandidate).toBeNull();
   });
 
-  it('readHistory returns history array', async () => {
-    const history = [validSnapshot];
-    chromeStorage.data['history'] = history;
-    const result = await readHistory();
-    expect(result).toEqual(history);
+  it('readRecoverySnapshots returns recovery snapshots array', async () => {
+    const recoverySnapshots = [validSnapshot];
+    chromeStorage.data['recoverySnapshots'] = recoverySnapshots;
+    const result = await readRecoverySnapshots();
+    expect(result).toEqual(recoverySnapshots);
   });
 
-  it('promoteHistoryCandidate promotes current candidate', async () => {
-    chromeStorage.data['historyCandidate'] = validSnapshot;
-    
-    const promoted = await promoteHistoryCandidate();
+  it('promoteRecoveryCandidate promotes current candidate', async () => {
+    chromeStorage.data['recoveryCandidate'] = validSnapshot;
+
+    const promoted = await promoteRecoveryCandidate();
     expect(promoted).toBe(true);
     const storage = await readStorage();
-    expect(storage.history).toHaveLength(1);
-    expect(storage.history[0].id).toBe('1');
+    expect(storage.recoverySnapshots).toHaveLength(1);
+    expect(storage.recoverySnapshots[0].id).toBe('1');
   });
 
   it('migrate handles legacy data', async () => {
@@ -147,14 +147,14 @@ describe('storage extra', () => {
         recoveryHistory: [validSnapshot]
     };
     Object.assign(chromeStorage.data, legacyData);
-    
+
     const storage = await readStorage();
     expect(storage.schemaVersion).toBe(5);
     expect(storage.sections).toHaveLength(1);
     expect(storage.sections[0].id).toBe('s1');
     expect(storage.sectionAssignments).toHaveLength(1);
     expect(storage.sectionAssignments[0].sectionId).toBe('s1');
-    expect(storage.historyCandidate).not.toBeNull();
-    expect(storage.history).toHaveLength(1);
+    expect(storage.recoveryCandidate).not.toBeNull();
+    expect(storage.recoverySnapshots).toHaveLength(1);
   });
 });

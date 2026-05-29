@@ -44,10 +44,27 @@ app, account system, cloud sync product, bookmark manager, or task manager.
 - Recovery is lightweight local safety from recent snapshots, not full session
   sync or cross-device history.
 
+## Terminology
+
+| Term | Meaning |
+|------|---------|
+| dashboard | toolbar-opened React page surface |
+| tab | one Chrome tab/page |
+| product group | automatic product/domain TabGroup |
+| section | user-created container for product groups |
+| unsectioned | product group intentionally outside any section |
+| recovery snapshot | local restore snapshot |
+| adapter | Chrome/browser API wrapper |
+| domain logic | pure product rules in src/lib |
+
+Casing convention: `camelCase` for variables/functions/props, `PascalCase` for
+types/interfaces/components, `kebab-case` for files/IDs/storage keys/CSS classes,
+`UPPER_SNAKE_CASE` for module-level constants.
+
 ## UI Design Core
 
 Source of truth: `docs/frontend-design.md` and
-`src/newtab/styles/global.css`.
+`src/dashboard/styles/global.css`.
 
 - Visual tone is Notion-inspired warm paper: calm, readable, lightly tactile.
 - Use warm surfaces and text, not cold gray UI. Key light tokens include
@@ -94,8 +111,8 @@ Source of truth: `docs/frontend-design.md` and
 
 Chrome runs two extension surfaces:
 
-- Dashboard page: `src/newtab/index.html` -> `src/newtab/main.tsx` ->
-  `src/newtab/App.tsx`.
+- Dashboard page: `src/dashboard/index.html` -> `src/dashboard/main.tsx` ->
+  `src/dashboard/App.tsx`.
 - Background worker: `manifest.json` -> `src/background/index.ts`.
 
 Core source layout:
@@ -103,8 +120,8 @@ Core source layout:
 ```text
 src/
   background/       MV3 service worker and toolbar action behavior
-  newtab/           React dashboard UI, hooks, components, styles
-  stores/           Zustand state for tabs, settings, workspace/session data
+  dashboard/           React dashboard UI, hooks, components, styles
+  stores/           Zustand state for tabs, settings, sections, recovery
   lib/              Pure domain logic: grouping, titles, history, effects
   utils/            Chrome/storage/url/error adapters and helpers
   config/           Product/domain mapping and grouping configuration
@@ -123,12 +140,12 @@ Source placement rules:
 
 - Use shallow files when a source has one clear responsibility and no stable peer group.
 - Use subdirectories only when depth expresses a durable responsibility group.
-- `src/newtab/controllers/` owns page-level orchestration and may coordinate stores, Chrome runtime messages, toast/dialog state, and user actions.
-- `src/newtab/hooks/` is for pure UI/DOM hooks only. Hooks in this directory must not import stores, storage utilities, or Chrome APIs.
-- `src/newtab/components/` is grouped by UI responsibility: `layout`, `ui`, `tabs`, `organizer`, `settings`, `history`, `search`, and `states`.
-- `src/newtab/lib/` is for newtab-only pure UI projections and parsers.
+- `src/dashboard/controllers/` owns page-level orchestration and may coordinate stores, Chrome runtime messages, toast/dialog state, and user actions.
+- `src/dashboard/hooks/` is for pure UI/DOM hooks only. Hooks in this directory must not import stores, storage utilities, or Chrome APIs.
+- `src/dashboard/components/` is grouped by UI responsibility: `layout`, `ui`, `tabs`, `organizer`, `product-groups`, `sections`, `recovery`, `settings`, `search`, and `states`.
+- `src/dashboard/lib/` is for dashboard-only pure UI projections and parsers.
 - `src/lib/` is pure product/domain logic. It must not import `src/utils`, React, Zustand, DOM, storage, or Chrome APIs.
-- `src/utils/` is for Chrome/browser/platform adapters. It may import pure `src/lib` rules, but must not import stores, newtab modules, controllers, or components.
+- `src/utils/` is for Chrome/browser/platform adapters. It may import pure `src/lib` rules, but must not import stores, dashboard modules, controllers, or components.
 
 ## Naming Rules
 
@@ -158,17 +175,23 @@ Source placement rules:
 
 ## Architecture Ownership
 
-- `src/newtab/index.html` is the dashboard entry.
-- `src/newtab/App.tsx` is the page orchestrator. It owns store wiring,
+- `src/dashboard/index.html` is the dashboard entry.
+- `src/dashboard/App.tsx` is the page orchestrator. It owns store wiring,
   transient UI state, search/keyboard flow, close/focus/dedupe handlers,
   settings, history, confirmations, toast, and the lazy drag organizer.
 - `src/background/index.ts` is the MV3 service worker. It refreshes badge counts
   and opens or focuses the dashboard from the toolbar action.
 - `src/utils/storage.ts` is the only adapter over `chrome.storage.local`.
-- `src/lib/tab-grouper.ts` owns product/domain grouping and duplicate counts.
-- `src/lib/history-snapshots.ts` owns snapshot creation and replacement rules.
-- `src/newtab/components/DndOrganizer.tsx` is the only component that imports
+- `src/lib/product-groups.ts` owns product/domain grouping and duplicate counts.
+- `src/lib/recovery-snapshots.ts` owns snapshot creation and replacement rules.
+- `src/dashboard/components/DndOrganizer.tsx` is the only component that imports
   `@dnd-kit`.
+
+Import boundary:
+
+- `src/lib` is pure and imports only `src/types` and `src/config`.
+- `src/utils` is the adapter layer and may import `src/types`, `src/config`, and pure `src/lib` rules.
+- `src/lib` must never import `src/utils`.
 
 Mutation flow:
 
@@ -184,11 +207,11 @@ Allowed import chains:
 
 ```text
 App -> controllers/providers/components
-controllers -> stores/newtab-lib/lib/utils/types/config
+controllers -> stores/dashboard-lib/lib/utils/types/config
 providers -> stores/lib/types/config
-components -> components/hooks/newtab-lib/lib/types/config
+components -> components/hooks/dashboard-lib/lib/types/config
 stores -> lib/utils/types/config
-newtab-lib -> lib/types/config
+dashboard-lib -> lib/types/config
 lib -> types/config only
 utils -> pure-lib/types/config only
 config -> types only
@@ -200,16 +223,16 @@ Forbidden import chains:
 ```text
 components -> stores/controllers/utils/storage/chrome.*
 hooks -> stores/utils/storage/chrome.*
-lib -> utils/stores/newtab/React/Zustand/chrome.*
-utils -> stores/newtab/components/controllers/React/Zustand
-stores -> newtab/components/controllers
+lib -> utils/stores/dashboard/React/Zustand/chrome.*
+utils -> stores/dashboard/components/controllers/React/Zustand
+stores -> dashboard/components/controllers
 config/types -> runtime layer
 ```
 
 ## State And Component Invariants
 
-- `App.tsx` is the only newtab UI file that imports Zustand stores.
-- Components under `src/newtab/components/` receive data and callbacks by props.
+- `App.tsx` is the only dashboard UI file that imports Zustand stores.
+- Components under `src/dashboard/components/` receive data and callbacks by props.
 - Components do not call `chrome.tabs.*`, `chrome.storage.local`, or storage
   utilities directly.
 - Sections contain automatic product groups only.
@@ -228,18 +251,18 @@ config/types -> runtime layer
   `section:<sectionId>`.
 - Cards view uses the lazy drag organizer directly so product groups can move
   between sections without a separate organize mode.
-- `src/newtab/components/DndOrganizer.tsx` is the only component that may import
+- `src/dashboard/components/DndOrganizer.tsx` is the only component that may import
   `@dnd-kit`; the Cards lazy chunk may contain DnD, while the Table path must
   not import or render DnD handles.
 - `dist/` is generated output. Do not edit it manually.
-- CRXJS reads `manifest.json`; keep `src/newtab/index.html` as an explicit Vite
+- CRXJS reads `manifest.json`; keep `src/dashboard/index.html` as an explicit Vite
   build input so the toolbar dashboard stays bundled.
 
 ## Change Playbooks
 
 For UI changes:
 
-- Check `docs/frontend-design.md` and `src/newtab/styles/global.css` first.
+- Check `docs/frontend-design.md` and `src/dashboard/styles/global.css` first.
 - Preserve Cards/Table parity unless the user asks for a mode-specific change.
 - Verify scan, jump, close, dedupe, organize, settings, and history paths still
   make sense after simplification.
@@ -247,10 +270,10 @@ For UI changes:
 
 For grouping, duplicate, or visible-tab behavior:
 
-- Treat `src/lib/tab-grouper.ts` and the visible chip model as source of truth.
+- Treat `src/lib/product-groups.ts` and the visible chip model as source of truth.
 - Duplicate cleanup keeps one tab and closes extras. Keyboard navigation and
   batch-close behavior should derive from the same visible set the UI renders.
-- Prefer targeted coverage in `src/__tests__/tab-grouper.test.ts` or
+- Prefer targeted coverage in `src/__tests__/product-groups.test.ts` or
   `src/__tests__/visible-tabs.test.ts` before the full gate.
 
 For storage and history changes:
@@ -275,7 +298,7 @@ Persisted in `chrome.storage.local`:
 - Product group order.
 - Product-only organizer sections.
 - Product-to-section assignments.
-- History candidate/history snapshots.
+- Recovery candidate/recovery snapshots.
 - Legacy `recoveryCandidate` and `recoveryHistory` fields required for
   migration compatibility.
 - Legacy `manualGroups` and `groupAssignments` are cleanup-only reset fields;
@@ -293,7 +316,7 @@ Storage rules:
   longer exists.
 - Product-to-section assignments are group-level label relationships:
   `{ productKey, sectionId, order }`.
-- `unsortedOverrides` stores product keys the user explicitly moved to No
+- `unsectionedProductKeys` stores product keys the user explicitly moved to No
   section so auto-rules do not immediately reapply.
 - History snapshots are capped and local-only; do not introduce cloud/session
   account semantics.
@@ -303,7 +326,7 @@ Storage rules:
 | Command | Use |
 |---|---|
 | `npm install` | Install dependencies when needed. |
-| `npm run dev` | Vite dev server for `src/newtab/index.html`. |
+| `npm run dev` | Vite dev server for `src/dashboard/index.html`. |
 | `npm run dev:a11y` | Vite dev server for the a11y harness. |
 | `npm run build` | `tsc -b`, Vite build, then sync Chrome-ready output to `dist/`. |
 | `npm run sync:dist` | Sync generated/static assets into `dist/` after build-only changes. |
@@ -335,8 +358,8 @@ Targeted Vitest examples:
 
 ```bash
 npm test -- src/__tests__/storage.test.ts
-npm test -- src/__tests__/tab-grouper.test.ts
-npm test -- src/__tests__/history-snapshots.test.ts
+npm test -- src/__tests__/product-groups.test.ts
+npm test -- src/__tests__/recovery-snapshots.test.ts
 npm test -- src/__tests__/tab-store.test.ts
 npm test -- src/__tests__/dashboard-reskin.test.tsx
 npm test -- src/__tests__/visible-tabs.test.ts

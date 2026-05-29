@@ -1,6 +1,6 @@
 import { render, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useChromeStorageSync } from '../newtab/controllers/useChromeStorageSync';
+import { useChromeStorageSync } from '../dashboard/controllers/useChromeStorageSync';
 
 type StorageListener = (
   changes: Record<string, chrome.storage.StorageChange>,
@@ -10,13 +10,13 @@ type StorageListener = (
 function Harness({
   fetchSettings,
   fetchTabs,
-  fetchHistory,
+  fetchRecovery,
 }: {
   fetchSettings: () => Promise<void>;
   fetchTabs: () => Promise<void>;
-  fetchHistory: () => Promise<void>;
+  fetchRecovery: () => Promise<void>;
 }): null {
-  useChromeStorageSync({ fetchSettings, fetchTabs, fetchHistory });
+  useChromeStorageSync({ fetchSettings, fetchTabs, fetchRecovery });
   return null;
 }
 
@@ -33,7 +33,7 @@ describe('useChromeStorageSync', () => {
     const removeListener = vi.fn();
     const fetchSettings = vi.fn(async () => {});
     const fetchTabs = vi.fn(async () => {});
-    const fetchHistory = vi.fn(async () => {});
+    const fetchRecovery = vi.fn(async () => {});
 
     vi.stubGlobal('chrome', {
       storage: {
@@ -48,7 +48,7 @@ describe('useChromeStorageSync', () => {
       <Harness
         fetchSettings={fetchSettings}
         fetchTabs={fetchTabs}
-        fetchHistory={fetchHistory}
+        fetchRecovery={fetchRecovery}
       />,
     );
 
@@ -67,7 +67,7 @@ describe('useChromeStorageSync', () => {
 
     await waitFor(() => expect(fetchSettings).toHaveBeenCalledTimes(1));
     expect(fetchTabs).toHaveBeenCalledTimes(1);
-    expect(fetchHistory).toHaveBeenCalledTimes(1);
+    expect(fetchRecovery).toHaveBeenCalledTimes(1);
 
     unmount();
     expect(removeListener).toHaveBeenCalledWith(listener);
@@ -77,7 +77,7 @@ describe('useChromeStorageSync', () => {
     const listeners: StorageListener[] = [];
     const fetchSettings = vi.fn(async () => {});
     const fetchTabs = vi.fn(async () => {});
-    const fetchHistory = vi.fn(async () => {});
+    const fetchRecovery = vi.fn(async () => {});
 
     vi.stubGlobal('chrome', {
       storage: {
@@ -94,7 +94,7 @@ describe('useChromeStorageSync', () => {
       <Harness
         fetchSettings={fetchSettings}
         fetchTabs={fetchTabs}
-        fetchHistory={fetchHistory}
+        fetchRecovery={fetchRecovery}
       />,
     );
 
@@ -105,6 +105,6 @@ describe('useChromeStorageSync', () => {
     await Promise.resolve();
     expect(fetchSettings).not.toHaveBeenCalled();
     expect(fetchTabs).not.toHaveBeenCalled();
-    expect(fetchHistory).not.toHaveBeenCalled();
+    expect(fetchRecovery).not.toHaveBeenCalled();
   });
 });

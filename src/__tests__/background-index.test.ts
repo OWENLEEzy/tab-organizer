@@ -101,7 +101,7 @@ describe('background service worker entry', () => {
 
   it('focuses an existing dashboard tab from the toolbar action', async () => {
     chromeMock.tabs.query.mockResolvedValue([
-      { id: 10, url: 'chrome-extension://fake-id/src/newtab/index.html', windowId: 1 },
+      { id: 10, url: 'chrome-extension://fake-id/src/dashboard/index.html', windowId: 1 },
     ]);
 
     await import('../background/index');
@@ -116,7 +116,7 @@ describe('background service worker entry', () => {
 
   it('falls back to the first dashboard tab when none is in the current window', async () => {
     chromeMock.tabs.query.mockResolvedValue([
-      { id: 10, url: 'chrome-extension://fake-id/src/newtab/index.html', windowId: 2 },
+      { id: 10, url: 'chrome-extension://fake-id/src/dashboard/index.html', windowId: 2 },
     ]);
     chromeMock.windows.getCurrent.mockResolvedValue({ id: 1 });
 
@@ -134,7 +134,7 @@ describe('background service worker entry', () => {
     chromeMock.tabs.query.mockResolvedValue([]);
 
     await import('../background/index');
-    listeners.onCommand.mock.calls[0][0]('open-space-switcher');
+    listeners.onCommand.mock.calls[0][0]('open-section-switcher');
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
@@ -146,7 +146,7 @@ describe('background service worker entry', () => {
 
   it('ignores unrelated commands and creates a dashboard if the candidate tab has no id', async () => {
     chromeMock.tabs.query.mockResolvedValue([
-      { url: 'chrome-extension://fake-id/src/newtab/index.html', windowId: 1 },
+      { url: 'chrome-extension://fake-id/src/dashboard/index.html', windowId: 1 },
     ]);
 
     await import('../background/index');
@@ -160,7 +160,7 @@ describe('background service worker entry', () => {
     await Promise.resolve();
 
     expect(chromeMock.tabs.create).toHaveBeenCalledWith({
-      url: 'chrome-extension://fake-id/src/newtab/index.html',
+      url: 'chrome-extension://fake-id/src/dashboard/index.html',
     });
   });
 
@@ -174,21 +174,21 @@ describe('background service worker entry', () => {
     await Promise.resolve();
 
     expect(chromeMock.tabs.create).toHaveBeenCalledWith({
-      url: 'chrome-extension://fake-id/src/newtab/index.html',
+      url: 'chrome-extension://fake-id/src/dashboard/index.html',
     });
     expect(chromeMock.action.setBadgeText).toHaveBeenCalledWith({ text: '' });
   });
 
   it('retries focusing the section switcher after command focus', async () => {
     chromeMock.tabs.query.mockResolvedValue([
-      { id: 10, url: 'chrome-extension://fake-id/src/newtab/index.html', windowId: 1 },
+      { id: 10, url: 'chrome-extension://fake-id/src/dashboard/index.html', windowId: 1 },
     ]);
     chromeMock.tabs.sendMessage
       .mockRejectedValueOnce(new Error('not ready'))
       .mockResolvedValueOnce({});
 
     await import('../background/index');
-    listeners.onCommand.mock.calls[0][0]('open-space-switcher');
+    listeners.onCommand.mock.calls[0][0]('open-section-switcher');
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
@@ -205,12 +205,12 @@ describe('background service worker entry', () => {
 
   it('stops retrying section switcher focus after repeated send failures', async () => {
     chromeMock.tabs.query.mockResolvedValue([
-      { id: 10, url: 'chrome-extension://fake-id/src/newtab/index.html', windowId: 1 },
+      { id: 10, url: 'chrome-extension://fake-id/src/dashboard/index.html', windowId: 1 },
     ]);
     chromeMock.tabs.sendMessage.mockRejectedValue(new Error('not ready'));
 
     await import('../background/index');
-    listeners.onCommand.mock.calls[0][0]('open-space-switcher');
+    listeners.onCommand.mock.calls[0][0]('open-section-switcher');
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();

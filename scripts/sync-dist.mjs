@@ -5,7 +5,7 @@ const rootDir = process.cwd();
 const distDir = path.join(rootDir, 'dist');
 const dashboardCandidates = [
   path.join(distDir, 'index.html'),
-  path.join(distDir, 'src', 'newtab', 'index.html'),
+  path.join(distDir, 'src', 'dashboard', 'index.html'),
 ];
 
 async function fileExists(filePath) {

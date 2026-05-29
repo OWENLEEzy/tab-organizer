@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { groupTabsByDomain } from '../lib/tab-grouper';
+import { groupTabsByProduct } from '../lib/product-groups';
 import type { Tab } from '../types';
 
 function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
@@ -26,7 +26,7 @@ describe('Grouping Consolidation', () => {
       makeTab({ id: 4, url: 'https://m.google.com.tw/' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
     expect(groups).toHaveLength(1);
     expect(groups[0].domain).toBe('google');
     expect(groups[0].friendlyName).toBe('Google');
@@ -40,7 +40,7 @@ describe('Grouping Consolidation', () => {
       makeTab({ id: 3, url: 'https://amazon.de/test' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
     expect(groups).toHaveLength(1);
     expect(groups[0].domain).toBe('amazon');
     expect(groups[0].friendlyName).toBe('Amazon');
@@ -54,7 +54,7 @@ describe('Grouping Consolidation', () => {
       makeTab({ id: 3, url: 'https://ja.wikipedia.org/' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
     expect(groups).toHaveLength(1);
     expect(groups[0].domain).toBe('wikipedia');
     expect(groups[0].friendlyName).toBe('Wikipedia');
@@ -68,7 +68,7 @@ describe('Grouping Consolidation', () => {
       makeTab({ id: 3, url: 'https://www.example.co.jp/' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
     // Should NOT consolidate to "example" key; should remain separate
     expect(groups).toHaveLength(3);
     expect(groups.map(g => g.domain)).toContain('example.com');
@@ -82,7 +82,7 @@ describe('Grouping Consolidation', () => {
       makeTab({ id: 2, url: 'https://blog.product.com/' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
     // Without a specific rule, "app.product.com" and "blog.product.com" remain separate keys.
     expect(groups).toHaveLength(2);
     expect(groups.find(g => g.domain === 'app.product.com')).toBeDefined();

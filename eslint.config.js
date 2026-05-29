@@ -208,7 +208,7 @@ export default defineConfig([
 
   // Rule 5: Components must not import stores, controllers, storage, or access chrome APIs
   {
-    files: ['src/newtab/components/**/*.tsx'],
+    files: ['src/dashboard/components/**/*.tsx'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -219,7 +219,7 @@ export default defineConfig([
               message: 'Components must not import stores. Pass data and callbacks from controllers/App.',
             },
             {
-              group: ['**/newtab/controllers/*', '**/controllers/*'],
+              group: ['**/dashboard/controllers/*', '**/controllers/*'],
               message: 'Components must not import controllers. Controllers compose components, never the reverse.',
             },
             {
@@ -243,9 +243,9 @@ export default defineConfig([
     },
   },
 
-  // Rule 6: Pure newtab hooks must not import stores, storage, or access chrome APIs
+  // Rule 6: Pure dashboard hooks must not import stores, storage, or access chrome APIs
   {
-    files: ['src/newtab/hooks/**/*.{ts,tsx}'],
+    files: ['src/dashboard/hooks/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -253,11 +253,11 @@ export default defineConfig([
           patterns: [
             {
               group: ['**/stores/*'],
-              message: 'Pure newtab hooks must not import stores. Move orchestration to src/newtab/controllers.',
+              message: 'Pure dashboard hooks must not import stores. Move orchestration to src/dashboard/controllers.',
             },
             {
               group: ['**/utils/storage'],
-              message: 'Pure newtab hooks must not import storage utilities. Move persistence orchestration to controllers or stores.',
+              message: 'Pure dashboard hooks must not import storage utilities. Move persistence orchestration to controllers or stores.',
             },
           ],
         },
@@ -266,11 +266,11 @@ export default defineConfig([
         'error',
         {
           selector: "MemberExpression[object.name='chrome']",
-          message: 'Pure newtab hooks must not access chrome.* APIs. Move runtime coordination to controllers.',
+          message: 'Pure dashboard hooks must not access chrome.* APIs. Move runtime coordination to controllers.',
         },
         {
           selector: "MemberExpression[object.object.name='chrome']",
-          message: 'Pure newtab hooks must not access chrome.* APIs. Move runtime coordination to controllers.',
+          message: 'Pure dashboard hooks must not access chrome.* APIs. Move runtime coordination to controllers.',
         },
       ],
     },
@@ -292,8 +292,8 @@ export default defineConfig([
               message: 'src/lib must not import stores.',
             },
             {
-              group: ['../newtab/*', '**/newtab/*'],
-              message: 'src/lib must not import newtab modules.',
+              group: ['../dashboard/*', '**/dashboard/*'],
+              message: 'src/lib must not import dashboard modules.',
             },
             {
               group: ['react', 'react-dom', 'zustand'],
@@ -329,8 +329,8 @@ export default defineConfig([
               message: 'src/utils is an adapter layer and must not import stores.',
             },
             {
-              group: ['../newtab/*', '**/newtab/*'],
-              message: 'src/utils is an adapter layer and must not import newtab modules.',
+              group: ['../dashboard/*', '**/dashboard/*'],
+              message: 'src/utils is an adapter layer and must not import dashboard modules.',
             },
             {
               group: ['react', 'react-dom', 'zustand'],
@@ -344,7 +344,7 @@ export default defineConfig([
 
   // Rule 7: avoid fake buttons on static elements
   {
-    files: ['src/newtab/components/**/*.tsx'],
+    files: ['src/dashboard/components/**/*.tsx'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -358,7 +358,7 @@ export default defineConfig([
 
   // Rule 8: UI Design Guardrails
   {
-    files: ['src/newtab/components/**/*.tsx', 'src/newtab/App.tsx'],
+    files: ['src/dashboard/components/**/*.tsx', 'src/dashboard/App.tsx'],
     rules: {
       'no-restricted-syntax': [
         'error',

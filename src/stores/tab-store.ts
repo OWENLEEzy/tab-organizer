@@ -1,23 +1,23 @@
 import { create } from 'zustand';
-import type { Section, HistorySnapshot, SectionAssignment, Tab, TabGroup, ViewMode, CustomGroup } from '../types';
-import { groupTabsByDomain } from '../lib/tab-grouper';
+import type { Section, RecoverySnapshot, SectionAssignment, Tab, TabGroup, ViewMode, CustomGroup } from '../types';
+import { groupTabsByProduct } from '../lib/product-groups';
 import {
   assignProductToSection as assignProductToSectionModel,
   autoAssignProducts,
   deleteSectionAndUnassignProducts,
-  moveProductToNoSection,
+  moveProductToUnsectioned,
 } from '../lib/section-organizer';
 import {
-  clearHistory,
-  deleteHistorySnapshot,
-  promoteHistorySnapshot,
-  readHistory,
+  clearRecoverySnapshots,
+  deleteRecoverySnapshot,
+  promoteRecoverySnapshot,
+  readRecoverySnapshots,
   reconcileOrganizerState,
   writeGroupOrder,
   writeOrganizerState,
 } from '../utils/storage';
 import { legacyProductKeyForHostname, productForHostname } from '../config/products';
-import { buildHistorySnapshot } from '../lib/history-snapshots';
+import { buildRecoverySnapshot } from '../lib/recovery-snapshots';
 import { duplicateTabIdsToClose } from '../lib/duplicate-tabs';
 import { getTabDomain, isRealTab } from '../lib/url-rules';
 import { isTabOrganizerPage } from '../utils/browser-url';
@@ -58,23 +58,23 @@ interface TabActions {
   /** Reorder sections and persist the new order. */
   reorderSections: (groups: Section[]) => Promise<void>;
   /** Assign a product group to a section. */
-  moveProductToSection: (productKey: string, sectionId: string) => Promise<void>;
+  moveProductGroupToSection: (productKey: string, sectionId: string) => Promise<void>;
   /** Remove a product group assignment. */
-  moveProductToNoSection: (productKey: string) => Promise<void>;
+  moveProductToUnsectioned: (productKey: string) => Promise<void>;
   /** Persist the visible organizer layout mode. */
   setViewMode: (viewMode: ViewMode) => Promise<void>;
   /** Clear the current error state. */
   clearError: () => void;
-  /** Fetch recent history snapshots from storage. */
-  fetchHistory: () => Promise<void>;
-  /** Restore all tabs from a specific history snapshot. */
-  restoreHistorySnapshot: (snapshotId: string) => Promise<void>;
+  /** Fetch recent recovery snapshots from storage. */
+  fetchRecovery: () => Promise<void>;
+  /** Restore all tabs from a specific recovery snapshot. */
+  restoreRecoverySnapshot: (snapshotId: string) => Promise<void>;
   /** Restore tabs from a specific product within a snapshot. */
-  restoreHistoryProduct: (snapshotId: string, productKey: string) => Promise<void>;
-  /** Delete a specific snapshot from history. */
-  deleteHistorySnapshot: (snapshotId: string) => Promise<void>;
-  /** Clear all historical snapshots. */
-  clearHistory: () => Promise<void>;
+  restoreRecoveryProduct: (snapshotId: string, productKey: string) => Promise<void>;
+  /** Delete a specific recovery snapshot. */
+  deleteRecoverySnapshot: (snapshotId: string) => Promise<void>;
+  /** Clear all recovery snapshots. */
+  clearRecovery: () => Promise<void>;
   /** Find and close all other open dashboard tabs except the current one. */
   closeExtraDashboards: () => Promise<void>;
   /** Set the currently active section to filter the dashboard. */
@@ -83,7 +83,7 @@ interface TabActions {
   importBackup: (
     sections: Section[],
     sectionAssignments: SectionAssignment[],
-    unsortedOverrides?: string[],
+    unsectionedProductKeys?: string[],
   ) => Promise<void>;
   /** Sort the current Chrome window's real tabs to match the dashboard product order. */
   sortCurrentWindowTabsByDashboardOrder: (products: TabGroup[]) => Promise<void>;
@@ -94,8 +94,8 @@ export type TabStore = {
   products: TabGroup[];
   sections: Section[];
   sectionAssignments: SectionAssignment[];
-  unsortedOverrides: string[];
-  history: HistorySnapshot[];
+  unsectionedProductKeys: string[];
+  recoverySnapshots: RecoverySnapshot[];
   viewMode: ViewMode;
   loading: boolean;
   error: string | null;
@@ -186,12 +186,12 @@ function buildProductKeyCompatibility(
   };
 }
 
-async function protectHistoryBeforeClosing(allTabs: chrome.tabs.Tab[]): Promise<void> {
+async function protectRecoveryBeforeClosing(allTabs: chrome.tabs.Tab[]): Promise<void> {
   try {
-    const snapshot = buildHistorySnapshot(allTabs.map(toAppTab));
-    await promoteHistorySnapshot(snapshot);
+    const snapshot = buildRecoverySnapshot(allTabs.map(toAppTab));
+    await promoteRecoverySnapshot(snapshot);
   } catch (err: unknown) {
-    console.warn('[Tab Organizer] Failed to protect history before closing tabs:', err);
+    console.warn('[Tab Organizer] Failed to protect recovery before closing tabs:', err);
   }
 }
 
@@ -202,8 +202,8 @@ export const useTabStore = create<TabStore>((set) => ({
   products: [],
   sections: [],
   sectionAssignments: [],
-  unsortedOverrides: [],
-  history: [],
+  unsectionedProductKeys: [],
+  recoverySnapshots: [],
   viewMode: 'cards',
   loading: false,
   error: null,
@@ -226,16 +226,15 @@ export const useTabStore = create<TabStore>((set) => ({
         buildProductKeyCompatibility(mapped, customGroups);
       const organizerState = await reconcileOrganizerState(currentProductKeys, legacyKeyMap);
       const groupOrder = organizerState.groupOrder;
-      const productGroups = groupTabsByDomain(mapped, groupOrder, customGroups);
+      const productGroups = groupTabsByProduct(mapped, groupOrder, customGroups);
       const sections = orderedSections(organizerState.sections);
-
       let sectionAssignments = organizerState.sectionAssignments;
       let hasNewAssignments = false;
       const newAssignments = autoAssignProducts({
         products: productGroups,
         sections,
         assignments: sectionAssignments,
-        noSectionOverrides: organizerState.unsortedOverrides,
+        noSectionOverrides: organizerState.unsectionedProductKeys,
         hostnamesByProductKey,
       });
 
@@ -257,7 +256,7 @@ export const useTabStore = create<TabStore>((set) => ({
         products,
         sections,
         sectionAssignments,
-        unsortedOverrides: organizerState.unsortedOverrides,
+        unsectionedProductKeys: organizerState.unsectionedProductKeys,
         viewMode: organizerState.viewMode,
         loading: false,
         dashboardCount,
@@ -273,7 +272,7 @@ export const useTabStore = create<TabStore>((set) => ({
       const allTabs = await chrome.tabs.query({});
       const match = allTabs.find((t) => t.url === url);
       if (match?.id != null) {
-        await protectHistoryBeforeClosing(allTabs);
+        await protectRecoveryBeforeClosing(allTabs);
         await chrome.tabs.remove(match.id);
       }
     } finally {
@@ -292,7 +291,7 @@ export const useTabStore = create<TabStore>((set) => ({
 
     try {
       if (toClose.length > 0) {
-        await protectHistoryBeforeClosing(allTabs);
+        await protectRecoveryBeforeClosing(allTabs);
         await chrome.tabs.remove(toClose);
       }
     } finally {
@@ -336,7 +335,7 @@ export const useTabStore = create<TabStore>((set) => ({
 
     try {
       if (toClose.length > 0) {
-        await protectHistoryBeforeClosing(allTabs);
+        await protectRecoveryBeforeClosing(allTabs);
         await chrome.tabs.remove(toClose);
       }
     } finally {
@@ -354,7 +353,7 @@ export const useTabStore = create<TabStore>((set) => ({
       .filter((id): id is number => id != null);
     try {
       if (toClose.length > 0) {
-        await protectHistoryBeforeClosing(allTabs);
+        await protectRecoveryBeforeClosing(allTabs);
         await chrome.tabs.remove(toClose);
       }
     } finally {
@@ -378,7 +377,7 @@ export const useTabStore = create<TabStore>((set) => ({
 
     try {
       if (toClose.length > 0) {
-        await protectHistoryBeforeClosing(allTabs);
+        await protectRecoveryBeforeClosing(allTabs);
         await chrome.tabs.remove(toClose);
       }
     } finally {
@@ -393,7 +392,7 @@ export const useTabStore = create<TabStore>((set) => ({
 
     try {
       if (toClose.length > 0) {
-        await protectHistoryBeforeClosing(allTabs);
+        await protectRecoveryBeforeClosing(allTabs);
         await chrome.tabs.remove(toClose);
       }
     } finally {
@@ -527,7 +526,7 @@ export const useTabStore = create<TabStore>((set) => ({
     const state = useTabStore.getState();
     const { assignments: nextAssignments, overrides: nextOverrides } = deleteSectionAndUnassignProducts(
       state.sectionAssignments,
-      state.unsortedOverrides,
+      state.unsectionedProductKeys,
       sectionId,
     );
     const nextSections = state.sections
@@ -537,12 +536,12 @@ export const useTabStore = create<TabStore>((set) => ({
     set({
       sections: nextSections,
       sectionAssignments: nextAssignments,
-      unsortedOverrides: nextOverrides,
+      unsectionedProductKeys: nextOverrides,
     });
     await writeOrganizerState({
       sections: nextSections,
       sectionAssignments: nextAssignments,
-      unsortedOverrides: nextOverrides,
+      unsectionedProductKeys: nextOverrides,
     });
     await useTabStore.getState().fetchTabs();
   },
@@ -553,24 +552,24 @@ export const useTabStore = create<TabStore>((set) => ({
     await writeOrganizerState({ sections: nextSections });
   },
 
-  moveProductToSection: async (productKey: string, sectionId: string) => {
+  moveProductGroupToSection: async (productKey: string, sectionId: string) => {
     const state = useTabStore.getState();
     const nextAssignments = assignProductToSectionModel(state.sectionAssignments, productKey, sectionId);
-    const nextOverrides = state.unsortedOverrides.filter((k) => k !== productKey);
-    set({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
-    await writeOrganizerState({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
+    const nextOverrides = state.unsectionedProductKeys.filter((k) => k !== productKey);
+    set({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
+    await writeOrganizerState({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
     await useTabStore.getState().fetchTabs();
   },
 
-  moveProductToNoSection: async (productKey: string) => {
+  moveProductToUnsectioned: async (productKey: string) => {
     const state = useTabStore.getState();
-    const { assignments: nextAssignments, overrides: nextOverrides } = moveProductToNoSection(
+    const { assignments: nextAssignments, overrides: nextOverrides } = moveProductToUnsectioned(
       state.sectionAssignments,
-      state.unsortedOverrides,
+      state.unsectionedProductKeys,
       productKey,
     );
-    set({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
-    await writeOrganizerState({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
+    set({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
+    await writeOrganizerState({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
     await useTabStore.getState().fetchTabs();
   },
 
@@ -579,13 +578,13 @@ export const useTabStore = create<TabStore>((set) => ({
     await writeOrganizerState({ viewMode });
   },
 
-  fetchHistory: async () => {
-    const snapshots = await readHistory();
-    set({ history: snapshots });
+  fetchRecovery: async () => {
+    const snapshots = await readRecoverySnapshots();
+    set({ recoverySnapshots: snapshots });
   },
 
-  restoreHistorySnapshot: async (snapshotId: string) => {
-    const snapshots = await readHistory();
+  restoreRecoverySnapshot: async (snapshotId: string) => {
+    const snapshots = await readRecoverySnapshots();
     const snapshot = snapshots.find((s) => s.id === snapshotId);
     if (!snapshot) return;
 
@@ -598,8 +597,8 @@ export const useTabStore = create<TabStore>((set) => ({
     }
   },
 
-  restoreHistoryProduct: async (snapshotId: string, productKey: string) => {
-    const snapshots = await readHistory();
+  restoreRecoveryProduct: async (snapshotId: string, productKey: string) => {
+    const snapshots = await readRecoverySnapshots();
     const snapshot = snapshots.find((s) => s.id === snapshotId);
     if (!snapshot) return;
 
@@ -613,14 +612,14 @@ export const useTabStore = create<TabStore>((set) => ({
     }
   },
 
-  deleteHistorySnapshot: async (id: string) => {
-    await deleteHistorySnapshot(id);
-    await useTabStore.getState().fetchHistory();
+  deleteRecoverySnapshot: async (id: string) => {
+    await deleteRecoverySnapshot(id);
+    await useTabStore.getState().fetchRecovery();
   },
 
-  clearHistory: async () => {
-    await clearHistory();
-    set({ history: [] });
+  clearRecovery: async () => {
+    await clearRecoverySnapshots();
+    set({ recoverySnapshots: [] });
   },
 
   closeExtraDashboards: async () => {
@@ -646,10 +645,10 @@ export const useTabStore = create<TabStore>((set) => ({
   importBackup: async (
     sections: Section[],
     sectionAssignments: SectionAssignment[],
-    unsortedOverrides: string[] = [],
+    unsectionedProductKeys: string[] = [],
   ) => {
-    await writeOrganizerState({ sections, sectionAssignments, unsortedOverrides });
-    set({ sections, sectionAssignments, unsortedOverrides });
+    await writeOrganizerState({ sections, sectionAssignments, unsectionedProductKeys });
+    set({ sections, sectionAssignments, unsectionedProductKeys });
     await useTabStore.getState().fetchTabs();
   },
 

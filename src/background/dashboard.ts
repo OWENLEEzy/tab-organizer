@@ -1,4 +1,4 @@
-export const DASHBOARD_RELATIVE_PATH = 'src/newtab/index.html';
+export const DASHBOARD_RELATIVE_PATH = 'src/dashboard/index.html';
 export const DASHBOARD_SECTION_SWITCHER_FOCUS_HASH = '#focus-section-switcher';
 
 export function getDashboardUrl(

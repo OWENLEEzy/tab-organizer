@@ -91,14 +91,14 @@ export interface SectionAssignment {
   order: number;
 }
 
-export interface HistoryProductSummary {
+export interface RecoveryProductSummary {
   productKey: string;
   label: string;
   iconDomain: string;
   tabCount: number;
 }
 
-export interface HistoryTab {
+export interface RecoveryTab {
   url: string;
   title: string;
   domain: string;
@@ -111,12 +111,12 @@ export interface HistoryTab {
   active?: boolean;
 }
 
-export interface HistorySnapshot {
+export interface RecoverySnapshot {
   id: string;
   capturedAt: string;
   tabCount: number;
-  products: HistoryProductSummary[];
-  tabs: HistoryTab[];
+  products: RecoveryProductSummary[];
+  tabs: RecoveryTab[];
 }
 
 // ─── App Settings ────────────────────────────────────────────────
@@ -150,10 +150,10 @@ export interface StorageSchema {
   sections: Section[];
   sectionAssignments: SectionAssignment[];
   /** Product keys explicitly moved to No section by the user — immune to auto-assignment. */
-  unsortedOverrides: string[];
+  unsectionedProductKeys: string[];
   viewMode: ViewMode;
-  historyCandidate: HistorySnapshot | null;
-  history: HistorySnapshot[];
+  recoveryCandidate: RecoverySnapshot | null;
+  recoverySnapshots: RecoverySnapshot[];
 }
 
 // ─── Component Props ─────────────────────────────────────────────

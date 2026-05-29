@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTabStore } from '../stores/tab-store';
-import type { HistorySnapshot } from '../types';
+import type { RecoverySnapshot } from '../types';
 
 const chromeTabs = {
   query: vi.fn(),
@@ -95,7 +95,7 @@ function makeChromeTab(
   } as chrome.tabs.Tab;
 }
 
-function makeStoredHistorySnapshot(id: string, urls: string[]): HistorySnapshot {
+function makeStoredRecoverySnapshot(id: string, urls: string[]): RecoverySnapshot {
   return {
     id,
     capturedAt: `2026-05-05T00:00:0${id}.000Z`,
@@ -122,14 +122,14 @@ function makeStoredHistorySnapshot(id: string, urls: string[]): HistorySnapshot 
 }
 
 function expectProtectedBeforeRemove(expectedRemoveArg: number | number[]): void {
-  const history = chromeStorage.data['history'] as HistorySnapshot[];
+  const history = chromeStorage.data['recoverySnapshots'] as RecoverySnapshot[];
   expect(history).toHaveLength(1);
   expect(history[0].tabs.map((tab) => tab.url)).toEqual([
     'https://github.com/OWENLEEzy/tab-out',
     'https://github.com/OWENLEEzy/tab-out',
     'https://vercel.com',
   ]);
-  expect(chromeStorage.data['historyCandidate']).toEqual(history[0]);
+  expect(chromeStorage.data['recoveryCandidate']).toEqual(history[0]);
   expect(chromeTabs.remove).toHaveBeenCalledWith(expectedRemoveArg);
   expect(chromeStorage.set.mock.invocationCallOrder[0]).toBeLessThan(
     chromeTabs.remove.mock.invocationCallOrder[0],
@@ -161,7 +161,7 @@ describe('useTabStore', () => {
       products: [],
       sections: [],
       sectionAssignments: [],
-      unsortedOverrides: [],
+      unsectionedProductKeys: [],
       viewMode: 'cards',
       loading: false,
       error: null,
@@ -239,7 +239,7 @@ describe('useTabStore', () => {
   });
 
   it('promotes the current pre-close tabs even when the stored candidate is stale', async () => {
-    chromeStorage.data['historyCandidate'] = makeStoredHistorySnapshot('stale', [
+    chromeStorage.data['recoveryCandidate'] = makeStoredRecoverySnapshot('stale', [
       'https://old.example.com',
     ]);
     chromeTabs.query.mockResolvedValue([
@@ -250,7 +250,7 @@ describe('useTabStore', () => {
 
     await useTabStore.getState().closeTabByUrl('https://github.com/OWENLEEzy/tab-out');
 
-    const history = chromeStorage.data['history'] as HistorySnapshot[];
+    const history = chromeStorage.data['recoverySnapshots'] as RecoverySnapshot[];
     expect(history[0].tabs.map((tab) => tab.url)).toEqual([
       'https://github.com/OWENLEEzy/tab-out',
       'https://vercel.com',
@@ -342,10 +342,10 @@ describe('useTabStore', () => {
       { productKey: 'gmail', sectionId: 'section-work', order: 0 },
     ]);
 
-    await useTabStore.getState().moveProductToNoSection('gmail');
+    await useTabStore.getState().moveProductToUnsectioned('gmail');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
-    expect(chromeStorage.data['unsortedOverrides']).toEqual(['gmail']);
+    expect(chromeStorage.data['unsectionedProductKeys']).toEqual(['gmail']);
 
     await useTabStore.getState().fetchTabs();
 
@@ -375,7 +375,7 @@ describe('useTabStore', () => {
       sectionAssignments: [],
     });
 
-    await useTabStore.getState().moveProductToSection('github', 'later');
+    await useTabStore.getState().moveProductGroupToSection('github', 'later');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([
       { productKey: 'github', sectionId: 'later', order: 0 },
@@ -383,19 +383,19 @@ describe('useTabStore', () => {
     expect(chromeStorage.data['sectionAssignments']).toEqual([
       { productKey: 'github', sectionId: 'later', order: 0 },
     ]);
-    expect(chromeStorage.data['unsortedOverrides']).toEqual([]);
+    expect(chromeStorage.data['unsectionedProductKeys']).toEqual([]);
 
-    await useTabStore.getState().moveProductToNoSection('github');
+    await useTabStore.getState().moveProductToUnsectioned('github');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
-    expect(chromeStorage.data['unsortedOverrides']).toEqual(['github']);
+    expect(chromeStorage.data['unsectionedProductKeys']).toEqual(['github']);
 
-    await useTabStore.getState().moveProductToSection('github', 'later');
+    await useTabStore.getState().moveProductGroupToSection('github', 'later');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([
       { productKey: 'github', sectionId: 'later', order: 0 },
     ]);
-    expect(chromeStorage.data['unsortedOverrides']).toEqual([]);
+    expect(chromeStorage.data['unsectionedProductKeys']).toEqual([]);
   });
 
   it('preserves concurrent product moves based on the latest organizer storage state', async () => {
@@ -403,18 +403,18 @@ describe('useTabStore', () => {
       fetchTabs: vi.fn().mockResolvedValue(undefined),
       sections: [{ id: 'later', name: 'Later', order: 0 }],
       sectionAssignments: [],
-      unsortedOverrides: [],
+      unsectionedProductKeys: [],
     });
     chromeStorage.data = {
       schemaVersion: 4,
       sections: [{ id: 'later', name: 'Later', order: 0 }],
       sectionAssignments: [],
-      unsortedOverrides: [],
+      unsectionedProductKeys: [],
     };
 
     await Promise.all([
-      useTabStore.getState().moveProductToSection('github', 'later'),
-      useTabStore.getState().moveProductToSection('vercel', 'later'),
+      useTabStore.getState().moveProductGroupToSection('github', 'later'),
+      useTabStore.getState().moveProductGroupToSection('vercel', 'later'),
     ]);
 
     expect(useTabStore.getState().sectionAssignments.map((assignment) => assignment.productKey).sort()).toEqual([
@@ -516,25 +516,25 @@ describe('useTabStore', () => {
   });
 
   it('refreshes tabs when restoring history fails mid-create', async () => {
-    const snapshot = makeStoredHistorySnapshot('1', ['https://example.com/a', 'https://example.com/b']);
-    chromeStorage.data['history'] = [snapshot];
+    const snapshot = makeStoredRecoverySnapshot('1', ['https://example.com/a', 'https://example.com/b']);
+    chromeStorage.data['recoverySnapshots'] = [snapshot];
     chromeTabs.create.mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('create failed'));
     const fetchTabs = vi.fn().mockResolvedValue(undefined);
     useTabStore.setState({ fetchTabs });
 
-    await expect(useTabStore.getState().restoreHistorySnapshot('1')).rejects.toThrow('create failed');
+    await expect(useTabStore.getState().restoreRecoverySnapshot('1')).rejects.toThrow('create failed');
 
     expect(fetchTabs).toHaveBeenCalled();
   });
 
   it('refreshes tabs when restoring a history product fails mid-create', async () => {
-    const snapshot = makeStoredHistorySnapshot('1', ['https://example.com/a']);
-    chromeStorage.data['history'] = [snapshot];
+    const snapshot = makeStoredRecoverySnapshot('1', ['https://example.com/a']);
+    chromeStorage.data['recoverySnapshots'] = [snapshot];
     chromeTabs.create.mockRejectedValueOnce(new Error('create failed'));
     const fetchTabs = vi.fn().mockResolvedValue(undefined);
     useTabStore.setState({ fetchTabs });
 
-    await expect(useTabStore.getState().restoreHistoryProduct('1', 'example.com')).rejects.toThrow(
+    await expect(useTabStore.getState().restoreRecoveryProduct('1', 'example.com')).rejects.toThrow(
       'create failed',
     );
 
@@ -542,10 +542,10 @@ describe('useTabStore', () => {
   });
 
   it('ignores missing history snapshots during restore', async () => {
-    chromeStorage.data['history'] = [];
+    chromeStorage.data['recoverySnapshots'] = [];
 
-    await useTabStore.getState().restoreHistorySnapshot('missing');
-    await useTabStore.getState().restoreHistoryProduct('missing', 'example.com');
+    await useTabStore.getState().restoreRecoverySnapshot('missing');
+    await useTabStore.getState().restoreRecoveryProduct('missing', 'example.com');
 
     expect(chromeTabs.create).not.toHaveBeenCalled();
   });
@@ -628,7 +628,7 @@ describe('useTabStore', () => {
     await useTabStore.getState().deleteSection('section-dev');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
-    expect(useTabStore.getState().unsortedOverrides).toEqual(['linear.app']);
+    expect(useTabStore.getState().unsectionedProductKeys).toEqual(['linear.app']);
   });
 
   it('keeps products in No section when deleting their section', async () => {
@@ -661,12 +661,12 @@ describe('useTabStore', () => {
     await useTabStore.getState().deleteSection('section-dev');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
-    expect(useTabStore.getState().unsortedOverrides).toEqual(['linear.app']);
+    expect(useTabStore.getState().unsectionedProductKeys).toEqual(['linear.app']);
 
     await useTabStore.getState().fetchTabs();
 
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
-    expect(useTabStore.getState().unsortedOverrides).toEqual(['linear.app']);
+    expect(useTabStore.getState().unsectionedProductKeys).toEqual(['linear.app']);
   });
 
   it('imports backup unsorted overrides so No section choices survive refresh', async () => {
@@ -681,7 +681,7 @@ describe('useTabStore', () => {
     await useTabStore.getState().fetchTabs();
 
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
-    expect(useTabStore.getState().unsortedOverrides).toEqual(['gmail']);
+    expect(useTabStore.getState().unsectionedProductKeys).toEqual(['gmail']);
   });
 
   it('tracks dashboard tab count before filtering real tabs', async () => {
@@ -689,8 +689,8 @@ describe('useTabStore', () => {
       fetchTabs: useTabStore.getInitialState().fetchTabs,
     });
     chromeTabs.query.mockResolvedValue([
-      makeChromeTab(1, 'chrome-extension://fake-id/src/newtab/index.html'),
-      makeChromeTab(2, 'chrome-extension://fake-id/src/newtab/index.html?x=1'),
+      makeChromeTab(1, 'chrome-extension://fake-id/src/dashboard/index.html'),
+      makeChromeTab(2, 'chrome-extension://fake-id/src/dashboard/index.html?x=1'),
       makeChromeTab(3, 'https://github.com/OWENLEEzy/tab-organizer'),
     ]);
 
@@ -701,34 +701,34 @@ describe('useTabStore', () => {
   });
 
   it('restores and manages history snapshots', async () => {
-    const snapshot = makeStoredHistorySnapshot('1', ['https://example.com/a', 'https://example.com/b']);
-    chromeStorage.data['history'] = [snapshot];
+    const snapshot = makeStoredRecoverySnapshot('1', ['https://example.com/a', 'https://example.com/b']);
+    chromeStorage.data['recoverySnapshots'] = [snapshot];
     chromeTabs.create.mockResolvedValue({});
     const fetchTabs = vi.fn().mockResolvedValue(undefined);
     useTabStore.setState({ fetchTabs });
 
-    await useTabStore.getState().fetchHistory();
-    expect(useTabStore.getState().history).toEqual([snapshot]);
+    await useTabStore.getState().fetchRecovery();
+    expect(useTabStore.getState().recoverySnapshots).toEqual([snapshot]);
 
-    await useTabStore.getState().restoreHistorySnapshot('1');
+    await useTabStore.getState().restoreRecoverySnapshot('1');
     expect(chromeTabs.create).toHaveBeenCalledTimes(2);
 
-    await useTabStore.getState().restoreHistoryProduct('1', 'example.com');
+    await useTabStore.getState().restoreRecoveryProduct('1', 'example.com');
     expect(chromeTabs.create).toHaveBeenCalledTimes(4);
 
-    await useTabStore.getState().deleteHistorySnapshot('1');
-    expect(useTabStore.getState().history).toEqual([]);
+    await useTabStore.getState().deleteRecoverySnapshot('1');
+    expect(useTabStore.getState().recoverySnapshots).toEqual([]);
 
-    chromeStorage.data['history'] = [snapshot];
-    await useTabStore.getState().clearHistory();
-    expect(useTabStore.getState().history).toEqual([]);
+    chromeStorage.data['recoverySnapshots'] = [snapshot];
+    await useTabStore.getState().clearRecovery();
+    expect(useTabStore.getState().recoverySnapshots).toEqual([]);
   });
 
   it('closes extra dashboard pages and tolerates cleanup failures', async () => {
-    chromeTabs.getCurrent.mockResolvedValue(makeChromeTab(1, 'chrome-extension://fake-id/src/newtab/index.html'));
+    chromeTabs.getCurrent.mockResolvedValue(makeChromeTab(1, 'chrome-extension://fake-id/src/dashboard/index.html'));
     chromeTabs.query.mockResolvedValue([
-      makeChromeTab(1, 'chrome-extension://fake-id/src/newtab/index.html'),
-      makeChromeTab(2, 'chrome-extension://fake-id/src/newtab/index.html?x=1'),
+      makeChromeTab(1, 'chrome-extension://fake-id/src/dashboard/index.html'),
+      makeChromeTab(2, 'chrome-extension://fake-id/src/dashboard/index.html?x=1'),
       makeChromeTab(3, 'https://example.com'),
     ]);
     chromeTabs.remove.mockResolvedValue(undefined);

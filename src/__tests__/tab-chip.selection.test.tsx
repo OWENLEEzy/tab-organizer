@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
-import { DomainCard } from '../newtab/components/tabs/DomainCard';
-import { TabChip } from '../newtab/components/tabs/TabChip';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
+import { ProductGroupCard } from '../dashboard/components/product-groups/ProductGroupCard';
+import { TabChip } from '../dashboard/components/tabs/TabChip';
 import type { Tab, TabGroup } from '../types';
 
 afterEach(() => {
@@ -82,7 +82,7 @@ describe('TabChip selection mode', () => {
     };
     const props = {
       group,
-      onCloseDomain: () => {},
+      onCloseProductGroup: () => {},
       onCloseDuplicates: () => {},
       onCloseTab: () => {},
       onFocusTab: () => {},
@@ -90,7 +90,7 @@ describe('TabChip selection mode', () => {
 
     const { rerender } = render(
       <I18nProvider>
-        <DomainCard {...props} selectedUrls={new Set()} />
+        <ProductGroupCard {...props} selectedUrls={new Set()} />
       </I18nProvider>,
     );
     const chip = screen.getByRole('button', { name: /^Example Page/ });
@@ -99,7 +99,7 @@ describe('TabChip selection mode', () => {
 
     rerender(
       <I18nProvider>
-        <DomainCard {...props} selectedUrls={new Set([tab.url])} />
+        <ProductGroupCard {...props} selectedUrls={new Set([tab.url])} />
       </I18nProvider>,
     );
 

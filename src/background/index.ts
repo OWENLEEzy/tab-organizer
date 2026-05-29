@@ -1,11 +1,11 @@
 import { updateBadge } from '../utils/badge';
 import { getTabDomain, isRealTab } from '../lib/url-rules';
 import { getDashboardFocusUrl, getDashboardUrl, isDashboardUrl } from './dashboard';
-import { buildHistorySnapshot } from '../lib/history-snapshots';
-import { promoteHistoryCandidate, updateHistoryCandidate } from '../utils/storage';
+import { buildRecoverySnapshot } from '../lib/recovery-snapshots';
+import { promoteRecoveryCandidate, updateRecoveryCandidate } from '../utils/storage';
 import type { Tab } from '../types';
 
-function toHistoryTab(raw: chrome.tabs.Tab): Tab {
+function toRecoveryTab(raw: chrome.tabs.Tab): Tab {
   const url = raw.url ?? '';
   return {
     id: raw.id ?? -1,
@@ -22,21 +22,21 @@ function toHistoryTab(raw: chrome.tabs.Tab): Tab {
   };
 }
 
-async function captureHistoryCandidate(): Promise<void> {
+async function captureRecoveryCandidate(): Promise<void> {
   try {
     const tabs = await chrome.tabs.query({});
-    const snapshot = buildHistorySnapshot(tabs.map(toHistoryTab));
-    await updateHistoryCandidate(snapshot);
+    const snapshot = buildRecoverySnapshot(tabs.map(toRecoveryTab));
+    await updateRecoveryCandidate(snapshot);
   } catch {
-    // History capture should never block core extension behavior.
+    // Recovery capture should never block core extension behavior.
   }
 }
 
-let historyDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-function scheduleHistoryCapture(): void {
-  if (historyDebounceTimer) clearTimeout(historyDebounceTimer);
-  historyDebounceTimer = setTimeout(() => {
-    void captureHistoryCandidate();
+let recoveryDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleRecoveryCapture(): void {
+  if (recoveryDebounceTimer) clearTimeout(recoveryDebounceTimer);
+  recoveryDebounceTimer = setTimeout(() => {
+    void captureRecoveryCandidate();
   }, 1500);
 }
 
@@ -61,31 +61,31 @@ async function refreshBadge(): Promise<void> {
 // Update badge on install
 chrome.runtime.onInstalled.addListener(() => {
   refreshBadge();
-  void captureHistoryCandidate();
+  void captureRecoveryCandidate();
 });
 
 // Update badge on browser startup
 chrome.runtime.onStartup.addListener(() => {
   refreshBadge();
-  void promoteHistoryCandidate().then(() => captureHistoryCandidate());
+  void promoteRecoveryCandidate().then(() => captureRecoveryCandidate());
 });
 
 // Update badge when tabs change
 chrome.tabs.onCreated.addListener(() => {
   refreshBadge();
-  scheduleHistoryCapture();
+  scheduleRecoveryCapture();
 });
 
 chrome.tabs.onRemoved.addListener(() => {
   refreshBadge();
-  void promoteHistoryCandidate().then(() => scheduleHistoryCapture());
+  void promoteRecoveryCandidate().then(() => scheduleRecoveryCapture());
 });
 
 let badgeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 chrome.tabs.onUpdated.addListener(() => {
   if (badgeDebounceTimer) clearTimeout(badgeDebounceTimer);
   badgeDebounceTimer = setTimeout(refreshBadge, 300);
-  scheduleHistoryCapture();
+  scheduleRecoveryCapture();
 });
 
 async function sendFocusSectionSwitcher(tabId: number): Promise<void> {
@@ -143,10 +143,10 @@ chrome.action.onClicked.addListener(() => {
 
 // Initial run when service worker loads
 refreshBadge();
-void captureHistoryCandidate();
+void captureRecoveryCandidate();
 
 chrome.commands.onCommand.addListener((command) => {
-  if (command === 'open-space-switcher') {
+  if (command === 'open-section-switcher') {
     void openTabOrganizerDashboard({ focusSectionSwitcher: true });
   }
 });

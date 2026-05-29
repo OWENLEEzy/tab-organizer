@@ -149,7 +149,7 @@ export const locales = {
     tableHeaderTabs: 'Tabs',
     tableHeaderDuplicates: 'Duplicates',
     tableHeaderActions: 'Actions',
-    tableUnsorted: 'Unsorted',
+    tableUnsectioned: 'Unsorted',
     tableBtnClose: 'Close',
     tableBtnDedupe: 'Dedupe',
     tableExpandLabel: 'Expand {name}',
@@ -167,17 +167,18 @@ export const locales = {
     cardShowMoreLabel: 'Show {count} more tabs',
 
     // DnD Organizer
-    organizerUnsorted: 'No section',
+    organizerUnsectioned: 'No section',
     organizerBtnRename: 'Rename',
     organizerBtnDelete: 'Delete',
     organizerBtnCloseAll: 'Close all',
 
     // Settings Panel
     settingsTitle: 'Settings',
-    settingsTabGeneral: 'General',
-    settingsTabCustomGroups: 'Custom Groups',
-    settingsTabSections: 'Sections',
+    settingsTabTab: 'Tab',
+    settingsTabGroup: 'Group',
+    settingsTabSection: 'Section',
     settingsTabShortcuts: 'Shortcuts',
+    settingsTabSystem: 'System',
     settingsVersionTitle: 'Version',
     settingsVersionDesc: 'Local extension build and update information.',
 
@@ -187,6 +188,11 @@ export const locales = {
     settingsLangEn: 'English',
     settingsLangZh: '简体中文',
     settingsLangDesc: 'Select language for the dashboard',
+
+    // Settings - View Mode
+    settingsViewMode: 'Default View',
+    settingsViewModeCards: 'Cards',
+    settingsViewModeTable: 'Table',
 
     // Settings - Theme & Options
     settingsTheme: 'Visual Theme',
@@ -218,9 +224,9 @@ export const locales = {
     settingsMaxChipsDesc: 'Set the threshold before chips fold under a \'+N more\' button',
     settingsStaleThreshold: 'Stale Tabs Definition',
     settingsStaleThresholdDesc: 'Define the threshold of inactivity in days for stale sweeps',
-    settingsSortOrderTitle: 'Sort Order',
-    settingsSortOrderDesc: 'Reset all manual ordering and product positions back to default',
-    settingsSortOrderBtn: 'Reset Order',
+    settingsSortOrderTitle: 'Product Group Order',
+    settingsSortOrderDesc: 'Clear manual drag-and-drop card positions and restore default sorting',
+    settingsSortOrderBtn: 'Reset Card Order',
 
     // Settings - Custom Groups
     settingsCustomRulesTitle: 'Product Group Rules',
@@ -287,7 +293,7 @@ export const locales = {
     emptySweepStaleTitle: 'No stale tabs found',
     emptySweepStaleDesc: 'All your tabs have been active recently (within the last {days} days).',
     emptySweepDupeTitle: 'No duplicate tabs found',
-    emptySweepDupeDesc: 'Your workspace is perfectly clean. There are no duplicate URLs!',
+    emptySweepDupeDesc: 'Your dashboard is clean. There are no duplicate URLs!',
     emptySweepSectionTitle: 'No section matches found',
     emptySweepSectionDesc: 'Could not find any section named "{name}" or the section has no tabs.',
     emptySweepSectionNoArg: 'Please specify a section name (e.g., /section:work)',
@@ -473,7 +479,7 @@ export const locales = {
     tableHeaderTabs: '页面数量',
     tableHeaderDuplicates: '重复项',
     tableHeaderActions: '操作',
-    tableUnsorted: '未分配分区',
+    tableUnsectioned: '未分配分区',
     tableBtnClose: '关闭',
     tableBtnDedupe: '去重',
     tableExpandLabel: '展开 {name}',
@@ -491,17 +497,18 @@ export const locales = {
     cardShowMoreLabel: '显示额外的 {count} 个页面',
 
     // DnD Organizer
-    organizerUnsorted: '未分配分区',
+    organizerUnsectioned: '未分配分区',
     organizerBtnRename: '重命名',
     organizerBtnDelete: '删除分区',
     organizerBtnCloseAll: '关闭全部',
 
     // Settings Panel
     settingsTitle: '设置选项',
-    settingsTabGeneral: '常规设置',
-    settingsTabCustomGroups: '自定义规则',
-    settingsTabSections: '分区',
+    settingsTabTab: 'Tab (页面)',
+    settingsTabGroup: 'Group (产品组)',
+    settingsTabSection: 'Section (分区)',
     settingsTabShortcuts: '快捷键',
+    settingsTabSystem: 'System (系统)',
     settingsVersionTitle: '版本信息',
     settingsVersionDesc: '当前本地扩展构建与更新信息。',
 
@@ -511,6 +518,11 @@ export const locales = {
     settingsLangEn: 'English (英文)',
     settingsLangZh: '简体中文',
     settingsLangDesc: '选择整理面板的显示语言',
+
+    // Settings - View Mode
+    settingsViewMode: '默认视图',
+    settingsViewModeCards: '卡片',
+    settingsViewModeTable: '列表',
 
     // Settings - Theme & Options
     settingsTheme: '界面视觉风格',
@@ -542,9 +554,9 @@ export const locales = {
     settingsMaxChipsDesc: '设置在此数量之上的页面将自动收纳进“+N 个更多”按钮中',
     settingsStaleThreshold: '闲置页面判定标准',
     settingsStaleThresholdDesc: '定义页面处于不活动状态多少天后将被判定为“闲置”',
-    settingsSortOrderTitle: '排序位置',
-    settingsSortOrderDesc: '重置所有手动拖动排序的位置及产品卡片分类',
-    settingsSortOrderBtn: '重置排序',
+    settingsSortOrderTitle: '卡片排序位置',
+    settingsSortOrderDesc: '清除所有手动拖拽的卡片位置记忆，恢复默认的自动排序',
+    settingsSortOrderBtn: '重置卡片位置',
 
     // Settings - Custom Groups
     settingsCustomRulesTitle: '区域自动归类',

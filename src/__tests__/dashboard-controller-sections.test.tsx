@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { App } from '../newtab/App';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
+import { App } from '../dashboard/App';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
 import { useTabStore } from '../stores/tab-store';
 import { useSettingsStore } from '../stores/settings-store';
 

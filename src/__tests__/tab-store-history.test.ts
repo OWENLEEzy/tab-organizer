@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTabStore } from '../stores/tab-store';
-import type { HistorySnapshot } from '../types';
+import type { RecoverySnapshot } from '../types';
 
 const chromeTabs = {
   query: vi.fn().mockResolvedValue([]),
@@ -29,7 +29,7 @@ vi.stubGlobal('chrome', {
   runtime: { getURL: vi.fn(() => '') }
 });
 
-const mockSnapshot: HistorySnapshot = {
+const mockSnapshot: RecoverySnapshot = {
   id: 's1',
   capturedAt: new Date().toISOString(),
   tabCount: 2,
@@ -40,53 +40,53 @@ const mockSnapshot: HistorySnapshot = {
   ]
 };
 
-describe('TabStore History Actions', () => {
+describe('TabStore Recovery Actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     chromeStorage.data = {
       schemaVersion: 4,
-      history: [mockSnapshot],
-      historyCandidate: null
+      recoverySnapshots: [mockSnapshot],
+      recoveryCandidate: null
     };
   });
 
-  it('fetchHistory loads from storage', async () => {
-    await useTabStore.getState().fetchHistory();
-    expect(useTabStore.getState().history).toHaveLength(1);
-    expect(useTabStore.getState().history[0].id).toBe('s1');
+  it('fetchRecovery loads from storage', async () => {
+    await useTabStore.getState().fetchRecovery();
+    expect(useTabStore.getState().recoverySnapshots).toHaveLength(1);
+    expect(useTabStore.getState().recoverySnapshots[0].id).toBe('s1');
   });
 
-  it('restoreHistorySnapshot creates tabs', async () => {
-    await useTabStore.getState().restoreHistorySnapshot('s1');
+  it('restoreRecoverySnapshot creates tabs', async () => {
+    await useTabStore.getState().restoreRecoverySnapshot('s1');
     expect(chromeTabs.create).toHaveBeenCalledTimes(2);
     expect(chromeTabs.create).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://a.com' }));
     expect(chromeTabs.create).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://b.com' }));
   });
 
-  it('restoreHistorySnapshot handles missing id', async () => {
-    await useTabStore.getState().restoreHistorySnapshot('missing');
+  it('restoreRecoverySnapshot handles missing id', async () => {
+    await useTabStore.getState().restoreRecoverySnapshot('missing');
     expect(chromeTabs.create).not.toHaveBeenCalled();
   });
 
-  it('restoreHistoryProduct creates only product tabs', async () => {
-    await useTabStore.getState().restoreHistoryProduct('s1', 'a');
+  it('restoreRecoveryProduct creates only product tabs', async () => {
+    await useTabStore.getState().restoreRecoveryProduct('s1', 'a');
     expect(chromeTabs.create).toHaveBeenCalledTimes(1);
     expect(chromeTabs.create).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://a.com' }));
   });
 
-  it('restoreHistoryProduct handles missing id', async () => {
-    await useTabStore.getState().restoreHistoryProduct('missing', 'a');
+  it('restoreRecoveryProduct handles missing id', async () => {
+    await useTabStore.getState().restoreRecoveryProduct('missing', 'a');
     expect(chromeTabs.create).not.toHaveBeenCalled();
   });
 
-  it('deleteHistorySnapshot removes snapshot', async () => {
-    await useTabStore.getState().deleteHistorySnapshot('s1');
-    expect(chromeStorage.data['history'] as HistorySnapshot[]).toHaveLength(0);
+  it('deleteRecoverySnapshot removes snapshot', async () => {
+    await useTabStore.getState().deleteRecoverySnapshot('s1');
+    expect(chromeStorage.data['recoverySnapshots'] as RecoverySnapshot[]).toHaveLength(0);
   });
 
-  it('clearHistory removes all snapshots', async () => {
-    await useTabStore.getState().clearHistory();
-    expect(chromeStorage.data['history'] as HistorySnapshot[]).toHaveLength(0);
-    expect(useTabStore.getState().history).toHaveLength(0);
+  it('clearRecovery removes all snapshots', async () => {
+    await useTabStore.getState().clearRecovery();
+    expect(chromeStorage.data['recoverySnapshots'] as RecoverySnapshot[]).toHaveLength(0);
+    expect(useTabStore.getState().recoverySnapshots).toHaveLength(0);
   });
 });

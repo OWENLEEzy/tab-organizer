@@ -4,7 +4,7 @@ import zlib from 'node:zlib';
 
 const distDir = path.resolve(process.cwd(), 'dist');
 const assetsDir = path.join(distDir, 'assets');
-const dashboardHtmlPath = path.join(distDir, 'src', 'newtab', 'index.html');
+const dashboardHtmlPath = path.join(distDir, 'src', 'dashboard', 'index.html');
 const maxEntryParsedBytes = 600 * 1024;
 const maxTotalParsedBytes = 1024 * 1024;
 

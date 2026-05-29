@@ -322,7 +322,7 @@ export function assignProductToSection(
  * Remove all assignments for the given productKey and add it to noSectionOverrides.
  * The productKey will be immune to auto-assignment until explicitly assigned.
  */
-export function moveProductToNoSection(
+export function moveProductToUnsectioned(
   currentAssignments: SectionAssignment[],
   currentOverrides: string[],
   productKey: string,

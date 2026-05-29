@@ -15,7 +15,10 @@ test.describe('Hybrid Organizer', () => {
     await dialog.getByRole('button', { name: 'Create Section' }).click();
     await expect(dialog).not.toBeVisible();
 
-    await page.getByRole('button', { name: 'Table' }).click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByRole('button', { name: 'System' }).click();
+    await page.locator('#setting-view-mode').selectOption('table');
+    await page.keyboard.press('Escape');
     const youtubeRow = page.getByRole('row', { name: /YouTube/ });
     await expect(youtubeRow).toBeVisible();
 
@@ -31,11 +34,14 @@ test.describe('Hybrid Organizer', () => {
     await expect(page.locator('footer')).toContainText(/4\s*sections/i);
 
     await page.reload();
-    await expect(page.getByRole('button', { name: 'Table' })).toHaveClass(/is-active/);
+
     const reloadedYoutubeRow = page.getByRole('row', { name: /YouTube/ });
     await expect(reloadedYoutubeRow.locator('select')).toHaveValue(laterValue);
 
-    await page.getByRole('button', { name: 'Cards' }).click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByRole('button', { name: 'System' }).click();
+    await page.locator('#setting-view-mode').selectOption('cards');
+    await page.keyboard.press('Escape');
     const laterSection = page.locator('section').filter({
       has: page.getByRole('heading', { name: 'Later' }),
     });
@@ -65,7 +71,10 @@ test.describe('Hybrid Organizer', () => {
     await dialog.getByLabel('Section Name').fill('Later');
     await dialog.getByRole('button', { name: 'Create Section' }).click();
 
-    await page.getByRole('button', { name: 'Table' }).click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByRole('button', { name: 'System' }).click();
+    await page.locator('#setting-view-mode').selectOption('table');
+    await page.keyboard.press('Escape');
     const youtubeRow = page.getByRole('row', { name: /YouTube/ });
     const sectionSelect = youtubeRow.locator('select');
     const laterValue = await sectionSelect.evaluate((select) => {
@@ -79,7 +88,10 @@ test.describe('Hybrid Organizer', () => {
     await sectionSelect.selectOption('');
     await expect(page.locator('footer')).toContainText(/3\s*sections/i);
 
-    await page.getByRole('button', { name: 'Cards' }).click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByRole('button', { name: 'System' }).click();
+    await page.locator('#setting-view-mode').selectOption('cards');
+    await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'No section' })).toBeVisible();
   });
 });

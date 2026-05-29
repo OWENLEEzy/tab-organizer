@@ -86,15 +86,15 @@ describe('architecture lint guardrails', () => {
   const eslintConfig = fs.readFileSync(path.join(repoRoot, 'eslint.config.js'), 'utf8');
 
   it('prevents presentational components from importing stores, controllers, storage, or chrome APIs', () => {
-    expect(eslintConfig).toContain("files: ['src/newtab/components/**/*.tsx']");
+    expect(eslintConfig).toContain("files: ['src/dashboard/components/**/*.tsx']");
     expect(eslintConfig).toContain("group: ['**/stores/*']");
-    expect(eslintConfig).toContain("group: ['**/newtab/controllers/*', '**/controllers/*']");
+    expect(eslintConfig).toContain("group: ['**/dashboard/controllers/*', '**/controllers/*']");
     expect(eslintConfig).toContain("group: ['**/utils/storage']");
     expect(eslintConfig).toContain("MemberExpression[object.name='chrome']");
   });
 
-  it('keeps pure newtab hooks free of stores, storage, and chrome APIs', () => {
-    expect(eslintConfig).toContain("files: ['src/newtab/hooks/**/*.{ts,tsx}']");
+  it('keeps pure dashboard hooks free of stores, storage, and chrome APIs', () => {
+    expect(eslintConfig).toContain("files: ['src/dashboard/hooks/**/*.{ts,tsx}']");
     expect(eslintConfig).toContain("group: ['**/stores/*']");
     expect(eslintConfig).toContain("group: ['**/utils/storage']");
   });
@@ -103,12 +103,132 @@ describe('architecture lint guardrails', () => {
     expect(eslintConfig).toContain("files: ['src/lib/**/*.{ts,tsx}']");
     expect(eslintConfig).toContain("group: ['../utils/*', '**/utils/*']");
     expect(eslintConfig).toContain("group: ['../stores/*', '**/stores/*']");
-    expect(eslintConfig).toContain("group: ['../newtab/*', '**/newtab/*']");
+    expect(eslintConfig).toContain("group: ['../dashboard/*', '**/dashboard/*']");
   });
 
   it('keeps src/utils as adapter layer without app imports', () => {
     expect(eslintConfig).toContain("files: ['src/utils/**/*.{ts,tsx}']");
     expect(eslintConfig).toContain("group: ['../stores/*', '**/stores/*']");
-    expect(eslintConfig).toContain("group: ['../newtab/*', '**/newtab/*']");
+    expect(eslintConfig).toContain("group: ['../dashboard/*', '**/dashboard/*']");
+  });
+});
+
+describe('source naming governance', () => {
+  const sourceFiles = [
+    ...fs.readdirSync(path.join(repoRoot, 'src'), { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => path.join(entry.parentPath, entry.name))
+      .filter((file) => /\.(ts|tsx|html|css)$/.test(file)),
+    path.join(repoRoot, 'package.json'),
+    path.join(repoRoot, 'vite.config.ts'),
+    path.join(repoRoot, 'manifest.json'),
+    path.join(repoRoot, 'AGENTS.md'),
+    path.join(repoRoot, 'CLAUDE.md'),
+  ];
+
+  it('does not reintroduce newtab as the dashboard source surface name', () => {
+    const offenders = sourceFiles.filter((file) => !file.includes('tooling-gates') && (file.includes('/src/newtab/') || fs.readFileSync(file, 'utf8').includes('src/newtab')));
+    expect(offenders).toEqual([]);
+  });
+
+  it('does not use space terminology for section behavior', () => {
+    const offenders = sourceFiles.filter((file) => !file.includes('tooling-gates') && fs.readFileSync(file, 'utf8').includes('open-space-switcher'));
+    expect(offenders).toEqual([]);
+  });
+
+  it('does not use temporary URL or helper names', () => {
+    const badNamePattern = /(url-new|new-url|url2|utils2|helpers2|helpers\.ts|misc\.ts|common\.ts)/i;
+    const offenders = sourceFiles.filter((file) => !file.includes('AGENTS.md') && !file.includes('CLAUDE.md') && !file.includes('tooling-gates') && (badNamePattern.test(file) || badNamePattern.test(fs.readFileSync(file, 'utf8'))));
+    expect(offenders).toEqual([]);
+  });
+
+  it('does not reintroduce DomainCard as a component name', () => {
+    const offenders = sourceFiles.filter((file) => !file.includes('tooling-gates') && fs.readFileSync(file, 'utf8').includes('DomainCard'));
+    expect(offenders).toEqual([]);
+  });
+
+  it('does not reintroduce tab-grouper as a module name', () => {
+    const offenders = sourceFiles.filter((file) => !file.includes('tooling-gates') && (file.includes('tab-grouper') || fs.readFileSync(file, 'utf8').includes('tab-grouper')));
+    expect(offenders).toEqual([]);
+  });
+
+  it('does not reintroduce history-snapshots as a file or module name', () => {
+    const offenders = sourceFiles.filter((file) => !file.includes('tooling-gates') && (file.includes('history-snapshots') || fs.readFileSync(file, 'utf8').includes('history-snapshots')));
+    expect(offenders).toEqual([]);
+  });
+
+  it('does not reintroduce unsortedOverrides as a property or variable name', () => {
+    const legacyMigrationFiles = [
+      'src/utils/storage.ts',
+      'src/dashboard/controllers/useSettingsImportExport.ts',
+      'src/dashboard/controllers/useChromeStorageSync.ts',
+      'src/__tests__/storage.test.ts',
+    ];
+    const offenders = sourceFiles.filter((file) => {
+      if (file.includes('tooling-gates')) return false;
+      if (legacyMigrationFiles.some((legacy) => file.endsWith(legacy))) return false;
+      return fs.readFileSync(file, 'utf8').includes('unsortedOverrides');
+    });
+    expect(offenders).toEqual([]);
+  });
+
+  it('does not use workspace terminology except for literal Google Workspace brand references', () => {
+    const legacyFiles = [
+      'src/dashboard/controllers/useChromeStorageSync.ts',
+      'src/__tests__/tab-store.test.ts',
+    ];
+    const offenders = sourceFiles.filter((file) => {
+      if (file.includes('tooling-gates')) return false;
+      if (file.includes('AGENTS.md') || file.includes('CLAUDE.md')) return false;
+      if (legacyFiles.some((legacy) => file.endsWith(legacy))) return false;
+      const content = fs.readFileSync(file, 'utf8');
+      return /\bworkspace\b/i.test(content) && !/Google\s+Workspace/i.test(content);
+    });
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('source noise governance', () => {
+  it('does not contain .DS_Store files under src/', () => {
+    const offenders: string[] = [];
+    const walkDir = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walkDir(fullPath);
+        } else if (entry.name === '.DS_Store') {
+          offenders.push(fullPath);
+        }
+      }
+    };
+    walkDir(path.join(repoRoot, 'src'));
+    expect(offenders).toEqual([]);
+  });
+
+  it('does not contain .DS_Store files under docs/', () => {
+    const docsDir = path.join(repoRoot, 'docs');
+    if (!fs.existsSync(docsDir)) return;
+    const offenders: string[] = [];
+    const walkDir = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walkDir(fullPath);
+        } else if (entry.name === '.DS_Store') {
+          offenders.push(fullPath);
+        }
+      }
+    };
+    walkDir(docsDir);
+    expect(offenders).toEqual([]);
+  });
+
+  it('does not contain stale architecture cleanup plan docs', () => {
+    const stalePaths = [
+      path.join(repoRoot, 'docs/superpowers/specs/src-architecture-cleanup-plan.md'),
+      path.join(repoRoot, 'docs/src-architecture-cleanup-plan.md'),
+    ];
+    const offenders = stalePaths.filter((p) => fs.existsSync(p));
+    expect(offenders).toEqual([]);
   });
 });

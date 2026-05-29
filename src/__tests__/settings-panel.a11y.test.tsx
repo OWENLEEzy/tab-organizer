@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
-import { SettingsPanel } from '../newtab/components/settings/SettingsPanel';
+import { SettingsPanel } from '../dashboard/components/settings/SettingsPanel';
 
 function SettingsHarness(): React.ReactElement {
   const [open, setOpen] = useState(false);
@@ -37,6 +37,8 @@ function SettingsHarness(): React.ReactElement {
         onImportSettings={async () => {}}
         onCreateSection={() => {}}
         appVersion="2.0.0-test"
+        viewMode="cards"
+        onViewModeChange={() => {}}
       />
     </>
   );
@@ -53,12 +55,12 @@ describe('SettingsPanel accessibility', () => {
 
     await user.click(openButton);
 
-    const generalTabButton = screen.getByRole('button', { name: 'General' });
+    const generalTabButton = screen.getByRole('button', { name: 'Tab' });
     expect(generalTabButton).toHaveFocus();
 
     await user.keyboard('{Shift>}{Tab}{/Shift}');
-    // The last focusable in General tab (default active tab) is the 'Reset Order' button
-    expect(screen.getByRole('button', { name: 'Reset Order' })).toHaveFocus();
+    // The last focusable in Tab tab (default active tab) is the Confetti Burst toggle
+    expect(screen.getByRole('switch', { name: 'Confetti Burst' })).toHaveFocus();
 
     await user.keyboard('{Tab}');
     expect(generalTabButton).toHaveFocus();
@@ -93,6 +95,8 @@ describe('SettingsPanel accessibility', () => {
         onImportSettings={async () => {}}
         onCreateSection={() => {}}
         appVersion="2.0.0-test"
+        viewMode="cards"
+        onViewModeChange={() => {}}
       />
       </I18nProvider>
     );

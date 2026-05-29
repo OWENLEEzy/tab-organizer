@@ -300,7 +300,7 @@ Warm ember-dark with caramel accents. Dark background (`isDark: true`).
 
 ## Theme Application Mechanics
 
-Themes are defined in `src/config/themes.ts` as `AccentConfig` objects. The `useTheme(accent: AccentKey)` hook in `src/newtab/hooks/useTheme.ts` applies them at runtime by setting CSS custom properties on `:root`.
+Themes are defined in `src/config/themes.ts` as `AccentConfig` objects. The `useTheme(accent: AccentKey)` hook in `src/dashboard/hooks/useTheme.ts` applies them at runtime by setting CSS custom properties on `:root`.
 
 ```typescript
 export type AccentKey = 'clay' | 'sage' | 'frost' | 'ochre' | 'lavender' | 'rosewood' | 'seagrass' | 'obsidian' | 'pine' | 'amethyst' | 'ember';
@@ -347,16 +347,20 @@ These tokens bridge raw theme values and the Tailwind utility layer:
 --color-accent-blue: var(--accent-primary);
 ```
 
-### Dark Theme Tokens (static — for use with Tailwind `dark:` variants)
+### Dark Theme Tokens (Dynamic Aliases)
+
+Historically, dark tokens were hardcoded to static grays (like `#1e1e1e`), which mistakenly stripped out the rich colors of dynamic dark themes (like Pine or Obsidian) whenever a developer wrote a `dark:` tailwind class. 
+
+These tokens are now dynamically aliased to the core dynamic theme variables. This means `dark:bg-surface-dark` safely resolves to the beautiful theme-specific surface color (`var(--bg-surface)`), ensuring dark themes remain fully intact.
 
 ```css
---color-surface-dark: #1e1e1e;
---color-border-dark: var(--color-to-border-dark);
---color-text-primary-dark: var(--color-to-text-primary-dark);
---color-text-secondary-dark: var(--color-to-text-secondary-dark);
---color-text-muted-dark: var(--color-to-text-muted-dark);
---color-bg-dark: var(--color-to-bg-dark);
---color-card-dark: #2a2a2a;
+--color-surface-dark: var(--bg-surface);
+--color-border-dark: var(--border-color);
+--color-text-primary-dark: var(--text-primary);
+--color-text-secondary-dark: var(--text-secondary);
+--color-text-muted-dark: var(--text-muted);
+--color-bg-dark: var(--bg-page);
+--color-card-dark: var(--bg-card);
 ```
 
 ### Stale State Tokens (derived at runtime)
@@ -474,9 +478,9 @@ Uses CSS custom properties for dimensions:
 --spacing-toggle-translate-x: 16px;
 ```
 
-### Segmented Control
+### View Switcher
 
-Two-item toggle for Cards/Table view switching.
+Cards/Table view switching is now located inside the Settings panel to reduce header clutter.
 
 ### Search Input
 
@@ -594,7 +598,7 @@ Left border accent for the currently active tab:
 
 Raw colors are allowed only at token boundaries:
 
-- `src/newtab/styles/global.css` inside the `@theme` token block.
+- `src/dashboard/styles/global.css` inside the `@theme` token block.
 - `src/config/themes.ts`, where the 11 accent themes are registered.
 - Explicit non-UI exceptions such as browser badge colors, confetti particles,
   and product grouping defaults.
@@ -603,14 +607,14 @@ Component TSX and ordinary CSS rules must use token-backed classes or CSS
 custom properties such as `text-text-primary`, `bg-[var(--bg-accent-subtle)]`,
 or `box-shadow: var(--shadow-control-active)`. Do not add literal hex,
 `rgb(...)`, or `rgba(...)` values to UI components. `raw-color-governance.test.ts`
-enforces this by scanning newtab TSX and CSS; `global.css` is not exempt as a
+enforces this by scanning dashboard TSX and CSS; `global.css` is not exempt as a
 whole file, only its token definition block is.
 
 ---
 
 ## CSS Custom Properties Architecture
 
-All design tokens are defined as CSS custom properties in `src/newtab/styles/global.css` under `@theme`. Theme-aware tokens (that change per accent) are set at runtime by `useTheme` on `:root`.
+All design tokens are defined as CSS custom properties in `src/dashboard/styles/global.css` under `@theme`. Theme-aware tokens (that change per accent) are set at runtime by `useTheme` on `:root`.
 
 **Static tokens** (base palette, typography, spacing, radius) never change and are shared across all themes.
 

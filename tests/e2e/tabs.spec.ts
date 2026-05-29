@@ -22,7 +22,8 @@ test.describe('Tab Management', () => {
     });
     await expect(devSection).toBeVisible();
 
-    await devSection.getByTitle(/Close all \d+ tabs in Dev/).click();
+    await devSection.getByLabel('Section options').click();
+    await devSection.getByText('Close all', { exact: true }).click();
 
     const dialog = page.locator('[role="dialog"]');
     await expect(dialog).toBeVisible();
