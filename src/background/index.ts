@@ -146,7 +146,7 @@ refreshBadge();
 void captureHistoryCandidate();
 
 chrome.commands.onCommand.addListener((command) => {
-  if (command === 'open-space-switcher') {
+  if (command === 'open-section-switcher') {
     void openTabOrganizerDashboard({ focusSectionSwitcher: true });
   }
 });

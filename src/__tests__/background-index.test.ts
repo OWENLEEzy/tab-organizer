@@ -134,7 +134,7 @@ describe('background service worker entry', () => {
     chromeMock.tabs.query.mockResolvedValue([]);
 
     await import('../background/index');
-    listeners.onCommand.mock.calls[0][0]('open-space-switcher');
+    listeners.onCommand.mock.calls[0][0]('open-section-switcher');
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
@@ -188,7 +188,7 @@ describe('background service worker entry', () => {
       .mockResolvedValueOnce({});
 
     await import('../background/index');
-    listeners.onCommand.mock.calls[0][0]('open-space-switcher');
+    listeners.onCommand.mock.calls[0][0]('open-section-switcher');
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
@@ -210,7 +210,7 @@ describe('background service worker entry', () => {
     chromeMock.tabs.sendMessage.mockRejectedValue(new Error('not ready'));
 
     await import('../background/index');
-    listeners.onCommand.mock.calls[0][0]('open-space-switcher');
+    listeners.onCommand.mock.calls[0][0]('open-section-switcher');
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();

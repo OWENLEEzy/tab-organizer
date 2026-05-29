@@ -132,7 +132,7 @@ describe('source naming governance', () => {
   });
 
   it('does not use space terminology for section behavior', () => {
-    const offenders = sourceFiles.filter((file) => fs.readFileSync(file, 'utf8').includes('open-space-switcher'));
+    const offenders = sourceFiles.filter((file) => fs.readFileSync(file, 'utf8').includes('open-section-switcher'));
     expect(offenders).toEqual([]);
   });
 
