@@ -2,7 +2,7 @@ import type { Tab } from '../../../types';
 import { getGroupFaviconSource } from '../../../lib/group-favicon';
 import { getFaviconUrl } from '../../../utils/favicon';
 
-export function getTabGroupIconUrl(tabs: readonly Tab[]): string {
+export function getProductGroupIconUrl(tabs: readonly Tab[]): string {
   const source = getGroupFaviconSource(tabs);
   if (!source) return '';
 

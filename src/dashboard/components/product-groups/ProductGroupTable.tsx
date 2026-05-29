@@ -1,14 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import type { Section, TabGroup } from '../../../types';
-import { TabChip } from './TabChip';
+import { TabChip } from '../tabs/TabChip';
 import { analyzeDuplicates } from '../../../lib/duplicate-analysis';
 import { getProductKey } from '../../../lib/product-key';
 import { toProductItemId } from '../../../lib/section-organizer';
-import { getTabGroupIconUrl } from './favicon';
+import { getProductGroupIconUrl } from './product-group-icon';
 import { ActionButton } from '../ui/ActionButton';
 import { useI18n } from '../../hooks/useI18n';
 
-interface ProductTableProps {
+interface ProductGroupTableProps {
   items: TabGroup[];
   sections: Section[];
   assignmentByItemId: Map<string, string>;
@@ -16,8 +16,8 @@ interface ProductTableProps {
   onCloseProduct: (p: TabGroup) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onFocusTab: (url: string) => void;
-  expandedDomains?: Set<string>;
-  onToggleExpanded?: (domain: string) => void;
+  expandedProductGroups?: Set<string>;
+  onToggleProductGroupExpanded?: (domain: string) => void;
   onCloseTab?: (url: string) => void;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   selectedUrls?: Set<string>;
@@ -52,7 +52,7 @@ function RowIcon({ group }: { group: TabGroup }): React.ReactElement {
   const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
   const label = group.friendlyName || group.domain;
   const initial = label.trim().charAt(0).toUpperCase() || '?';
-  const faviconUrl = useMemo(() => getTabGroupIconUrl(group.tabs), [group.tabs]);
+  const faviconUrl = useMemo(() => getProductGroupIconUrl(group.tabs), [group.tabs]);
   const failed = faviconUrl !== '' && failedFaviconUrl === faviconUrl;
 
   if (failed || !faviconUrl) {
@@ -73,7 +73,7 @@ function RowIcon({ group }: { group: TabGroup }): React.ReactElement {
   );
 }
 
-export function ProductTable({
+export function ProductGroupTable({
   items,
   sections,
   assignmentByItemId,
@@ -81,8 +81,8 @@ export function ProductTable({
   onCloseProduct,
   onCloseDuplicates,
   onFocusTab,
-  expandedDomains = new Set(),
-  onToggleExpanded = () => {},
+  expandedProductGroups = new Set(),
+  onToggleProductGroupExpanded = () => {},
   onCloseTab = () => {},
   onChipClick = () => {},
   selectedUrls = new Set(),
@@ -91,7 +91,7 @@ export function ProductTable({
   focusedUrl = null,
   searchQuery = '',
   staleThresholdDays = 3,
-}: ProductTableProps): React.ReactElement {
+}: ProductGroupTableProps): React.ReactElement {
   const { t } = useI18n();
   const rows = items;
 
@@ -122,7 +122,7 @@ export function ProductTable({
             const id = itemId(p);
             const sectionId = assignmentByItemId.get(id) ?? '';
             const dupes = dupeUrlsByProductId.get(p.id) ?? [];
-            const isExpanded = expandedDomains.has(p.domain);
+            const isExpanded = expandedProductGroups.has(p.domain);
             const selectionMode = (selectedUrls?.size ?? 0) > 0 || (selectedTabIds?.size ?? 0) > 0;
 
             return (
@@ -132,7 +132,7 @@ export function ProductTable({
                     <button
                       type="button"
                       className="product-table-expand-toggle"
-                      onClick={() => onToggleExpanded(p.domain)}
+                      onClick={() => onToggleProductGroupExpanded(p.domain)}
                       aria-expanded={isExpanded}
                       aria-label={isExpanded ? t('tableCollapseLabel', { name: p.friendlyName || p.domain }) : t('tableExpandLabel', { name: p.friendlyName || p.domain })}
                     >
@@ -218,4 +218,4 @@ export function ProductTable({
   );
 }
 
-export const ProductTableMemo = React.memo(ProductTable);
+export const ProductGroupTableMemo = React.memo(ProductGroupTable);

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ErrorBoundary } from './components/states/ErrorBoundary';
 import { LoadingState } from './components/states/LoadingState';
-import { ProductTableMemo as ProductTable } from './components/tabs/ProductTable';
+import { ProductGroupTableMemo as ProductGroupTable } from './components/product-groups/ProductGroupTable';
 import { SelectionBar } from './components/tabs/SelectionBar';
 import { EmptyState } from './components/states/EmptyState';
 import { Footer } from './components/Footer';
@@ -253,7 +253,7 @@ export function App(): React.ReactElement {
                   </p>
                 </div>
               ) : viewMode === 'table' ? (
-                <ProductTable
+                <ProductGroupTable
                   items={derived.filteredProducts}
                   sections={derived.manageableSections}
                   assignmentByItemId={derived.assignmentByItemId}
@@ -261,8 +261,8 @@ export function App(): React.ReactElement {
                   onCloseProduct={handlers.handleCloseProduct}
                   onCloseDuplicates={handlers.handleCloseDuplicates}
                   onFocusTab={handlers.handleFocusTab}
-                  expandedDomains={state.expandedDomains}
-                  onToggleExpanded={handlers.handleToggleExpanded}
+                  expandedProductGroups={state.expandedDomains}
+                  onToggleProductGroupExpanded={handlers.handleToggleExpanded}
                   onCloseTab={handlers.handleCloseTabAnimated}
                   onChipClick={handlers.handleChipClick}
                   selectedUrls={state.selectedUrls}
@@ -282,7 +282,7 @@ export function App(): React.ReactElement {
                       productsBySection={derived.productsBySection}
                       assignmentByItemId={derived.assignmentByItemId}
                       itemIdForProduct={derived.itemIdForProduct}
-                      expandedDomains={state.expandedDomains}
+                      expandedProductGroups={state.expandedDomains}
                       maxChipsVisible={settings.maxChipsVisible}
                       staleThresholdDays={settings.staleThresholdDays ?? 3}
                       focusedUrl={state.focusedUrl}
@@ -299,7 +299,7 @@ export function App(): React.ReactElement {
                       onCloseTab={handlers.handleCloseTabAnimated}
                       onFocusTab={handlers.handleFocusTab}
                       onChipClick={handlers.handleChipClick}
-                      onToggleExpanded={handlers.handleToggleExpanded}
+                      onToggleProductGroupExpanded={handlers.handleToggleExpanded}
                       searchQuery={state.searchQuery}
                       activeSectionId={tabStore.activeSectionId}
                     />

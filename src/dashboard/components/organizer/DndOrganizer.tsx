@@ -9,12 +9,12 @@ import {
   fromSectionDropId,
   toSectionDropId,
 } from '../../../lib/section-organizer';
-import { DomainCard } from '../tabs/DomainCard';
+import { ProductGroupCard } from '../product-groups/ProductGroupCard';
 import { useI18n } from '../../hooks/useI18n';
 
 // ─── Draggable card wrapper ────────────────────────────────────────────
 
-interface DraggableDomainCardProps {
+interface DraggableProductGroupCardProps {
   group: TabGroup;
   draggableId: string;
   expanded?: boolean;
@@ -24,16 +24,16 @@ interface DraggableDomainCardProps {
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
   selectedTabIds: Set<number>;
-  onCloseDomain: (group: TabGroup) => void;
+  onCloseProductGroup: (group: TabGroup) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onCloseTab: (url: string) => void;
   onFocusTab: (url: string) => void;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
-  onToggleExpanded?: (domain: string) => void;
+  onToggleProductGroupExpanded?: (domain: string) => void;
   searchQuery?: string;
 }
 
-function DraggableDomainCard({
+function DraggableProductGroupCard({
   group,
   draggableId,
   expanded,
@@ -43,26 +43,26 @@ function DraggableDomainCard({
   closingUrls,
   selectedUrls,
   selectedTabIds,
-  onCloseDomain,
+  onCloseProductGroup,
   onCloseDuplicates,
   onCloseTab,
   onFocusTab,
   onChipClick,
-  onToggleExpanded,
+  onToggleProductGroupExpanded,
   searchQuery = '',
-}: DraggableDomainCardProps): React.ReactElement {
+}: DraggableProductGroupCardProps): React.ReactElement {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: draggableId });
   const label = group.friendlyName || group.domain;
 
   return (
     <div ref={setNodeRef} style={{ opacity: isDragging ? 0 : 1 }}>
-      <DomainCard
+      <ProductGroupCard
         group={group}
         dragHandleProps={{ ...attributes, ...listeners, 'aria-label': `Drag ${label} product` }}
         expanded={expanded}
         maxChipsVisible={maxChipsVisible}
         staleThresholdDays={staleThresholdDays}
-        onCloseDomain={onCloseDomain}
+        onCloseProductGroup={onCloseProductGroup}
         onCloseDuplicates={onCloseDuplicates}
         onCloseTab={onCloseTab}
         onFocusTab={onFocusTab}
@@ -71,7 +71,7 @@ function DraggableDomainCard({
         selectedUrls={selectedUrls}
         selectedTabIds={selectedTabIds}
         onChipClick={onChipClick}
-        onToggleExpanded={onToggleExpanded}
+        onToggleProductGroupExpanded={onToggleProductGroupExpanded}
         searchQuery={searchQuery}
       />
     </div>
@@ -86,7 +86,7 @@ interface DndGroupBoardProps {
   items: TabGroup[];
   section?: Section;
   tabCount: number;
-  expandedDomains: Set<string>;
+  expandedProductGroups: Set<string>;
   maxChipsVisible: number;
   staleThresholdDays: number;
   focusedUrl?: string | null;
@@ -102,7 +102,7 @@ interface DndGroupBoardProps {
   onCloseTab: (url: string) => void;
   onFocusTab: (url: string) => void;
   onChipClick: (url: string, event: React.MouseEvent) => void;
-  onToggleExpanded: (domain: string) => void;
+  onToggleProductGroupExpanded: (domain: string) => void;
   searchQuery?: string;
 }
 
@@ -112,7 +112,7 @@ function DndGroupBoard({
   items,
   section,
   tabCount,
-  expandedDomains,
+  expandedProductGroups,
   maxChipsVisible,
   staleThresholdDays,
   focusedUrl,
@@ -128,7 +128,7 @@ function DndGroupBoard({
   onCloseTab,
   onFocusTab,
   onChipClick,
-  onToggleExpanded,
+  onToggleProductGroupExpanded,
   searchQuery = '',
 }: DndGroupBoardProps): React.ReactElement {
   const { setNodeRef, isOver } = useDroppable({ id });
@@ -183,23 +183,23 @@ function DndGroupBoard({
       </div>
       <div className="missions">
         {items.map((p) => (
-          <DraggableDomainCard
+          <DraggableProductGroupCard
             key={p.id}
             group={p}
             draggableId={itemIdForProduct(p)}
-            expanded={expandedDomains.has(p.domain)}
+            expanded={expandedProductGroups.has(p.domain)}
             maxChipsVisible={maxChipsVisible}
             staleThresholdDays={staleThresholdDays}
             focusedUrl={focusedUrl}
             closingUrls={closingUrls}
             selectedUrls={selectedUrls}
             selectedTabIds={selectedTabIds}
-            onCloseDomain={onCloseProduct}
+            onCloseProductGroup={onCloseProduct}
             onCloseDuplicates={onCloseDuplicates}
             onCloseTab={onCloseTab}
             onFocusTab={onFocusTab}
             onChipClick={onChipClick}
-            onToggleExpanded={onToggleExpanded}
+            onToggleProductGroupExpanded={onToggleProductGroupExpanded}
             searchQuery={searchQuery}
           />
         ))}
@@ -217,7 +217,7 @@ interface DndOrganizerProps {
   productsBySection: Map<string, TabGroup[]>;
   assignmentByItemId: Map<string, string>;
   itemIdForProduct: (p: TabGroup) => string;
-  expandedDomains: Set<string>;
+  expandedProductGroups: Set<string>;
   maxChipsVisible: number;
   staleThresholdDays: number;
   focusedUrl?: string | null;
@@ -234,7 +234,7 @@ interface DndOrganizerProps {
   onCloseTab: (url: string) => void;
   onFocusTab: (url: string) => void;
   onChipClick: (url: string, event: React.MouseEvent) => void;
-  onToggleExpanded: (domain: string) => void;
+  onToggleProductGroupExpanded: (domain: string) => void;
   searchQuery?: string;
   activeSectionId?: string | null;
 }
@@ -246,7 +246,7 @@ export function DndOrganizer({
   productsBySection,
   assignmentByItemId,
   itemIdForProduct,
-  expandedDomains,
+  expandedProductGroups,
   maxChipsVisible,
   staleThresholdDays,
   focusedUrl,
@@ -263,7 +263,7 @@ export function DndOrganizer({
   onCloseTab,
   onFocusTab,
   onChipClick,
-  onToggleExpanded,
+  onToggleProductGroupExpanded,
   searchQuery = '',
   activeSectionId = null,
 }: DndOrganizerProps): React.ReactElement {
@@ -307,7 +307,7 @@ export function DndOrganizer({
   );
 
   const sharedProps = {
-    expandedDomains,
+    expandedProductGroups,
     maxChipsVisible,
     staleThresholdDays,
     focusedUrl,
@@ -321,7 +321,7 @@ export function DndOrganizer({
     onCloseTab,
     onFocusTab,
     onChipClick,
-    onToggleExpanded,
+    onToggleProductGroupExpanded,
     searchQuery,
   };
 
@@ -359,12 +359,12 @@ export function DndOrganizer({
       </div>
       <DragOverlay>
         {activeGroup ? (
-          <DomainCard
+          <ProductGroupCard
             group={activeGroup}
-            expanded={expandedDomains.has(activeGroup.domain)}
+            expanded={expandedProductGroups.has(activeGroup.domain)}
             maxChipsVisible={maxChipsVisible}
             staleThresholdDays={staleThresholdDays}
-            onCloseDomain={onCloseProduct}
+            onCloseProductGroup={onCloseProduct}
             onCloseDuplicates={onCloseDuplicates}
             onCloseTab={onCloseTab}
             onFocusTab={onFocusTab}
@@ -373,7 +373,7 @@ export function DndOrganizer({
             selectedUrls={selectedUrls}
             selectedTabIds={selectedTabIds}
             onChipClick={onChipClick}
-            onToggleExpanded={onToggleExpanded}
+            onToggleProductGroupExpanded={onToggleProductGroupExpanded}
             searchQuery={searchQuery}
           />
         ) : null}

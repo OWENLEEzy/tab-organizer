@@ -168,7 +168,7 @@ describe('dashboard reskin composition contract', () => {
     expect(appSource).toContain('Footer');
     expect(appSource).toContain('DashboardHeader');
     expect(appSource).toContain('DndOrganizer');
-    expect(appSource).toContain('ProductTable');
+    expect(appSource).toContain('ProductGroupTable');
   });
 
   it('keeps dnd-kit isolated to the cards drag board', () => {
@@ -181,7 +181,7 @@ describe('dashboard reskin composition contract', () => {
       'utf8',
     );
     const productTableSource = readFileSync(
-      join(process.cwd(), 'src/dashboard/components/tabs/ProductTable.tsx'),
+      join(process.cwd(), 'src/dashboard/components/product-groups/ProductGroupTable.tsx'),
       'utf8',
     );
 

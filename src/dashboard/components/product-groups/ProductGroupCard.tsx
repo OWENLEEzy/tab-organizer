@@ -1,20 +1,20 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import type { TabGroup } from '../../../types';
-import { TabChip } from './TabChip';
+import { TabChip } from '../tabs/TabChip';
 import { getVisibleTabs } from '../../lib/visible-tabs';
 import { analyzeDuplicates } from '../../../lib/duplicate-analysis';
-import { getTabGroupIconUrl } from './favicon';
+import { getProductGroupIconUrl } from './product-group-icon';
 import { useI18n } from '../../hooks/useI18n';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
-interface DomainCardProps {
+interface ProductGroupCardProps {
   group: TabGroup;
   dragHandleProps?: Record<string, unknown>;
   expanded?: boolean;
   maxChipsVisible?: number;
   staleThresholdDays?: number;
-  onCloseDomain: (group: TabGroup) => void;
+  onCloseProductGroup: (group: TabGroup) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onCloseTab: (url: string) => void;
   onFocusTab: (url: string) => void;
@@ -23,7 +23,7 @@ interface DomainCardProps {
   selectedUrls?: Set<string>;
   selectedTabIds?: Set<number>;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
-  onToggleExpanded?: (domain: string) => void;
+  onToggleProductGroupExpanded?: (domain: string) => void;
   searchQuery?: string;
 }
 
@@ -108,7 +108,7 @@ function TabChipRow({
 
 // ─── Component ────────────────────────────────────────────────────────
 
-function DomainCardComponent({
+function ProductGroupCardComponent({
   group,
   dragHandleProps,
   expanded = false,
@@ -122,15 +122,15 @@ function DomainCardComponent({
   selectedUrls,
   selectedTabIds,
   onChipClick,
-  onToggleExpanded,
+  onToggleProductGroupExpanded,
   searchQuery = '',
-}: DomainCardProps): React.ReactElement {
+}: ProductGroupCardProps): React.ReactElement {
   const { t } = useI18n();
   const tabs = useMemo(() => group.tabs || [], [group.tabs]);
   const displayName = group.friendlyName || group.domain;
   const selectionMode = (selectedUrls?.size ?? 0) > 0 || (selectedTabIds?.size ?? 0) > 0;
   const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
-  const groupFaviconUrl = useMemo(() => getTabGroupIconUrl(tabs), [tabs]);
+  const groupFaviconUrl = useMemo(() => getProductGroupIconUrl(tabs), [tabs]);
   const iconFailed = groupFaviconUrl !== '' && failedFaviconUrl === groupFaviconUrl;
   const initial = displayName.trim().charAt(0).toUpperCase() || '?';
 
@@ -163,8 +163,8 @@ function DomainCardComponent({
   }, [onCloseDuplicates, dupeUrls]);
 
   const handleExpand = useCallback(() => {
-    onToggleExpanded?.(group.domain);
-  }, [group.domain, onToggleExpanded]);
+    onToggleProductGroupExpanded?.(group.domain);
+  }, [group.domain, onToggleProductGroupExpanded]);
 
   const handleCloseTab = useCallback(
     (url: string) => {
@@ -190,7 +190,7 @@ function DomainCardComponent({
       <div className={`h-0.5 relative z-10 ${statusBarColor}`} />
 
       <div className="border-b border-border-color p-4 bg-bg-surface/20 relative z-10">
-        {/* Header: domain name + badges — DnD uses a dedicated handle to avoid nested interactive controls. */}
+        {/* Header: product name + badges — DnD uses a dedicated handle to avoid nested interactive controls. */}
         <div className="flex flex-wrap items-center gap-2">
           {dragHandleProps && (
             <button
@@ -298,4 +298,4 @@ function DomainCardComponent({
   );
 }
 
-export const DomainCard = React.memo(DomainCardComponent);
+export const ProductGroupCard = React.memo(ProductGroupCardComponent);

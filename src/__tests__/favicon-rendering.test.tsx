@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { I18nProvider } from '../dashboard/providers/I18nProvider';
-import { DomainCard } from '../dashboard/components/tabs/DomainCard';
-import { ProductTable } from '../dashboard/components/tabs/ProductTable';
+import { ProductGroupCard } from '../dashboard/components/product-groups/ProductGroupCard';
+import { ProductGroupTable } from '../dashboard/components/product-groups/ProductGroupTable';
 import { TabChip } from '../dashboard/components/tabs/TabChip';
 import type { Tab, TabGroup } from '../types';
 
@@ -72,9 +72,9 @@ describe('Chrome favicon rendering', () => {
 
     const { container } = render(
       <I18nProvider>
-        <DomainCard
+        <ProductGroupCard
           group={group}
-          onCloseDomain={() => {}}
+          onCloseProductGroup={() => {}}
           onCloseDuplicates={() => {}}
           onCloseTab={() => {}}
           onFocusTab={() => {}}
@@ -94,7 +94,7 @@ describe('Chrome favicon rendering', () => {
 
     const { container } = render(
       <I18nProvider>
-        <ProductTable
+        <ProductGroupTable
           items={[group]}
           sections={[]}
           assignmentByItemId={new Map()}
@@ -102,8 +102,8 @@ describe('Chrome favicon rendering', () => {
           onCloseProduct={() => {}}
           onCloseDuplicates={() => {}}
           onFocusTab={() => {}}
-          expandedDomains={new Set()}
-          onToggleExpanded={() => {}}
+          expandedProductGroups={new Set()}
+          onToggleProductGroupExpanded={() => {}}
           onCloseTab={() => {}}
           onChipClick={() => {}}
           selectedUrls={new Set()}
@@ -134,7 +134,7 @@ describe('Chrome favicon rendering', () => {
 
     const { container } = render(
       <I18nProvider>
-        <ProductTable
+        <ProductGroupTable
           items={[first, second]}
           sections={[]}
           assignmentByItemId={new Map()}
@@ -153,9 +153,9 @@ describe('Chrome favicon rendering', () => {
   it('falls back to initials when favicon is missing or fails to load', () => {
     const { container, getAllByText } = render(
       <I18nProvider>
-        <DomainCard
+        <ProductGroupCard
           group={makeGroup([makeTab({ url: 'https://api-docs.deepseek.com/a', favIconUrl: '' })])}
-          onCloseDomain={() => {}}
+          onCloseProductGroup={() => {}}
           onCloseDuplicates={() => {}}
           onCloseTab={() => {}}
           onFocusTab={() => {}}
