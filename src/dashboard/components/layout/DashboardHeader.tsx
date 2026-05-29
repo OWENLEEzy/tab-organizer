@@ -1,6 +1,5 @@
 import React from 'react';
 import { SearchBar } from '../search/SearchBar';
-import { ViewToggle } from '../search/ViewToggle';
 import { SortButton } from '../search/SortButton';
 import { SortDropdown } from '../search/SortDropdown';
 import { ActionButton } from '../ui/ActionButton';
@@ -8,8 +7,6 @@ import { SectionSwitcher } from '../organizer/SectionSwitcher';
 import { useI18n } from '../../hooks/useI18n';
 import { getDateFormatter } from '../../lib/date-formatters';
 import type { GroupSortOption, Section } from '../../../types';
-
-// ─── Helpers ──────────────────────────────────────────────────────────
 
 const EMPTY_SECTIONS: Section[] = [];
 
@@ -21,8 +18,6 @@ interface DashboardHeaderProps {
   onSearchChange: (query: string) => void;
   resultCount: number;
   totalCount: number;
-  viewMode: 'cards' | 'table';
-  onViewModeChange: (mode: 'cards' | 'table') => void;
   groupSortBy: GroupSortOption;
   onGroupSortByChange: (sortBy: GroupSortOption) => void;
   sortButtonDisabled: boolean;
@@ -37,6 +32,14 @@ interface DashboardHeaderProps {
   activeSectionId: string | null;
   onSectionChange: (id: string | null) => void;
   isSectionSwitcherFocused?: boolean;
+}
+
+function FolderIcon(): React.ReactElement {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-6 text-text-primary-light dark:text-text-primary-dark opacity-80">
+      <path d="M19.5 21a3 3 0 0 0 3-3v-4.5a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3V18a3 3 0 0 0 3 3h15ZM1.5 10.146V6a3 3 0 0 1 3-3h5.379a2.25 2.25 0 0 1 1.59.659l2.122 2.121c.14.141.331.22.53.22H19.5a3 3 0 0 1 3 3v1.146A4.483 4.483 0 0 0 19.5 9h-15a4.483 4.483 0 0 0-3 1.146Z" />
+    </svg>
+  );
 }
 
 function RefreshIcon(): React.ReactElement {
@@ -72,8 +75,6 @@ export function DashboardHeader({
   onSearchChange,
   resultCount,
   totalCount,
-  viewMode,
-  onViewModeChange,
   groupSortBy,
   onGroupSortByChange,
   sortButtonDisabled,
@@ -101,7 +102,7 @@ export function DashboardHeader({
   return (
     <section className="pb-3 pt-2" aria-labelledby={headingId}>
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-3 border-b border-border-light pb-3 dark:border-border-dark md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 border-b border-border-light/40 pb-3 dark:border-border-dark/40 md:flex-row md:items-center md:justify-between">
           <SectionSwitcher
             sections={sections}
             sectionIds={sectionIds}
@@ -110,32 +111,21 @@ export function DashboardHeader({
             onCreateSection={onCreateSection}
             isFocused={isSectionSwitcherFocused}
           />
-          <p className="font-body text-xs font-semibold tracking-normal text-text-secondary uppercase md:text-right">
+          <p className="font-body text-[11px] font-semibold tracking-wide text-text-secondary uppercase md:text-right">
             {activeDateLabel}
           </p>
         </div>
-        <div className="flex flex-col gap-3 border-b border-border-light pb-3 dark:border-border-dark lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <h1 id={headingId} className="mt-1 font-heading text-3xl font-normal tracking-tight text-text-primary-light dark:text-text-primary-dark">
+        
+        <div className="flex flex-col gap-3 border-b border-border-light/40 pb-3 dark:border-border-dark/40">
+          <div className="flex items-center gap-2.5">
+            <FolderIcon />
+            <h1 id={headingId} className="font-heading text-2xl font-medium tracking-tight text-text-primary-light dark:text-text-primary-dark">
               {title}
             </h1>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            {hasGroups ? (
-              <>
-                <ViewToggle value={viewMode} onChange={onViewModeChange} />
-                <SortDropdown value={groupSortBy} onChange={onGroupSortByChange} />
-                <SortButton
-                  disabled={sortButtonDisabled}
-                  disabledTooltip={t('sortButtonDisabledTooltip')}
-                  onClick={onSortWindow}
-                />
-              </>
-            ) : null}
-          </div>
         </div>
 
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center pt-1">
           {hasGroups ? (
             <>
               <div className="min-w-0 flex-1 md:min-w-[24rem]">
@@ -148,27 +138,28 @@ export function DashboardHeader({
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2 md:justify-end">
-                <ActionButton variant="quiet" icon={<RefreshIcon />} onClick={onRefresh} aria-label="Refresh tabs">
-                  {t('refresh')}
-                </ActionButton>
+                <SortDropdown value={groupSortBy} onChange={onGroupSortByChange} />
+                <SortButton
+                  disabled={sortButtonDisabled}
+                  disabledTooltip={t('sortButtonDisabledTooltip')}
+                  onClick={onSortWindow}
+                />
+                <div className="w-px h-4 bg-border-color mx-0.5 hidden md:block" />
+                <ActionButton variant="quiet" icon={<RefreshIcon />} onClick={onRefresh} aria-label="Refresh tabs" />
               </div>
             </>
           ) : (
             <div className="min-w-0 flex-1" />
           )}
           <div className="flex flex-wrap items-center gap-2 md:justify-end">
-            <ActionButton variant="quiet" icon={<SettingsIcon />} onClick={onOpenSettings} aria-label={t('settings')}>
-              {t('settings')}
-            </ActionButton>
+            <ActionButton variant="quiet" icon={<SettingsIcon />} onClick={onOpenSettings} aria-label={t('settings')} />
             <ActionButton
               variant="quiet"
               icon={<SidebarIcon />}
               onClick={onToggleSidebar}
               aria-label={isSidebarExpanded ? t('historyHide') : t('historyShow')}
               className={isSidebarExpanded ? 'text-accent-blue bg-accent-blue/5' : ''}
-            >
-              {isSidebarExpanded ? t('historyHide') : t('historyShow')}
-            </ActionButton>
+            />
           </div>
         </div>
       </div>

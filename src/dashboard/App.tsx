@@ -10,7 +10,7 @@ import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { PromptDialog } from './components/PromptDialog';
 import { DashboardShell } from './components/layout/DashboardShell';
 import { DashboardHeader } from './components/layout/DashboardHeader';
-import { RecoveryPanel } from './components/recovery/RecoveryPanel';
+
 import type { FooterAlert } from './components/Footer';
 import { useDashboardController } from './controllers/useDashboardController';
 import { useI18n } from './hooks/useI18n';
@@ -25,6 +25,10 @@ const SettingsPanel = React.lazy(() =>
 
 const DndOrganizer = React.lazy(() =>
   import('./components/organizer/DndOrganizer').then((module) => ({ default: module.DndOrganizer })),
+);
+
+const RecoveryPanel = React.lazy(() =>
+  import('./components/recovery/RecoveryPanel').then((module) => ({ default: module.RecoveryPanel })),
 );
 
 // ─── Component ────────────────────────────────────────────────────────
@@ -99,8 +103,6 @@ export function App(): React.ReactElement {
             onSearchChange={(q) => dispatch({ type: 'SET_SEARCH_QUERY', query: q })}
             resultCount={state.filteredTabCount}
             totalCount={state.totalTabs}
-            viewMode={viewMode}
-            onViewModeChange={handlers.handleSetViewMode}
             groupSortBy={settings.groupSortBy}
             onGroupSortByChange={settingsStore.setGroupSortBy}
             onRefresh={handlers.handleRefresh}
@@ -120,13 +122,15 @@ export function App(): React.ReactElement {
         isSidebarExpanded={state.isSidebarExpanded}
         onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
         utilities={
-          <RecoveryPanel
-            recoverySnapshots={recoverySnapshots}
-            onRestoreRecoverySnapshot={tabStore.restoreRecoverySnapshot}
-            onRestoreRecoveryProduct={tabStore.restoreRecoveryProduct}
-            onDeleteSnapshot={tabStore.deleteRecoverySnapshot}
-            onClearSnapshots={tabStore.clearRecovery}
-          />
+          <React.Suspense fallback={null}>
+            <RecoveryPanel
+              recoverySnapshots={recoverySnapshots}
+              onRestoreRecoverySnapshot={tabStore.restoreRecoverySnapshot}
+              onRestoreRecoveryProduct={tabStore.restoreRecoveryProduct}
+              onDeleteSnapshot={tabStore.deleteRecoverySnapshot}
+              onClearSnapshots={tabStore.clearRecovery}
+            />
+          </React.Suspense>
         }
         toolbar={null}
         footer={<Footer tabCount={state.totalTabs} duplicateCount={state.totalDupes} groupCount={derived.filteredProducts.length} sectionCount={state.visibleSectionCount} alerts={footerAlerts} />}
@@ -372,6 +376,8 @@ export function App(): React.ReactElement {
             onUpdateKeyBinding={settingsStore.updateKeyBinding}
             onResetKeyBindings={settingsStore.resetKeyBindings}
             appVersion={appVersion}
+            viewMode={viewMode}
+            onViewModeChange={handlers.handleSetViewMode}
           />
         </React.Suspense>
       )}

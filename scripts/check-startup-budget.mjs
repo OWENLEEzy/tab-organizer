@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const distDir = path.resolve(process.cwd(), 'dist');
-const indexPath = path.join(distDir, 'src', 'newtab', 'index.html');
+const indexPath = path.join(distDir, 'src', 'dashboard', 'index.html');
 const fallbackIndexPath = path.join(distDir, 'index.html');
 const maxHtmlBytes = 25 * 1024;
 

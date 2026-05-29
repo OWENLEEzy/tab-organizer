@@ -37,6 +37,8 @@ function SettingsHarness(): React.ReactElement {
         onImportSettings={async () => {}}
         onCreateSection={() => {}}
         appVersion="2.0.0-test"
+        viewMode="cards"
+        onViewModeChange={() => {}}
       />
     </>
   );
@@ -93,6 +95,8 @@ describe('SettingsPanel accessibility', () => {
         onImportSettings={async () => {}}
         onCreateSection={() => {}}
         appVersion="2.0.0-test"
+        viewMode="cards"
+        onViewModeChange={() => {}}
       />
       </I18nProvider>
     );

@@ -36,6 +36,9 @@ test.describe('a11y harness', () => {
       await page.waitForLoadState('networkidle');
 
       const results = await new AxeBuilder({ page }).analyze();
+      if (results.violations.length > 0) {
+        console.error(JSON.stringify(results.violations, null, 2));
+      }
       expect(results.violations, scenario).toEqual([]);
     }
   });

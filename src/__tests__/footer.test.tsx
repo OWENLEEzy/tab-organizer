@@ -7,7 +7,7 @@ describe('Footer', () => {
   it('links to the bare feedback form without local runtime metadata', () => {
     render(<I18nProvider><Footer tabCount={42} duplicateCount={0} /></I18nProvider>);
 
-    const feedback = screen.getByRole('link', { name: 'Give feedback' });
+    const feedback = screen.getByRole('link', { name: 'Feedback' });
     const href = feedback.getAttribute('href') ?? '';
 
     expect(href).toBe('https://docs.google.com/forms/d/e/1FAIpQLSfXJ6osy2J84TLpyLE-DYA-NcWMcjRAZbcTHBOZV9RnQ7WEfA/viewform');

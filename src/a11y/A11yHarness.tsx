@@ -61,6 +61,8 @@ export function A11yHarness(): React.ReactElement {
           onImportSettings={async () => {}}
           onCreateSection={() => {}}
           appVersion="2.0.0-test"
+          viewMode="cards"
+          onViewModeChange={() => {}}
         />
       </main>
     </I18nProvider>

@@ -43,6 +43,9 @@ interface SettingsPanelProps {
   onResetKeyBindings?: () => void;
   // App version
   appVersion: string;
+  // View Mode
+  viewMode: 'cards' | 'table';
+  onViewModeChange: (mode: 'cards' | 'table') => void;
 }
 
 type TabId = 'general' | 'custom-groups' | 'sections' | 'shortcuts';
@@ -84,6 +87,8 @@ export function SettingsPanel({
   onUpdateKeyBinding = () => {},
   onResetKeyBindings = () => {},
   appVersion,
+  viewMode,
+  onViewModeChange,
 }: SettingsPanelProps): React.ReactElement | null {
   const panelRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -303,6 +308,17 @@ export function SettingsPanel({
           <div className="flex-1 overflow-y-auto p-6">
             {activeTab === 'general' && (
               <div className="flex flex-col gap-6">
+                <SelectRow
+                  id="setting-view-mode"
+                  label={'Default View'}
+                  value={viewMode}
+                  options={[
+                    { value: 'cards', label: 'Cards' },
+                    { value: 'table', label: 'Table' },
+                  ]}
+                  onChange={(val) => onViewModeChange(val as 'cards' | 'table')}
+                />
+
                 <SelectRow
                   id="setting-language"
                   label={t('settingsLang')}

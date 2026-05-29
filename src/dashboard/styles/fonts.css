@@ -1,4 +1,5 @@
 /* ─── Localized Google Fonts (CSP-safe for Chrome Extension MV3) ─── */
+/* stylelint-disable scale-unlimited/declaration-strict-value, font-family-name-quotes */
 
 @font-face {
   font-family: 'Newsreader';

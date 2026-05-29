@@ -1,4 +1,4 @@
-import type { HistorySnapshot, Tab, TabGroup } from '../types';
+import type { RecoverySnapshot, Tab, TabGroup } from '../types';
 
 export function makeAppTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
   return {
@@ -44,7 +44,7 @@ export function makeChromeTab(overrides: Pick<chrome.tabs.Tab, 'id' | 'url'> & P
   } as chrome.tabs.Tab;
 }
 
-export function makeHistorySnapshot(overrides: Partial<HistorySnapshot> & Pick<HistorySnapshot, 'id'>): HistorySnapshot {
+export function makeRecoverySnapshot(overrides: Partial<RecoverySnapshot> & Pick<RecoverySnapshot, 'id'>): RecoverySnapshot {
   return {
     capturedAt: '2026-05-08T00:00:00.000Z',
     tabCount: 1,

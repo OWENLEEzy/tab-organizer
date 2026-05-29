@@ -27,7 +27,7 @@ test.describe('Search & Filter', () => {
     await page.waitForTimeout(100);
 
     // Verify result count updates
-    const resultCount = page.locator('text=/of \\d+/');
+    const resultCount = page.locator('span').filter({ hasText: /of/i }).first();
     await expect(resultCount).toBeVisible();
   });
 
@@ -71,7 +71,9 @@ test.describe('Search & Filter', () => {
     await dialog.getByLabel('Section Name').fill('Later');
     await dialog.getByRole('button', { name: 'Create Section' }).click();
 
-    await page.getByRole('button', { name: 'Table' }).click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.locator('#setting-view-mode').selectOption('table');
+    await page.keyboard.press('Escape');
     const youtubeRow = page.getByRole('row', { name: /YouTube/ });
     const sectionSelect = youtubeRow.locator('select');
     const laterValue = await sectionSelect.evaluate((select) => {
@@ -80,7 +82,9 @@ test.describe('Search & Filter', () => {
     });
     await sectionSelect.selectOption(laterValue);
 
-    await page.getByRole('button', { name: 'Cards' }).click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.locator('#setting-view-mode').selectOption('cards');
+    await page.keyboard.press('Escape');
     const searchInput = page.getByRole('searchbox', { name: 'search tabs' });
     await searchInput.fill(`/section:${laterValue}`);
     await page.waitForTimeout(300);

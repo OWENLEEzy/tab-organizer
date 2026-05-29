@@ -474,9 +474,9 @@ Uses CSS custom properties for dimensions:
 --spacing-toggle-translate-x: 16px;
 ```
 
-### Segmented Control
+### View Switcher
 
-Two-item toggle for Cards/Table view switching.
+Cards/Table view switching is now located inside the Settings panel to reduce header clutter.
 
 ### Search Input
 
