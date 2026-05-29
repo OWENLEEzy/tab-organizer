@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { App } from '../newtab/App';
 import { I18nProvider } from '../newtab/providers/I18nProvider';
 import { useTabStore } from '../stores/tab-store';
@@ -73,6 +74,7 @@ beforeEach(() => {
       query: vi.fn(),
       onCreated: { addListener: vi.fn(), removeListener: vi.fn() },
       onRemoved: { addListener: vi.fn(), removeListener: vi.fn() },
+      onMoved: { addListener: vi.fn(), removeListener: vi.fn() },
       onUpdated: { addListener: vi.fn(), removeListener: vi.fn() },
     },
   });
@@ -99,9 +101,7 @@ describe('dashboard section semantics', () => {
 
     renderApp();
 
-    await waitFor(() => expect(screen.getByText('1 sections')).toBeInTheDocument());
-    expect(screen.queryByText('2 sections')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: 'Empty' })).not.toBeInTheDocument();
   });
 
@@ -114,7 +114,7 @@ describe('dashboard section semantics', () => {
 
     renderApp();
 
-    await waitFor(() => expect(screen.getByText('0 sections')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'All sections' })).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: 'Later' })).not.toBeInTheDocument();
   });
 
@@ -137,9 +137,8 @@ describe('dashboard section semantics', () => {
     expect(within(select).getByRole('option', { name: 'Empty' })).toBeInTheDocument();
   });
 
-  it('allows navigating to another section after switching to one section', async () => {
-    // Two sections with content; switch to A, then switch to B — both should
-    // appear in section navigation regardless of activeSectionId.
+  it('keeps other populated sections navigable after switching to one section', async () => {
+    const user = userEvent.setup();
     chromeStorageData.sections = [
       { id: 'work', name: 'Work', order: 0 },
       { id: 'personal', name: 'Personal', order: 1 },
@@ -155,10 +154,50 @@ describe('dashboard section semantics', () => {
 
     renderApp();
 
-    // Both sections visible in section switcher
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Personal' })).toBeInTheDocument();
-    });
+    await user.click(await screen.findByRole('button', { name: 'Work' }));
+
+    expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Personal' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'All sections' })).toBeInTheDocument();
+  });
+
+  it('keeps section projections consistent after filtering and navigation', async () => {
+    chromeStorageData.sections = [
+      { id: 'section-dev', name: 'Dev', order: 0 },
+      { id: 'section-empty', name: 'Empty', order: 1 },
+    ];
+    chromeStorageData.sectionAssignments = [
+      { productKey: 'github', sectionId: 'section-dev', order: 0 },
+    ];
+    (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeChromeTab(1, 'https://github.com/OWENLEEzy/tab-organizer', 'Repo'),
+      makeChromeTab(2, 'https://example.com/docs', 'Docs'),
+    ]);
+
+    renderApp();
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'All sections' })).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Dev' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Empty' })).not.toBeInTheDocument();
+  });
+
+  it('renders non-default empty sections as cards drop zones without counting them as content sections', async () => {
+    chromeStorageData.sections = [
+      { id: 'section-dev', name: 'Dev', order: 0 },
+      { id: 'custom-empty', name: 'Custom Empty', order: 1 },
+    ];
+    chromeStorageData.sectionAssignments = [
+      { productKey: 'github', sectionId: 'section-dev', order: 0 },
+    ];
+    (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeChromeTab(1, 'https://github.com/OWENLEEzy/tab-organizer', 'Repo'),
+      makeChromeTab(2, 'https://example.com/docs', 'Docs'),
+    ]);
+
+    renderApp();
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Dev' })).toBeInTheDocument());
+    expect(screen.getByRole('heading', { name: 'Custom Empty' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Custom Empty' })).not.toBeInTheDocument();
   });
 });

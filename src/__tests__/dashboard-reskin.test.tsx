@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -84,9 +84,8 @@ describe('MotherDuck-inspired layout components', () => {
       <I18nProvider>
         <DashboardHeader
           title="Open Tabs by Product"
-          hasGroups
+          hasGroups={true}
           dateLabel="Tuesday, May 5, 2026"
-          sectionCount={2}
           searchQuery=""
           onSearchChange={() => {}}
           resultCount={5}
@@ -95,6 +94,8 @@ describe('MotherDuck-inspired layout components', () => {
           onViewModeChange={() => {}}
           groupSortBy="count"
           onGroupSortByChange={() => {}}
+          sortButtonDisabled={false}
+          onSortWindow={vi.fn()}
           onRefresh={() => {}}
           onCreateSection={() => {}}
           onOpenSettings={() => {}}
@@ -108,7 +109,6 @@ describe('MotherDuck-inspired layout components', () => {
 
     expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
     expect(screen.getByText('Tuesday, May 5, 2026')).toBeInTheDocument();
-    expect(screen.getByText('2 sections')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'All sections' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: 'Search tabs' })).toBeInTheDocument();
@@ -123,9 +123,8 @@ describe('MotherDuck-inspired layout components', () => {
           header={
             <DashboardHeader
               title="Open Tabs by Product"
-              hasGroups
+              hasGroups={true}
               dateLabel="Tuesday, May 5, 2026"
-              sectionCount={1}
               searchQuery=""
               onSearchChange={() => {}}
               resultCount={1}
@@ -134,6 +133,8 @@ describe('MotherDuck-inspired layout components', () => {
               onViewModeChange={() => {}}
               groupSortBy="count"
               onGroupSortByChange={() => {}}
+              sortButtonDisabled={false}
+              onSortWindow={vi.fn()}
               onRefresh={() => {}}
               onCreateSection={() => {}}
               onOpenSettings={() => {}}

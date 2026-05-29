@@ -95,7 +95,6 @@ export function App(): React.ReactElement {
           <DashboardHeader
             title={t('titleOpenTabs')}
             hasGroups={!state.showEmptyState}
-            sectionCount={state.visibleSectionCount}
             searchQuery={state.searchQuery}
             onSearchChange={(q) => dispatch({ type: 'SET_SEARCH_QUERY', query: q })}
             resultCount={state.filteredTabCount}
@@ -109,11 +108,13 @@ export function App(): React.ReactElement {
             onOpenSettings={() => dispatch({ type: 'SET_SETTINGS_OPEN', open: true })}
             isSidebarExpanded={state.isSidebarExpanded}
             onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
-            sections={derived.contentSections}
+            sections={derived.navigableSections}
             sectionIds={derived.sectionNavigationIds}
             activeSectionId={tabStore.activeSectionId}
             onSectionChange={tabStore.setActiveSection}
             isSectionSwitcherFocused={state.sectionSwitcherFocused}
+            sortButtonDisabled={state.sortButtonDisabled}
+            onSortWindow={handlers.handleSortWindow}
           />
         }
         isSidebarExpanded={state.isSidebarExpanded}
@@ -277,7 +278,7 @@ export function App(): React.ReactElement {
                     <DndOrganizer
                       filteredProducts={derived.filteredProducts}
                       unassignedProducts={derived.unassignedProducts}
-                      orderedSections={derived.contentSections}
+                      orderedSections={derived.cardsSections}
                       productsBySection={derived.productsBySection}
                       assignmentByItemId={derived.assignmentByItemId}
                       itemIdForProduct={derived.itemIdForProduct}

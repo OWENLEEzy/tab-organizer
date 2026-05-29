@@ -28,7 +28,7 @@ test.describe('Hybrid Organizer', () => {
     expect(laterValue).not.toBe('');
     await sectionSelect.selectOption(laterValue);
     await expect(sectionSelect).toHaveValue(laterValue);
-    await expect(page.getByText(/4 sections/)).toBeVisible();
+    await expect(page.locator('footer')).toContainText(/4\s*sections/i);
 
     await page.reload();
     await expect(page.getByRole('button', { name: 'Table' })).toHaveClass(/is-active/);
@@ -42,17 +42,19 @@ test.describe('Hybrid Organizer', () => {
     await expect(laterSection.getByRole('heading', { name: 'YouTube' })).toBeVisible();
   });
 
-  test('empty sections do not increase dashboard section count', async ({ page }) => {
+  test('empty sections do not appear in section switcher but render as cards drop zones', async ({ page }) => {
     await page.waitForSelector('[data-tab-url]');
-    await expect(page.getByText(/\d+ sections/)).toBeVisible();
+    await expect(page.locator('footer')).toContainText(/\d+\s*sections/i);
 
     await page.getByRole('button', { name: 'New section' }).click();
     const dialog = page.locator('[role="dialog"]');
     await dialog.getByLabel('Section Name').fill('Empty Later');
     await dialog.getByRole('button', { name: 'Create Section' }).click();
 
+    // Empty section should NOT appear in section switcher buttons
     await expect(page.getByRole('button', { name: 'Empty Later' })).not.toBeVisible();
-    await expect(page.getByText('Empty Later')).not.toBeVisible();
+    // But the empty section SHOULD render as a cards drop zone (heading visible in DndOrganizer)
+    await expect(page.getByRole('heading', { name: 'Empty Later' })).toBeVisible();
   });
 
   test('moving a product to and from a section updates visible section count', async ({ page }) => {
@@ -72,10 +74,10 @@ test.describe('Hybrid Organizer', () => {
     });
 
     await sectionSelect.selectOption(laterValue);
-    await expect(page.getByText(/4 sections/)).toBeVisible();
+    await expect(page.locator('footer')).toContainText(/4\s*sections/i);
 
     await sectionSelect.selectOption('');
-    await expect(page.getByText(/3 sections/)).toBeVisible();
+    await expect(page.locator('footer')).toContainText(/3\s*sections/i);
 
     await page.getByRole('button', { name: 'Cards' }).click();
     await expect(page.getByRole('heading', { name: 'No section' })).toBeVisible();

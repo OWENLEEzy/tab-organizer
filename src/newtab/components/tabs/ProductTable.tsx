@@ -3,6 +3,7 @@ import type { Section, TabGroup } from '../../../types';
 import { TabChip } from './TabChip';
 import { analyzeDuplicates } from '../../../lib/duplicate-analysis';
 import { getProductKey } from '../../../lib/product-key';
+import { toProductItemId } from '../../../lib/section-organizer';
 import { getTabGroupIconUrl } from './favicon';
 import { ActionButton } from '../ui/ActionButton';
 import { useI18n } from '../../hooks/useI18n';
@@ -44,7 +45,7 @@ function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
 }
 
 function itemId(p: TabGroup): string {
-  return `product:${getProductKey(p)}`;
+  return toProductItemId(getProductKey(p));
 }
 
 function RowIcon({ group }: { group: TabGroup }): React.ReactElement {

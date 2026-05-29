@@ -8,12 +8,14 @@ import { useUIState } from '../hooks/useUIState';
 import { useTabActions } from './useTabActions';
 import { useI18n } from '../hooks/useI18n';
 import { DASHBOARD_SECTION_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
+import { useNow } from '../hooks/useNow';
 import { isTabStale } from '../../lib/staleness';
 import { analyzeDuplicates } from '../../lib/duplicate-analysis';
-import { getProductKey } from '../../lib/product-key';
 import { createSortComparator } from '../../lib/tab-grouper';
 import { parseSearchQuery, resolveSectionQueryTarget } from '../lib/search-commands';
 import { useChromeStorageSync } from './useChromeStorageSync';
+import { buildOrganizerModel, toProductItemId } from '../../lib/section-organizer';
+import { isDefaultSectionId } from '../../config/sections';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -62,53 +64,31 @@ export function useDashboardController() {
   const { sections, sectionAssignments } = tabStore;
   const { settings } = settingsStore;
 
-  // ─── Derived state ──────────────────────────────────────────────────
+  // ─── Organizer model (single source of truth for section/assignment state) ─────
 
-  const itemIdForProduct = useCallback((p: TabGroup) => {
-    return `product:${getProductKey(p)}`;
+  // Sort once — used by organizerModel and filteredProducts
+  const sortedProducts = useMemo(() => {
+    const sortComparator = createSortComparator(settings.groupSortBy ?? 'count');
+    return [...products].sort(sortComparator);
+  }, [products, settings.groupSortBy]);
+
+  const structureOrganizerModel = useMemo(() => buildOrganizerModel({
+    sections,
+    products: sortedProducts,
+    assignments: sectionAssignments,
+    noSectionOverrides: tabStore.unsortedOverrides,
+    activeSectionId: tabStore.activeSectionId,
+  }), [sections, sortedProducts, sectionAssignments, tabStore.unsortedOverrides, tabStore.activeSectionId]);
+
+  const itemIdForProduct = useCallback((product: TabGroup) => {
+    return toProductItemId(product.productKey ?? product.itemKey ?? product.domain);
   }, []);
-
-  // Inline helper — avoids an extra useCallback allocation per render.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const groupAssignmentKey = (p: TabGroup) => `product:${getProductKey(p)}`;
-
-  const assignmentByItemId = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const assignment of sectionAssignments) {
-      map.set(`product:${assignment.productKey}`, assignment.sectionId);
-    }
-    return map;
-  }, [sectionAssignments]);
-
-  const manageableSections = useMemo(
-    () => [...sections].sort((a, b) => a.order - b.order),
-    [sections],
-  );
-
-  const navigationProductsBySection = useMemo(() => {
-    const result = new Map<string, TabGroup[]>();
-    for (const section of manageableSections) {
-      result.set(section.id, []);
-    }
-
-    for (const product of products) {
-      const sectionId = assignmentByItemId.get(groupAssignmentKey(product));
-      if (!sectionId) continue;
-      const bucket = result.get(sectionId);
-      if (bucket) bucket.push(product);
-    }
-
-    return result;
-  }, [assignmentByItemId, products, groupAssignmentKey, manageableSections]);
-
-  const contentSections = useMemo(
-    () => manageableSections.filter((section) => (navigationProductsBySection.get(section.id)?.length ?? 0) > 0),
-    [manageableSections, navigationProductsBySection],
-  );
 
   // Debounce searchQuery for derived memos — avoids cascading recomputes on every keystroke.
   const searchQueryRef = useRef(searchQuery);
-  searchQueryRef.current = searchQuery;
+  useEffect(() => {
+    searchQueryRef.current = searchQuery;
+  }, [searchQuery]);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
   useEffect(() => {
     const id = window.setTimeout(() => setDebouncedSearchQuery(searchQueryRef.current), 150);
@@ -121,29 +101,28 @@ export function useDashboardController() {
     [debouncedSearchQuery],
   );
 
+  // Capture timestamp once per second — used for /stale search command.
+  const staleTimestamp = useNow();
+
   const filteredProducts = useMemo(() => {
-    let result = products;
+    let result = sortedProducts;
 
     if (tabStore.activeSectionId) {
-      result = result.filter(p => {
-        const itemKey = groupAssignmentKey(p);
-        return assignmentByItemId.get(itemKey) === tabStore.activeSectionId;
+      result = result.filter((product) => {
+        const productKey = product.productKey ?? product.itemKey ?? product.domain;
+        return structureOrganizerModel.assignmentByProductKey.get(productKey) === tabStore.activeSectionId;
       });
     }
-
-    // Apply sort order
-    const sortComparator = createSortComparator(settings.groupSortBy ?? 'count');
-    result = [...result].sort(sortComparator);
 
     if (!debouncedSearchQuery.trim()) return result;
 
     // 1. Process /section:SectionName command
     if (parsedQuery.type === 'section') {
-      const targetSection = resolveSectionQueryTarget(parsedQuery.sectionToken ?? '', contentSections);
+      const targetSection = resolveSectionQueryTarget(parsedQuery.sectionToken ?? '', structureOrganizerModel.visibleSections);
       if (targetSection) {
-        result = products.filter(p => {
-          const itemKey = groupAssignmentKey(p);
-          return assignmentByItemId.get(itemKey) === targetSection.id;
+        result = sortedProducts.filter(p => {
+          const productKey = p.productKey ?? p.itemKey ?? p.domain;
+          return structureOrganizerModel.assignmentByProductKey.get(productKey) === targetSection.id;
         });
       } else {
         result = [];
@@ -163,12 +142,10 @@ export function useDashboardController() {
 
     // 3. Process /stale command
     if (parsedQuery.type === 'stale') {
-      const stableNow = Math.floor(Date.now() / 1000) * 1000;
-
       result = result
         .map(p => ({
           ...p,
-          tabs: p.tabs.filter(t => isTabStale(t, stableNow, settings.staleThresholdDays ?? 3))
+          tabs: p.tabs.filter(t => isTabStale(t, staleTimestamp, settings.staleThresholdDays ?? 3))
         }))
         .filter(p => p.tabs.length > 0);
     }
@@ -190,55 +167,31 @@ export function useDashboardController() {
       }
     }
     return finalResult;
-  }, [products, debouncedSearchQuery, parsedQuery, tabStore.activeSectionId, assignmentByItemId, contentSections, settings.staleThresholdDays, settings.groupSortBy]);
+  }, [sortedProducts, debouncedSearchQuery, parsedQuery, staleTimestamp, tabStore.activeSectionId, structureOrganizerModel, settings.staleThresholdDays]);
 
-  const unassignedProducts = useMemo(
-    () => filteredProducts.filter((p) => !assignmentByItemId.has(groupAssignmentKey(p))),
-    [filteredProducts, assignmentByItemId, groupAssignmentKey],
-  );
+  // ─── Visible OrganizerModel (filtered products projected through the model) ───
 
-  const productsBySection = useMemo(() => {
-    const result = new Map<string, TabGroup[]>();
-    for (const section of manageableSections) {
-      result.set(section.id, []);
-    }
+  const contentOrganizerModel = useMemo(() => buildOrganizerModel({
+    sections: structureOrganizerModel.sections,
+    products: filteredProducts,
+    assignments: sectionAssignments,
+    noSectionOverrides: tabStore.unsortedOverrides,
+    activeSectionId: tabStore.activeSectionId,
+  }), [structureOrganizerModel.sections, filteredProducts, sectionAssignments, tabStore.unsortedOverrides, tabStore.activeSectionId]);
 
-    for (const product of filteredProducts) {
-      const sectionId = assignmentByItemId.get(groupAssignmentKey(product));
-      if (!sectionId) continue;
-      const bucket = result.get(sectionId);
-      if (bucket) bucket.push(product);
-    }
-
-    for (const [sectionId, items] of result) {
-      const orderMap = new Map<string, number>();
-      for (const assignment of sectionAssignments) {
-        if (assignment.sectionId === sectionId) {
-          orderMap.set(`product:${assignment.productKey}`, assignment.order);
-        }
-      }
-
-      items.sort((a, b) => {
-        const aOrder = orderMap.get(groupAssignmentKey(a)) ?? a.order;
-        const bOrder = orderMap.get(groupAssignmentKey(b)) ?? b.order;
-        return aOrder - bOrder;
-      });
-    }
-
-    return result;
-  }, [assignmentByItemId, filteredProducts, groupAssignmentKey, manageableSections, sectionAssignments]);
-
-  const sectionNavigationIds = useMemo(
-    () => [null, ...contentSections.map((section) => section.id)] as (string | null)[],
-    [contentSections],
-  );
+  const cardsSections = useMemo(() => {
+    return structureOrganizerModel.sections.filter((section) => {
+      const hasRenderedProducts = (contentOrganizerModel.productsBySection.get(section.id)?.length ?? 0) > 0;
+      return hasRenderedProducts || !isDefaultSectionId(section.id);
+    });
+  }, [structureOrganizerModel.sections, contentOrganizerModel.productsBySection]);
 
   const flatChips = useMemo(() => {
     const visualProducts = viewMode === 'table'
       ? [...filteredProducts].sort((a, b) => a.order - b.order)
       : [
-          ...unassignedProducts,
-          ...contentSections.flatMap((section) => productsBySection.get(section.id) ?? []),
+          ...contentOrganizerModel.unassignedProducts,
+          ...contentOrganizerModel.visibleSections.flatMap((section) => contentOrganizerModel.productsBySection.get(section.id) ?? []),
         ];
 
     const isSearching = debouncedSearchQuery.trim().length > 0;
@@ -253,9 +206,9 @@ export function useDashboardController() {
     );
   }, [
     filteredProducts,
-    unassignedProducts,
-    contentSections,
-    productsBySection,
+    contentOrganizerModel.productsBySection,
+    contentOrganizerModel.unassignedProducts,
+    contentOrganizerModel.visibleSections,
     viewMode,
     settings.maxChipsVisible,
     expandedDomains,
@@ -411,8 +364,8 @@ export function useDashboardController() {
       }
     },
     onSwitchSectionN: (n) => {
-      if (n > 0 && n <= contentSections.length) {
-        tabStore.setActiveSection(contentSections[n - 1].id);
+      if (n > 0 && n <= structureOrganizerModel.visibleSections.length) {
+        tabStore.setActiveSection(structureOrganizerModel.visibleSections[n - 1].id);
       }
     },
     onSwitchSectionAll: () => {
@@ -420,7 +373,7 @@ export function useDashboardController() {
     },
     onCycleSectionPrev: (() => {
       return () => {
-        const ids = sectionNavigationIds;
+        const ids = structureOrganizerModel.navigationSections;
         const currentIndex = ids.indexOf(tabStore.activeSectionId);
         const nextIndex = (currentIndex - 1 + ids.length) % ids.length;
         tabStore.setActiveSection(ids[nextIndex]);
@@ -428,7 +381,7 @@ export function useDashboardController() {
     })(),
     onCycleSectionNext: (() => {
       return () => {
-        const ids = sectionNavigationIds;
+        const ids = structureOrganizerModel.navigationSections;
         const currentIndex = ids.indexOf(tabStore.activeSectionId);
         const nextIndex = (currentIndex + 1) % ids.length;
         tabStore.setActiveSection(ids[nextIndex]);
@@ -449,10 +402,11 @@ export function useDashboardController() {
       totalDupes,
       dashboardCount,
       showEmptyState: products.length === 0,
-      visibleSectionCount: contentSections.length,
+      visibleSectionCount: structureOrganizerModel.visibleSections.length,
       focusedUrl,
       filteredTabCount,
       parsedQuery,
+      sortButtonDisabled: parsedQuery.type === 'dupes' || parsedQuery.type === 'stale' || parsedQuery.type === 'section' || debouncedSearchQuery.trim().length > 0 || !!tabStore.activeSectionId,
     },
     stores: {
       tabStore,
@@ -460,12 +414,13 @@ export function useDashboardController() {
     },
     derived: {
       filteredProducts,
-      unassignedProducts,
-      manageableSections,
-      contentSections,
-      sectionNavigationIds,
-      productsBySection,
-      assignmentByItemId,
+      unassignedProducts: contentOrganizerModel.unassignedProducts,
+      manageableSections: structureOrganizerModel.sections,
+      navigableSections: structureOrganizerModel.visibleSections,
+      cardsSections: cardsSections,
+      sectionNavigationIds: structureOrganizerModel.navigationSections,
+      productsBySection: contentOrganizerModel.productsBySection,
+      assignmentByItemId: structureOrganizerModel.assignmentByProductItemId,
       itemIdForProduct,
       flatChips,
     },

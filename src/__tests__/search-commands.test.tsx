@@ -216,6 +216,34 @@ describe('SearchBar Commands Menu', () => {
     expect(onChange).toHaveBeenCalledWith('/section:');
   });
 
+  it('suggests only sections passed by the controller', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    render(
+      <I18nProvider>
+        <SearchBar
+          value="/section:"
+          onChange={onChange}
+          resultCount={0}
+          totalCount={0}
+          sections={[{ id: 'section-dev', name: 'Dev' }]}
+        />
+      </I18nProvider>,
+    );
+
+    const input = screen.getByRole('searchbox', { name: 'Search tabs' });
+    fireEvent.focus(input);
+
+    expect(screen.getByText('/section:section-dev')).toBeInTheDocument();
+    expect(screen.queryByText('/section:section-empty')).not.toBeInTheDocument();
+
+    const devBtn = screen.getByRole('button', { name: /\/section:section-dev/ });
+    await user.click(devBtn);
+
+    expect(onChange).toHaveBeenCalledWith('/section:section-dev ');
+  });
+
   it('shows manual sections list as suggestions when /section: or /s: is typed', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

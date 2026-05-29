@@ -24,7 +24,6 @@ describe('DashboardHeader', () => {
         title="Open Tabs by Product"
         hasGroups
         dateLabel="Tuesday, May 5, 2026"
-        sectionCount={2}
         searchQuery=""
         onSearchChange={onSearchChange}
         resultCount={6}
@@ -33,6 +32,8 @@ describe('DashboardHeader', () => {
         onViewModeChange={onViewModeChange}
         groupSortBy="count"
         onGroupSortByChange={onGroupSortByChange}
+        sortButtonDisabled={false}
+        onSortWindow={vi.fn()}
         onRefresh={() => {}}
         onCreateSection={onCreateSection}
         onOpenSettings={onOpenSettings}
@@ -45,7 +46,6 @@ describe('DashboardHeader', () => {
 
     expect(screen.getByText('Tuesday, May 5, 2026')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Open Tabs by Product' })).toBeInTheDocument();
-    expect(screen.getByText('2 sections')).toBeInTheDocument();
 
     const viewToggle = screen.getByLabelText('View mode');
     const hardcodedHeightClass = ['h', '[44px]'].join('-');
@@ -77,7 +77,6 @@ describe('DashboardHeader', () => {
         title="Open Tabs by Product"
         hasGroups={false}
         dateLabel="Tuesday, May 5, 2026"
-        sectionCount={0}
         searchQuery=""
         onSearchChange={() => {}}
         resultCount={0}
@@ -86,6 +85,8 @@ describe('DashboardHeader', () => {
         onViewModeChange={() => {}}
         groupSortBy="count"
         onGroupSortByChange={onGroupSortByChange}
+        sortButtonDisabled={false}
+        onSortWindow={vi.fn()}
         onRefresh={() => {}}
         onCreateSection={() => {}}
         onOpenSettings={onOpenSettings}

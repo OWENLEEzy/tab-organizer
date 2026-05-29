@@ -1,14 +1,18 @@
 import { create } from 'zustand';
 import type { Section, HistorySnapshot, SectionAssignment, Tab, TabGroup, ViewMode, CustomGroup } from '../types';
-import { groupTabsByDomain, autoAssignProductToSection } from '../lib/tab-grouper';
+import { groupTabsByDomain } from '../lib/tab-grouper';
+import {
+  assignProductToSection as assignProductToSectionModel,
+  autoAssignProducts,
+  deleteSectionAndUnassignProducts,
+  moveProductToNoSection,
+} from '../lib/section-organizer';
 import {
   clearHistory,
   deleteHistorySnapshot,
-  assignProductToSection,
   promoteHistorySnapshot,
   readHistory,
   reconcileOrganizerState,
-  unassignProductFromSections,
   writeGroupOrder,
   writeOrganizerState,
 } from '../utils/storage';
@@ -81,6 +85,8 @@ interface TabActions {
     sectionAssignments: SectionAssignment[],
     unsortedOverrides?: string[],
   ) => Promise<void>;
+  /** Sort the current Chrome window's real tabs to match the dashboard product order. */
+  sortCurrentWindowTabsByDashboardOrder: (products: TabGroup[]) => Promise<void>;
 }
 
 export type TabStore = {
@@ -222,29 +228,20 @@ export const useTabStore = create<TabStore>((set) => ({
       const groupOrder = organizerState.groupOrder;
       const productGroups = groupTabsByDomain(mapped, groupOrder, customGroups);
       const sections = orderedSections(organizerState.sections);
-      const unsortedOverrideSet = new Set(organizerState.unsortedOverrides);
-      
+
       let sectionAssignments = organizerState.sectionAssignments;
       let hasNewAssignments = false;
-      const assignedKeys = new Set(sectionAssignments.map((a) => a.productKey));
+      const newAssignments = autoAssignProducts({
+        products: productGroups,
+        sections,
+        assignments: sectionAssignments,
+        noSectionOverrides: organizerState.unsortedOverrides,
+        hostnamesByProductKey,
+      });
 
-      for (const product of productGroups) {
-        const productKey = product.productKey ?? product.domain;
-        if (!assignedKeys.has(productKey) && !unsortedOverrideSet.has(productKey)) {
-          const sectionId = autoAssignProductToSection(
-            hostnamesByProductKey.get(productKey) ?? [productKey],
-            sections,
-          );
-          if (sectionId) {
-            const existingInGroup = sectionAssignments.filter((a) => a.sectionId === sectionId);
-            sectionAssignments = [
-              ...sectionAssignments,
-              { productKey, sectionId: sectionId, order: existingInGroup.length }
-            ];
-            hasNewAssignments = true;
-            assignedKeys.add(productKey);
-          }
-        }
+      if (newAssignments.length > 0) {
+        sectionAssignments = [...sectionAssignments, ...newAssignments];
+        hasNewAssignments = true;
       }
 
       if (hasNewAssignments) {
@@ -456,6 +453,7 @@ export const useTabStore = create<TabStore>((set) => ({
 
     const onCreated = (): void => refresh();
     const onRemoved = (): void => refresh();
+    const onMoved = (_tabId: number, _info: chrome.tabs.OnMovedInfo): void => refresh();
     const onUpdated = (_tabId: number, info: chrome.tabs.OnUpdatedInfo): void => {
       if (info.url || info.title || info.favIconUrl || info.status === 'complete') {
         refresh();
@@ -464,11 +462,13 @@ export const useTabStore = create<TabStore>((set) => ({
 
     chrome.tabs.onCreated.addListener(onCreated);
     chrome.tabs.onRemoved.addListener(onRemoved);
+    chrome.tabs.onMoved.addListener(onMoved);
     chrome.tabs.onUpdated.addListener(onUpdated);
 
     return () => {
       chrome.tabs.onCreated.removeListener(onCreated);
       chrome.tabs.onRemoved.removeListener(onRemoved);
+      chrome.tabs.onMoved.removeListener(onMoved);
       chrome.tabs.onUpdated.removeListener(onUpdated);
       if (timer) clearTimeout(timer);
     };
@@ -525,18 +525,14 @@ export const useTabStore = create<TabStore>((set) => ({
 
   deleteSection: async (sectionId: string) => {
     const state = useTabStore.getState();
-    const removedProductKeys = state.sectionAssignments
-      .filter((assignment) => assignment.sectionId === sectionId)
-      .map((assignment) => assignment.productKey);
+    const { assignments: nextAssignments, overrides: nextOverrides } = deleteSectionAndUnassignProducts(
+      state.sectionAssignments,
+      state.unsortedOverrides,
+      sectionId,
+    );
     const nextSections = state.sections
       .filter((section) => section.id !== sectionId)
       .map((section, index) => ({ ...section, order: index }));
-    const nextAssignments = state.sectionAssignments
-      .filter((assignment) => assignment.sectionId !== sectionId);
-    const nextOverrides = [
-      ...state.unsortedOverrides,
-      ...removedProductKeys.filter((productKey) => !state.unsortedOverrides.includes(productKey)),
-    ];
 
     set({
       sections: nextSections,
@@ -558,14 +554,23 @@ export const useTabStore = create<TabStore>((set) => ({
   },
 
   moveProductToSection: async (productKey: string, sectionId: string) => {
-    const { sectionAssignments, unsortedOverrides } = await assignProductToSection(productKey, sectionId);
-    set({ sectionAssignments, unsortedOverrides });
+    const state = useTabStore.getState();
+    const nextAssignments = assignProductToSectionModel(state.sectionAssignments, productKey, sectionId);
+    const nextOverrides = state.unsortedOverrides.filter((k) => k !== productKey);
+    set({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
+    await writeOrganizerState({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
     await useTabStore.getState().fetchTabs();
   },
 
   moveProductToNoSection: async (productKey: string) => {
-    const { sectionAssignments, unsortedOverrides } = await unassignProductFromSections(productKey);
-    set({ sectionAssignments, unsortedOverrides });
+    const state = useTabStore.getState();
+    const { assignments: nextAssignments, overrides: nextOverrides } = moveProductToNoSection(
+      state.sectionAssignments,
+      state.unsortedOverrides,
+      productKey,
+    );
+    set({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
+    await writeOrganizerState({ sectionAssignments: nextAssignments, unsortedOverrides: nextOverrides });
     await useTabStore.getState().fetchTabs();
   },
 
@@ -646,5 +651,108 @@ export const useTabStore = create<TabStore>((set) => ({
     await writeOrganizerState({ sections, sectionAssignments, unsortedOverrides });
     set({ sections, sectionAssignments, unsortedOverrides });
     await useTabStore.getState().fetchTabs();
+  },
+
+  sortCurrentWindowTabsByDashboardOrder: async (products: TabGroup[]) => {
+    // 1. Get current window
+    const currentWindow = await chrome.windows.getCurrent();
+    const windowId = currentWindow.id;
+
+    // 2. Query all tabs in this window
+    const allTabs = await chrome.tabs.query({ windowId });
+
+    // 3. Separate pinned from unpinned; filter to real web tabs only
+    const pinnedTabs = allTabs.filter((t) => t.pinned);
+    const pinnedRealTabs = pinnedTabs.filter((t) => isRealTab(t.url ?? ''));
+    const unpinnedRealTabs = allTabs.filter((t) => !t.pinned && isRealTab(t.url ?? ''));
+
+    if (pinnedRealTabs.length === 0 && unpinnedRealTabs.length === 0) {
+      // Nothing to sort
+      return;
+    }
+
+    // 4. Build product-key -> position-in-products map from dashboard order
+    const productKeyPositions = new Map<string, number>();
+    for (let i = 0; i < products.length; i++) {
+      const key = products[i].productKey ?? products[i].domain;
+      productKeyPositions.set(key, i);
+    }
+
+    type TabWithProduct = { tab: chrome.tabs.Tab; productKey: string; originalIndex: number };
+    const customGroups = useSettingsStore.getState().settings.customGroups;
+
+    const tabsWithProducts = (tabsToSort: chrome.tabs.Tab[]): TabWithProduct[] =>
+      tabsToSort.map((tab) => {
+        const hostname = getTabDomain(tab.url ?? '');
+        const normalizedHost = hostname.toLowerCase();
+        const customOverride = customGroups?.find(
+          (cg) =>
+            cg.hostname?.toLowerCase() === normalizedHost ||
+            (cg.hostnameEndsWith && normalizedHost.endsWith(cg.hostnameEndsWith.toLowerCase())),
+        );
+        const product = customOverride
+          ? { key: customOverride.groupKey }
+          : productForHostname(hostname);
+        return { tab, productKey: product.key, originalIndex: tab.index };
+      });
+
+    // 5. Sort each Chrome tab area independently. Known products follow dashboard order;
+    // unknown products remain at the end in their original order.
+    const sortTabsByProductOrder = (tabsToSort: chrome.tabs.Tab[]): TabWithProduct[] => {
+      const tabsWithProduct = tabsWithProducts(tabsToSort);
+      return [
+        ...tabsWithProduct
+        .filter((tp) => productKeyPositions.has(tp.productKey))
+        .sort((a, b) => {
+          const posA = productKeyPositions.get(a.productKey) ?? Infinity;
+          const posB = productKeyPositions.get(b.productKey) ?? Infinity;
+          if (posA !== posB) return posA - posB;
+          return a.originalIndex - b.originalIndex;
+        }),
+        ...tabsWithProduct
+        .filter((tp) => !productKeyPositions.has(tp.productKey))
+        .sort((a, b) => a.originalIndex - b.originalIndex),
+      ];
+    };
+
+    const sortedPinnedTabs = sortTabsByProductOrder(pinnedRealTabs);
+    const sortedUnpinnedTabs = sortTabsByProductOrder(unpinnedRealTabs);
+
+    // 6. Build move plan. Real tabs sort only within their existing real-tab slots
+    // so Chrome internal and extension pages keep their relative positions.
+    const moves: { id: number; index: number }[] = [];
+    const pinnedRealTargetIndices = pinnedRealTabs
+      .map((tab) => tab.index)
+      .sort((a, b) => a - b);
+    const unpinnedRealTargetIndices = unpinnedRealTabs
+      .map((tab) => tab.index)
+      .sort((a, b) => a - b);
+
+    for (let i = 0; i < sortedPinnedTabs.length; i++) {
+      const tabId = sortedPinnedTabs[i].tab.id;
+      if (tabId != null) {
+        moves.push({ id: tabId, index: pinnedRealTargetIndices[i] });
+      }
+    }
+
+    for (let i = 0; i < sortedUnpinnedTabs.length; i++) {
+      const tabId = sortedUnpinnedTabs[i].tab.id;
+      if (tabId != null) {
+        moves.push({ id: tabId, index: unpinnedRealTargetIndices[i] });
+      }
+    }
+
+    // 7. Execute moves in batch
+    if (moves.length === 0) return;
+
+    // Move one at a time to avoid Chrome API conflicts with same-window reordering
+    // We use sequential moves preserving relative order
+    for (const move of moves) {
+      try {
+        await chrome.tabs.move(move.id, { index: move.index });
+      } catch (err) {
+        console.warn('[Tab Organizer] Failed to move tab', move.id, err);
+      }
+    }
   },
 }));

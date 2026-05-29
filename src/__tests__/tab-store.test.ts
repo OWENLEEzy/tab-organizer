@@ -8,11 +8,16 @@ const chromeTabs = {
   update: vi.fn(),
   create: vi.fn(),
   getCurrent: vi.fn(),
+  move: vi.fn(),
   onCreated: {
     addListener: vi.fn(),
     removeListener: vi.fn(),
   },
   onRemoved: {
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+  },
+  onMoved: {
     addListener: vi.fn(),
     removeListener: vi.fn(),
   },
@@ -144,6 +149,8 @@ describe('useTabStore', () => {
     chromeTabs.onCreated.removeListener.mockClear();
     chromeTabs.onRemoved.addListener.mockClear();
     chromeTabs.onRemoved.removeListener.mockClear();
+    chromeTabs.onMoved.addListener.mockClear();
+    chromeTabs.onMoved.removeListener.mockClear();
     chromeTabs.onUpdated.addListener.mockClear();
     chromeTabs.onUpdated.removeListener.mockClear();
     chromeStorage.get.mockClear();
@@ -595,6 +602,33 @@ describe('useTabStore', () => {
 
     await useTabStore.getState().deleteSection('group-1');
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
+  });
+
+  it('uses No section overrides when deleting an auto-assigned section', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+    });
+    chromeStorage.data['sections'] = [
+      {
+        id: 'section-dev',
+        name: 'Dev',
+        order: 0,
+        autoRules: [{ pattern: 'linear', type: 'hostname' }],
+      },
+    ];
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(51, 'https://linear.app/acme/issue/TAB-1'),
+    ]);
+
+    await useTabStore.getState().fetchTabs();
+    expect(useTabStore.getState().sectionAssignments).toEqual([
+      { productKey: 'linear.app', sectionId: 'section-dev', order: 0 },
+    ]);
+
+    await useTabStore.getState().deleteSection('section-dev');
+
+    expect(useTabStore.getState().sectionAssignments).toEqual([]);
+    expect(useTabStore.getState().unsortedOverrides).toEqual(['linear.app']);
   });
 
   it('keeps products in No section when deleting their section', async () => {

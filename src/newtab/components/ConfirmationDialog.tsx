@@ -100,17 +100,17 @@ export function ConfirmationDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
-        className="border border-border-light bg-card-light relative w-full max-w-sm animate-[fadeUp_var(--motion-enter)_ease_both] p-6 rounded-card"
+        className="border border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-sm animate-[fadeUp_var(--motion-enter)_ease_both] p-6 rounded-card"
       >
         <h3
           id="confirm-dialog-title"
-          className="font-heading text-text-primary text-lg font-semibold"
+          className="font-heading text-text-primary-light dark:text-text-primary-dark text-lg font-semibold"
         >
           {title}
         </h3>
         <p
           id="confirm-dialog-description"
-          className="text-text-secondary mt-2 text-sm leading-relaxed"
+          className="text-text-secondary dark:text-text-secondary-dark mt-2 text-sm leading-relaxed"
         >
           {message}
         </p>

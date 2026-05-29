@@ -130,3 +130,9 @@ export const DEFAULT_SECTIONS: Section[] = [
     ]
   }
 ];
+
+const DEFAULT_SECTION_IDS = new Set(DEFAULT_SECTIONS.map((section) => section.id));
+
+export function isDefaultSectionId(sectionId: string): boolean {
+  return DEFAULT_SECTION_IDS.has(sectionId);
+}

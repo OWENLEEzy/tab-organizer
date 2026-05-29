@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./public/readme-assets/real-screenshot.png" alt="Tab Organizer Dashboard" width="800">
+  <img src="./public/readme-assets/tab-organizer-demo.png" alt="Tab Organizer Dashboard" width="800">
 
   # Tab Organizer
   

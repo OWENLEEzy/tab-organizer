@@ -27,8 +27,12 @@ app, account system, cloud sync product, bookmark manager, or task manager.
 - The first screen is the working dashboard, not a marketing page.
 - Tabs are single pages. They are grouped automatically into product/domain
   `TabGroup`s; this grouping is the source of truth for the UI.
-- Sections are user-created containers for automatic groups. They must not
-  rewrite grouping semantics or become URL-level task management.
+- Sections are local label containers for automatic product groups. Init release
+  starts with built-in smart section templates, and users can create, rename,
+  delete, and edit sections locally.
+- Assigning a group to a section means applying a section label to the
+  product/domain `TabGroup`; it must not rewrite grouping semantics or become
+  URL-level task management.
 - The extension is local-first by design: no account, no server sync, no
   analytics, no external storage, and no external API dependency.
 - Runtime data lives in Chrome and local extension storage. Treat privacy as a
@@ -124,7 +128,33 @@ Source placement rules:
 - `src/newtab/components/` is grouped by UI responsibility: `layout`, `ui`, `tabs`, `organizer`, `settings`, `history`, `search`, and `states`.
 - `src/newtab/lib/` is for newtab-only pure UI projections and parsers.
 - `src/lib/` is pure product/domain logic. It must not import `src/utils`, React, Zustand, DOM, storage, or Chrome APIs.
-- `src/utils/` is for Chrome/browser/platform adapters. It must not import stores, newtab modules, controllers, or components.
+- `src/utils/` is for Chrome/browser/platform adapters. It may import pure `src/lib` rules, but must not import stores, newtab modules, controllers, or components.
+
+## Naming Rules
+
+- Do not rename the tree only for casing consistency. Existing `PascalCase.tsx` component files, `useThing.ts` hook files, and `kebab-case.ts` utility/domain files are accepted until a planned architecture rename touches them.
+- For new files or files already being renamed, use the existing local pattern for that file kind:
+  - React component files: `PascalCase.tsx`, matching the exported component name, for example `DashboardHeader.tsx`.
+  - React component exports: `PascalCase`, for example `DashboardHeader`.
+  - Hook files: `useThing.ts`, for example `useDashboardController.ts`.
+  - Hook exports: `camelCase` beginning with `use`, for example `useDashboardController`.
+  - Store files: `kebab-case-store.ts`, for example `settings-store.ts`.
+  - Pure domain, adapter, config, and test helper files: `kebab-case.ts`, for example `url-rules.ts`, `browser-url.ts`, and `product-groups.ts`.
+  - Test files: `kebab-case.test.ts` or `kebab-case.test.tsx`; accessibility tests use `kebab-case.a11y.test.tsx`.
+  - Directory names: lowercase responsibility groups; use plural nouns for stable collections such as `controllers`, `providers`, `components`, `stores`, `product-groups`, `sections`, and `recovery`.
+- TypeScript symbols follow standard TS/React casing:
+  - Types, interfaces, classes, enums, and React components use `PascalCase`.
+  - Functions, variables, parameters, object properties, and callback props use `camelCase`.
+  - Boolean values start with `is`, `has`, `can`, or `should`.
+  - Module-level exported constants use `UPPER_SNAKE_CASE` when they represent fixed config or limits; local derived maps/helpers use `camelCase`.
+  - String ids, command ids, storage keys, CSS classes, and CSS custom properties use `kebab-case` unless Chrome or an external API requires a different shape.
+- Name files and symbols from the product contract first, not from temporary implementation history. Prefer `dashboard`, `productGroup`, `section`, `unsectioned`, and `recoverySnapshot` vocabulary for new or renamed source.
+- Use `domain` only for literal hostname/domain data. UI that renders automatic product/domain groups should use product-group names, not domain-only names.
+- Do not introduce misleading legacy terms for current behavior: `space`, `workspace`, `SavedTab`, `deferred`, or new domain-only names for product-group UI.
+- Avoid vague or temporary names: `helpers.ts`, `misc.ts`, `common.ts`, `utils2.ts`, `url-new.ts`, `new-url.ts`, `url2.ts`, `temp.ts`, `old.ts`, or `new.ts`.
+- Event handlers owned by App/controllers use `handleX`; component callback props use `onX`. Async storage/browser actions use concrete verbs such as `read`, `write`, `fetch`, `restore`, `close`, `focus`, or `sync`.
+- IDs and keys must say what namespace they belong to. Organizer ids stay namespaced as `product:<productKey>` and `section:<sectionId>`.
+- Keep accepted technical abbreviations only when they are clearer than spelling out the phrase: `URL`, `UI`, `DOM`, `MV3`, `DnD`, and `i18n`.
 
 ## Architecture Ownership
 
@@ -160,7 +190,7 @@ components -> components/hooks/newtab-lib/lib/types/config
 stores -> lib/utils/types/config
 newtab-lib -> lib/types/config
 lib -> types/config only
-utils -> types/config only
+utils -> pure-lib/types/config only
 config -> types only
 types -> no runtime imports
 ```
@@ -183,8 +213,14 @@ config/types -> runtime layer
 - Components do not call `chrome.tabs.*`, `chrome.storage.local`, or storage
   utilities directly.
 - Sections contain automatic product groups only.
-- Sections are user-created containers for product groups. Sections contain groups, never individual URLs.
-- Terminology: tab = single page, group = automatic TabGroup of tabs, section = user-created container for groups.
+- Sections are local label containers for product groups. Sections contain
+  groups, never individual URLs.
+- Built-in smart sections are default local templates; user-created sections use
+  the same object model.
+- No section is a system bucket for product groups without a section assignment.
+  It is not a persisted section object.
+- Terminology: tab = single page, group = automatic TabGroup of tabs, section =
+  local label container for groups.
 - English UI: tab / group / section. Chinese UI: 页面 / 区域 / 分区.
 - Cards view is directly draggable; Table view is not.
 - URL-level section assignments are not part of the current model.
@@ -255,6 +291,10 @@ Storage rules:
 - Normalize non-section legacy storage shapes at the adapter boundary.
 - Prune product assignments when the product is no longer open or the group no
   longer exists.
+- Product-to-section assignments are group-level label relationships:
+  `{ productKey, sectionId, order }`.
+- `unsortedOverrides` stores product keys the user explicitly moved to No
+  section so auto-rules do not immediately reapply.
 - History snapshots are capped and local-only; do not introduce cloud/session
   account semantics.
 

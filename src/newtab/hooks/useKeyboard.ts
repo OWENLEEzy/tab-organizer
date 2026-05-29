@@ -163,6 +163,13 @@ export function useKeyboard(
           return;
         }
 
+        // clearFilter
+        if (canUseGlobalNavigation && matchesKeyBinding(e, keyBindings.clearFilter)) {
+          e.preventDefault();
+          callbackRef.current.onClearFilter?.();
+          return;
+        }
+
         // cyclePrev
         if (canUseGlobalNavigation && matchesKeyBinding(e, keyBindings.cyclePrev)) {
           e.preventDefault();
