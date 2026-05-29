@@ -74,7 +74,7 @@ export function SectionSwitcher({
         tabIndex={activeSectionId === null ? 0 : -1}
         className={`px-4 py-1.5 rounded-chip text-xs transition-colors duration-[var(--motion-fast)] focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none ${
           activeSectionId === null
-            ? 'border border-[var(--border-accent-subtle)] bg-[var(--bg-accent-subtle)] text-text-primary font-semibold'
+            ? 'border-accent-primary/20 bg-accent-primary/10 text-text-primary font-semibold'
             : 'border border-transparent text-text-secondary hover:bg-bg-surface font-medium'
         }`}
       >
@@ -89,7 +89,7 @@ export function SectionSwitcher({
           tabIndex={activeSectionId === section.id ? 0 : -1}
           className={`px-4 py-1.5 rounded-chip text-xs transition-colors duration-[var(--motion-fast)] focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none ${
             activeSectionId === section.id
-              ? 'border border-[var(--border-accent-subtle)] bg-[var(--bg-accent-subtle)] text-text-primary font-semibold'
+              ? 'border-accent-primary/20 bg-accent-primary/10 text-text-primary font-semibold'
               : 'border border-transparent text-text-secondary hover:bg-bg-surface font-medium'
           }`}
         >

@@ -257,7 +257,7 @@ export function SettingsPanel({
                 onClick={() => setActiveTab(item.id)}
                 className={`w-full text-left font-body text-xs rounded-chip px-3 py-2 transition-all cursor-pointer flex items-center gap-2 min-h-[var(--spacing-button-height)] outline-none ${
                   isActive
-                    ? 'bg-accent-blue/10 text-accent-blue dark:bg-accent-blue/15 dark:text-blue-400 font-semibold border-l border-accent-blue pl-[11px]'
+                    ? 'bg-accent-blue/10 text-accent-blue dark:bg-accent-blue/15 dark:text-accent-blue font-semibold border-l border-accent-blue pl-[11px]'
                     : 'text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark'
                 }`}
               >
@@ -894,7 +894,7 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
                 className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-[var(--spacing-button-height-sm)] min-w-[var(--width-button-min)] ${
                   isRecording
                     ? 'bg-[var(--accent-amber)]/10 dark:bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] dark:text-[var(--accent-amber)] border-[var(--accent-amber)] dark:border-[var(--accent-amber)] animate-pulse'
-                    : 'bg-[var(--bg-card)] dark:bg-[var(--bg-card)] text-text-secondary border-border-light dark:border-border-dark hover:border-gray-400 dark:hover:border-gray-600'
+                    : 'bg-[var(--bg-card)] dark:bg-[var(--bg-card)] text-text-secondary border-border-light dark:border-border-dark hover:border-text-muted dark:hover:border-text-muted-dark'
                 }`}
               >
                 {isRecording ? t('settingsShortcutRecording') : binding}
