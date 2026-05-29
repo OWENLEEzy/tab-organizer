@@ -1,10 +1,9 @@
-import React from 'react';
-import type { HistorySnapshot } from '../../../types';
+import type { RecoverySnapshot } from '../../../types';
 
-export function HistorySnapshotDetails({
+export function RecoverySnapshotDetails({
   snapshot,
 }: {
-  snapshot: HistorySnapshot;
+  snapshot: RecoverySnapshot;
 }): React.ReactElement {
   return (
     <ul className="history-tabs">

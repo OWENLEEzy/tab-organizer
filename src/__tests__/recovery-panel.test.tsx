@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nProvider } from '../dashboard/providers/I18nProvider';
-import { HistoryPanel } from '../dashboard/components/history/HistoryPanel';
-import type { HistorySnapshot } from '../types';
+import { RecoveryPanel } from '../dashboard/components/recovery/RecoveryPanel';
+import type { RecoverySnapshot } from '../types';
 
-function makeSnapshot(): HistorySnapshot {
+function makeSnapshot(): RecoverySnapshot {
   return {
     id: 'snapshot-1',
     capturedAt: '2026-05-05T00:00:00.000Z',
@@ -39,7 +39,7 @@ function makeSnapshot(): HistorySnapshot {
   };
 }
 
-describe('HistoryPanel', () => {
+describe('RecoveryPanel', () => {
   beforeEach(() => {
     cleanup();
   });
@@ -49,10 +49,10 @@ describe('HistoryPanel', () => {
 
     render(
       <I18nProvider>
-        <HistoryPanel
-          snapshots={[makeSnapshot()]}
-          onRestoreSnapshot={vi.fn()}
-          onRestoreProduct={vi.fn()}
+        <RecoveryPanel
+          recoverySnapshots={[makeSnapshot()]}
+          onRestoreRecoverySnapshot={vi.fn()}
+          onRestoreRecoveryProduct={vi.fn()}
           onDeleteSnapshot={vi.fn()}
           onClearSnapshots={vi.fn()}
         />
@@ -71,24 +71,24 @@ describe('HistoryPanel', () => {
 
   it('requires explicit restore action', async () => {
     const user = userEvent.setup();
-    const onRestoreSnapshot = vi.fn();
+    const onRestoreRecoverySnapshot = vi.fn();
 
     render(
       <I18nProvider>
-        <HistoryPanel
-          snapshots={[makeSnapshot()]}
-          onRestoreSnapshot={onRestoreSnapshot}
-          onRestoreProduct={vi.fn()}
+        <RecoveryPanel
+          recoverySnapshots={[makeSnapshot()]}
+          onRestoreRecoverySnapshot={onRestoreRecoverySnapshot}
+          onRestoreRecoveryProduct={vi.fn()}
           onDeleteSnapshot={vi.fn()}
           onClearSnapshots={vi.fn()}
         />
       </I18nProvider>,
     );
 
-    expect(onRestoreSnapshot).not.toHaveBeenCalled();
+    expect(onRestoreRecoverySnapshot).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: /restore all/i }));
 
-    expect(onRestoreSnapshot).toHaveBeenCalledWith('snapshot-1');
+    expect(onRestoreRecoverySnapshot).toHaveBeenCalledWith('snapshot-1');
   });
 });

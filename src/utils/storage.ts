@@ -4,9 +4,9 @@ import type {
   Section,
   SectionAssignment,
   ViewMode,
-  HistorySnapshot,
+  RecoverySnapshot,
 } from '../types';
-import { historyUrlSignature, shouldReplaceHistoryCandidate } from '../lib/history-snapshots';
+import { recoveryUrlSignature, shouldReplaceRecoveryCandidate } from '../lib/recovery-snapshots';
 import { DEFAULT_SECTIONS } from '../config/sections';
 import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
 import { DEFAULT_GROUP_SORT, normalizeGroupSortBy } from '../config/group-sort';
@@ -41,12 +41,13 @@ const STORAGE_KEYS = [
   'sectionAssignments',
   'unsortedOverrides',
   'viewMode',
-  'historyCandidate',
-  'history',
+  'recoveryCandidate',
+  'recoverySnapshots',
   // Legacy keys cleaned after the section storage reset.
   'manualGroups',
   'groupAssignments',
-  'recoveryCandidate',
+  'historyCandidate',
+  'history',
   'recoveryHistory',
 ] as const;
 
@@ -93,8 +94,8 @@ const EMPTY_SCHEMA: StorageSchema = {
   sectionAssignments: [],
   unsortedOverrides: [],
   viewMode: 'cards',
-  historyCandidate: null,
-  history: [],
+  recoveryCandidate: null,
+  recoverySnapshots: [],
 };
 
 function isViewMode(value: unknown): value is ViewMode {
@@ -306,9 +307,9 @@ function reconcileUnsortedOverrides(
   return nextOverrides;
 }
 
-function normalizeHistorySnapshot(value: unknown): HistorySnapshot | null {
+function normalizeRecoverySnapshot(value: unknown): RecoverySnapshot | null {
   if (!value || typeof value !== 'object') return null;
-  const candidate = value as Partial<HistorySnapshot>;
+  const candidate = value as Partial<RecoverySnapshot>;
   if (
     typeof candidate.id !== 'string' ||
     typeof candidate.capturedAt !== 'string' ||
@@ -320,7 +321,7 @@ function normalizeHistorySnapshot(value: unknown): HistorySnapshot | null {
 
   const tabs = candidate.tabs
     .filter((tab) => tab && typeof tab === 'object')
-    .map((tab) => tab as HistorySnapshot['tabs'][number])
+    .map((tab) => tab as RecoverySnapshot['tabs'][number])
     .filter((tab) => typeof tab.url === 'string' && isRealTab(tab.url) && typeof tab.productKey === 'string')
     .slice(0, 80);
 
@@ -328,7 +329,7 @@ function normalizeHistorySnapshot(value: unknown): HistorySnapshot | null {
 
   const products = candidate.products
     .filter((product) => product && typeof product === 'object')
-    .map((product) => product as HistorySnapshot['products'][number])
+    .map((product) => product as RecoverySnapshot['products'][number])
     .filter((product) => typeof product.productKey === 'string' && typeof product.label === 'string');
 
   return {
@@ -340,15 +341,15 @@ function normalizeHistorySnapshot(value: unknown): HistorySnapshot | null {
   };
 }
 
-function normalizeHistory(value: unknown): HistorySnapshot[] {
+function normalizeRecoverySnapshots(value: unknown): RecoverySnapshot[] {
   if (!Array.isArray(value)) return [];
-  const result: HistorySnapshot[] = [];
+  const result: RecoverySnapshot[] = [];
   const seen = new Set<string>();
 
   for (const item of value) {
-    const snapshot = normalizeHistorySnapshot(item);
+    const snapshot = normalizeRecoverySnapshot(item);
     if (!snapshot) continue;
-    const signature = historyUrlSignature(snapshot);
+    const signature = recoveryUrlSignature(snapshot);
     if (seen.has(signature)) continue;
     seen.add(signature);
     result.push(snapshot);
@@ -367,12 +368,13 @@ function migrate(data: Record<string, unknown>): StorageSchema {
 
   const sections = data['sections'];
   const sectionAssignments = data['sectionAssignments'];
-  let historyCandidate = data['historyCandidate'];
-  let history = data['history'];
+  // Read from legacy keys and promote to canonical names
+  let recoveryCandidate = data['recoveryCandidate'] ?? data['historyCandidate'];
+  let recoverySnapshots = data['recoverySnapshots'] ?? data['recoveryHistory'] ?? data['history'];
 
   if (version < 4) {
-    if (data['recoveryCandidate']) historyCandidate = data['recoveryCandidate'];
-    if (data['recoveryHistory']) history = data['recoveryHistory'];
+    if (data['recoveryCandidate']) recoveryCandidate = data['recoveryCandidate'];
+    if (data['recoveryHistory']) recoverySnapshots = data['recoveryHistory'];
   }
 
   const rawSettings = { ...DEFAULT_SETTINGS, ...(data['settings'] as Partial<AppSettings> | undefined) };
@@ -391,8 +393,8 @@ function migrate(data: Record<string, unknown>): StorageSchema {
     sectionAssignments: normalizeAssignments(sectionAssignments),
     unsortedOverrides: normalizeUnsortedOverrides(data['unsortedOverrides']),
     viewMode: isViewMode(data['viewMode']) ? data['viewMode'] : 'cards',
-    historyCandidate: normalizeHistorySnapshot(historyCandidate),
-    history: normalizeHistory(history),
+    recoveryCandidate: normalizeRecoverySnapshot(recoveryCandidate),
+    recoverySnapshots: normalizeRecoverySnapshots(recoverySnapshots),
   };
 }
 
@@ -413,12 +415,12 @@ async function persistStorage(data: StorageSchema): Promise<void> {
     sectionAssignments: data.sectionAssignments,
     unsortedOverrides: data.unsortedOverrides,
     viewMode: data.viewMode,
-    historyCandidate: data.historyCandidate,
-    history: data.history,
+    recoveryCandidate: data.recoveryCandidate,
+    recoverySnapshots: data.recoverySnapshots,
   });
 
   // Clean up legacy keys.
-  await chrome.storage.local.remove(['manualGroups', 'groupAssignments', 'recoveryCandidate', 'recoveryHistory']);
+  await chrome.storage.local.remove(['manualGroups', 'groupAssignments', 'historyCandidate', 'history']);
 }
 
 /**
@@ -456,8 +458,8 @@ async function updateStorage(
     const hasLegacyKeys =
       raw.manualGroups !== undefined ||
       raw.groupAssignments !== undefined ||
-      raw.recoveryCandidate !== undefined ||
-      raw.recoveryHistory !== undefined;
+      raw.historyCandidate !== undefined ||
+      raw.history !== undefined;
 
     const needsWrite = !isVersionCurrent || hasLegacyKeys || JSON.stringify(nextState) !== JSON.stringify(current);
 
@@ -720,53 +722,53 @@ export async function unassignProductFromSections(productKey: string): Promise<{
   return nextState;
 }
 
-export async function updateHistoryCandidate(snapshot: HistorySnapshot | null): Promise<void> {
+export async function updateRecoveryCandidate(snapshot: RecoverySnapshot | null): Promise<void> {
   await updateStorage((storage) => {
     if (snapshot == null) {
-      return { ...storage, historyCandidate: null };
+      return { ...storage, recoveryCandidate: null };
     }
 
-    const normalized = normalizeHistorySnapshot(snapshot);
-    if (!normalized || !shouldReplaceHistoryCandidate(storage.historyCandidate, normalized)) {
+    const normalized = normalizeRecoverySnapshot(snapshot);
+    if (!normalized || !shouldReplaceRecoveryCandidate(storage.recoveryCandidate, normalized)) {
       return storage;
     }
 
-    return { ...storage, historyCandidate: normalized };
+    return { ...storage, recoveryCandidate: normalized };
   });
 }
 
 function promoteSnapshotInStorage(
   storage: StorageSchema,
-  snapshot: HistorySnapshot | null,
+  snapshot: RecoverySnapshot | null,
 ): { next: StorageSchema; promoted: boolean } {
-  const normalized = normalizeHistorySnapshot(snapshot);
+  const normalized = normalizeRecoverySnapshot(snapshot);
   if (!normalized) return { next: storage, promoted: false };
 
-  const signature = historyUrlSignature(normalized);
-  const latest = storage.history[0] ?? null;
-  if (latest && historyUrlSignature(latest) === signature) {
+  const signature = recoveryUrlSignature(normalized);
+  const latest = storage.recoverySnapshots[0] ?? null;
+  if (latest && recoveryUrlSignature(latest) === signature) {
     return {
-      next: { ...storage, historyCandidate: normalized },
+      next: { ...storage, recoveryCandidate: normalized },
       promoted: false,
     };
   }
 
-  const history = [
+  const recoverySnapshots = [
     normalized,
-    ...storage.history.filter((item) => historyUrlSignature(item) !== signature),
+    ...storage.recoverySnapshots.filter((item) => recoveryUrlSignature(item) !== signature),
   ].slice(0, 5);
 
   return {
     next: {
       ...storage,
-      historyCandidate: normalized,
-      history,
+      recoveryCandidate: normalized,
+      recoverySnapshots,
     },
     promoted: true,
   };
 }
 
-export async function promoteHistorySnapshot(snapshot: HistorySnapshot | null): Promise<boolean> {
+export async function promoteRecoverySnapshot(snapshot: RecoverySnapshot | null): Promise<boolean> {
   let promoted = false;
   await updateStorage((storage) => {
     const result = promoteSnapshotInStorage(storage, snapshot);
@@ -777,10 +779,10 @@ export async function promoteHistorySnapshot(snapshot: HistorySnapshot | null): 
   return promoted;
 }
 
-export async function promoteHistoryCandidate(): Promise<boolean> {
+export async function promoteRecoveryCandidate(): Promise<boolean> {
   let promoted = false;
   await updateStorage((storage) => {
-    const result = promoteSnapshotInStorage(storage, storage.historyCandidate);
+    const result = promoteSnapshotInStorage(storage, storage.recoveryCandidate);
     promoted = result.promoted;
     return result.next;
   });
@@ -788,22 +790,22 @@ export async function promoteHistoryCandidate(): Promise<boolean> {
   return promoted;
 }
 
-export async function deleteHistorySnapshot(id: string): Promise<void> {
+export async function deleteRecoverySnapshot(id: string): Promise<void> {
   await updateStorage((storage) => ({
     ...storage,
-    history: storage.history.filter((snapshot) => snapshot.id !== id),
+    recoverySnapshots: storage.recoverySnapshots.filter((snapshot) => snapshot.id !== id),
   }));
 }
 
-export async function clearHistory(): Promise<void> {
+export async function clearRecoverySnapshots(): Promise<void> {
   await updateStorage((storage) => ({
     ...storage,
-    historyCandidate: null,
-    history: [],
+    recoveryCandidate: null,
+    recoverySnapshots: [],
   }));
 }
 
-export async function readHistory(): Promise<HistorySnapshot[]> {
+export async function readRecoverySnapshots(): Promise<RecoverySnapshot[]> {
   const storage = await readStorage();
-  return storage.history;
+  return storage.recoverySnapshots;
 }

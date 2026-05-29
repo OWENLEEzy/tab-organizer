@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildHistorySnapshot, shouldReplaceHistoryCandidate } from '../lib/history-snapshots';
-import type { HistorySnapshot, Tab } from '../types';
+import { buildRecoverySnapshot, shouldReplaceRecoveryCandidate } from '../lib/recovery-snapshots';
+import type { RecoverySnapshot, Tab } from '../types';
 
 function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
   return {
@@ -17,16 +17,16 @@ function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
   };
 }
 
-function snapshotWithUrls(urls: string[]): HistorySnapshot {
-  return buildHistorySnapshot(
+function snapshotWithUrls(urls: string[]): RecoverySnapshot {
+  return buildRecoverySnapshot(
     urls.map((url, index) => makeTab({ id: index, url, title: `Tab ${index}` })),
     '2026-05-05T00:00:00.000Z',
   )!;
 }
 
-describe('buildHistorySnapshot', () => {
+describe('buildRecoverySnapshot', () => {
   it('excludes browser internal and Tab Organizer pages and keeps product summaries', () => {
-    const snapshot = buildHistorySnapshot(
+    const snapshot = buildRecoverySnapshot(
       [
         makeTab({ id: 1, url: 'https://github.com/OWENLEEzy/tab-out', title: 'Repo' }),
         makeTab({ id: 2, url: 'https://music.youtube.com/watch?v=1', title: 'Song' }),
@@ -44,7 +44,7 @@ describe('buildHistorySnapshot', () => {
   });
 
   it('does not classify spoofed product-looking hosts as known products', () => {
-    const snapshot = buildHistorySnapshot(
+    const snapshot = buildRecoverySnapshot(
       [
         makeTab({ id: 1, url: 'https://google.evil.example/login', title: 'Login' }),
         makeTab({ id: 2, url: 'https://amazon.evil.example/deal', title: 'Deal' }),
@@ -57,11 +57,11 @@ describe('buildHistorySnapshot', () => {
   });
 
   it('returns null when there are no real tabs and caps snapshots at 80 tabs', () => {
-    expect(buildHistorySnapshot([
+    expect(buildRecoverySnapshot([
       makeTab({ id: 1, url: 'chrome://newtab/' }),
     ])).toBeNull();
 
-    const snapshot = buildHistorySnapshot(
+    const snapshot = buildRecoverySnapshot(
       Array.from({ length: 85 }, (_, index) => makeTab({ id: index, url: `https://example.com/${index}` })),
       '2026-05-05T00:00:00.000Z',
     );
@@ -71,7 +71,7 @@ describe('buildHistorySnapshot', () => {
   });
 });
 
-describe('shouldReplaceHistoryCandidate', () => {
+describe('shouldReplaceRecoveryCandidate', () => {
   it('ignores title-only changes and replaces candidates when the URL set changes', () => {
     const current = snapshotWithUrls(['https://example.com/a']);
     const sameUrlsNewTitle = {
@@ -80,7 +80,7 @@ describe('shouldReplaceHistoryCandidate', () => {
     };
     const changedUrls = snapshotWithUrls(['https://example.com/b']);
 
-    expect(shouldReplaceHistoryCandidate(current, sameUrlsNewTitle)).toBe(false);
-    expect(shouldReplaceHistoryCandidate(current, changedUrls)).toBe(true);
+    expect(shouldReplaceRecoveryCandidate(current, sameUrlsNewTitle)).toBe(false);
+    expect(shouldReplaceRecoveryCandidate(current, changedUrls)).toBe(true);
   });
 });

@@ -10,7 +10,7 @@ import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { PromptDialog } from './components/PromptDialog';
 import { DashboardShell } from './components/layout/DashboardShell';
 import { DashboardHeader } from './components/layout/DashboardHeader';
-import { HistoryPanel } from './components/history/HistoryPanel';
+import { RecoveryPanel } from './components/recovery/RecoveryPanel';
 import type { FooterAlert } from './components/Footer';
 import { useDashboardController } from './controllers/useDashboardController';
 import { useI18n } from './hooks/useI18n';
@@ -35,7 +35,7 @@ export function App(): React.ReactElement {
 
   const { tabStore, settingsStore } = stores;
   const { settings } = settingsStore;
-  const { history, viewMode } = tabStore;
+  const { recoverySnapshots, viewMode } = tabStore;
 
   const appVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
     ? chrome.runtime.getManifest().version
@@ -120,12 +120,12 @@ export function App(): React.ReactElement {
         isSidebarExpanded={state.isSidebarExpanded}
         onToggleSidebar={() => dispatch({ type: 'SET_SIDEBAR_EXPANDED', expanded: !state.isSidebarExpanded })}
         utilities={
-          <HistoryPanel
-            snapshots={history}
-            onRestoreSnapshot={tabStore.restoreHistorySnapshot}
-            onRestoreProduct={tabStore.restoreHistoryProduct}
-            onDeleteSnapshot={tabStore.deleteHistorySnapshot}
-            onClearSnapshots={tabStore.clearHistory}
+          <RecoveryPanel
+            recoverySnapshots={recoverySnapshots}
+            onRestoreRecoverySnapshot={tabStore.restoreRecoverySnapshot}
+            onRestoreRecoveryProduct={tabStore.restoreRecoveryProduct}
+            onDeleteSnapshot={tabStore.deleteRecoverySnapshot}
+            onClearSnapshots={tabStore.clearRecovery}
           />
         }
         toolbar={null}

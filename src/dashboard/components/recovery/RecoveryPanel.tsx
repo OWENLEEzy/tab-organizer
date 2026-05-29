@@ -1,35 +1,35 @@
 import React, { useMemo, useState } from 'react';
-import type { HistorySnapshot } from '../../../types';
+import type { RecoverySnapshot } from '../../../types';
 import { UtilityPanel } from '../layout/UtilityPanel';
 import { ActionButton } from '../ui/ActionButton';
 import { useI18n } from '../../hooks/useI18n';
 import { getSnapshotDateFormatter } from '../../lib/date-formatters';
 
-const HistorySnapshotDetails = React.lazy(() =>
-  import('./HistorySnapshotDetails').then((module) => ({
-    default: module.HistorySnapshotDetails,
+const RecoverySnapshotDetails = React.lazy(() =>
+  import('./RecoverySnapshotDetails').then((module) => ({
+    default: module.RecoverySnapshotDetails,
   })),
 );
 
-interface HistoryPanelProps {
-  snapshots: HistorySnapshot[];
-  onRestoreSnapshot: (snapshotId: string) => void;
-  onRestoreProduct: (snapshotId: string, productKey: string) => void;
+interface RecoveryPanelProps {
+  recoverySnapshots: RecoverySnapshot[];
+  onRestoreRecoverySnapshot: (snapshotId: string) => void;
+  onRestoreRecoveryProduct: (snapshotId: string, productKey: string) => void;
   onDeleteSnapshot: (snapshotId: string) => void;
   onClearSnapshots: () => void;
 }
 
-export function HistoryPanel({
-  snapshots,
-  onRestoreSnapshot,
-  onRestoreProduct,
+export function RecoveryPanel({
+  recoverySnapshots,
+  onRestoreRecoverySnapshot,
+  onRestoreRecoveryProduct,
   onDeleteSnapshot,
   onClearSnapshots,
-}: HistoryPanelProps): React.ReactElement | null {
+}: RecoveryPanelProps): React.ReactElement | null {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { t, locale } = useI18n();
-  const latest = snapshots[0] ?? null;
-  const older = useMemo(() => snapshots.slice(1), [snapshots]);
+  const latest = recoverySnapshots[0] ?? null;
+  const older = useMemo(() => recoverySnapshots.slice(1), [recoverySnapshots]);
 
   const visibleSnapshots = latest ? [latest, ...older] : [];
 
@@ -73,7 +73,7 @@ export function HistoryPanel({
                         : t('historyCountTabsPlural', { count: snapshot.tabCount })}
                     </div>
                   </div>
-                  <button type="button" className="history-button" onClick={() => onRestoreSnapshot(snapshot.id)}>
+                  <button type="button" className="history-button" onClick={() => onRestoreRecoverySnapshot(snapshot.id)}>
                     {t('historyRestoreAll')}
                   </button>
                 </div>
@@ -84,7 +84,7 @@ export function HistoryPanel({
                       key={product.productKey}
                       type="button"
                       className="history-product-button"
-                      onClick={() => onRestoreProduct(snapshot.id, product.productKey)}
+                      onClick={() => onRestoreRecoveryProduct(snapshot.id, product.productKey)}
                       aria-label={t('historyRestoreProduct', { product: product.label })}
                     >
                       <span>{product.label}</span>
@@ -109,7 +109,7 @@ export function HistoryPanel({
 
                 {expanded && (
                   <React.Suspense fallback={<div className="history-loading">{t('historyLoadingDetails')}</div>}>
-                    <HistorySnapshotDetails snapshot={snapshot} />
+                    <RecoverySnapshotDetails snapshot={snapshot} />
                   </React.Suspense>
                 )}
               </section>
