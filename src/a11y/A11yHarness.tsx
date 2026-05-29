@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { SearchBar } from '../newtab/components/search/SearchBar';
-import { SettingsPanel } from '../newtab/components/settings/SettingsPanel';
-import { Toast } from '../newtab/components/states/Toast';
-import { TabChip } from '../newtab/components/tabs/TabChip';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
+import { SearchBar } from '../dashboard/components/search/SearchBar';
+import { SettingsPanel } from '../dashboard/components/settings/SettingsPanel';
+import { Toast } from '../dashboard/components/states/Toast';
+import { TabChip } from '../dashboard/components/tabs/TabChip';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
 
 export function A11yHarness(): React.ReactElement {
   const [settingsOpen, setSettingsOpen] = useState(false);

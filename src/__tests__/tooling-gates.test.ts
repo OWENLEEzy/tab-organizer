@@ -86,15 +86,15 @@ describe('architecture lint guardrails', () => {
   const eslintConfig = fs.readFileSync(path.join(repoRoot, 'eslint.config.js'), 'utf8');
 
   it('prevents presentational components from importing stores, controllers, storage, or chrome APIs', () => {
-    expect(eslintConfig).toContain("files: ['src/newtab/components/**/*.tsx']");
+    expect(eslintConfig).toContain("files: ['src/dashboard/components/**/*.tsx']");
     expect(eslintConfig).toContain("group: ['**/stores/*']");
-    expect(eslintConfig).toContain("group: ['**/newtab/controllers/*', '**/controllers/*']");
+    expect(eslintConfig).toContain("group: ['**/dashboard/controllers/*', '**/controllers/*']");
     expect(eslintConfig).toContain("group: ['**/utils/storage']");
     expect(eslintConfig).toContain("MemberExpression[object.name='chrome']");
   });
 
-  it('keeps pure newtab hooks free of stores, storage, and chrome APIs', () => {
-    expect(eslintConfig).toContain("files: ['src/newtab/hooks/**/*.{ts,tsx}']");
+  it('keeps pure dashboard hooks free of stores, storage, and chrome APIs', () => {
+    expect(eslintConfig).toContain("files: ['src/dashboard/hooks/**/*.{ts,tsx}']");
     expect(eslintConfig).toContain("group: ['**/stores/*']");
     expect(eslintConfig).toContain("group: ['**/utils/storage']");
   });
@@ -103,13 +103,13 @@ describe('architecture lint guardrails', () => {
     expect(eslintConfig).toContain("files: ['src/lib/**/*.{ts,tsx}']");
     expect(eslintConfig).toContain("group: ['../utils/*', '**/utils/*']");
     expect(eslintConfig).toContain("group: ['../stores/*', '**/stores/*']");
-    expect(eslintConfig).toContain("group: ['../newtab/*', '**/newtab/*']");
+    expect(eslintConfig).toContain("group: ['../dashboard/*', '**/dashboard/*']");
   });
 
   it('keeps src/utils as adapter layer without app imports', () => {
     expect(eslintConfig).toContain("files: ['src/utils/**/*.{ts,tsx}']");
     expect(eslintConfig).toContain("group: ['../stores/*', '**/stores/*']");
-    expect(eslintConfig).toContain("group: ['../newtab/*', '**/newtab/*']");
+    expect(eslintConfig).toContain("group: ['../dashboard/*', '**/dashboard/*']");
   });
 });
 

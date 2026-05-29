@@ -4,7 +4,7 @@ import {
   MOTION_DURATIONS_MS,
   MOTION_EASINGS,
   getChipCloseDelay,
-} from '../newtab/lib/motion';
+} from '../dashboard/lib/motion';
 
 describe('getChipCloseDelay', () => {
   it('skips the close delay when reduced motion is enabled', () => {

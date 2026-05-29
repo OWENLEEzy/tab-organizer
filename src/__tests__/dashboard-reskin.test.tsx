@@ -2,16 +2,16 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
-import { DashboardHeader } from '../newtab/components/layout/DashboardHeader';
-import { getDateFormatter, getSnapshotDateFormatter } from '../newtab/lib/date-formatters';
-import { DashboardShell } from '../newtab/components/layout/DashboardShell';
-import { Footer } from '../newtab/components/Footer';
-import { UtilityPanel } from '../newtab/components/layout/UtilityPanel';
-import { TabChip } from '../newtab/components/tabs/TabChip';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
+import { DashboardHeader } from '../dashboard/components/layout/DashboardHeader';
+import { getDateFormatter, getSnapshotDateFormatter } from '../dashboard/lib/date-formatters';
+import { DashboardShell } from '../dashboard/components/layout/DashboardShell';
+import { Footer } from '../dashboard/components/Footer';
+import { UtilityPanel } from '../dashboard/components/layout/UtilityPanel';
+import { TabChip } from '../dashboard/components/tabs/TabChip';
 
 const globalCss = readFileSync(
-  join(process.cwd(), 'src/newtab/styles/global.css'),
+  join(process.cwd(), 'src/dashboard/styles/global.css'),
   'utf8',
 );
 
@@ -160,7 +160,7 @@ describe('MotherDuck-inspired layout components', () => {
 describe('dashboard reskin composition contract', () => {
   it('documents that App owns behavior while layout components remain prop-driven', () => {
     const appSource = readFileSync(
-      join(process.cwd(), 'src/newtab/App.tsx'),
+      join(process.cwd(), 'src/dashboard/App.tsx'),
       'utf8',
     );
 
@@ -173,15 +173,15 @@ describe('dashboard reskin composition contract', () => {
 
   it('keeps dnd-kit isolated to the cards drag board', () => {
     const appSource = readFileSync(
-      join(process.cwd(), 'src/newtab/App.tsx'),
+      join(process.cwd(), 'src/dashboard/App.tsx'),
       'utf8',
     );
     const dndOrganizerSource = readFileSync(
-      join(process.cwd(), 'src/newtab/components/organizer/DndOrganizer.tsx'),
+      join(process.cwd(), 'src/dashboard/components/organizer/DndOrganizer.tsx'),
       'utf8',
     );
     const productTableSource = readFileSync(
-      join(process.cwd(), 'src/newtab/components/tabs/ProductTable.tsx'),
+      join(process.cwd(), 'src/dashboard/components/tabs/ProductTable.tsx'),
       'utf8',
     );
 

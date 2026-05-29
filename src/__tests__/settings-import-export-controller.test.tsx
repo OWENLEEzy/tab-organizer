@@ -3,8 +3,8 @@ import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import type { SettingsStore } from '../stores/settings-store';
 import type { TabStore } from '../stores/tab-store';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
-import { useSettingsImportExport } from '../newtab/controllers/useSettingsImportExport';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
+import { useSettingsImportExport } from '../dashboard/controllers/useSettingsImportExport';
 
 function wrapper({ children }: { children: ReactNode }) {
   return <I18nProvider>{children}</I18nProvider>;

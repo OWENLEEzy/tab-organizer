@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useKeyboard } from '../newtab/hooks/useKeyboard';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
-import { SectionSwitcher } from '../newtab/components/organizer/SectionSwitcher';
+import { useKeyboard } from '../dashboard/hooks/useKeyboard';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
+import { SectionSwitcher } from '../dashboard/components/organizer/SectionSwitcher';
 
 afterEach(() => {
   cleanup();

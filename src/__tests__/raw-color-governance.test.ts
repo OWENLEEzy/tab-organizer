@@ -12,7 +12,7 @@ const EXEMPT_PATTERNS = [
   // Tab grouper uses neutral defaults for product grouping, not UI theming
   /src\/lib\/tab-grouper\.ts/,
   // Fonts.css is font-face declarations only
-  /src\/newtab\/styles\/fonts\.css/,
+  /src\/dashboard\/styles\/fonts\.css/,
 ];
 
 // Raw hex or rgb(...) values in UI components that are NOT allowed
@@ -78,14 +78,14 @@ function isExempt(filePath: string): boolean {
 describe('raw color governance', () => {
   const files = readdirSync('.', { recursive: true, encoding: 'utf-8' })
     .filter((f): f is string => typeof f === 'string' && (f.endsWith('.tsx') || f.endsWith('.css')))
-    .filter((f) => f.startsWith('src/newtab/') && !f.includes('__tests__'))
+    .filter((f) => f.startsWith('src/dashboard/') && !f.includes('__tests__'))
     .map((f) => ({ path: f, content: readFileSync(join('.', f), 'utf-8') }));
 
   for (const { path, content } of files) {
     if (isExempt(path)) continue;
 
     describe(path, () => {
-      const tokenLines = path === 'src/newtab/styles/global.css' ? themeTokenLines(content) : new Set<number>();
+      const tokenLines = path === 'src/dashboard/styles/global.css' ? themeTokenLines(content) : new Set<number>();
       const findings = findRawColors(content).filter((finding) => !tokenLines.has(finding.line));
 
       it('contains no raw hex or rgb() color values', () => {

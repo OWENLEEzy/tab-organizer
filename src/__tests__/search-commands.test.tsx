@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
-import { TabChip } from '../newtab/components/tabs/TabChip';
-import { SearchBar } from '../newtab/components/search/SearchBar';
-import { useKeyboard } from '../newtab/hooks/useKeyboard';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
+import { TabChip } from '../dashboard/components/tabs/TabChip';
+import { SearchBar } from '../dashboard/components/search/SearchBar';
+import { useKeyboard } from '../dashboard/hooks/useKeyboard';
 
 afterEach(() => {
   cleanup();

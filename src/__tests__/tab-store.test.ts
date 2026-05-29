@@ -689,8 +689,8 @@ describe('useTabStore', () => {
       fetchTabs: useTabStore.getInitialState().fetchTabs,
     });
     chromeTabs.query.mockResolvedValue([
-      makeChromeTab(1, 'chrome-extension://fake-id/src/newtab/index.html'),
-      makeChromeTab(2, 'chrome-extension://fake-id/src/newtab/index.html?x=1'),
+      makeChromeTab(1, 'chrome-extension://fake-id/src/dashboard/index.html'),
+      makeChromeTab(2, 'chrome-extension://fake-id/src/dashboard/index.html?x=1'),
       makeChromeTab(3, 'https://github.com/OWENLEEzy/tab-organizer'),
     ]);
 
@@ -725,10 +725,10 @@ describe('useTabStore', () => {
   });
 
   it('closes extra dashboard pages and tolerates cleanup failures', async () => {
-    chromeTabs.getCurrent.mockResolvedValue(makeChromeTab(1, 'chrome-extension://fake-id/src/newtab/index.html'));
+    chromeTabs.getCurrent.mockResolvedValue(makeChromeTab(1, 'chrome-extension://fake-id/src/dashboard/index.html'));
     chromeTabs.query.mockResolvedValue([
-      makeChromeTab(1, 'chrome-extension://fake-id/src/newtab/index.html'),
-      makeChromeTab(2, 'chrome-extension://fake-id/src/newtab/index.html?x=1'),
+      makeChromeTab(1, 'chrome-extension://fake-id/src/dashboard/index.html'),
+      makeChromeTab(2, 'chrome-extension://fake-id/src/dashboard/index.html?x=1'),
       makeChromeTab(3, 'https://example.com'),
     ]);
     chromeTabs.remove.mockResolvedValue(undefined);

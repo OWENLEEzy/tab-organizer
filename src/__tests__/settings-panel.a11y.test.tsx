@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
-import { SettingsPanel } from '../newtab/components/settings/SettingsPanel';
+import { SettingsPanel } from '../dashboard/components/settings/SettingsPanel';
 
 function SettingsHarness(): React.ReactElement {
   const [open, setOpen] = useState(false);

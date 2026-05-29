@@ -9,7 +9,7 @@ import {
 
 describe('DASHBOARD_RELATIVE_PATH', () => {
   it('points at the built dashboard entry', () => {
-    expect(DASHBOARD_RELATIVE_PATH).toBe('src/newtab/index.html');
+    expect(DASHBOARD_RELATIVE_PATH).toBe('src/dashboard/index.html');
   });
 });
 

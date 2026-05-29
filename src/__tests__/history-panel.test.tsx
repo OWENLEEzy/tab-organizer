@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
-import { HistoryPanel } from '../newtab/components/history/HistoryPanel';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
+import { HistoryPanel } from '../dashboard/components/history/HistoryPanel';
 import type { HistorySnapshot } from '../types';
 
 function makeSnapshot(): HistorySnapshot {

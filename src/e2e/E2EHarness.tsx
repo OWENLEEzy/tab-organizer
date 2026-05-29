@@ -1,6 +1,6 @@
 import React from 'react';
-import { App } from '../newtab/App';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
+import { App } from '../dashboard/App';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
 
 interface E2EHarnessProps {
   scenario?: 'default' | 'duplicates' | 'empty' | 'many-tabs';

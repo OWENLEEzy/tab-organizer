@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
-import { DomainCard } from '../newtab/components/tabs/DomainCard';
-import { TabChip } from '../newtab/components/tabs/TabChip';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
+import { DomainCard } from '../dashboard/components/tabs/DomainCard';
+import { TabChip } from '../dashboard/components/tabs/TabChip';
 import type { Tab, TabGroup } from '../types';
 
 afterEach(() => {

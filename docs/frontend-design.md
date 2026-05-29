@@ -300,7 +300,7 @@ Warm ember-dark with caramel accents. Dark background (`isDark: true`).
 
 ## Theme Application Mechanics
 
-Themes are defined in `src/config/themes.ts` as `AccentConfig` objects. The `useTheme(accent: AccentKey)` hook in `src/newtab/hooks/useTheme.ts` applies them at runtime by setting CSS custom properties on `:root`.
+Themes are defined in `src/config/themes.ts` as `AccentConfig` objects. The `useTheme(accent: AccentKey)` hook in `src/dashboard/hooks/useTheme.ts` applies them at runtime by setting CSS custom properties on `:root`.
 
 ```typescript
 export type AccentKey = 'clay' | 'sage' | 'frost' | 'ochre' | 'lavender' | 'rosewood' | 'seagrass' | 'obsidian' | 'pine' | 'amethyst' | 'ember';
@@ -594,7 +594,7 @@ Left border accent for the currently active tab:
 
 Raw colors are allowed only at token boundaries:
 
-- `src/newtab/styles/global.css` inside the `@theme` token block.
+- `src/dashboard/styles/global.css` inside the `@theme` token block.
 - `src/config/themes.ts`, where the 11 accent themes are registered.
 - Explicit non-UI exceptions such as browser badge colors, confetti particles,
   and product grouping defaults.
@@ -603,14 +603,14 @@ Component TSX and ordinary CSS rules must use token-backed classes or CSS
 custom properties such as `text-text-primary`, `bg-[var(--bg-accent-subtle)]`,
 or `box-shadow: var(--shadow-control-active)`. Do not add literal hex,
 `rgb(...)`, or `rgba(...)` values to UI components. `raw-color-governance.test.ts`
-enforces this by scanning newtab TSX and CSS; `global.css` is not exempt as a
+enforces this by scanning dashboard TSX and CSS; `global.css` is not exempt as a
 whole file, only its token definition block is.
 
 ---
 
 ## CSS Custom Properties Architecture
 
-All design tokens are defined as CSS custom properties in `src/newtab/styles/global.css` under `@theme`. Theme-aware tokens (that change per accent) are set at runtime by `useTheme` on `:root`.
+All design tokens are defined as CSS custom properties in `src/dashboard/styles/global.css` under `@theme`. Theme-aware tokens (that change per accent) are set at runtime by `useTheme` on `:root`.
 
 **Static tokens** (base palette, typography, spacing, radius) never change and are shared across all themes.
 

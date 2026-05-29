@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DashboardHeader } from '../newtab/components/layout/DashboardHeader';
-import { I18nProvider } from '../newtab/providers/I18nProvider';
+import { DashboardHeader } from '../dashboard/components/layout/DashboardHeader';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
 
 afterEach(() => {
   cleanup();

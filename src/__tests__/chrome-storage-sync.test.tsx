@@ -1,6 +1,6 @@
 import { render, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useChromeStorageSync } from '../newtab/controllers/useChromeStorageSync';
+import { useChromeStorageSync } from '../dashboard/controllers/useChromeStorageSync';
 
 type StorageListener = (
   changes: Record<string, chrome.storage.StorageChange>,

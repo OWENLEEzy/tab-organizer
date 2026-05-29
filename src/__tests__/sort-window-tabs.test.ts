@@ -82,7 +82,7 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
       { id: 9, url: 'chrome://extensions', pinned: false, index: 0 } as chrome.tabs.Tab,
       { id: 3, url: 'https://example.com', pinned: false, index: 1 } as chrome.tabs.Tab,
       { id: 1, url: 'https://github.com/a', pinned: false, index: 2 } as chrome.tabs.Tab,
-      { id: 8, url: 'chrome-extension://fake-id/src/newtab/index.html', pinned: false, index: 3 } as chrome.tabs.Tab,
+      { id: 8, url: 'chrome-extension://fake-id/src/dashboard/index.html', pinned: false, index: 3 } as chrome.tabs.Tab,
       { id: 2, url: 'https://github.com/b', pinned: false, index: 4 } as chrome.tabs.Tab,
     ]);
 

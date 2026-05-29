@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseSearchQuery, resolveSectionQueryTarget } from '../newtab/lib/search-commands';
+import { parseSearchQuery, resolveSectionQueryTarget } from '../dashboard/lib/search-commands';
 
 describe('parseSearchQuery', () => {
   describe('Duplicate Command parsing (/dupes, /dupe, dupes, dupe)', () => {

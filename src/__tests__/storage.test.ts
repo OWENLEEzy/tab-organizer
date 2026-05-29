@@ -187,7 +187,7 @@ describe('readStorage', () => {
           capturedAt: '2026-05-05T00:00:00Z',
         },
         {
-          url: 'chrome-extension://fake-id/src/newtab/index.html',
+          url: 'chrome-extension://fake-id/src/dashboard/index.html',
           title: 'Tab Organizer',
           domain: 'fake-id',
           productKey: 'fake-id',

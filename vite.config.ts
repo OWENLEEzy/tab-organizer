@@ -10,7 +10,7 @@ export default defineConfig({
     cssMinify: 'esbuild',
     rollupOptions: {
       input: {
-        index: path.resolve(process.cwd(), 'src/newtab/index.html'),
+        index: path.resolve(process.cwd(), 'src/dashboard/index.html'),
       },
     },
   },
