@@ -13,6 +13,7 @@ import { isTabStale } from '../../lib/staleness';
 import { analyzeDuplicates } from '../../lib/duplicate-analysis';
 import { createSortComparator } from '../../lib/product-groups';
 import { parseSearchQuery, resolveSectionQueryTarget } from '../lib/search-commands';
+import { getExtensionVersion } from '../../utils/chrome-runtime';
 import { useChromeStorageSync } from './useChromeStorageSync';
 import { buildOrganizerModel, toProductItemId } from '../../lib/section-organizer';
 import { isDefaultSectionId } from '../../config/sections';
@@ -423,6 +424,7 @@ export function useDashboardController() {
       assignmentByItemId: structureOrganizerModel.assignmentByProductItemId,
       itemIdForProduct,
       flatChips,
+      appVersion: getExtensionVersion(),
     },
     dispatch,
     handlers: {

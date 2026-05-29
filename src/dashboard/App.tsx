@@ -41,9 +41,7 @@ export function App(): React.ReactElement {
   const { settings } = settingsStore;
   const { recoverySnapshots, viewMode } = tabStore;
 
-  const appVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
-    ? chrome.runtime.getManifest().version
-    : '2.0.0';
+  const { appVersion } = derived;
 
   useTheme(settings.theme);
 
