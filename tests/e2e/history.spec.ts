@@ -23,7 +23,7 @@ test.describe('History Panel', () => {
           ]
         }
       ];
-      localStorage.setItem(storageKey, JSON.stringify({ history: mockHistory }));
+      localStorage.setItem(storageKey, JSON.stringify({ schemaVersion: 5, recoverySnapshots: mockHistory }));
     });
 
     await page.goto('/tests/harness/e2e-harness.html');
