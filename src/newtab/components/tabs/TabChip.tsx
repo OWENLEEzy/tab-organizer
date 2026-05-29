@@ -210,7 +210,7 @@ function TabChipComponent({
     'cursor-pointer bg-transparent transition-all duration-[var(--motion-toast)] ease-spring',
     isSelected ? '' : 'hover:border-border-color hover:bg-bg-surface hover:translate-x-1',
     'focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none',
-    duplicateCount > 1 ? 'border-border-duplicate bg-bg-duplicate' : '',
+    duplicateCount > 1 ? 'border-accent-amber/25 bg-accent-amber/10' : '',
     active && !isSelected ? 'tab-active' : '',
     isFocused && !isSelected ? 'ring-2 ring-accent-primary/40 border-border-color bg-bg-surface' : '',
     isClosing ? 'chip-closing' : '',
@@ -272,7 +272,7 @@ function TabChipComponent({
 
         {/* Duplicate badge */}
         {duplicateCount > 1 && (
-          <span className="text-[10px] font-bold font-mono rotate-[-3deg] border border-dashed border-accent-amber/40 px-0.5 rounded-sm text-accent-amber shrink-0">
+          <span className="flex items-center text-3xs font-medium bg-accent-amber/10 text-accent-amber px-1.5 py-0.5 rounded-badge border border-accent-amber/25 tabular-nums">
             ×{duplicateCount}
           </span>
         )}

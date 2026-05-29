@@ -34,26 +34,6 @@ const DEFAULT_MAX_CHIPS = 8;
 // ─── SVG Icons ────────────────────────────────────────────────────────
 
 
-function CloseAllIcon(): React.ReactElement {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={2}
-      stroke="currentColor"
-      className="size-4"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M6 18 18 6M6 6l12 12"
-      />
-    </svg>
-  );
-}
-
 function DedupIcon(): React.ReactElement {
   return (
     <svg
@@ -134,7 +114,6 @@ function DomainCardComponent({
   expanded = false,
   maxChipsVisible = DEFAULT_MAX_CHIPS,
   staleThresholdDays = 3,
-  onCloseDomain,
   onCloseDuplicates,
   onCloseTab,
   onFocusTab,
@@ -148,7 +127,6 @@ function DomainCardComponent({
 }: DomainCardProps): React.ReactElement {
   const { t } = useI18n();
   const tabs = useMemo(() => group.tabs || [], [group.tabs]);
-  const tabCount = tabs.length;
   const displayName = group.friendlyName || group.domain;
   const selectionMode = (selectedUrls?.size ?? 0) > 0 || (selectedTabIds?.size ?? 0) > 0;
   const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
@@ -178,10 +156,6 @@ function DomainCardComponent({
   const extraCount = hiddenTabs.length;
 
   // ─── Handlers ────────────────────────────────────────────────────────
-
-  const handleCloseDomain = useCallback(() => {
-    onCloseDomain(group);
-  }, [onCloseDomain, group]);
 
   const handleCloseDuplicates = useCallback(() => {
     const urls = dupeUrls.map(([url]) => url);
@@ -319,27 +293,6 @@ function DomainCardComponent({
         )}
 
         {/* Footer actions */}
-        <div className="mt-3 flex flex-wrap gap-2 border-t border-border-color pt-3">
-          <button
-            type="button"
-            className="rounded-chip text-text-secondary font-body hover:bg-bg-surface hover:text-accent-red focus-visible:ring-accent-primary/40 inline-flex min-h-[var(--spacing-button-height)] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-[var(--motion-fast)] focus-visible:ring-2 focus-visible:outline-none"
-            onClick={handleCloseDomain}
-          >
-            <CloseAllIcon />
-            {tabCount === 1 ? t('cardBtnCloseAllSingle') : t('cardBtnCloseAllPlural', { count: tabCount })}
-          </button>
-
-          {hasDupes && (
-            <button
-              type="button"
-              className="rounded-chip text-text-secondary font-body hover:bg-accent-amber/10 hover:text-accent-amber focus-visible:ring-accent-primary/40 inline-flex min-h-[var(--spacing-button-height)] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-[var(--motion-fast)] focus-visible:ring-2 focus-visible:outline-none"
-              onClick={handleCloseDuplicates}
-            >
-              <DedupIcon />
-              {totalExtras === 1 ? t('cardBtnCloseDupesSingle') : t('cardBtnCloseDupesPlural', { count: totalExtras })}
-            </button>
-          )}
-        </div>
       </div>
     </div>
   );

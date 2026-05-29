@@ -34,7 +34,7 @@ test.describe('Duplicate Management', () => {
       has: page.getByRole('heading', { name: 'GitHub' }),
     }).first();
 
-    const closeDupesButton = githubCard.getByRole('button', { name: /Close 2 duplicates/i });
+    const closeDupesButton = githubCard.getByTitle(/Close duplicate/i);
     await expect(closeDupesButton).toBeVisible();
   });
 
@@ -48,7 +48,7 @@ test.describe('Duplicate Management', () => {
     const dupeBadge = githubCard.getByRole('button', { name: '2', exact: true });
     await expect(dupeBadge).toBeVisible();
 
-    const closeDupesButton = githubCard.getByRole('button', { name: /Close 2 duplicates/i });
+    const closeDupesButton = githubCard.getByTitle(/Close duplicate/i);
     await closeDupesButton.click();
 
     // Since mock tabs.remove doesn't actually update the scenarioTabs in our current mock-chrome.ts,
