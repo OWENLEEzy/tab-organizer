@@ -44,6 +44,23 @@ app, account system, cloud sync product, bookmark manager, or task manager.
 - Recovery is lightweight local safety from recent snapshots, not full session
   sync or cross-device history.
 
+## Terminology
+
+| Term | Meaning |
+|------|---------|
+| dashboard | toolbar-opened React page surface |
+| tab | one Chrome tab/page |
+| product group | automatic product/domain TabGroup |
+| section | user-created container for product groups |
+| unsectioned | product group intentionally outside any section |
+| recovery snapshot | local restore snapshot |
+| adapter | Chrome/browser API wrapper |
+| domain logic | pure product rules in src/lib |
+
+Casing convention: `camelCase` for variables/functions/props, `PascalCase` for
+types/interfaces/components, `kebab-case` for files/IDs/storage keys/CSS classes,
+`UPPER_SNAKE_CASE` for module-level constants.
+
 ## UI Design Core
 
 Source of truth: `docs/frontend-design.md` and
@@ -125,10 +142,10 @@ Source placement rules:
 - Use subdirectories only when depth expresses a durable responsibility group.
 - `src/dashboard/controllers/` owns page-level orchestration and may coordinate stores, Chrome runtime messages, toast/dialog state, and user actions.
 - `src/dashboard/hooks/` is for pure UI/DOM hooks only. Hooks in this directory must not import stores, storage utilities, or Chrome APIs.
-- `src/dashboard/components/` is grouped by UI responsibility: `layout`, `ui`, `tabs`, `organizer`, `settings`, `history`, `search`, and `states`.
-- `src/dashboard/lib/` is for newtab-only pure UI projections and parsers.
+- `src/dashboard/components/` is grouped by UI responsibility: `layout`, `ui`, `tabs`, `organizer`, `product-groups`, `sections`, `recovery`, `settings`, `search`, and `states`.
+- `src/dashboard/lib/` is for dashboard-only pure UI projections and parsers.
 - `src/lib/` is pure product/domain logic. It must not import `src/utils`, React, Zustand, DOM, storage, or Chrome APIs.
-- `src/utils/` is for Chrome/browser/platform adapters. It may import pure `src/lib` rules, but must not import stores, newtab modules, controllers, or components.
+- `src/utils/` is for Chrome/browser/platform adapters. It may import pure `src/lib` rules, but must not import stores, dashboard modules, controllers, or components.
 
 ## Naming Rules
 
@@ -166,9 +183,15 @@ Source placement rules:
   and opens or focuses the dashboard from the toolbar action.
 - `src/utils/storage.ts` is the only adapter over `chrome.storage.local`.
 - `src/lib/product-groups.ts` owns product/domain grouping and duplicate counts.
-- `src/lib/history-snapshots.ts` owns snapshot creation and replacement rules.
+- `src/lib/recovery-snapshots.ts` owns snapshot creation and replacement rules.
 - `src/dashboard/components/DndOrganizer.tsx` is the only component that imports
   `@dnd-kit`.
+
+Import boundary:
+
+- `src/lib` is pure and imports only `src/types` and `src/config`.
+- `src/utils` is the adapter layer and may import `src/types`, `src/config`, and pure `src/lib` rules.
+- `src/lib` must never import `src/utils`.
 
 Mutation flow:
 
@@ -188,7 +211,7 @@ controllers -> stores/dashboard-lib/lib/utils/types/config
 providers -> stores/lib/types/config
 components -> components/hooks/dashboard-lib/lib/types/config
 stores -> lib/utils/types/config
-newtab-lib -> lib/types/config
+dashboard-lib -> lib/types/config
 lib -> types/config only
 utils -> pure-lib/types/config only
 config -> types only
@@ -208,7 +231,7 @@ config/types -> runtime layer
 
 ## State And Component Invariants
 
-- `App.tsx` is the only newtab UI file that imports Zustand stores.
+- `App.tsx` is the only dashboard UI file that imports Zustand stores.
 - Components under `src/dashboard/components/` receive data and callbacks by props.
 - Components do not call `chrome.tabs.*`, `chrome.storage.local`, or storage
   utilities directly.
@@ -275,7 +298,7 @@ Persisted in `chrome.storage.local`:
 - Product group order.
 - Product-only organizer sections.
 - Product-to-section assignments.
-- History candidate/history snapshots.
+- Recovery candidate/recovery snapshots.
 - Legacy `recoveryCandidate` and `recoveryHistory` fields required for
   migration compatibility.
 - Legacy `manualGroups` and `groupAssignments` are cleanup-only reset fields;
@@ -293,7 +316,7 @@ Storage rules:
   longer exists.
 - Product-to-section assignments are group-level label relationships:
   `{ productKey, sectionId, order }`.
-- `unsortedOverrides` stores product keys the user explicitly moved to No
+- `unsectionedProductKeys` stores product keys the user explicitly moved to No
   section so auto-rules do not immediately reapply.
 - History snapshots are capped and local-only; do not introduce cloud/session
   account semantics.
@@ -336,7 +359,7 @@ Targeted Vitest examples:
 ```bash
 npm test -- src/__tests__/storage.test.ts
 npm test -- src/__tests__/product-groups.test.ts
-npm test -- src/__tests__/history-snapshots.test.ts
+npm test -- src/__tests__/recovery-snapshots.test.ts
 npm test -- src/__tests__/tab-store.test.ts
 npm test -- src/__tests__/dashboard-reskin.test.tsx
 npm test -- src/__tests__/visible-tabs.test.ts
