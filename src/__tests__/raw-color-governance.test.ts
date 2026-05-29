@@ -9,8 +9,8 @@ const EXEMPT_PATTERNS = [
   /src\/utils\/badge\.ts/,
   // Confetti is decorative particle colors, not UI theme tokens
   /src\/lib\/constants\.ts/,
-  // Tab grouper uses neutral defaults for product grouping, not UI theming
-  /src\/lib\/tab-grouper\.ts/,
+  // Product grouper uses neutral defaults for product grouping, not UI theming
+  /src\/lib\/product-groups\.ts/,
   // Fonts.css is font-face declarations only
   /src\/dashboard\/styles\/fonts\.css/,
 ];

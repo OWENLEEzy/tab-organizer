@@ -77,7 +77,7 @@ export function createSortComparator(
  * rendering — each carries its product label, icon domain, color, duplicate info,
  * and a stable sort order.
  */
-export function groupTabsByDomain(
+export function groupTabsByProduct(
   tabs: readonly Tab[],
   customOrder?: Record<string, number>,
   customGroups?: CustomGroup[],

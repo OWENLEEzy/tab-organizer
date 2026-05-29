@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Section, HistorySnapshot, SectionAssignment, Tab, TabGroup, ViewMode, CustomGroup } from '../types';
-import { groupTabsByDomain } from '../lib/tab-grouper';
+import { groupTabsByProduct } from '../lib/product-groups';
 import {
   assignProductToSection as assignProductToSectionModel,
   autoAssignProducts,
@@ -226,7 +226,7 @@ export const useTabStore = create<TabStore>((set) => ({
         buildProductKeyCompatibility(mapped, customGroups);
       const organizerState = await reconcileOrganizerState(currentProductKeys, legacyKeyMap);
       const groupOrder = organizerState.groupOrder;
-      const productGroups = groupTabsByDomain(mapped, groupOrder, customGroups);
+      const productGroups = groupTabsByProduct(mapped, groupOrder, customGroups);
       const sections = orderedSections(organizerState.sections);
 
       let sectionAssignments = organizerState.sectionAssignments;

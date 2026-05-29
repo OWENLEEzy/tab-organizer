@@ -11,7 +11,7 @@ import { DASHBOARD_SECTION_SWITCHER_FOCUS_HASH } from '../../background/dashboar
 import { useNow } from '../hooks/useNow';
 import { isTabStale } from '../../lib/staleness';
 import { analyzeDuplicates } from '../../lib/duplicate-analysis';
-import { createSortComparator } from '../../lib/tab-grouper';
+import { createSortComparator } from '../../lib/product-groups';
 import { parseSearchQuery, resolveSectionQueryTarget } from '../lib/search-commands';
 import { useChromeStorageSync } from './useChromeStorageSync';
 import { buildOrganizerModel, toProductItemId } from '../../lib/section-organizer';

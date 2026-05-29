@@ -165,7 +165,7 @@ Source placement rules:
 - `src/background/index.ts` is the MV3 service worker. It refreshes badge counts
   and opens or focuses the dashboard from the toolbar action.
 - `src/utils/storage.ts` is the only adapter over `chrome.storage.local`.
-- `src/lib/tab-grouper.ts` owns product/domain grouping and duplicate counts.
+- `src/lib/product-groups.ts` owns product/domain grouping and duplicate counts.
 - `src/lib/history-snapshots.ts` owns snapshot creation and replacement rules.
 - `src/dashboard/components/DndOrganizer.tsx` is the only component that imports
   `@dnd-kit`.
@@ -247,10 +247,10 @@ For UI changes:
 
 For grouping, duplicate, or visible-tab behavior:
 
-- Treat `src/lib/tab-grouper.ts` and the visible chip model as source of truth.
+- Treat `src/lib/product-groups.ts` and the visible chip model as source of truth.
 - Duplicate cleanup keeps one tab and closes extras. Keyboard navigation and
   batch-close behavior should derive from the same visible set the UI renders.
-- Prefer targeted coverage in `src/__tests__/tab-grouper.test.ts` or
+- Prefer targeted coverage in `src/__tests__/product-groups.test.ts` or
   `src/__tests__/visible-tabs.test.ts` before the full gate.
 
 For storage and history changes:
@@ -335,7 +335,7 @@ Targeted Vitest examples:
 
 ```bash
 npm test -- src/__tests__/storage.test.ts
-npm test -- src/__tests__/tab-grouper.test.ts
+npm test -- src/__tests__/product-groups.test.ts
 npm test -- src/__tests__/history-snapshots.test.ts
 npm test -- src/__tests__/tab-store.test.ts
 npm test -- src/__tests__/dashboard-reskin.test.tsx
