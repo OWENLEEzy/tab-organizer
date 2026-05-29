@@ -718,11 +718,13 @@ export const useTabStore = create<TabStore>((set) => ({
     const sortedPinnedTabs = sortTabsByProductOrder(pinnedRealTabs);
     const sortedUnpinnedTabs = sortTabsByProductOrder(unpinnedRealTabs);
 
-    // 6. Build move plan. Pinned real tabs sort within their current pinned real-tab slots,
-    // while unpinned real tabs sort after the pinned area.
-    const pinnedCount = pinnedTabs.length;
+    // 6. Build move plan. Real tabs sort only within their existing real-tab slots
+    // so Chrome internal and extension pages keep their relative positions.
     const moves: { id: number; index: number }[] = [];
     const pinnedRealTargetIndices = pinnedRealTabs
+      .map((tab) => tab.index)
+      .sort((a, b) => a - b);
+    const unpinnedRealTargetIndices = unpinnedRealTabs
       .map((tab) => tab.index)
       .sort((a, b) => a - b);
 
@@ -736,7 +738,7 @@ export const useTabStore = create<TabStore>((set) => ({
     for (let i = 0; i < sortedUnpinnedTabs.length; i++) {
       const tabId = sortedUnpinnedTabs[i].tab.id;
       if (tabId != null) {
-        moves.push({ id: tabId, index: pinnedCount + i });
+        moves.push({ id: tabId, index: unpinnedRealTargetIndices[i] });
       }
     }
 

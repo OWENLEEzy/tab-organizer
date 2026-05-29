@@ -77,6 +77,30 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
     expect(movedIds).toEqual([1, 2, 3]);
   });
 
+  it('preserves non-real unpinned tab slots while sorting real tabs', async () => {
+    (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { id: 9, url: 'chrome://extensions', pinned: false, index: 0 } as chrome.tabs.Tab,
+      { id: 3, url: 'https://example.com', pinned: false, index: 1 } as chrome.tabs.Tab,
+      { id: 1, url: 'https://github.com/a', pinned: false, index: 2 } as chrome.tabs.Tab,
+      { id: 8, url: 'chrome-extension://fake-id/src/newtab/index.html', pinned: false, index: 3 } as chrome.tabs.Tab,
+      { id: 2, url: 'https://github.com/b', pinned: false, index: 4 } as chrome.tabs.Tab,
+    ]);
+
+    const products = [
+      { id: '1', domain: 'github.com', productKey: 'github', friendlyName: 'GitHub', collapsed: false, order: 0, color: '', hasDuplicates: false, duplicateCount: 0, tabs: [] },
+      { id: '2', domain: 'example.com', productKey: 'example', friendlyName: 'Example', collapsed: false, order: 1, color: '', hasDuplicates: false, duplicateCount: 0, tabs: [] },
+    ];
+
+    await useTabStore.getState().sortCurrentWindowTabsByDashboardOrder(products);
+
+    const moves = (chrome.tabs.move as ReturnType<typeof vi.fn>).mock.calls;
+    expect(moves).toEqual([
+      [1, { index: 1 }],
+      [2, { index: 2 }],
+      [3, { index: 4 }],
+    ]);
+  });
+
   it('keeps unknown products after known products in original order', async () => {
     (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
       { id: 4, url: 'https://unknown-b.com', pinned: false, index: 0 } as chrome.tabs.Tab,
