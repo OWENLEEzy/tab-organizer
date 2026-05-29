@@ -38,6 +38,7 @@ function renderApp(): void {
 
 beforeEach(() => {
   for (const key of Object.keys(chromeStorageData)) delete chromeStorageData[key];
+  chromeStorageData.schemaVersion = 5;
   useTabStore.setState(useTabStore.getInitialState(), true);
   useSettingsStore.setState(useSettingsStore.getInitialState(), true);
 

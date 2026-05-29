@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTabStore } from '../stores/tab-store';
+import { DEFAULT_SECTIONS } from '../config/sections';
 import type { RecoverySnapshot } from '../types';
 
 const chromeTabs = {
@@ -155,7 +156,7 @@ describe('useTabStore', () => {
     chromeTabs.onUpdated.removeListener.mockClear();
     chromeStorage.get.mockClear();
     chromeStorage.set.mockClear();
-    chromeStorage.data = {};
+    chromeStorage.data = { schemaVersion: 5, sections: DEFAULT_SECTIONS };
     useTabStore.setState({
       tabs: [],
       products: [],
@@ -268,7 +269,7 @@ describe('useTabStore', () => {
       fetchTabs: useTabStore.getInitialState().fetchTabs,
     });
     chromeStorage.data = {
-      schemaVersion: 4,
+      schemaVersion: 5,
       deferred: [],
       workspaces: [],
       settings: {
@@ -406,7 +407,7 @@ describe('useTabStore', () => {
       unsectionedProductKeys: [],
     });
     chromeStorage.data = {
-      schemaVersion: 4,
+      schemaVersion: 5,
       sections: [{ id: 'later', name: 'Later', order: 0 }],
       sectionAssignments: [],
       unsectionedProductKeys: [],

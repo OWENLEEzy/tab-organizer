@@ -40,16 +40,9 @@ const STORAGE_KEYS = [
   'sections',
   'sectionAssignments',
   'unsectionedProductKeys',
-  'unsortedOverrides',
   'viewMode',
   'recoveryCandidate',
   'recoverySnapshots',
-  // Legacy keys cleaned after the section storage reset.
-  'manualGroups',
-  'groupAssignments',
-  'historyCandidate',
-  'history',
-  'recoveryHistory',
 ] as const;
 
 /**
@@ -92,6 +85,18 @@ const EMPTY_SCHEMA: StorageSchema = {
   settings: DEFAULT_SETTINGS,
   groupOrder: {},
   sections: [],
+  sectionAssignments: [],
+  unsectionedProductKeys: [],
+  viewMode: 'cards',
+  recoveryCandidate: null,
+  recoverySnapshots: [],
+};
+
+const DEFAULT_STORAGE: StorageSchema = {
+  schemaVersion: CURRENT_SCHEMA_VERSION,
+  settings: DEFAULT_SETTINGS,
+  groupOrder: {},
+  sections: DEFAULT_SECTIONS,
   sectionAssignments: [],
   unsectionedProductKeys: [],
   viewMode: 'cards',
@@ -360,44 +365,36 @@ function normalizeRecoverySnapshots(value: unknown): RecoverySnapshot[] {
   return result;
 }
 
-/**
- * Migrate storage data from older schema versions.
- * Applies migrations sequentially: v0→v1, v1→v2, etc.
- */
-function migrate(data: Record<string, unknown>): StorageSchema {
-  const version = (data['schemaVersion'] as number | undefined) ?? 0;
-
-  const sections = data['sections'];
-  const sectionAssignments = data['sectionAssignments'];
-  // Read from legacy keys and promote to canonical names
-  let recoveryCandidate = data['recoveryCandidate'] ?? data['historyCandidate'];
-  let recoverySnapshots = data['recoverySnapshots'] ?? data['recoveryHistory'] ?? data['history'];
-
-  if (version < 4) {
-    if (data['recoveryCandidate']) recoveryCandidate = data['recoveryCandidate'];
-    if (data['recoveryHistory']) recoverySnapshots = data['recoveryHistory'];
-  }
-
-  const rawSettings = { ...DEFAULT_SETTINGS, ...(data['settings'] as Partial<AppSettings> | undefined) };
-  const settings: AppSettings = {
-    ...rawSettings,
-    theme: isAccentKey(rawSettings.theme) ? rawSettings.theme : DEFAULT_ACCENT,
-    groupSortBy: normalizeGroupSortBy(rawSettings.groupSortBy),
-    keyBindings: normalizeKeyBindings(rawSettings.keyBindings),
+function normalizeSettings(value: unknown): AppSettings {
+  const raw = { ...DEFAULT_SETTINGS, ...(value as Partial<AppSettings> | undefined) };
+  return {
+    ...raw,
+    theme: isAccentKey(raw.theme) ? raw.theme : DEFAULT_ACCENT,
+    groupSortBy: normalizeGroupSortBy(raw.groupSortBy),
+    keyBindings: normalizeKeyBindings(raw.keyBindings),
   };
+}
 
+function normalizeGroupOrder(value: unknown): Record<string, number> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return { ...(value as Record<string, number>) };
+}
+
+/**
+ * Normalize current-schema storage data. Only reads current schema keys —
+ * no legacy fallback reads. On schema mismatch, callers reset to DEFAULT_STORAGE.
+ */
+function normalizeCurrentSchema(data: Record<string, unknown>): StorageSchema {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    settings,
-    groupOrder: (data['groupOrder'] as Record<string, number> | undefined) ?? {},
-    sections: normalizeSections(sections),
-    sectionAssignments: normalizeAssignments(sectionAssignments),
-    unsectionedProductKeys: normalizeUnsectionedProductKeys(
-      data['unsectionedProductKeys'] ?? data['unsortedOverrides'],
-    ),
+    settings: normalizeSettings(data['settings']),
+    groupOrder: normalizeGroupOrder(data['groupOrder']),
+    sections: normalizeSections(data['sections']),
+    sectionAssignments: normalizeAssignments(data['sectionAssignments']),
+    unsectionedProductKeys: normalizeUnsectionedProductKeys(data['unsectionedProductKeys']),
     viewMode: isViewMode(data['viewMode']) ? data['viewMode'] : 'cards',
-    recoveryCandidate: normalizeRecoverySnapshot(recoveryCandidate),
-    recoverySnapshots: normalizeRecoverySnapshots(recoverySnapshots),
+    recoveryCandidate: normalizeRecoverySnapshot(data['recoveryCandidate']),
+    recoverySnapshots: normalizeRecoverySnapshots(data['recoverySnapshots']),
   };
 }
 
@@ -427,10 +424,16 @@ async function persistStorage(data: StorageSchema): Promise<void> {
 }
 
 /**
- * Read the full storage schema, applying migrations if needed.
+ * Read the full storage schema. On schema mismatch, resets destructively to
+ * DEFAULT_STORAGE. On match, normalizes current-schema keys only.
  */
 export async function readStorage(): Promise<StorageSchema> {
-  return migrate(await readStorageSnapshot());
+  const raw = await readStorageSnapshot();
+  if (raw.schemaVersion !== CURRENT_SCHEMA_VERSION) {
+    await persistStorage(DEFAULT_STORAGE);
+    return DEFAULT_STORAGE;
+  }
+  return normalizeCurrentSchema(raw);
 }
 
 /**
@@ -453,20 +456,12 @@ async function updateStorage(
 
   await queuedWrite(async () => {
     const raw = await readStorageSnapshot();
-    const current = migrate(raw);
+    const isCurrentVersion = raw.schemaVersion === CURRENT_SCHEMA_VERSION;
+    const current = isCurrentVersion ? normalizeCurrentSchema(raw) : DEFAULT_STORAGE;
     const updated = await updater(current);
-    nextState = migrate(updated as unknown as Record<string, unknown>);
+    nextState = normalizeCurrentSchema(updated as unknown as Record<string, unknown>);
 
-    const isVersionCurrent = raw.schemaVersion === CURRENT_SCHEMA_VERSION;
-    const hasLegacyKeys =
-      raw.manualGroups !== undefined ||
-      raw.groupAssignments !== undefined ||
-      raw.historyCandidate !== undefined ||
-      raw.history !== undefined;
-
-    const needsWrite = !isVersionCurrent || hasLegacyKeys || JSON.stringify(nextState) !== JSON.stringify(current);
-
-    if (needsWrite) {
+    if (!isCurrentVersion || JSON.stringify(nextState) !== JSON.stringify(current)) {
       await persistStorage(nextState);
     }
   });
@@ -574,11 +569,7 @@ export async function reconcileOrganizerState(
 
   try {
     nextStorage = await updateStorage((current) => {
-      let currentSections = current.sections;
-
-      if (currentSections.length === 0) {
-        currentSections = DEFAULT_SECTIONS;
-      }
+      const currentSections = current.sections;
 
       const groupOrder = reconcileGroupOrder(
         current.groupOrder,

@@ -10,19 +10,12 @@ const ORGANIZER_KEYS = new Set([
   'sections',
   'sectionAssignments',
   'unsectionedProductKeys',
-  'unsortedOverrides',
   'viewMode',
-  'manualGroups',
-  'groupAssignments',
-  'deferred',
-  'workspaces',
 ]);
 const HISTORY_KEYS = new Set([
   'schemaVersion',
-  'historyCandidate',
-  'history',
   'recoveryCandidate',
-  'recoveryHistory',
+  'recoverySnapshots',
 ]);
 
 interface ChromeStorageSyncOptions {

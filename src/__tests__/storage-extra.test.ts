@@ -61,7 +61,7 @@ const validSnapshot: RecoverySnapshot = {
 describe('storage extra', () => {
   beforeEach(() => {
     chromeStorage.data = {
-      schemaVersion: 4,
+      schemaVersion: 5,
       recoverySnapshots: [],
       recoveryCandidate: null,
       sections: [],
@@ -95,7 +95,7 @@ describe('storage extra', () => {
   });
 
   it('writeStorage replaces full data', async () => {
-    const newData = { schemaVersion: 4, viewMode: 'table' } as StorageSchema;
+    const newData = { schemaVersion: 5, viewMode: 'table' } as StorageSchema;
     await writeStorage(newData);
     const storage = await readStorage();
     expect(storage.viewMode).toBe('table');
@@ -138,7 +138,7 @@ describe('storage extra', () => {
     expect(storage.recoverySnapshots[0].id).toBe('1');
   });
 
-  it('migrate handles legacy data', async () => {
+  it('resets to default storage on schema mismatch (v3)', async () => {
     const legacyData = {
         schemaVersion: 3,
         sections: [{ id: 's1', name: 'Legacy', order: 0 }],
@@ -150,11 +150,10 @@ describe('storage extra', () => {
 
     const storage = await readStorage();
     expect(storage.schemaVersion).toBe(5);
-    expect(storage.sections).toHaveLength(1);
-    expect(storage.sections[0].id).toBe('s1');
-    expect(storage.sectionAssignments).toHaveLength(1);
-    expect(storage.sectionAssignments[0].sectionId).toBe('s1');
-    expect(storage.recoveryCandidate).not.toBeNull();
-    expect(storage.recoverySnapshots).toHaveLength(1);
+    // Schema mismatch resets to DEFAULT_STORAGE; legacy data is not read
+    expect(storage.sections.length).toBeGreaterThan(0);
+    expect(storage.sectionAssignments).toEqual([]);
+    expect(storage.recoveryCandidate).toBeNull();
+    expect(storage.recoverySnapshots).toEqual([]);
   });
 });
