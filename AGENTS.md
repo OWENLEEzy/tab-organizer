@@ -277,7 +277,6 @@ For grouping, duplicate, or visible-tab behavior:
 For storage and history changes:
 
 - Route persisted mutations through `src/utils/storage.ts`.
-- Keep non-section legacy normalization at the adapter boundary.
 - Validate snapshot caps, local-only behavior, and internal-page filtering.
 
 For review/fix loops:
@@ -307,7 +306,7 @@ Storage rules:
 - Localized consolidation (stripping TLDs) is limited to known safe variants in `PRODUCT_RULES` only.
 - All read-modify-write mutations go through the serial write queue in
   `src/utils/storage.ts`.
-- On schema mismatch, storage resets destructively to the current schema. Do not read legacy storage keys into current state.
+- On schema mismatch, storage resets to current schema defaults (see above).
 - Prune product assignments when the product is no longer open or the group no
   longer exists.
 - Product-to-section assignments are group-level label relationships:
