@@ -405,9 +405,6 @@ async function readStorageSnapshot(): Promise<Record<string, unknown>> {
   return chrome.storage.local.get([...STORAGE_KEYS]);
 }
 
-function hasOwnStorageKey(data: Record<string, unknown>, key: string): boolean {
-  return Object.prototype.hasOwnProperty.call(data, key);
-}
 
 async function persistStorage(data: StorageSchema): Promise<void> {
   await chrome.storage.local.set({
@@ -576,13 +573,10 @@ export async function reconcileOrganizerState(
   let nextStorage: StorageSchema;
 
   try {
-    const raw = await readStorageSnapshot();
-    const hasSections = hasOwnStorageKey(raw, 'sections');
-    const shouldSeedDefaultSections = !hasSections;
-
     nextStorage = await updateStorage((current) => {
       let currentSections = current.sections;
-      if (shouldSeedDefaultSections && currentSections.length === 0) {
+
+      if (currentSections.length === 0) {
         currentSections = DEFAULT_SECTIONS;
       }
 

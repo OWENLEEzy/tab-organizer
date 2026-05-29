@@ -228,7 +228,6 @@ export const useTabStore = create<TabStore>((set) => ({
       const groupOrder = organizerState.groupOrder;
       const productGroups = groupTabsByProduct(mapped, groupOrder, customGroups);
       const sections = orderedSections(organizerState.sections);
-
       let sectionAssignments = organizerState.sectionAssignments;
       let hasNewAssignments = false;
       const newAssignments = autoAssignProducts({

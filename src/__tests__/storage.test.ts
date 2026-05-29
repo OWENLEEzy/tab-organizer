@@ -524,15 +524,17 @@ describe('reconcileOrganizerState', () => {
     expect(devSection?.autoRules?.[0]?.pattern).toContain('github');
   });
 
-  it('preserves an intentionally persisted empty sections list', async () => {
+  it('seeds default sections when persisted sections list is empty', async () => {
     storage['schemaVersion'] = 4;
     storage['sections'] = [];
 
     const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
     const result = await readStorage();
 
-    expect(state.sections).toEqual([]);
-    expect(result.sections).toEqual([]);
+    expect(state.sections.length).toBeGreaterThan(0);
+    const devSection = state.sections.find(g => g.id === 'section-dev');
+    expect(devSection).toBeDefined();
+    expect(result.sections.length).toBeGreaterThan(0);
   });
 
   it('keeps existing sections if not empty', async () => {
