@@ -64,47 +64,62 @@ export function Footer({
   const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfXJ6osy2J84TLpyLE-DYA-NcWMcjRAZbcTHBOZV9RnQ7WEfA/viewform';
 
   return (
-    <footer className="py-1.5" aria-label="Dashboard footer">
-      <div className="text-text-primary flex items-center justify-between gap-4 text-xs font-semibold tracking-wider uppercase">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-1.5">
+    <footer className="py-1.5 px-4 mt-auto border-t border-border-color/40 bg-bg-surface/30 backdrop-blur-md relative z-20" aria-label="Dashboard footer">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        {/* Left side: Metrics */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Tabs Metric */}
+          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-bg-card border border-border-color/50 shadow-sm transition-transform hover:scale-105">
+            <svg className="w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="M6 8h12" />
+            </svg>
             <span
-              className={`font-body text-text-primary inline-block text-xs font-bold${state.popping ? ' animate-[countPop_var(--motion-count-pop)_ease]' : ''}`}
+              className={`font-mono text-text-primary text-sm font-bold ${state.popping ? 'animate-[countPop_var(--motion-count-pop)_ease]' : ''}`}
             >
               {tabCount}
             </span>
-            <span className="normal-case">{t('metricTabs')}</span>
+            <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">{t('metricTabs')}</span>
           </div>
-          <div className="h-3 w-px bg-border-color" />
-          <div className="flex items-center gap-1.5">
-            <span className="font-body text-text-primary inline-block text-xs font-bold">
-              {groupCount}
-            </span>
-            <span className="normal-case">{t('metricGroups')}</span>
+
+          {/* Groups Metric */}
+          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-bg-card border border-border-color/50 shadow-sm transition-transform hover:scale-105">
+            <svg className="w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
+            </svg>
+            <span className="font-mono text-text-primary text-sm font-bold">{groupCount}</span>
+            <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">{t('metricGroups')}</span>
           </div>
-          <div className="h-3 w-px bg-border-color" />
-          <div className="flex items-center gap-1.5">
-            <span className="font-body text-text-primary inline-block text-xs font-bold">
-              {sectionCount}
-            </span>
-            <span className="normal-case">{t('metricSections')}</span>
+
+          {/* Sections Metric */}
+          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-bg-card border border-border-color/50 shadow-sm transition-transform hover:scale-105">
+            <svg className="w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M3 9h18M9 21V9" />
+            </svg>
+            <span className="font-mono text-text-primary text-sm font-bold">{sectionCount}</span>
+            <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">{t('metricSections')}</span>
           </div>
-          <div className="h-3 w-px bg-border-color" />
+
+          {/* Duplicates Metric */}
           {duplicateCount > 0 && (
-            <div className="flex items-center gap-1.5">
-              <span className="font-body text-text-primary inline-block text-xs font-bold">
-                {duplicateCount}
-              </span>
-              <span className="normal-case">{t('metricDuplicates')}</span>
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent-amber/10 border border-accent-amber/25 shadow-sm transition-transform hover:scale-105 animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]">
+              <svg className="w-4 h-4 text-accent-amber" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+              </svg>
+              <span className="font-mono text-accent-amber text-sm font-bold">{duplicateCount}</span>
+              <span className="text-xs font-bold text-accent-amber uppercase tracking-wider">{t('metricDuplicates')}</span>
             </div>
           )}
+
+          {/* Alerts */}
           {alerts.map((alert) => (
-            <div key={alert.id} className="inline-flex items-center gap-2 rounded-full border border-border-color/30 bg-bg-card/50 px-2.5 py-0.5">
-              <span className="normal-case text-accent-amber">{alert.label}</span>
+            <div key={alert.id} className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent-amber/10 border border-accent-amber/20 shadow-sm">
+              <span className="text-xs font-semibold text-accent-amber uppercase tracking-wider">{alert.label}</span>
               {alert.actionLabel && alert.onAction ? (
                 <button
                   type="button"
-                  className="text-[var(--text-3xs)] font-semibold tracking-wide text-accent-primary normal-case hover:underline"
+                  className="text-xs font-semibold text-accent-primary hover:text-accent-primary/70 underline decoration-accent-primary/30 underline-offset-2 transition-colors"
                   onClick={alert.onAction}
                 >
                   {alert.actionLabel}
@@ -113,25 +128,30 @@ export function Footer({
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-4">
+
+        {/* Right side: Links */}
+        <div className="flex items-center gap-3">
           <a
             href={FEEDBACK_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-text-primary hover:text-accent-blue transition-colors text-xs font-semibold normal-case"
+            className="group flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-bg-card border border-border-color/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-accent-primary text-text-primary hover:text-accent-primary text-xs font-semibold tracking-wide uppercase cursor-pointer"
             aria-label="Give feedback"
           >
+            <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
             Feedback
           </a>
           <a
             href={GITHUB_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-text-primary hover:text-accent-blue transition-colors flex items-center"
+            className="group flex items-center justify-center p-1.5 rounded-full bg-bg-card border border-border-color/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-accent-primary text-text-primary hover:text-accent-primary cursor-pointer"
             aria-label="View source code on GitHub"
           >
             <svg
-              className="size-4"
+              className="w-4.5 h-4.5 group-hover:scale-110 transition-transform"
               viewBox="0 0 24 24"
               fill="currentColor"
               xmlns="http://www.w3.org/2000/svg"

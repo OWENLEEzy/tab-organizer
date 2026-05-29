@@ -17,7 +17,6 @@ interface DashboardHeaderProps {
   title: string;
   hasGroups: boolean;
   dateLabel?: string;
-  sectionCount: number;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   resultCount: number;
@@ -69,7 +68,6 @@ export function DashboardHeader({
   title,
   hasGroups,
   dateLabel,
-  sectionCount,
   searchQuery,
   onSearchChange,
   resultCount,
@@ -121,9 +119,6 @@ export function DashboardHeader({
             <h1 id={headingId} className="mt-1 font-heading text-3xl font-normal tracking-tight text-text-primary-light dark:text-text-primary-dark">
               {title}
             </h1>
-            <p className="mt-1 font-body text-xs font-semibold tracking-normal text-text-secondary">
-              {sectionCount} {t('metricSections')}
-            </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {hasGroups ? (
