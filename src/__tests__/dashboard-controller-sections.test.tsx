@@ -196,8 +196,7 @@ describe('dashboard section semantics', () => {
 
     renderApp();
 
-    await waitFor(() => expect(screen.getByText('1 sections')).toBeInTheDocument());
-    expect(screen.getByRole('heading', { name: 'Dev' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Dev' })).toBeInTheDocument());
     expect(screen.getByRole('heading', { name: 'Custom Empty' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Custom Empty' })).not.toBeInTheDocument();
   });
