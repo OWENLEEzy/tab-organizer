@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { E2EHarness } from './E2EHarness';
 import { mockChromeApi } from './mock-chrome';
 import type { E2EScenario } from './mock-chrome';
-import '../newtab/styles/global.css';
+import '../dashboard/styles/global.css';
 
 const SCENARIOS = new Set<E2EScenario>(['default', 'duplicates', 'empty', 'many-tabs']);
 

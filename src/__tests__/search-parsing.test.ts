@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseSearchQuery, resolveSpaceQueryTarget } from '../newtab/hooks/useAppLogic';
+import { parseSearchQuery, resolveSpaceQueryTarget } from '../dashboard/hooks/useAppLogic';
 
 describe('parseSearchQuery', () => {
   describe('Duplicate Command parsing (/dupes, /dupe, dupes, dupe)', () => {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useKeyboard } from '../newtab/hooks/useKeyboard';
+import { useKeyboard } from '../dashboard/hooks/useKeyboard';
 
 afterEach(() => {
   cleanup();

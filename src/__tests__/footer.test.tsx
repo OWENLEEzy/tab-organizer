@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { Footer } from '../newtab/components/Footer';
+import { Footer } from '../dashboard/components/Footer';
 
 describe('Footer', () => {
   it('links to the bare feedback form without local runtime metadata', () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   DASHBOARD_RELATIVE_PATH,
-  DASHBOARD_SPACE_SWITCHER_FOCUS_HASH,
+  DASHBOARD_SECTION_SWITCHER_FOCUS_HASH,
   getDashboardFocusUrl,
   getDashboardUrl,
   isDashboardUrl,
@@ -9,7 +9,7 @@ import {
 
 describe('DASHBOARD_RELATIVE_PATH', () => {
   it('points at the built dashboard entry', () => {
-    expect(DASHBOARD_RELATIVE_PATH).toBe('src/newtab/index.html');
+    expect(DASHBOARD_RELATIVE_PATH).toBe('src/dashboard/index.html');
   });
 });
 
@@ -26,10 +26,10 @@ describe('getDashboardUrl', () => {
     const baseUrl = getDashboardUrl(getUrl);
     const focusUrl = getDashboardFocusUrl(getUrl);
 
-    expect(focusUrl).toBe(`${baseUrl}${DASHBOARD_SPACE_SWITCHER_FOCUS_HASH}`);
+    expect(focusUrl).toBe(`${baseUrl}${DASHBOARD_SECTION_SWITCHER_FOCUS_HASH}`);
     expect(isDashboardUrl(baseUrl, baseUrl)).toBe(true);
     expect(isDashboardUrl(`${baseUrl}?v=1`, baseUrl)).toBe(true);
     expect(isDashboardUrl(focusUrl, baseUrl)).toBe(true);
-    expect(isDashboardUrl('chrome-extension://tab-out/other.html#focus-space-switcher', baseUrl)).toBe(false);
+    expect(isDashboardUrl('chrome-extension://tab-out/other.html#focus-section-switcher', baseUrl)).toBe(false);
   });
 });

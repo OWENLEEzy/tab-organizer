@@ -2,7 +2,7 @@ import React from 'react';
 import type { CustomGroup } from '../types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingState } from './components/LoadingState';
-import { ProductTableMemo as ProductTable } from './components/ProductTable';
+import { ProductGroupTableMemo as ProductGroupTable } from './components/product-groups/ProductGroupTable';
 import { SelectionBar } from './components/SelectionBar';
 import { EmptyState } from './components/EmptyState';
 import { Footer } from './components/Footer';
@@ -14,7 +14,7 @@ import { StatusStrip } from './components/layout/StatusStrip';
 import type { StatusStripAlert } from './components/layout/StatusStrip';
 import { DashboardHeader } from './components/layout/DashboardHeader';
 import { HistoryPanel } from './components/HistoryPanel';
-import { SpaceSwitcher } from './components/SpaceSwitcher';
+import { SectionSwitcher } from './components/SectionSwitcher';
 import { useAppLogic } from './hooks/useAppLogic';
 import { useI18n } from './hooks/useI18n';
 import { useTheme } from './hooks/useTheme';
@@ -168,13 +168,13 @@ export function App(): React.ReactElement {
         }
         header={
           <>
-            <SpaceSwitcher
-              spaces={derived.orderedGroups}
-              spaceIds={[null, ...derived.orderedGroups.map((g) => g.id)]}
-              activeSpaceId={tabStore.activeSpaceId}
+            <SectionSwitcher
+              sections={derived.orderedGroups}
+              sectionIds={[null, ...derived.orderedGroups.map((g) => g.id)]}
+              activeSectionId={tabStore.activeSpaceId}
               onChange={tabStore.setActiveSpace}
-              onCreateSpace={handlers.handleCreateGroup}
-              isFocused={state.spaceSwitcherFocused}
+              onCreateSection={handlers.handleCreateGroup}
+              isFocused={state.sectionSwitcherFocused}
             />
             <DashboardHeader
               title={t('titleOpenTabs')}
@@ -332,7 +332,7 @@ export function App(): React.ReactElement {
                   </p>
                 </div>
               ) : viewMode === 'table' ? (
-                <ProductTable
+                <ProductGroupTable
                   items={derived.filteredProducts}
                   groups={derived.orderedGroups}
                   assignmentByItemId={derived.assignmentByItemId}
@@ -340,8 +340,8 @@ export function App(): React.ReactElement {
                   onCloseProduct={handlers.handleCloseProduct}
                   onCloseDuplicates={handlers.handleCloseDuplicates}
                   onFocusTab={handlers.handleFocusTab}
-                  expandedDomains={state.expandedDomains}
-                  onToggleExpanded={handlers.handleToggleExpanded}
+                  expandedProductGroups={state.expandedDomains}
+                  onToggleProductGroupExpanded={handlers.handleToggleExpanded}
                   onCloseTab={handlers.handleCloseTabAnimated}
                   onChipClick={handlers.handleChipClick}
                   selectedUrls={state.selectedUrls}
@@ -360,7 +360,7 @@ export function App(): React.ReactElement {
                       productsByGroup={derived.productsByGroup}
                       assignmentByItemId={derived.assignmentByItemId}
                       itemIdForProduct={derived.itemIdForProduct}
-                      expandedDomains={state.expandedDomains}
+                      expandedProductGroups={state.expandedDomains}
                       maxChipsVisible={settings.maxChipsVisible}
                       focusedUrl={state.focusedUrl}
                       closingUrls={state.closingUrls}
@@ -376,7 +376,7 @@ export function App(): React.ReactElement {
                       onCloseTab={handlers.handleCloseTabAnimated}
                       onFocusTab={handlers.handleFocusTab}
                       onChipClick={handlers.handleChipClick}
-                      onToggleExpanded={handlers.handleToggleExpanded}
+                      onToggleProductGroupExpanded={handlers.handleToggleExpanded}
                       searchQuery={state.searchQuery}
                     />
                   </React.Suspense>

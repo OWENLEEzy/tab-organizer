@@ -1,18 +1,18 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import type { TabGroup } from '../../types';
-import { TabChip } from './TabChip';
-import { getVisibleTabs } from '../lib/visible-tabs';
-import { getGroupFaviconUrl } from '../../lib/tab-utils';
-import { useI18n } from '../hooks/useI18n';
+import type { TabGroup } from '../../../types';
+import { TabChip } from '../TabChip';
+import { getVisibleTabs } from '../../lib/visible-tabs';
+import { getGroupFaviconUrl } from '../../../lib/tab-utils';
+import { useI18n } from '../../hooks/useI18n';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
-interface DomainCardProps {
+interface ProductGroupCardProps {
   group: TabGroup;
   dragHandleProps?: Record<string, unknown>;
   expanded?: boolean;
   maxChipsVisible?: number;
-  onCloseDomain: (group: TabGroup) => void;
+  onCloseProductGroup: (group: TabGroup) => void;
   onCloseDuplicates: (urls: string[]) => void;
   onCloseTab: (url: string) => void;
   onFocusTab: (url: string) => void;
@@ -21,7 +21,7 @@ interface DomainCardProps {
   selectedUrls?: Set<string>;
   selectedTabIds?: Set<number>;
   onChipClick?: (url: string, event: React.MouseEvent) => void;
-  onToggleExpanded?: (domain: string) => void;
+  onToggleProductGroupExpanded?: (domain: string) => void;
   searchQuery?: string;
 }
 
@@ -123,12 +123,12 @@ function TabChipRow({
 
 // ─── Component ────────────────────────────────────────────────────────
 
-export function DomainCard({
+export function ProductGroupCard({
   group,
   dragHandleProps,
   expanded = false,
   maxChipsVisible = DEFAULT_MAX_CHIPS,
-  onCloseDomain,
+  onCloseProductGroup,
   onCloseDuplicates,
   onCloseTab,
   onFocusTab,
@@ -137,9 +137,9 @@ export function DomainCard({
   selectedUrls,
   selectedTabIds,
   onChipClick,
-  onToggleExpanded,
+  onToggleProductGroupExpanded,
   searchQuery = '',
-}: DomainCardProps): React.ReactElement {
+}: ProductGroupCardProps): React.ReactElement {
   const { t } = useI18n();
   const tabs = useMemo(() => group.tabs || [], [group.tabs]);
   const tabCount = tabs.length;
@@ -176,9 +176,9 @@ export function DomainCard({
 
   // ─── Handlers ────────────────────────────────────────────────────────
 
-  const handleCloseDomain = useCallback(() => {
-    onCloseDomain(group);
-  }, [onCloseDomain, group]);
+  const handleCloseProductGroup = useCallback(() => {
+    onCloseProductGroup(group);
+  }, [onCloseProductGroup, group]);
 
   const handleCloseDuplicates = useCallback(() => {
     const urls = dupeUrls.map(([url]) => url);
@@ -186,8 +186,8 @@ export function DomainCard({
   }, [onCloseDuplicates, dupeUrls]);
 
   const handleExpand = useCallback(() => {
-    onToggleExpanded?.(group.domain);
-  }, [group.domain, onToggleExpanded]);
+    onToggleProductGroupExpanded?.(group.domain);
+  }, [group.domain, onToggleProductGroupExpanded]);
 
   const handleCloseTab = useCallback(
     (url: string) => {
@@ -314,7 +314,7 @@ export function DomainCard({
           <button
             type="button"
             className="rounded-chip text-text-secondary font-body hover:bg-bg-surface hover:text-accent-red focus-visible:ring-accent-primary/40 inline-flex min-h-[var(--spacing-button-height)] cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
-            onClick={handleCloseDomain}
+            onClick={handleCloseProductGroup}
           >
             <CloseAllIcon />
             {tabCount === 1 ? t('cardBtnCloseAllSingle') : t('cardBtnCloseAllPlural', { count: tabCount })}
@@ -336,4 +336,4 @@ export function DomainCard({
   );
 }
 
-export const DomainCardMemo = React.memo(DomainCard);
+export const ProductGroupCardMemo = React.memo(ProductGroupCard);

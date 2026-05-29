@@ -47,3 +47,34 @@ describe('tooling gates', () => {
     expect(config).toContain('process.env.PLAYWRIGHT_BASE_URL');
   });
 });
+
+describe('source naming governance', () => {
+  const sourceFiles = [
+    ...fs.readdirSync(path.join(repoRoot, 'src'), { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => path.join(entry.parentPath, entry.name))
+      .filter((file) => /\.(ts|tsx|html|css)$/.test(file))
+      .filter((file) => !file.includes('tooling-gates.test.ts')),
+    path.join(repoRoot, 'package.json'),
+    path.join(repoRoot, 'vite.config.ts'),
+    path.join(repoRoot, 'manifest.json'),
+    path.join(repoRoot, 'AGENTS.md'),
+    path.join(repoRoot, 'CLAUDE.md'),
+  ];
+
+  it('does not reintroduce newtab as the dashboard source surface name', () => {
+    const offenders = sourceFiles.filter((file) => file.includes('/src/newtab/') || fs.readFileSync(file, 'utf8').includes('src/newtab'));
+    expect(offenders).toEqual([]);
+  });
+
+  it('does not use space terminology for section behavior', () => {
+    const offenders = sourceFiles.filter((file) => fs.readFileSync(file, 'utf8').includes('open-space-switcher'));
+    expect(offenders).toEqual([]);
+  });
+
+  it('does not use temporary URL or helper names', () => {
+    const badNamePattern = /(url-new|new-url|url2|utils2|helpers2|helpers\.ts|misc\.ts|common\.ts)/i;
+    const offenders = sourceFiles.filter((file) => badNamePattern.test(file) || badNamePattern.test(fs.readFileSync(file, 'utf8')));
+    expect(offenders).toEqual([]);
+  });
+});

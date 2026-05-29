@@ -43,7 +43,7 @@ app, account system, cloud sync product, bookmark manager, or task manager.
 ## UI Design Core
 
 Source of truth: `docs/frontend-design.md` and
-`src/newtab/styles/global.css`.
+`src/dashboard/styles/global.css`.
 
 - Visual tone is Notion-inspired warm paper: calm, readable, lightly tactile.
 - Use warm surfaces and text, not cold gray UI. Key light tokens include
@@ -90,8 +90,8 @@ Source of truth: `docs/frontend-design.md` and
 
 Chrome runs two extension surfaces:
 
-- Dashboard page: `src/newtab/index.html` -> `src/newtab/main.tsx` ->
-  `src/newtab/App.tsx`.
+- Dashboard page: `src/dashboard/index.html` -> `src/dashboard/main.tsx` ->
+  `src/dashboard/App.tsx`.
 - Background worker: `manifest.json` -> `src/background/index.ts`.
 
 Core source layout:
@@ -99,7 +99,7 @@ Core source layout:
 ```text
 src/
   background/       MV3 service worker and toolbar action behavior
-  newtab/           React dashboard UI, hooks, components, styles
+  dashboard/           React dashboard UI, hooks, components, styles
   stores/           Zustand state for tabs, settings, workspace/session data
   lib/              Pure domain logic: grouping, titles, history, effects
   utils/            Chrome/storage/url/error adapters and helpers
@@ -117,16 +117,16 @@ Build/runtime shape:
 
 ## Architecture Ownership
 
-- `src/newtab/index.html` is the dashboard entry.
-- `src/newtab/App.tsx` is the page orchestrator. It owns store wiring,
+- `src/dashboard/index.html` is the dashboard entry.
+- `src/dashboard/App.tsx` is the page orchestrator. It owns store wiring,
   transient UI state, search/keyboard flow, close/focus/dedupe handlers,
   settings, history, confirmations, toast, and lazy organize mode.
 - `src/background/index.ts` is the MV3 service worker. It refreshes badge counts
   and opens or focuses the dashboard from the toolbar action.
 - `src/utils/storage.ts` is the only adapter over `chrome.storage.local`.
-- `src/lib/tab-grouper.ts` owns product/domain grouping and duplicate counts.
+- `src/lib/product-groups.ts` owns product grouping and duplicate counts.
 - `src/lib/history-snapshots.ts` owns snapshot creation and replacement rules.
-- `src/newtab/components/DndOrganizer.tsx` is the only component that imports
+- `src/dashboard/components/DndOrganizer.tsx` is the only component that imports
   `@dnd-kit`.
 
 Mutation flow:
@@ -141,8 +141,8 @@ User action
 
 ## State And Component Invariants
 
-- `App.tsx` is the only newtab UI file that imports Zustand stores.
-- Components under `src/newtab/components/` receive data and callbacks by props.
+- `App.tsx` is the only dashboard UI file that imports Zustand stores.
+- Components under `src/dashboard/components/` receive data and callbacks by props.
 - Components do not call `chrome.tabs.*`, `chrome.storage.local`, or storage
   utilities directly.
 - Manual groups contain product groups only.
@@ -152,14 +152,14 @@ User action
 - Default Cards/Table views must not import or render drag handles.
 - `@dnd-kit` must stay out of the default dashboard entry path.
 - `dist/` is generated output. Do not edit it manually.
-- CRXJS reads `manifest.json`; keep `src/newtab/index.html` as an explicit Vite
+- CRXJS reads `manifest.json`; keep `src/dashboard/index.html` as an explicit Vite
   build input so the toolbar dashboard stays bundled.
 
 ## Change Playbooks
 
 For UI changes:
 
-- Check `docs/frontend-design.md` and `src/newtab/styles/global.css` first.
+- Check `docs/frontend-design.md` and `src/dashboard/styles/global.css` first.
 - Preserve Cards/Table parity unless the user asks for a mode-specific change.
 - Verify scan, jump, close, dedupe, organize, settings, and history paths still
   make sense after simplification.
@@ -167,10 +167,10 @@ For UI changes:
 
 For grouping, duplicate, or visible-tab behavior:
 
-- Treat `src/lib/tab-grouper.ts` and the visible chip model as source of truth.
+- Treat `src/lib/product-groups.ts` and the visible chip model as source of truth.
 - Duplicate cleanup keeps one tab and closes extras. Keyboard navigation and
   batch-close behavior should derive from the same visible set the UI renders.
-- Prefer targeted coverage in `src/__tests__/tab-grouper.test.ts` or
+- Prefer targeted coverage in `src/__tests__/product-groups.test.ts` or
   `src/__tests__/visible-tabs.test.ts` before the full gate.
 
 For storage and history changes:
@@ -217,7 +217,7 @@ Storage rules:
 | Command | Use |
 |---|---|
 | `npm install` | Install dependencies when needed. |
-| `npm run dev` | Vite dev server for `src/newtab/index.html`. |
+| `npm run dev` | Vite dev server for `src/dashboard/index.html`. |
 | `npm run dev:a11y` | Vite dev server for the a11y harness. |
 | `npm run build` | `tsc -b`, Vite build, then sync Chrome-ready output to `dist/`. |
 | `npm run sync:dist` | Sync generated/static assets into `dist/` after build-only changes. |
@@ -248,8 +248,8 @@ Targeted Vitest examples:
 
 ```bash
 npm test -- src/__tests__/storage.test.ts
-npm test -- src/__tests__/tab-grouper.test.ts
-npm test -- src/__tests__/history-snapshots.test.ts
+npm test -- src/__tests__/product-groups.test.ts
+npm test -- src/__tests__/recovery-snapshots.test.ts
 npm test -- src/__tests__/tab-store.test.ts
 npm test -- src/__tests__/dashboard-reskin.test.tsx
 npm test -- src/__tests__/visible-tabs.test.ts

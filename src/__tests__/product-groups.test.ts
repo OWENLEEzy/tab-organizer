@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { groupTabsByDomain, autoAssignProductToSpace, createSortComparator } from '../lib/tab-grouper';
+import { groupTabsByProduct, autoAssignProductToSection, createSortComparator } from '../lib/product-groups';
 import type { Tab, ManualGroup, TabGroup } from '../types';
 
 function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
@@ -17,9 +17,9 @@ function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
   };
 }
 
-describe('groupTabsByDomain', () => {
+describe('groupTabsByProduct', () => {
   it('returns empty array for empty input', () => {
-    expect(groupTabsByDomain([])).toEqual([]);
+    expect(groupTabsByProduct([])).toEqual([]);
   });
 
   it('groups tabs by product key instead of raw hostname', () => {
@@ -29,7 +29,7 @@ describe('groupTabsByDomain', () => {
       makeTab({ id: 3, url: 'https://stackoverflow.com/questions/1' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
     const youtubeGroup = groups.find((g) => g.domain === 'youtube');
     const soGroup = groups.find((g) => g.domain === 'stackoverflow.com');
 
@@ -50,7 +50,7 @@ describe('groupTabsByDomain', () => {
       makeTab({ id: 3, url: 'https://github.com/' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
 
     expect(groups.find((g) => g.domain === '__landing-pages__')).toBeUndefined();
     expect(groups.find((g) => g.domain === 'youtube')!.tabs).toHaveLength(2);
@@ -64,7 +64,7 @@ describe('groupTabsByDomain', () => {
       makeTab({ id: 3, url: 'https://drive.google.com/drive/my-drive' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
     const keys = groups.map((g) => g.domain).sort();
 
     expect(keys).toEqual(['gmail', 'google-docs', 'google-drive']);
@@ -78,7 +78,7 @@ describe('groupTabsByDomain', () => {
       makeTab({ id: 2, url: 'https://music.youtube.com/watch?v=2' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
     const keys = groups.map((g) => g.domain).sort();
 
     expect(keys).toEqual(['youtube']);
@@ -93,7 +93,7 @@ describe('groupTabsByDomain', () => {
       makeTab({ id: 3, url: 'https://preview-abc.my-product.vercel.app/path' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
 
     expect(groups).toHaveLength(1);
     expect(groups[0].domain).toBe('vercel');
@@ -107,7 +107,7 @@ describe('groupTabsByDomain', () => {
       makeTab({ id: 3, url: 'https://example.com/page' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
     const localGroup = groups.find((g) => g.domain === 'local-files');
 
     expect(localGroup).toBeDefined();
@@ -120,7 +120,7 @@ describe('groupTabsByDomain', () => {
       makeTab({ id: 1, url: 'https://github.com/user/repo' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
     expect(groups[0].friendlyName).toBe('GitHub');
     expect(groups[0].domain).toBe('github');
   });
@@ -131,7 +131,7 @@ describe('groupTabsByDomain', () => {
       makeTab({ id: 2, url: 'https://m.youtube.com/watch?v=1' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
 
     expect(groups[0].hasDuplicates).toBe(false);
     expect(groups[0].duplicateCount).toBe(0);
@@ -144,7 +144,7 @@ describe('groupTabsByDomain', () => {
       makeTab({ id: 2, url: 'https://example.com/2', active: false }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
     const exampleGroup = groups[0];
 
     expect(exampleGroup.tabs.find((t) => t.id === 1)?.active).toBe(true);
@@ -157,7 +157,7 @@ describe('groupTabsByDomain', () => {
       makeTab({ id: 2, url: 'https://example.com/page' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
 
     expect(groups[0].hasDuplicates).toBe(true);
     expect(groups[0].duplicateCount).toBe(1);
@@ -171,12 +171,12 @@ describe('groupTabsByDomain', () => {
       makeTab({ id: 3, url: 'https://third.com/c' }),
     ];
 
-    const groups = groupTabsByDomain(tabs);
+    const groups = groupTabsByProduct(tabs);
     expect(groups.map((g) => g.order)).toEqual([0, 1, 2]);
   });
 
   it('sets collapsed to false for all groups', () => {
-    const groups = groupTabsByDomain([
+    const groups = groupTabsByProduct([
       makeTab({ id: 1, url: 'https://example.com/a' }),
     ]);
 
@@ -184,7 +184,7 @@ describe('groupTabsByDomain', () => {
   });
 
   it('skips malformed URLs without crashing', () => {
-    const groups = groupTabsByDomain([
+    const groups = groupTabsByProduct([
       makeTab({ id: 1, url: 'not-a-url' }),
       makeTab({ id: 2, url: 'https://example.com/valid' }),
     ]);
@@ -201,8 +201,8 @@ describe('groupTabsByDomain', () => {
         makeTab({ id: 3, url: 'https://x.com/status' }),
       ];
 
-      const withoutOrder = groupTabsByDomain(tabs);
-      const withEmpty = groupTabsByDomain(tabs, {});
+      const withoutOrder = groupTabsByProduct(tabs);
+      const withEmpty = groupTabsByProduct(tabs, {});
 
       expect(withEmpty.map((g) => g.domain)).toEqual(withoutOrder.map((g) => g.domain));
     });
@@ -214,7 +214,7 @@ describe('groupTabsByDomain', () => {
         makeTab({ id: 3, url: 'https://x.com/status' }),
       ];
 
-      const groups = groupTabsByDomain(tabs, {
+      const groups = groupTabsByProduct(tabs, {
         'example.com': 0,
         'x.com': 1,
         github: 2,
@@ -230,7 +230,7 @@ describe('groupTabsByDomain', () => {
         makeTab({ id: 3, url: 'https://x.com/status' }),
       ];
 
-      const groups = groupTabsByDomain(tabs, {
+      const groups = groupTabsByProduct(tabs, {
         'example.com': 0,
       });
 
@@ -247,7 +247,7 @@ describe('groupTabsByDomain', () => {
         makeTab({ id: 3, url: 'https://www.google.co.uk/' }),
       ];
 
-      const groups = groupTabsByDomain(tabs);
+      const groups = groupTabsByProduct(tabs);
 
       expect(groups).toHaveLength(1);
       expect(groups[0].productKey).toBe('google');
@@ -261,7 +261,7 @@ describe('groupTabsByDomain', () => {
         makeTab({ id: 3, url: 'https://m.example.com/' }),
       ];
 
-      const groups = groupTabsByDomain(tabs);
+      const groups = groupTabsByProduct(tabs);
 
       expect(groups).toHaveLength(1);
       expect(groups[0].productKey).toBe('example.com');
@@ -270,8 +270,8 @@ describe('groupTabsByDomain', () => {
   });
 });
 
-describe('autoAssignProductToSpace', () => {
-  const mockSpaces: ManualGroup[] = [
+describe('autoAssignProductToSection', () => {
+  const mockSections: ManualGroup[] = [
     {
       id: 'dev',
       name: 'Dev',
@@ -287,13 +287,13 @@ describe('autoAssignProductToSpace', () => {
   ];
 
   it('matches hostname against regex rules', () => {
-    expect(autoAssignProductToSpace(['github.com'], mockSpaces)).toBe('dev');
-    expect(autoAssignProductToSpace(['vercel.com'], mockSpaces)).toBe('dev');
-    expect(autoAssignProductToSpace(['youtube.com'], mockSpaces)).toBe('media');
+    expect(autoAssignProductToSection(['github.com'], mockSections)).toBe('dev');
+    expect(autoAssignProductToSection(['vercel.com'], mockSections)).toBe('dev');
+    expect(autoAssignProductToSection(['youtube.com'], mockSections)).toBe('media');
   });
 
   it('matches canonical Google products through their source hostnames', () => {
-    const spaces: ManualGroup[] = [
+    const sections: ManualGroup[] = [
       {
         id: 'work',
         name: 'Work',
@@ -302,25 +302,25 @@ describe('autoAssignProductToSpace', () => {
       },
     ];
 
-    expect(autoAssignProductToSpace(['mail.google.com'], spaces)).toBe('work');
-    expect(autoAssignProductToSpace(['docs.google.com'], spaces)).toBe('work');
+    expect(autoAssignProductToSection(['mail.google.com'], sections)).toBe('work');
+    expect(autoAssignProductToSection(['docs.google.com'], sections)).toBe('work');
   });
 
   it('returns null if no rule matches', () => {
-    expect(autoAssignProductToSpace(['google.com'], mockSpaces)).toBeNull();
+    expect(autoAssignProductToSection(['google.com'], mockSections)).toBeNull();
   });
 
   it('safely ignores invalid regex patterns', () => {
-    const spacesWithInvalidRegex: ManualGroup[] = [
+    const sectionsWithInvalidRegex: ManualGroup[] = [
       {
         id: 'bad-regex',
         name: 'Bad',
         order: 0,
         autoRules: [{ pattern: '[invalid', type: 'hostname' }],
       },
-      ...mockSpaces,
+      ...mockSections,
     ];
-    expect(autoAssignProductToSpace(['github.com'], spacesWithInvalidRegex)).toBe('dev');
+    expect(autoAssignProductToSection(['github.com'], sectionsWithInvalidRegex)).toBe('dev');
   });
 });
 

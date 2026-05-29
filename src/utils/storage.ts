@@ -8,7 +8,7 @@ import type {
   ViewMode,
   HistorySnapshot,
 } from '../types';
-import { historyUrlSignature, shouldReplaceHistoryCandidate } from '../lib/history-snapshots';
+import { historyUrlSignature, shouldReplaceHistoryCandidate } from '../lib/recovery-snapshots';
 import { DEFAULT_SPACES } from '../config/spaces';
 import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
 import { DEFAULT_GROUP_SORT, normalizeGroupSortBy } from '../config/group-sort';

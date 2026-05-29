@@ -5,7 +5,7 @@ const rootDir = process.cwd();
 const distDir = path.join(rootDir, 'dist');
 const dashboardCandidates = [
   path.join(distDir, 'index.html'),
-  path.join(distDir, 'src', 'newtab', 'index.html'),
+  path.join(distDir, 'src', 'dashboard', 'index.html'),
 ];
 
 async function fileExists(filePath) {
@@ -54,7 +54,7 @@ async function main() {
 
   if (!foundDashboardPath) {
     throw new Error(
-      'dist/index.html not found. Ensure src/newtab/index.html is included in Vite build inputs.',
+      'dist/index.html not found. Ensure src/dashboard/index.html is included in Vite build inputs.',
     );
   }
 

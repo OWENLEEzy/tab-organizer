@@ -27,7 +27,7 @@
     "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:"
   },
   "commands": {
-    "open-space-switcher": {
+    "open-section-switcher": {
       "suggested_key": { "default": "Ctrl+Shift+K", "mac": "Command+Shift+K" },
       "description": "__MSG_extCommandDesc__"
     }

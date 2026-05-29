@@ -1,7 +1,7 @@
 import { updateBadge } from '../utils/badge';
 import { getTabDomain, isRealTab } from '../utils/url';
 import { getDashboardFocusUrl, getDashboardUrl, isDashboardUrl } from './dashboard';
-import { buildHistorySnapshot } from '../lib/history-snapshots';
+import { buildHistorySnapshot } from '../lib/recovery-snapshots';
 import { promoteHistoryCandidate, updateHistoryCandidate } from '../utils/storage';
 import type { Tab } from '../types';
 
@@ -88,7 +88,7 @@ chrome.tabs.onUpdated.addListener(() => {
   scheduleHistoryCapture();
 });
 
-async function sendFocusSpaceSwitcher(tabId: number): Promise<void> {
+async function sendFocusSectionSwitcher(tabId: number): Promise<void> {
   const maxAttempts = 8;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
@@ -103,9 +103,9 @@ async function sendFocusSpaceSwitcher(tabId: number): Promise<void> {
 }
 
 // Open Tab Organizer dashboard when toolbar icon is clicked.
-async function openTabOrganizerDashboard(options: { focusSpaceSwitcher?: boolean } = {}): Promise<void> {
+async function openTabOrganizerDashboard(options: { focusSectionSwitcher?: boolean } = {}): Promise<void> {
   const dashboardUrl = getDashboardUrl(chrome.runtime.getURL);
-  const createUrl = options.focusSpaceSwitcher
+  const createUrl = options.focusSectionSwitcher
     ? getDashboardFocusUrl(chrome.runtime.getURL)
     : dashboardUrl;
 
@@ -120,8 +120,8 @@ async function openTabOrganizerDashboard(options: { focusSpaceSwitcher?: boolean
       if (currentTab.id != null) {
         await chrome.tabs.update(currentTab.id, { active: true });
         await chrome.windows.update(currentTab.windowId, { focused: true });
-        if (options.focusSpaceSwitcher) {
-          void sendFocusSpaceSwitcher(currentTab.id);
+        if (options.focusSectionSwitcher) {
+          void sendFocusSectionSwitcher(currentTab.id);
         }
         return;
       }
@@ -146,7 +146,7 @@ refreshBadge();
 void captureHistoryCandidate();
 
 chrome.commands.onCommand.addListener((command) => {
-  if (command === 'open-space-switcher') {
-    void openTabOrganizerDashboard({ focusSpaceSwitcher: true });
+  if (command === 'open-section-switcher') {
+    void openTabOrganizerDashboard({ focusSectionSwitcher: true });
   }
 });

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { SearchBar } from '../newtab/components/SearchBar';
-import { SettingsPanel } from '../newtab/components/SettingsPanel';
-import { Toast } from '../newtab/components/Toast';
-import { TabChip } from '../newtab/components/TabChip';
+import { SearchBar } from '../dashboard/components/SearchBar';
+import { SettingsPanel } from '../dashboard/components/SettingsPanel';
+import { Toast } from '../dashboard/components/Toast';
+import { TabChip } from '../dashboard/components/TabChip';
 
 export function A11yHarness(): React.ReactElement {
   const [settingsOpen, setSettingsOpen] = useState(false);

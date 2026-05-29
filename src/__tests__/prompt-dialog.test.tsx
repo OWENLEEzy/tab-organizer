@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PromptDialog } from '../newtab/components/PromptDialog';
+import { PromptDialog } from '../dashboard/components/PromptDialog';
 import type { PromptDialogProps } from '../types';
 
 afterEach(() => {

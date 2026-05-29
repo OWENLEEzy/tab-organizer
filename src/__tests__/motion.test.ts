@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHIP_CLOSE_ANIMATION_MS, getChipCloseDelay } from '../newtab/lib/motion';
+import { CHIP_CLOSE_ANIMATION_MS, getChipCloseDelay } from '../dashboard/lib/motion';
 
 describe('getChipCloseDelay', () => {
   it('skips the close delay when reduced motion is enabled', () => {

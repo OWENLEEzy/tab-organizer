@@ -1,5 +1,5 @@
 import React from 'react';
-import { App } from '../newtab/App';
+import { App } from '../dashboard/App';
 
 interface E2EHarnessProps {
   scenario?: 'default' | 'duplicates' | 'empty' | 'many-tabs';

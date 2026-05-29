@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseImportedSettings } from '../newtab/lib/settings-import';
+import { parseImportedSettings } from '../dashboard/lib/settings-import';
 
 describe('parseImportedSettings', () => {
   it('accepts supported accent themes', () => {

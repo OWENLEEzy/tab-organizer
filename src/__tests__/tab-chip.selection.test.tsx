@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { TabChip } from '../newtab/components/TabChip';
+import { TabChip } from '../dashboard/components/TabChip';
 
 afterEach(() => {
   cleanup();

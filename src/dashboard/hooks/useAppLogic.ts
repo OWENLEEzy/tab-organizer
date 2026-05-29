@@ -8,9 +8,9 @@ import type { TabGroup, ManualGroup } from '../../types';
 import { useUIState } from './useUIState';
 import { useTabHandlers } from './useTabHandlers';
 import { useI18n } from './useI18n';
-import { DASHBOARD_SPACE_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
+import { DASHBOARD_SECTION_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
 import { isTabStale, filterDuplicateTabs, getProductKey } from '../../lib/tab-utils';
-import { createSortComparator } from '../../lib/tab-grouper';
+import { createSortComparator } from '../../lib/product-groups';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -97,10 +97,10 @@ export function useAppLogic() {
     lastClickedIndex,
   } = state;
 
-  const focusSpaceSwitcher = useCallback(() => {
-    dispatch({ type: 'SET_SPACE_SWITCHER_FOCUSED', focused: true });
+  const focusSectionSwitcher = useCallback(() => {
+    dispatch({ type: 'SET_SECTION_SWITCHER_FOCUSED', focused: true });
     window.setTimeout(() => {
-      dispatch({ type: 'SET_SPACE_SWITCHER_FOCUSED', focused: false });
+      dispatch({ type: 'SET_SECTION_SWITCHER_FOCUSED', focused: false });
     }, 100);
   }, [dispatch]);
 
@@ -350,25 +350,25 @@ export function useAppLogic() {
   useEffect(() => {
     const handleMessage = (message: { type?: string }) => {
       if (message.type === 'FOCUS_SPACE_SWITCHER') {
-        focusSpaceSwitcher();
+        focusSectionSwitcher();
       }
     };
     chrome.runtime?.onMessage?.addListener(handleMessage);
     return () => {
       chrome.runtime?.onMessage?.removeListener(handleMessage);
     };
-  }, [focusSpaceSwitcher]);
+  }, [focusSectionSwitcher]);
 
   useEffect(() => {
-    if (window.location.hash !== DASHBOARD_SPACE_SWITCHER_FOCUS_HASH) {
+    if (window.location.hash !== DASHBOARD_SECTION_SWITCHER_FOCUS_HASH) {
       return;
     }
 
-    focusSpaceSwitcher();
+    focusSectionSwitcher();
     const cleanUrl = new URL(window.location.href);
     cleanUrl.hash = '';
     window.history.replaceState(null, '', cleanUrl.toString());
-  }, [focusSpaceSwitcher]);
+  }, [focusSectionSwitcher]);
 
   // ─── Keyboard shortcuts ────────────────────────────────────────────
 

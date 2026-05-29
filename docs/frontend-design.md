@@ -236,7 +236,7 @@ Evening purple-dark with lavender accents. Dark background (`isDark: true`).
 
 ## Theme Application Mechanics
 
-Themes are defined in `src/config/themes.ts` as `AccentConfig` objects. The `useTheme(accent: AccentKey)` hook in `src/newtab/hooks/useTheme.ts` applies them at runtime by setting CSS custom properties on `:root`.
+Themes are defined in `src/config/themes.ts` as `AccentConfig` objects. The `useTheme(accent: AccentKey)` hook in `src/dashboard/hooks/useTheme.ts` applies them at runtime by setting CSS custom properties on `:root`.
 
 ```typescript
 export type AccentKey = 'clay' | 'sage' | 'frost' | 'ochre' | 'obsidian' | 'pine' | 'amethyst';
@@ -523,7 +523,7 @@ Left border accent for the currently active tab:
 
 ## CSS Custom Properties Architecture
 
-All design tokens are defined as CSS custom properties in `src/newtab/styles/global.css` under `@theme`. Theme-aware tokens (that change per accent) are set at runtime by `useTheme` on `:root`.
+All design tokens are defined as CSS custom properties in `src/dashboard/styles/global.css` under `@theme`. Theme-aware tokens (that change per accent) are set at runtime by `useTheme` on `:root`.
 
 **Static tokens** (base palette, typography, spacing, radius) never change and are shared across all themes.
 

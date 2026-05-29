@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { SearchBar } from '../newtab/components/SearchBar';
-import { NudgeBanner } from '../newtab/components/NudgeBanner';
-import { UpdateBanner } from '../newtab/components/UpdateBanner';
-import { SelectionBar } from '../newtab/components/SelectionBar';
-import { TabChip } from '../newtab/components/TabChip';
-import { ActionButton } from '../newtab/components/ui/ActionButton';
+import { SearchBar } from '../dashboard/components/SearchBar';
+import { NudgeBanner } from '../dashboard/components/NudgeBanner';
+import { UpdateBanner } from '../dashboard/components/UpdateBanner';
+import { SelectionBar } from '../dashboard/components/SelectionBar';
+import { TabChip } from '../dashboard/components/TabChip';
+import { ActionButton } from '../dashboard/components/ui/ActionButton';
 
 function expectTouchHeight(element: HTMLElement): void {
   // Accept only valid CSS variable token utilities or the shared global button class.

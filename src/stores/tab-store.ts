@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { ManualGroup, HistorySnapshot, GroupAssignment, Tab, TabGroup, ViewMode, CustomGroup } from '../types';
-import { groupTabsByDomain, autoAssignProductToSpace } from '../lib/tab-grouper';
+import { groupTabsByProduct, autoAssignProductToSection } from '../lib/product-groups';
 import {
   clearHistory,
   deleteHistorySnapshot,
@@ -11,7 +11,7 @@ import {
   writeOrganizerState,
 } from '../utils/storage';
 import { legacyProductKeyForHostname, productForHostname } from '../config/products';
-import { buildHistorySnapshot } from '../lib/history-snapshots';
+import { buildHistorySnapshot } from '../lib/recovery-snapshots';
 import { duplicateTabIdsToClose } from '../lib/duplicate-tabs';
 import { getTabDomain, isRealTab, isTabOrganizerPage } from '../utils/url';
 import { getErrorMessage } from '../utils/error';
@@ -209,7 +209,7 @@ export const useTabStore = create<TabStore>((set) => ({
         buildProductKeyCompatibility(mapped, customGroups);
       const organizerState = await reconcileOrganizerState(currentProductKeys, legacyKeyMap);
       const groupOrder = organizerState.groupOrder;
-      const productGroups = groupTabsByDomain(mapped, groupOrder, customGroups);
+      const productGroups = groupTabsByProduct(mapped, groupOrder, customGroups);
       const manualGroups = orderedGroups(organizerState.manualGroups);
       const unsortedOverrideSet = new Set(organizerState.unsortedOverrides);
       
@@ -220,15 +220,15 @@ export const useTabStore = create<TabStore>((set) => ({
       for (const product of productGroups) {
         const productKey = product.productKey ?? product.domain;
         if (!assignedKeys.has(productKey) && !unsortedOverrideSet.has(productKey)) {
-          const spaceId = autoAssignProductToSpace(
+          const sectionId = autoAssignProductToSection(
             hostnamesByProductKey.get(productKey) ?? [productKey],
             manualGroups,
           );
-          if (spaceId) {
-            const existingInGroup = groupAssignments.filter((a) => a.groupId === spaceId);
+          if (sectionId) {
+            const existingInGroup = groupAssignments.filter((a) => a.groupId === sectionId);
             groupAssignments = [
               ...groupAssignments,
-              { productKey, groupId: spaceId, order: existingInGroup.length }
+              { productKey, groupId: sectionId, order: existingInGroup.length }
             ];
             hasNewAssignments = true;
             assignedKeys.add(productKey);

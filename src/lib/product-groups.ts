@@ -77,7 +77,7 @@ export function createSortComparator(
  * rendering — each carries its product label, icon domain, color, duplicate info,
  * and a stable sort order.
  */
-export function groupTabsByDomain(
+export function groupTabsByProduct(
   tabs: readonly Tab[],
   customOrder?: Record<string, number>,
   customGroups?: CustomGroup[],
@@ -177,15 +177,15 @@ export function groupTabsByDomain(
 /**
  * Auto-assign a product to a space based on its hostname rules.
  */
-export function autoAssignProductToSpace(
+export function autoAssignProductToSection(
   hostnames: readonly string[],
-  spaces: ManualGroup[]
+  sections: ManualGroup[]
 ): string | null {
-  for (const space of spaces) {
-    for (const rule of space.autoRules ?? []) {
+  for (const section of sections) {
+    for (const rule of section.autoRules ?? []) {
       try {
         const re = new RegExp(rule.pattern, 'i');
-        if (hostnames.some((hostname) => re.test(hostname))) return space.id;
+        if (hostnames.some((hostname) => re.test(hostname))) return section.id;
       } catch {
         // Skip invalid regex patterns
       }

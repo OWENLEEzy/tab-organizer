@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite src/newtab/index.html",
-    "dev:newtab": "vite src/newtab/index.html",
+    "dev": "vite src/dashboard/index.html",
+    "dev:dashboard": "vite src/dashboard/index.html",
     "dev:a11y": "vite --config vite.a11y.config.ts",
     "build": "tsc -b && vite build && npm run sync:dist",
     "sync:dist": "node ./scripts/sync-dist.mjs",

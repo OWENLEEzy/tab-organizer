@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
-import { SettingsPanel } from '../newtab/components/SettingsPanel';
+import { SettingsPanel } from '../dashboard/components/SettingsPanel';
 
 function SettingsHarness(): React.ReactElement {
   const [open, setOpen] = useState(false);

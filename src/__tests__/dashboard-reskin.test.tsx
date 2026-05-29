@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { DashboardHeader } from '../newtab/components/layout/DashboardHeader';
-import { DashboardShell } from '../newtab/components/layout/DashboardShell';
-import { StatusStrip } from '../newtab/components/layout/StatusStrip';
-import { UtilityPanel } from '../newtab/components/layout/UtilityPanel';
-import { TabChip } from '../newtab/components/TabChip';
+import { DashboardHeader } from '../dashboard/components/layout/DashboardHeader';
+import { DashboardShell } from '../dashboard/components/layout/DashboardShell';
+import { StatusStrip } from '../dashboard/components/layout/StatusStrip';
+import { UtilityPanel } from '../dashboard/components/layout/UtilityPanel';
+import { TabChip } from '../dashboard/components/TabChip';
 
 const globalCss = readFileSync(
-  join(process.cwd(), 'src/newtab/styles/global.css'),
+  join(process.cwd(), 'src/dashboard/styles/global.css'),
   'utf8',
 );
 
@@ -123,7 +123,7 @@ describe('MotherDuck-inspired layout components', () => {
 describe('dashboard reskin composition contract', () => {
   it('documents that App owns behavior while layout components remain prop-driven', () => {
     const appSource = readFileSync(
-      join(process.cwd(), 'src/newtab/App.tsx'),
+      join(process.cwd(), 'src/dashboard/App.tsx'),
       'utf8',
     );
 
@@ -131,7 +131,7 @@ describe('dashboard reskin composition contract', () => {
     expect(appSource).toContain('StatusStrip');
     expect(appSource).toContain('DashboardHeader');
     expect(appSource).toContain('DndOrganizer');
-    expect(appSource).toContain('ProductTable');
+    expect(appSource).toContain('ProductGroupTable');
   });
 });
 
