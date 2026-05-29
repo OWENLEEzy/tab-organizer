@@ -3,7 +3,7 @@ import { SearchBar } from '../search/SearchBar';
 import { SortButton } from '../search/SortButton';
 import { SortDropdown } from '../search/SortDropdown';
 import { ActionButton } from '../ui/ActionButton';
-import { SectionSwitcher } from '../organizer/SectionSwitcher';
+import { SectionSwitcher } from '../sections/SectionSwitcher';
 import { useI18n } from '../../hooks/useI18n';
 import { getDateFormatter } from '../../lib/date-formatters';
 import type { GroupSortOption, Section } from '../../../types';

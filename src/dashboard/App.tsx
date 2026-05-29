@@ -23,8 +23,8 @@ const SettingsPanel = React.lazy(() =>
   import('./components/settings/SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
 );
 
-const DndOrganizer = React.lazy(() =>
-  import('./components/organizer/DndOrganizer').then((module) => ({ default: module.DndOrganizer })),
+const DndSectionOrganizer = React.lazy(() =>
+  import('./components/sections/DndSectionOrganizer').then((module) => ({ default: module.DndSectionOrganizer })),
 );
 
 const RecoveryPanel = React.lazy(() =>
@@ -277,7 +277,7 @@ export function App(): React.ReactElement {
               ) : viewMode === 'cards' ? (
                 <ErrorBoundary>
                   <React.Suspense fallback={<LoadingState />}>
-                    <DndOrganizer
+                    <DndSectionOrganizer
                       filteredProducts={derived.filteredProducts}
                       unassignedProducts={derived.unassignedProducts}
                       orderedSections={derived.cardsSections}

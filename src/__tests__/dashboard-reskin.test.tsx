@@ -163,7 +163,7 @@ describe('dashboard reskin composition contract', () => {
     expect(appSource).toContain('DashboardShell');
     expect(appSource).toContain('Footer');
     expect(appSource).toContain('DashboardHeader');
-    expect(appSource).toContain('DndOrganizer');
+    expect(appSource).toContain('DndSectionOrganizer');
     expect(appSource).toContain('ProductGroupTable');
   });
 
@@ -173,7 +173,7 @@ describe('dashboard reskin composition contract', () => {
       'utf8',
     );
     const dndOrganizerSource = readFileSync(
-      join(process.cwd(), 'src/dashboard/components/organizer/DndOrganizer.tsx'),
+      join(process.cwd(), 'src/dashboard/components/sections/DndSectionOrganizer.tsx'),
       'utf8',
     );
     const productTableSource = readFileSync(
@@ -203,5 +203,34 @@ describe('tab title readability', () => {
 
     expect(screen.getByText('Tab Organizer repo')).toBeInTheDocument();
     expect(screen.queryByText('TAB OUT REPO')).not.toBeInTheDocument();
+  });
+});
+
+describe('dark theme token aliases', () => {
+  const DARK_TOKENS = [
+    { token: '--color-surface-dark', alias: '--bg-surface' },
+    { token: '--color-border-dark', alias: '--border-color' },
+    { token: '--color-text-primary-dark', alias: '--text-primary' },
+    { token: '--color-text-secondary-dark', alias: '--text-secondary' },
+    { token: '--color-text-muted-dark', alias: '--text-muted' },
+    { token: '--color-bg-dark', alias: '--bg-page' },
+    { token: '--color-card-dark', alias: '--bg-card' },
+  ];
+
+  it.each(DARK_TOKENS)('$token aliases $alias (not a static hex)', ({ token, alias }) => {
+    expect(globalCss).toContain(`${token}: var(${alias})`);
+  });
+
+  it('does not contain hardcoded hex values for dark surface or card tokens', () => {
+    expect(globalCss).not.toContain('--color-surface-dark: #');
+    expect(globalCss).not.toContain('--color-card-dark: #');
+  });
+});
+
+describe('footer animation', () => {
+  it('defines the footerCountPop keyframes and class in global CSS', () => {
+    expect(globalCss).toContain('@keyframes footerCountPop');
+    expect(globalCss).toContain('.footer-count-pop');
+    expect(globalCss).toContain('animation: footerCountPop');
   });
 });
