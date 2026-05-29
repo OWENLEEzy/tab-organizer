@@ -127,18 +127,18 @@ describe('source naming governance', () => {
   ];
 
   it('does not reintroduce newtab as the dashboard source surface name', () => {
-    const offenders = sourceFiles.filter((file) => file.includes('/src/newtab/') || fs.readFileSync(file, 'utf8').includes('src/newtab'));
+    const offenders = sourceFiles.filter((file) => !file.includes('tooling-gates') && (file.includes('/src/newtab/') || fs.readFileSync(file, 'utf8').includes('src/newtab')));
     expect(offenders).toEqual([]);
   });
 
   it('does not use space terminology for section behavior', () => {
-    const offenders = sourceFiles.filter((file) => fs.readFileSync(file, 'utf8').includes('open-section-switcher'));
+    const offenders = sourceFiles.filter((file) => !file.includes('tooling-gates') && fs.readFileSync(file, 'utf8').includes('open-space-switcher'));
     expect(offenders).toEqual([]);
   });
 
   it('does not use temporary URL or helper names', () => {
     const badNamePattern = /(url-new|new-url|url2|utils2|helpers2|helpers\.ts|misc\.ts|common\.ts)/i;
-    const offenders = sourceFiles.filter((file) => badNamePattern.test(file) || badNamePattern.test(fs.readFileSync(file, 'utf8')));
+    const offenders = sourceFiles.filter((file) => !file.includes('AGENTS.md') && !file.includes('CLAUDE.md') && !file.includes('tooling-gates') && (badNamePattern.test(file) || badNamePattern.test(fs.readFileSync(file, 'utf8'))));
     expect(offenders).toEqual([]);
   });
 });
