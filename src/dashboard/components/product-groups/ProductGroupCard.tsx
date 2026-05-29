@@ -185,11 +185,11 @@ function ProductGroupCardComponent({
   const statusBarColor = hasDupes ? 'bg-accent-amber' : 'bg-accent-sage';
 
   return (
-    <div className="app-card rounded-card overflow-hidden relative">
+    <div className="app-card rounded-card overflow-hidden relative flex flex-col h-full">
       <div className="paper-noise" aria-hidden="true" />
-      <div className={`h-0.5 relative z-10 ${statusBarColor}`} />
+      <div className={`h-0.5 relative z-10 shrink-0 ${statusBarColor}`} />
 
-      <div className="border-b border-border-color p-4 bg-bg-surface/20 relative z-10">
+      <div className="border-b border-border-color p-4 bg-bg-surface/20 relative z-10 shrink-0">
         {/* Header: product name + badges — DnD uses a dedicated handle to avoid nested interactive controls. */}
         <div className="flex flex-wrap items-center gap-2">
           {dragHandleProps && (
@@ -229,9 +229,16 @@ function ProductGroupCardComponent({
               onError={() => setFailedFaviconUrl(groupFaviconUrl)}
             />
           )}
-          <h3 className="min-w-0 flex-1 truncate font-mono text-sm font-medium uppercase tracking-wider text-text-primary">
-            {displayName}
-          </h3>
+          
+          <div className="min-w-0 flex-1 flex items-center gap-2">
+            <h3 className="truncate font-mono text-sm font-medium uppercase tracking-wider text-text-primary">
+              {displayName}
+            </h3>
+            <span className="font-mono text-[10px] font-bold bg-border-color/20 text-text-secondary px-1.5 rounded-[3px] shrink-0" title={`${group.tabs.length} tabs`}>
+              <span className="sr-only">{group.tabs.length} tabs</span>
+              <span aria-hidden="true">{group.tabs.length}</span>
+            </span>
+          </div>
 
           <div className="flex items-center gap-1">
             {hasDupes && (
@@ -249,7 +256,7 @@ function ProductGroupCardComponent({
         </div>
       </div>
 
-      <div className="p-4 relative z-10">
+      <div className="p-4 relative z-10 flex-1 flex flex-col">
 
         {/* Tab chips */}
         <div className="flex flex-col gap-0.5">

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { closestCenter, DndContext, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import type { Section, TabGroup } from '../../../types';
@@ -106,7 +106,94 @@ interface DndGroupBoardProps {
   searchQuery?: string;
 }
 
-function DndGroupBoard({
+interface SectionActionsDropdownProps {
+  section?: Section;
+  tabCount: number;
+  title: string;
+  onRenameSection?: (group: Section) => void;
+  onDeleteSection?: (group: Section) => void;
+  onCloseSection: (groups: TabGroup[], title: string) => void;
+  items: TabGroup[];
+}
+
+function SectionActionsDropdown({
+  section,
+  tabCount,
+  title,
+  onRenameSection,
+  onDeleteSection,
+  onCloseSection,
+  items,
+}: SectionActionsDropdownProps) {
+  const { t } = useI18n();
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  if (!section && tabCount === 0) return null;
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="rounded-chip text-text-secondary hover:bg-surface-light dark:hover:bg-surface-dark flex h-6 w-6 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none"
+        aria-label="Section options"
+        aria-expanded={isOpen}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-1 z-50 w-36 overflow-hidden rounded-md border border-border-light bg-bg-card shadow-lg dark:border-border-dark flex flex-col font-body py-1">
+          {section && (
+            <>
+              <button
+                type="button"
+                onClick={() => { setIsOpen(false); onRenameSection?.(section); }}
+                className="w-full text-left px-3 py-1.5 text-xs text-text-primary hover:bg-surface-light dark:hover:bg-surface-dark cursor-pointer transition-colors"
+              >
+                {t('organizerBtnRename')}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsOpen(false); onDeleteSection?.(section); }}
+                className="w-full text-left px-3 py-1.5 text-xs text-text-primary hover:bg-surface-light dark:hover:bg-surface-dark cursor-pointer transition-colors"
+              >
+                {t('organizerBtnDelete')}
+              </button>
+            </>
+          )}
+          {section && tabCount > 0 && <div className="mx-2 my-1 h-px bg-border-light dark:bg-border-dark opacity-50" />}
+          {tabCount > 0 && (
+            <button
+              type="button"
+              onClick={() => { setIsOpen(false); onCloseSection(items, title); }}
+              className="w-full text-left px-3 py-1.5 text-xs text-accent-red hover:bg-accent-red/10 cursor-pointer transition-colors"
+            >
+              {t('organizerBtnCloseAll')}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function DndGroupBoard({
   id,
   title,
   items,
@@ -132,7 +219,6 @@ function DndGroupBoard({
   searchQuery = '',
 }: DndGroupBoardProps): React.ReactElement {
   const { setNodeRef, isOver } = useDroppable({ id });
-  const { t } = useI18n();
 
   return (
     <section ref={setNodeRef} className={`organizer-group ${isOver ? 'is-over' : ''}`}>
@@ -148,36 +234,15 @@ function DndGroupBoard({
           </div>
           <div className="flex-1 h-[1px] bg-gradient-to-r from-border-color to-transparent opacity-80 mt-1"></div>
           <div className="section-actions flex items-center gap-1 shrink-0">
-            {section && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => onRenameSection?.(section)}
-                  className="text-[var(--text-2xs)] font-semibold tracking-wider text-text-secondary hover:text-accent-blue transition-colors"
-                >
-                  {t('organizerBtnRename')}
-                </button>
-                <div className="h-3 w-px bg-border-light mx-1" />
-                <button
-                  type="button"
-                  onClick={() => onDeleteSection?.(section)}
-                  className="text-[var(--text-2xs)] font-semibold tracking-wider text-text-secondary hover:text-accent-red transition-colors"
-                >
-                  {t('organizerBtnDelete')}
-                </button>
-                <div className="h-3 w-px bg-border-light mx-1" />
-              </>
-            )}
-            {tabCount > 0 && (
-            <button
-              type="button"
-              onClick={() => onCloseSection(items, title)}
-              className="text-[var(--text-2xs)] font-semibold tracking-wider text-text-secondary hover:text-accent-red transition-colors"
-              title={`Close all ${tabCount} tabs in ${title}`}
-            >
-              {t('organizerBtnCloseAll')}
-            </button>
-)}
+            <SectionActionsDropdown
+              section={section}
+              tabCount={tabCount}
+              title={title}
+              onRenameSection={onRenameSection}
+              onDeleteSection={onDeleteSection}
+              onCloseSection={onCloseSection}
+              items={items}
+            />
           </div>
         </div>
       </div>

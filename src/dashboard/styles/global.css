@@ -646,7 +646,7 @@ body, html {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 10px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .missions > * {
