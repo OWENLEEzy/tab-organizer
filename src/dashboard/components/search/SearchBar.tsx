@@ -217,7 +217,7 @@ export function SearchBar({
       {/* Floating suggestion panel */}
       {showCommands && filteredCommands.length > 0 && (
         <div
-          className="absolute top-12 left-0 z-50 w-full rounded-lg border border-border-light bg-[var(--bg-card)] dark:bg-card-dark/95 p-1.5 shadow-lg backdrop-blur-md dark:border-border-dark font-body"
+          className="absolute top-12 left-0 z-50 w-full rounded-lg border border-border-color bg-bg-card/95 p-1.5 shadow-lg backdrop-blur-md font-body"
           style={{ boxShadow: 'var(--shadow-dropdown)' }}
         >
           <div className="px-2.5 py-1 text-[10px] font-bold tracking-wider text-text-secondary uppercase select-none">

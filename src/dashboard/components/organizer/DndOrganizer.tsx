@@ -158,7 +158,7 @@ function SectionActionsDropdown({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 z-50 w-36 overflow-hidden rounded-md border border-border-light bg-bg-card shadow-lg dark:border-border-dark flex flex-col font-body py-1">
+        <div className="absolute right-0 top-full mt-1 z-50 w-36 overflow-hidden rounded-md border border-border-color bg-bg-card shadow-lg flex flex-col font-body py-1">
           {section && (
             <>
               <button

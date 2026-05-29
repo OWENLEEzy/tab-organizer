@@ -9,14 +9,14 @@ test.describe('a11y harness', () => {
     await openButton.focus();
     await openButton.press('Enter');
 
-    const generalTab = page.getByRole('button', { name: 'General' });
-    await expect(generalTab).toBeFocused();
+    const firstTabButton = page.locator('[role="dialog"] button').filter({ hasText: /^Tab/ }).first().or(page.locator('[role="dialog"] button').first());
+    await expect(firstTabButton).toBeFocused();
 
     await page.keyboard.press('Shift+Tab');
-    await expect(page.getByRole('button', { name: 'Reset Order' })).toBeFocused();
+    await expect(page.getByRole('switch', { name: 'Confetti Burst' })).toBeFocused();
 
     await page.keyboard.press('Tab');
-    await expect(generalTab).toBeFocused();
+    await expect(firstTabButton).toBeFocused();
 
     await page.keyboard.press('Escape');
     await expect(openButton).toBeFocused();

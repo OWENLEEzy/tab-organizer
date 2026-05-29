@@ -94,6 +94,7 @@ test.describe('Settings & Theme', () => {
   test('dialog contains theme switcher', async ({ page }) => {
     const settingsGear = page.getByRole('button', { name: 'Settings', exact: true });
     await settingsGear.click();
+    await page.getByRole('button', { name: 'System' }).click();
 
     const themeSection = page.locator('text=Theme');
     await expect(themeSection).toBeVisible();
@@ -138,6 +139,7 @@ test.describe('Settings & Theme', () => {
   test('switching accent theme persists', async ({ page }) => {
     const settingsGear = page.getByRole('button', { name: 'Settings', exact: true });
     await settingsGear.click();
+    await page.getByRole('button', { name: 'System' }).click();
 
     // Open theme dropdown and select Sage
     const themeSelect = page.locator('#setting-theme');
@@ -146,6 +148,7 @@ test.describe('Settings & Theme', () => {
     // Refresh and verify persistence
     await page.reload();
     await settingsGear.click();
+    await page.getByRole('button', { name: 'System' }).click();
     const themeSelectAfterReload = page.locator('#setting-theme');
     await expect(themeSelectAfterReload).toHaveValue('sage');
   });

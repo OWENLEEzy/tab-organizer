@@ -55,12 +55,12 @@ describe('SettingsPanel accessibility', () => {
 
     await user.click(openButton);
 
-    const generalTabButton = screen.getByRole('button', { name: 'General' });
+    const generalTabButton = screen.getByRole('button', { name: 'Tab' });
     expect(generalTabButton).toHaveFocus();
 
     await user.keyboard('{Shift>}{Tab}{/Shift}');
-    // The last focusable in General tab (default active tab) is the 'Reset Order' button
-    expect(screen.getByRole('button', { name: 'Reset Order' })).toHaveFocus();
+    // The last focusable in Tab tab (default active tab) is the Confetti Burst toggle
+    expect(screen.getByRole('switch', { name: 'Confetti Burst' })).toHaveFocus();
 
     await user.keyboard('{Tab}');
     expect(generalTabButton).toHaveFocus();

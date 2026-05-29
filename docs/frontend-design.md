@@ -347,16 +347,20 @@ These tokens bridge raw theme values and the Tailwind utility layer:
 --color-accent-blue: var(--accent-primary);
 ```
 
-### Dark Theme Tokens (static — for use with Tailwind `dark:` variants)
+### Dark Theme Tokens (Dynamic Aliases)
+
+Historically, dark tokens were hardcoded to static grays (like `#1e1e1e`), which mistakenly stripped out the rich colors of dynamic dark themes (like Pine or Obsidian) whenever a developer wrote a `dark:` tailwind class. 
+
+These tokens are now dynamically aliased to the core dynamic theme variables. This means `dark:bg-surface-dark` safely resolves to the beautiful theme-specific surface color (`var(--bg-surface)`), ensuring dark themes remain fully intact.
 
 ```css
---color-surface-dark: #1e1e1e;
---color-border-dark: var(--color-to-border-dark);
---color-text-primary-dark: var(--color-to-text-primary-dark);
---color-text-secondary-dark: var(--color-to-text-secondary-dark);
---color-text-muted-dark: var(--color-to-text-muted-dark);
---color-bg-dark: var(--color-to-bg-dark);
---color-card-dark: #2a2a2a;
+--color-surface-dark: var(--bg-surface);
+--color-border-dark: var(--border-color);
+--color-text-primary-dark: var(--text-primary);
+--color-text-secondary-dark: var(--text-secondary);
+--color-text-muted-dark: var(--text-muted);
+--color-bg-dark: var(--bg-page);
+--color-card-dark: var(--bg-card);
 ```
 
 ### Stale State Tokens (derived at runtime)

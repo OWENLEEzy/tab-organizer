@@ -72,6 +72,7 @@ test.describe('Search & Filter', () => {
     await dialog.getByRole('button', { name: 'Create Section' }).click();
 
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByRole('button', { name: 'System' }).click();
     await page.locator('#setting-view-mode').selectOption('table');
     await page.keyboard.press('Escape');
     const youtubeRow = page.getByRole('row', { name: /YouTube/ });
@@ -83,6 +84,7 @@ test.describe('Search & Filter', () => {
     await sectionSelect.selectOption(laterValue);
 
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByRole('button', { name: 'System' }).click();
     await page.locator('#setting-view-mode').selectOption('cards');
     await page.keyboard.press('Escape');
     const searchInput = page.getByRole('searchbox', { name: 'search tabs' });

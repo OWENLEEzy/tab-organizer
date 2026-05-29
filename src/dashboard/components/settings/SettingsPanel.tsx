@@ -48,7 +48,7 @@ interface SettingsPanelProps {
   onViewModeChange: (mode: 'cards' | 'table') => void;
 }
 
-type TabId = 'general' | 'custom-groups' | 'sections' | 'shortcuts';
+type TabId = 'tab' | 'group' | 'section' | 'shortcuts' | 'system';
 
 interface TabItem {
   id: TabId;
@@ -92,7 +92,7 @@ export function SettingsPanel({
 }: SettingsPanelProps): React.ReactElement | null {
   const panelRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>('general');
+  const [activeTab, setActiveTab] = useState<TabId>('tab');
   const { t } = useI18n();
 
   const onCloseEffect = useEffectEvent(onClose);
@@ -164,18 +164,17 @@ export function SettingsPanel({
 
   const TAB_ITEMS: TabItem[] = [
     {
-      id: 'general',
-      label: t('settingsTabGeneral'),
+      id: 'tab',
+      label: t('settingsTabTab'),
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
         </svg>
       ),
     },
     {
-      id: 'custom-groups',
-      label: t('settingsTabCustomGroups'),
+      id: 'group',
+      label: t('settingsTabGroup'),
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
           <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A9 9 0 0 1 11.25 3h1.5a9 9 0 0 1 9 9v.75m-19.5 0A2.25 2.25 0 0 0 4.5 15h15a2.25 2.25 0 0 0 2.25-2.25m-19.5 0v.25C2.25 17.5 5.5 21 9.75 21h4.5c4.25 0 7.5-3.5 7.5-8v-.25m-18 0h18" />
@@ -183,8 +182,8 @@ export function SettingsPanel({
       ),
     },
     {
-      id: 'sections',
-      label: t('settingsTabSections'),
+      id: 'section',
+      label: t('settingsTabSection'),
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 6.878V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 18 6v.878m-12 0c.29.08.59.182.885.303l.244.1.243-.1a15.933 15.933 0 0 1 7.744-1.181M6 6.878c-.29.08-.59.182-.885.303l-.244.1-.243-.1A15.933 15.933 0 0 0 2.25 6v.878" />
@@ -198,6 +197,16 @@ export function SettingsPanel({
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
           <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5h15M4.5 13.5h15m-15-6h15m-15 12h15" />
+        </svg>
+      ),
+    },
+    {
+      id: 'system',
+      label: t('settingsTabSystem'),
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
         </svg>
       ),
     },
@@ -243,10 +252,10 @@ export function SettingsPanel({
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
-        className="border border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark relative w-full max-w-2xl animate-[fadeUp_var(--motion-enter)_ease_both] overflow-hidden max-h-[85vh] h-[550px] rounded-card shadow-2xl flex"
+        className="border border-border-color bg-card-light dark:bg-card-dark relative w-full max-w-2xl animate-[fadeUp_var(--motion-enter)_ease_both] overflow-hidden max-h-[85vh] h-[550px] rounded-card shadow-2xl flex"
       >
         {/* Left Column - Navigation */}
-        <div className="w-48 border-r border-border-light/40 dark:border-border-dark/40 bg-surface-light/40 dark:bg-surface-dark/40 flex flex-col p-4 gap-1 shrink-0 select-none overflow-y-auto">
+        <div className="w-48 border-r border-border-color/40 bg-surface-light/40 dark:bg-surface-dark/40 flex flex-col p-4 gap-1 shrink-0 select-none overflow-y-auto">
           <h3
             id="settings-title"
             className="font-heading text-text-primary-light dark:text-text-primary-dark text-base font-semibold px-2 mb-4"
@@ -276,7 +285,7 @@ export function SettingsPanel({
         {/* Right Column - Active Content */}
         <div className="flex-1 flex flex-col overflow-hidden bg-card-light dark:bg-card-dark">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 pb-4 border-b border-border-light/20 dark:border-border-dark/20">
+          <div className="flex items-center justify-between p-6 pb-4 border-b border-border-color/20">
             <h4 className="font-heading text-text-primary-light dark:text-text-primary-dark text-sm font-semibold">
               {TAB_ITEMS.find((t) => t.id === activeTab)?.label}
             </h4>
@@ -306,15 +315,93 @@ export function SettingsPanel({
 
           {/* Tab Viewport */}
           <div className="flex-1 overflow-y-auto p-6">
-            {activeTab === 'general' && (
+            {activeTab === 'tab' && (
+              <div className="flex flex-col gap-6">
+                <SelectRow
+                  id="setting-stale-threshold"
+                  label={t('settingsStaleThreshold')}
+                  value={staleThresholdDays}
+                  options={STALE_THRESHOLD_OPTIONS}
+                  onChange={onSetStaleThresholdDays}
+                />
+                
+                <ToggleRow
+                  id="setting-sound"
+                  label={t('settingsOptionsSound')}
+                  checked={soundEnabled}
+                  onChange={onToggleSound}
+                />
+                
+                <ToggleRow
+                  id="setting-confetti"
+                  label={t('settingsOptionsConfetti')}
+                  checked={confettiEnabled}
+                  onChange={onToggleConfetti}
+                />
+              </div>
+            )}
+
+            {activeTab === 'group' && (
+              <div className="flex flex-col gap-6">
+                <SelectRow
+                  id="setting-max-chips"
+                  label={t('settingsMaxChips')}
+                  value={maxChipsVisible}
+                  options={MAX_CHIPS_OPTIONS}
+                  onChange={onSetMaxChipsVisible}
+                />
+
+                <hr className="border-border-color/20" />
+
+                <CustomGroupsSection
+                  groups={customGroups}
+                  onAdd={onAddCustomGroup}
+                  onRemove={onRemoveCustomGroup}
+                />
+                
+                <hr className="border-border-color/20" />
+                
+                <div className="flex items-center justify-between">
+                  <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm">
+                    {t('settingsSortOrderTitle')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={onResetSortOrder}
+                    className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 min-h-[var(--spacing-button-height)] cursor-pointer px-3 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                  >
+                    {t('settingsSortOrderBtn')}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'section' && (
+              <SectionsSection
+                sections={sections}
+                onUpdateSection={onUpdateSection}
+                onDeleteSection={onDeleteSection}
+                onCreateSection={onCreateSection}
+              />
+            )}
+
+            {activeTab === 'shortcuts' && keyBindings && (
+              <KeyboardSection
+                keyBindings={keyBindings}
+                onUpdateKeyBinding={onUpdateKeyBinding}
+                onResetKeyBindings={onResetKeyBindings}
+              />
+            )}
+
+            {activeTab === 'system' && (
               <div className="flex flex-col gap-6">
                 <SelectRow
                   id="setting-view-mode"
-                  label={'Default View'}
+                  label={t('settingsViewMode')}
                   value={viewMode}
                   options={[
-                    { value: 'cards', label: 'Cards' },
-                    { value: 'table', label: 'Table' },
+                    { value: 'cards', label: t('settingsViewModeCards') },
+                    { value: 'table', label: t('settingsViewModeTable') },
                   ]}
                   onChange={(val) => onViewModeChange(val as 'cards' | 'table')}
                 />
@@ -337,38 +424,8 @@ export function SettingsPanel({
                   }))}
                   onChange={onSetTheme}
                 />
-                
-                <ToggleRow
-                  id="setting-sound"
-                  label={t('settingsOptionsSound')}
-                  checked={soundEnabled}
-                  onChange={onToggleSound}
-                />
-                
-                <ToggleRow
-                  id="setting-confetti"
-                  label={t('settingsOptionsConfetti')}
-                  checked={confettiEnabled}
-                  onChange={onToggleConfetti}
-                />
-                
-                <SelectRow
-                  id="setting-max-chips"
-                  label={t('settingsMaxChips')}
-                  value={maxChipsVisible}
-                  options={MAX_CHIPS_OPTIONS}
-                  onChange={onSetMaxChipsVisible}
-                />
 
-                <SelectRow
-                  id="setting-stale-threshold"
-                  label={t('settingsStaleThreshold')}
-                  value={staleThresholdDays}
-                  options={STALE_THRESHOLD_OPTIONS}
-                  onChange={onSetStaleThresholdDays}
-                />
-
-                <hr className="border-border-light/20 dark:border-border-dark/20" />
+                <hr className="border-border-color/20" />
 
                 <div className="flex flex-col gap-2">
                   <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm font-medium">
@@ -378,7 +435,7 @@ export function SettingsPanel({
                     <button
                       type="button"
                       onClick={onExportSettings}
-                      className="flex-1 rounded-chip font-body border border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-[var(--spacing-button-height)] cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5"
+                      className="flex-1 rounded-chip font-body border border-border-color hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-[var(--spacing-button-height)] cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-3.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -386,7 +443,7 @@ export function SettingsPanel({
                       {t('settingsBackupExportBtn')}
                     </button>
                     <label
-                      className="flex-1 rounded-chip font-body border border-border-light dark:border-border-dark hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-[var(--spacing-button-height)] cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5 text-center"
+                      className="flex-1 rounded-chip font-body border border-border-color hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-[var(--spacing-button-height)] cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5 text-center"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-3.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
@@ -414,9 +471,9 @@ export function SettingsPanel({
                   </div>
                 </div>
 
-                <hr className="border-border-light/20 dark:border-border-dark/20" />
+                <hr className="border-border-color/20" />
 
-                <div className="rounded-md border border-border-light/50 bg-surface-light/40 p-3 dark:border-border-dark/50 dark:bg-surface-dark/40">
+                <div className="rounded-md border border-border-color/50 bg-surface-light/40 p-3 dark:bg-surface-dark/40">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <span className="font-body text-text-primary-light dark:text-text-primary-dark block text-sm font-medium">
@@ -431,47 +488,7 @@ export function SettingsPanel({
                     </span>
                   </div>
                 </div>
-
-                <hr className="border-border-light/20 dark:border-border-dark/20" />
-
-                <div className="flex items-center justify-between">
-                  <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm">
-                    {t('settingsSortOrderTitle')}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={onResetSortOrder}
-                    className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 min-h-[var(--spacing-button-height)] cursor-pointer px-3 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
-                  >
-                    {t('settingsSortOrderBtn')}
-                  </button>
-                </div>
               </div>
-            )}
-
-            {activeTab === 'custom-groups' && (
-              <CustomGroupsSection
-                groups={customGroups}
-                onAdd={onAddCustomGroup}
-                onRemove={onRemoveCustomGroup}
-              />
-            )}
-
-            {activeTab === 'sections' && (
-              <SectionsSection
-                sections={sections}
-                onUpdateSection={onUpdateSection}
-                onDeleteSection={onDeleteSection}
-                onCreateSection={onCreateSection}
-              />
-            )}
-
-            {activeTab === 'shortcuts' && keyBindings && (
-              <KeyboardSection
-                keyBindings={keyBindings}
-                onUpdateKeyBinding={onUpdateKeyBinding}
-                onResetKeyBindings={onResetKeyBindings}
-              />
             )}
           </div>
         </div>
@@ -754,7 +771,7 @@ function SectionsSection({ sections, onUpdateSection, onDeleteSection, onCreateS
           sections.map((section) => {
             const rulesText = (section.autoRules ?? []).map(r => r.pattern).join('\n');
             return (
-              <div key={section.id} className="border border-border-light dark:border-border-dark rounded-md p-3 bg-surface-light dark:bg-surface-dark flex flex-col gap-2">
+              <div key={section.id} className="border border-border-color rounded-md p-3 bg-surface-light dark:bg-surface-dark flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <div className="relative w-10 shrink-0">
                     <label htmlFor={`section-emoji-${section.id}`} className="sr-only">
@@ -901,7 +918,7 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
           const isRecording = recordingKey === key;
 
           return (
-            <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-surface-light dark:bg-surface-dark border border-border-light/50 dark:border-border-dark/50 min-h-[var(--spacing-button-height)]">
+            <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-surface-light dark:bg-surface-dark border border-border-color/50 min-h-[var(--spacing-button-height)]">
               <span className="font-body text-xs text-text-primary-light dark:text-text-primary-dark">{label}</span>
               <button
                 type="button"
@@ -910,7 +927,7 @@ function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }
                 className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-[var(--spacing-button-height-sm)] min-w-[var(--width-button-min)] ${
                   isRecording
                     ? 'bg-[var(--accent-amber)]/10 dark:bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] dark:text-[var(--accent-amber)] border-[var(--accent-amber)] dark:border-[var(--accent-amber)] animate-pulse'
-                    : 'bg-[var(--bg-card)] dark:bg-[var(--bg-card)] text-text-secondary border-border-light dark:border-border-dark hover:border-text-muted dark:hover:border-text-muted-dark'
+                    : 'bg-[var(--bg-card)] dark:bg-[var(--bg-card)] text-text-secondary border-border-color hover:border-text-muted dark:hover:border-text-muted-dark'
                 }`}
               >
                 {isRecording ? t('settingsShortcutRecording') : binding}

@@ -72,8 +72,10 @@ describe('MotherDuck-inspired layout components', () => {
       </I18nProvider>,
     );
 
-    expect(screen.getByText('42 tabs')).toBeInTheDocument();
-    expect(screen.getByText('3 duplicates')).toBeInTheDocument();
+    expect(screen.getByText('42')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByText('tabs')).toBeInTheDocument();
+    expect(screen.getByText('duplicates')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close extras' })).toBeInTheDocument();
   });
 
