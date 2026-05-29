@@ -24,7 +24,7 @@ export function DashboardShell({
   
   // Decoupled grid classes: header/top are independent of sidebar state
   const baseGridClass = 'dashboard-grid-layout';
-  const workspaceGridClass = `${baseGridClass} ${showSidebar ? 'has-sidebar' : ''}`;
+  const contentGridClass = `${baseGridClass} ${showSidebar ? 'has-sidebar' : ''}`;
 
   return (
     <div className="dashboard-shell">
@@ -50,8 +50,8 @@ export function DashboardShell({
           </div>
         ) : null}
       </header>
-      <div className="dashboard-workspace">
-        <div className={workspaceGridClass}>
+      <div className="dashboard-content">
+        <div className={contentGridClass}>
           <main id="dashboard-main" className="dashboard-primary">{children}</main>
           {showSidebar && (
             <aside className="dashboard-utilities relative">
@@ -61,7 +61,7 @@ export function DashboardShell({
         </div>
       </div>
       {footer && (
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border-color bg-bg-surface/95 backdrop-blur-sm py-0.5">
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border-color bg-bg-page/95 backdrop-blur-sm">
           <div className={baseGridClass}>{footer}</div>
         </div>
       )}

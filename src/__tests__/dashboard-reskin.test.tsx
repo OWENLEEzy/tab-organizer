@@ -27,7 +27,7 @@ describe('MotherDuck-inspired dashboard token layer', () => {
 
   it('keeps warm flat layout classes available to React components', () => {
     expect(globalCss).toContain('.dashboard-shell');
-    expect(globalCss).toContain('.dashboard-workspace');
+    expect(globalCss).toContain('.dashboard-content');
     expect(globalCss).toContain('.dashboard-utilities');
   });
 
@@ -72,10 +72,8 @@ describe('MotherDuck-inspired layout components', () => {
       </I18nProvider>,
     );
 
-    expect(screen.getByText('42')).toBeInTheDocument();
-    expect(screen.getByText('tabs')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
-    expect(screen.getByText('duplicates')).toBeInTheDocument();
+    expect(screen.getByText('42 tabs')).toBeInTheDocument();
+    expect(screen.getByText('3 duplicates')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close extras' })).toBeInTheDocument();
   });
 
@@ -90,8 +88,6 @@ describe('MotherDuck-inspired layout components', () => {
           onSearchChange={() => {}}
           resultCount={5}
           totalCount={8}
-          viewMode="cards"
-          onViewModeChange={() => {}}
           groupSortBy="count"
           onGroupSortByChange={() => {}}
           sortButtonDisabled={false}
@@ -129,8 +125,6 @@ describe('MotherDuck-inspired layout components', () => {
               onSearchChange={() => {}}
               resultCount={1}
               totalCount={1}
-              viewMode="cards"
-              onViewModeChange={() => {}}
               groupSortBy="count"
               onGroupSortByChange={() => {}}
               sortButtonDisabled={false}

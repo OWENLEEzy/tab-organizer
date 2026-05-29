@@ -104,7 +104,7 @@ Core source layout:
 src/
   background/       MV3 service worker and toolbar action behavior
   dashboard/           React dashboard UI, hooks, components, styles
-  stores/           Zustand state for tabs, settings, workspace/session data
+  stores/           Zustand state for tabs, settings, sections, recovery
   lib/              Pure domain logic: grouping, titles, history, effects
   utils/            Chrome/storage/url/error adapters and helpers
   config/           Product/domain mapping and grouping configuration

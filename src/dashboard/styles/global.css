@@ -280,11 +280,11 @@ body, html {
   gap: 32px;
 }
 
-.dashboard-workspace {
-  padding: 16px 0 80px;
+.dashboard-content {
+  padding: 16px 0 48px;
 }
 
-.dashboard-workspace.has-utilities {
+.dashboard-content.has-utilities {
   grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
 }
 
@@ -661,7 +661,7 @@ body, html {
 }
 
 @media (max-width: 1080px) {
-  .dashboard-workspace {
+  .dashboard-content {
     grid-template-columns: 1fr;
   }
 

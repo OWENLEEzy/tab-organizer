@@ -287,7 +287,7 @@ export const locales = {
     emptySweepStaleTitle: 'No stale tabs found',
     emptySweepStaleDesc: 'All your tabs have been active recently (within the last {days} days).',
     emptySweepDupeTitle: 'No duplicate tabs found',
-    emptySweepDupeDesc: 'Your workspace is perfectly clean. There are no duplicate URLs!',
+    emptySweepDupeDesc: 'Your dashboard is clean. There are no duplicate URLs!',
     emptySweepSectionTitle: 'No section matches found',
     emptySweepSectionDesc: 'Could not find any section named "{name}" or the section has no tabs.',
     emptySweepSectionNoArg: 'Please specify a section name (e.g., /section:work)',
