@@ -1072,9 +1072,10 @@ input[type="search"]::-webkit-search-results-decoration {
 .footer-link {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 0 6px;
-  height: 26px;
+  gap: 6px;
+  padding: 0 10px;
+  border-radius: var(--radius-chip);
+  height: 28px;
   color: var(--text-secondary);
   text-decoration: none;
   transition: background-color 120ms ease, color 120ms ease;
