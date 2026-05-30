@@ -139,7 +139,7 @@ export function DndGroupBoard({
       <div className="group-header">
         <div className="flex items-center gap-4 mb-1">
           <div className="flex items-baseline gap-3 shrink-0">
-            <h2 className="font-heading text-xl italic text-text-primary font-normal">
+            <h2 className="font-heading text-xl text-text-primary font-medium">
               {title}
             </h2>
             <span className="font-mono text-[0.65rem] font-bold uppercase tracking-[0.1em] text-text-muted">

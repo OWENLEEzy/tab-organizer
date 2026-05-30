@@ -13,10 +13,6 @@
 
 </div>
 
-  ### [English](README.md) | [中文说明](docs/README_zh.md) | [Original Project ↗️](https://github.com/OWENLEEzy/tab-out)
-
-</div>
-
 ---
 
 # 📖 Table of Contents
@@ -73,7 +69,7 @@
 - **Open Dashboard**: Click the extension icon or use `Cmd+Shift+K` (customizable in Chrome shortcuts).
 - **Quick Search**: Just start typing anywhere to filter your tabs instantly.
 - **Navigation**: Use `Arrow Keys` to move between tab chips, and `Enter` to switch to that tab.
-- **Organize Mode**: Toggle "Organize" in the header to drag and drop product groups into custom sections.
+- **Direct Dragging**: In Cards View, drag and drop product groups directly into custom sections.
 
 ## 🔒 Privacy & Security
 Tab Organizer is **Local-First**. 
@@ -96,9 +92,9 @@ The project is divided into three distinct execution contexts, each with strict 
   - **Stateless Event Hub**: Acts as the central listener for Chrome system events (tab creation, window focus, etc.).
   - **Badge Orchestration**: Manages the toolbar badge count using a debounced update logic to ensure zero-flicker UI.
   - **Context Management**: Handles the "Singleton" dashboard pattern—ensuring only one Tab Organizer dashboard is open or focused at a time.
-- **The Dashboard Runtime (`src/newtab/`)**:
+- **The Dashboard Runtime (`src/dashboard/`)**:
   - **Orchestrator Pattern**: `App.tsx` is the single point of entry for global state. It performs the "Final Join" between raw browser tabs and user-defined groupings.
-  - **Lazy-Loaded Modules**: High-impact dependencies like `@dnd-kit` are lazy-loaded only when "Organize Mode" is active to keep the initial paint under 100ms.
+  - **Lazy-Loaded Modules**: High-impact dependencies like `@dnd-kit` are lazy-loaded only for the Cards View drag sections; Table View does not load them.
 - **The Storage Adapter (`src/utils/storage.ts`)**:
   - **Serializable Queue**: Implements a write-queue to handle atomic updates to `chrome.storage.local`. This prevents data corruption during rapid tab-closing bursts.
   - **Schema Normalization**: Automatically prunes stale product assignments and migrates legacy data shapes at the boundary.
@@ -129,7 +125,7 @@ To maintain testability and clean code, we separate concerns:
 ```text
 src/
 ├── background/   # MV3 Service Worker (Stateless event logic)
-├── newtab/       # React App (Page orchestrator & Components)
+├── dashboard/    # React App (Page orchestrator & Components)
 │   ├── components/ # Pure UI/UX (Atomic design)
 │   └── styles/     # Tailwind v4 (Design tokens & Global CSS)
 ├── stores/       # Zustand State (Tabs, Settings, Recovery, Organizer)

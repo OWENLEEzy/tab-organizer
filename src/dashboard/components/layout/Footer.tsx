@@ -59,7 +59,7 @@ export function Footer({
             <span className="footer-label">{t('metricTabs')}</span>
           </span>
 
-          <span className="footer-sep" aria-hidden="true" />
+          <span className="text-text-secondary/40 font-bold mx-3 select-none" aria-hidden="true">·</span>
 
           {/* Groups */}
           <span className="footer-metric" title={`${groupCount} ${t('metricGroups')}`}>
@@ -73,7 +73,7 @@ export function Footer({
             <span className="footer-label">{t('metricGroups')}</span>
           </span>
 
-          <span className="footer-sep" aria-hidden="true" />
+          <span className="text-text-secondary/40 font-bold mx-3 select-none" aria-hidden="true">·</span>
 
           {/* Sections */}
           <span className="footer-metric" title={`${sectionCount} ${t('metricSections')}`}>
@@ -88,7 +88,7 @@ export function Footer({
           {/* Duplicates — amber accent when present */}
           {duplicateCount > 0 && (
             <>
-              <span className="footer-sep" aria-hidden="true" />
+              <span className="text-text-secondary/40 font-bold mx-3 select-none" aria-hidden="true">·</span>
               <span className="footer-metric footer-metric-warn" title={`${duplicateCount} ${t('metricDuplicates')}`}>
                 <svg className="footer-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true" focusable="false">
                   <rect x="4" y="1.5" width="9" height="11" rx="1.5" />
@@ -103,7 +103,7 @@ export function Footer({
           {/* Alerts inline */}
           {alerts.length > 0 && (
             <>
-              <span className="footer-sep" aria-hidden="true" />
+              <span className="text-text-secondary/40 font-bold mx-3 select-none" aria-hidden="true">·</span>
               <ul className="footer-metrics">
                 {alerts.map((alert) => (
                   <li key={alert.id} className="footer-metric footer-metric-warn">
@@ -129,7 +129,7 @@ export function Footer({
         </div>
 
         {/* Right: links */}
-        <div className="footer-links">
+        <div className="footer-links gap-4">
           <a
             href={FEEDBACK_URL}
             target="_blank"

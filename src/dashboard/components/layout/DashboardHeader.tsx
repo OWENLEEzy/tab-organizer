@@ -36,7 +36,7 @@ interface DashboardHeaderProps {
 
 function FolderIcon(): React.ReactElement {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5 text-text-primary-light dark:text-text-primary-dark opacity-80">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4 text-text-primary-light dark:text-text-primary-dark opacity-80">
       <path d="M19.5 21a3 3 0 0 0 3-3v-4.5a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3V18a3 3 0 0 0 3 3h15ZM1.5 10.146V6a3 3 0 0 1 3-3h5.379a2.25 2.25 0 0 1 1.59.659l2.122 2.121c.14.141.331.22.53.22H19.5a3 3 0 0 1 3 3v1.146A4.483 4.483 0 0 0 19.5 9h-15a4.483 4.483 0 0 0-3 1.146Z" />
     </svg>
   );
@@ -103,26 +103,30 @@ export function DashboardHeader({
     <section className="pb-3 pt-2" aria-labelledby={headingId}>
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 border-b border-border-light/40 pb-3 dark:border-border-dark/40 md:flex-row md:items-center md:justify-between">
-          <SectionSwitcher
-            sections={sections}
-            sectionIds={sectionIds}
-            activeSectionId={activeSectionId}
-            onChange={onSectionChange}
-            onCreateSection={onCreateSection}
-            isFocused={isSectionSwitcherFocused}
-          />
-          <p className="font-body text-[11px] font-semibold tracking-wide text-text-secondary uppercase md:text-right">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center min-w-0">
+            <div className="flex items-center gap-2 shrink-0">
+              <FolderIcon />
+              <h1 id={headingId} className="font-heading text-sm font-semibold tracking-tight text-text-primary-light dark:text-text-primary-dark whitespace-nowrap">
+                {title}
+              </h1>
+            </div>
+            
+            <div className="hidden md:block w-px h-4 bg-border-color mx-1 shrink-0" />
+
+            <div className="min-w-0 flex-1">
+              <SectionSwitcher
+                sections={sections}
+                sectionIds={sectionIds}
+                activeSectionId={activeSectionId}
+                onChange={onSectionChange}
+                onCreateSection={onCreateSection}
+                isFocused={isSectionSwitcherFocused}
+              />
+            </div>
+          </div>
+          <p className="font-body text-[11px] font-semibold tracking-wide text-text-secondary uppercase md:text-right shrink-0 mt-2 md:mt-0">
             {activeDateLabel}
           </p>
-        </div>
-        
-        <div className="flex flex-col gap-3 border-b border-border-light/40 pb-3 dark:border-border-dark/40">
-          <div className="flex items-center gap-2.5">
-            <FolderIcon />
-            <h1 id={headingId} className="font-heading text-2xl font-medium tracking-tight text-text-primary-light dark:text-text-primary-dark">
-              {title}
-            </h1>
-          </div>
         </div>
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center pt-1">
@@ -137,21 +141,21 @@ export function DashboardHeader({
                   sections={sections}
                 />
               </div>
-              <div className="flex flex-wrap items-center gap-2 md:justify-end">
+              <div className="flex flex-wrap items-center gap-1.5 md:justify-end">
                 <SortDropdown value={groupSortBy} onChange={onGroupSortByChange} />
                 <SortButton
                   disabled={sortButtonDisabled}
                   disabledTooltip={t('sortButtonDisabledTooltip')}
                   onClick={onSortWindow}
                 />
-                <div className="w-px h-4 bg-border-color mx-0.5 hidden md:block" />
                 <ActionButton variant="quiet" icon={<RefreshIcon />} onClick={onRefresh} aria-label="Refresh tabs" />
               </div>
+              <div className="hidden md:block w-px h-4 bg-border-color/50 mx-1" />
             </>
           ) : (
             <div className="min-w-0 flex-1" />
           )}
-          <div className="flex flex-wrap items-center gap-2 md:justify-end">
+          <div className="flex flex-wrap items-center gap-1.5 md:justify-end">
             <ActionButton variant="quiet" icon={<SettingsIcon />} onClick={onOpenSettings} aria-label={t('settings')} />
             <ActionButton
               variant="quiet"
