@@ -2,8 +2,7 @@
  * Chrome tabs/windows adapter.
  *
  * Wraps chrome.tabs and chrome.windows API calls so stores and components never
- * reference the raw chrome namespace directly. Listener registration
- * (chrome.tabs.onCreated, etc.) stays in the store lifecycle wiring.
+ * reference the raw chrome namespace directly.
  */
 
 export async function queryAllTabs(): Promise<chrome.tabs.Tab[]> {
@@ -29,9 +28,10 @@ export async function closeTabIds(
 ): Promise<void> {
   if (Array.isArray(tabIds)) {
     await chrome.tabs.remove(tabIds);
-  } else {
-    await chrome.tabs.remove(tabIds);
+    return;
   }
+
+  await chrome.tabs.remove(tabIds);
 }
 
 export async function focusChromeTab(

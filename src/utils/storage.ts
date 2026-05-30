@@ -84,7 +84,7 @@ const EMPTY_SCHEMA: StorageSchema = {
   schemaVersion: CURRENT_SCHEMA_VERSION,
   settings: DEFAULT_SETTINGS,
   groupOrder: {},
-  sections: [],
+  sections: DEFAULT_SECTIONS,
   sectionAssignments: [],
   unsectionedProductKeys: [],
   viewMode: 'cards',
