@@ -176,12 +176,25 @@ export function buildOrganizerModel(input: BuildOrganizerModelInput): OrganizerM
     }
   }
 
-  // Sort each bucket by assignment order, falling back to product.order
+  // Build sort-dropdown order map from the products array index.
+  // The caller passes products pre-sorted by the active sort option (count/name/lastAccessed),
+  // so the array index reflects the sort dropdown order. In practice every section-assigned
+  // product already has an orderMap entry (written from SectionAssignment above), so this
+  // fallback is mainly a defensive edge-case guard. Unassigned products bypass this loop
+  // entirely and inherit the pre-sorted order from the products array.
+  const productOrderByIndex = new Map<string, number>();
+  for (let i = 0; i < products.length; i++) {
+    productOrderByIndex.set(getProductKey(products[i]), i);
+  }
+
+  // Sort each bucket: assignment order (manual drag) > sort dropdown index > creation-time order
   for (const [sectionId, items] of productsBySection) {
     const orderMap = orderMaps.get(sectionId);
     items.sort((a, b) => {
-      const aOrder = orderMap?.get(toProductItemId(getProductKey(a))) ?? a.order;
-      const bOrder = orderMap?.get(toProductItemId(getProductKey(b))) ?? b.order;
+      const aKey = getProductKey(a);
+      const bKey = getProductKey(b);
+      const aOrder = orderMap?.get(toProductItemId(aKey)) ?? productOrderByIndex.get(aKey) ?? a.order;
+      const bOrder = orderMap?.get(toProductItemId(bKey)) ?? productOrderByIndex.get(bKey) ?? b.order;
       return aOrder - bOrder;
     });
   }

@@ -230,6 +230,14 @@ export function useDashboardController() {
     [products],
   );
 
+  // Section-aware product order for Sort Window: unsectioned first, then by section order
+  const sectionOrderedProducts = useMemo(() => [
+    ...contentOrganizerModel.unassignedProducts,
+    ...contentOrganizerModel.visibleSections.flatMap(
+      (section) => contentOrganizerModel.productsBySection.get(section.id) ?? []
+    ),
+  ], [contentOrganizerModel]);
+
   // ─── Handlers ──────────────────────────────────────────────────────
   const { t } = useI18n();
   const handlers = useTabActions({
@@ -238,6 +246,7 @@ export function useDashboardController() {
     showToast,
     flatChips,
     visibleProducts: filteredProducts,
+    sectionOrderedProducts,
     selectedUrls,
     selectedTabIds: state.selectedTabIds,
     lastClickedIndex,
