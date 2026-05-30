@@ -178,23 +178,22 @@ export function buildOrganizerModel(input: BuildOrganizerModelInput): OrganizerM
 
   // Build sort-dropdown order map from the products array index.
   // The caller passes products pre-sorted by the active sort option (count/name/lastAccessed),
-  // so the array index reflects the sort dropdown order. In practice every section-assigned
-  // product already has an orderMap entry (written from SectionAssignment above), so this
-  // fallback is mainly a defensive edge-case guard. Unassigned products bypass this loop
-  // entirely and inherit the pre-sorted order from the products array.
+  // so the array index reflects the sort dropdown order. This is the primary within-section
+  // ordering because DnD only supports cross-section moves (append to end), not within-section
+  // reordering — so orderMap values carry no user-intent ordering within a section.
   const productOrderByIndex = new Map<string, number>();
   for (let i = 0; i < products.length; i++) {
     productOrderByIndex.set(getProductKey(products[i]), i);
   }
 
-  // Sort each bucket: assignment order (manual drag) > sort dropdown index > creation-time order
+  // Sort each bucket: sort dropdown order > assignment fallback > creation-time order
   for (const [sectionId, items] of productsBySection) {
     const orderMap = orderMaps.get(sectionId);
     items.sort((a, b) => {
       const aKey = getProductKey(a);
       const bKey = getProductKey(b);
-      const aOrder = orderMap?.get(toProductItemId(aKey)) ?? productOrderByIndex.get(aKey) ?? a.order;
-      const bOrder = orderMap?.get(toProductItemId(bKey)) ?? productOrderByIndex.get(bKey) ?? b.order;
+      const aOrder = productOrderByIndex.get(aKey) ?? orderMap?.get(toProductItemId(aKey)) ?? a.order;
+      const bOrder = productOrderByIndex.get(bKey) ?? orderMap?.get(toProductItemId(bKey)) ?? b.order;
       return aOrder - bOrder;
     });
   }
