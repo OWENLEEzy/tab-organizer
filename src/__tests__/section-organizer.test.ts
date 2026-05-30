@@ -387,3 +387,32 @@ describe('buildOrganizerModel product.order fallback sorting', () => {
     expect(model.unassignedProducts.map((p) => p.productKey)).toEqual(['b']);
   });
 });
+
+describe('buildOrganizerModel section bucket sort priority', () => {
+  it('products in a section are sorted by the input products array order (sort dropdown)', () => {
+    // Products passed in name order: github, gitlab, google
+    // All assigned to the same section; their array index should drive sort order
+    const products = [
+      product('github', ['https://github.com/a'], 0),
+      product('gitlab', ['https://gitlab.com/a'], 0),
+      product('google', ['https://google.com/a'], 0),
+    ];
+    const assignments: SectionAssignment[] = [
+      { productKey: 'github', sectionId: 'section-dev', order: 5 }, // stale order
+      { productKey: 'gitlab', sectionId: 'section-dev', order: 1 },
+      { productKey: 'google', sectionId: 'section-dev', order: 9 },
+    ];
+
+    const model = buildOrganizerModel({
+      sections,
+      products, // pre-sorted by caller (name order)
+      assignments,
+      unsectionedProductKeys: [],
+      activeSectionId: null,
+    });
+
+    const sectionProducts = model.productsBySection.get('section-dev') ?? [];
+    // Should follow products array order (github, gitlab, google), not assignment.order
+    expect(sectionProducts.map((p) => p.productKey)).toEqual(['github', 'gitlab', 'google']);
+  });
+});

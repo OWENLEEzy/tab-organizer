@@ -189,7 +189,7 @@ export function useDashboardController() {
 
   const flatChips = useMemo(() => {
     const visualProducts = viewMode === 'table'
-      ? [...filteredProducts].sort((a, b) => a.order - b.order)
+      ? filteredProducts
       : [
           ...contentOrganizerModel.unassignedProducts,
           ...contentOrganizerModel.visibleSections.flatMap((section) => contentOrganizerModel.productsBySection.get(section.id) ?? []),
