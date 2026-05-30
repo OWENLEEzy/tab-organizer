@@ -124,7 +124,7 @@ export function DashboardHeader({
               />
             </div>
           </div>
-          <p className="font-body text-[11px] font-semibold tracking-wide text-text-secondary uppercase md:text-right shrink-0 mt-2 md:mt-0">
+          <p className="font-body text-2xs font-semibold tracking-wide text-text-secondary uppercase md:text-right shrink-0 mt-2 md:mt-0">
             {activeDateLabel}
           </p>
         </div>

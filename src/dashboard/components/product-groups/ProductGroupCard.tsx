@@ -214,7 +214,7 @@ function ProductGroupCardComponent({
           )}
           {iconFailed || !groupFaviconUrl ? (
             <span
-              className="bg-bg-surface border border-border-color/30 text-text-secondary flex size-5 shrink-0 items-center justify-center rounded-[3px] text-xs font-semibold"
+              className="bg-bg-surface border border-border-color/30 text-text-secondary flex size-5 shrink-0 items-center justify-center rounded-badge text-xs font-semibold"
               aria-hidden="true"
             >
               {initial}
@@ -225,7 +225,7 @@ function ProductGroupCardComponent({
               alt=""
               width={20}
               height={20}
-              className="favicon size-5 shrink-0 rounded-[3px]"
+              className="favicon size-5 shrink-0 rounded-badge"
               onError={() => setFailedFaviconUrl(groupFaviconUrl)}
             />
           )}
@@ -234,7 +234,7 @@ function ProductGroupCardComponent({
             <h3 className="truncate font-mono text-sm font-medium uppercase tracking-wider text-text-primary">
               {displayName}
             </h3>
-            <span className="font-mono text-[10px] font-bold bg-border-color/20 text-text-secondary px-1.5 rounded-[3px] shrink-0" title={`${group.tabs.length} tabs`}>
+            <span className="font-mono text-3xs font-bold bg-border-color/20 text-text-secondary px-1.5 rounded-badge shrink-0" title={`${group.tabs.length} tabs`}>
               <span className="sr-only">{group.tabs.length} tabs</span>
               <span aria-hidden="true">{group.tabs.length}</span>
             </span>
@@ -244,7 +244,7 @@ function ProductGroupCardComponent({
             {hasDupes && (
               <button
                 type="button"
-                className="flex h-7 items-center gap-1.5 rounded-[4px] border border-dashed border-accent-amber/60 bg-bg-surface px-2.5 text-[10px] font-semibold font-mono text-accent-amber transition-transform hover:translate-y-[-1px] hover:rotate-[1deg] hover:bg-accent-amber/10 active:translate-y-[2px] active:rotate-[3deg] active:border-dotted active:opacity-60"
+                className="flex h-7 items-center gap-1.5 rounded-chip border border-dashed border-accent-amber/60 bg-bg-surface px-2.5 text-3xs font-semibold font-mono text-accent-amber transition-transform hover:translate-y-[-1px] hover:rotate-[1deg] hover:bg-accent-amber/10 active:translate-y-[2px] active:rotate-[3deg] active:border-dotted active:opacity-60"
                 onClick={handleCloseDuplicates}
                 title={t('cardCloseDupesTitle')}
               >
@@ -282,7 +282,7 @@ function ProductGroupCardComponent({
         {extraCount > 0 && (
           <button
             type="button"
-            className="w-full mt-1.5 py-1.5 text-[10px] font-mono tracking-wider text-text-muted border border-dashed border-border-color rounded hover:text-text-primary bg-transparent cursor-pointer transition-colors duration-[var(--motion-fast)]"
+            className="w-full mt-1.5 py-1.5 text-3xs font-mono tracking-wider text-text-muted border border-dashed border-border-color rounded hover:text-text-primary bg-transparent cursor-pointer transition-colors duration-[var(--motion-fast)]"
             onClick={handleExpand}
             aria-expanded={expanded}
             aria-label={

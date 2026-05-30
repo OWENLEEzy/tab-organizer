@@ -813,7 +813,7 @@ function SectionsSection({ sections, onUpdateSection, onDeleteSection, onCreateS
                   </button>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="font-body text-text-secondary text-[var(--text-3xs)]">
+                  <span className="font-body text-text-secondary text-3xs">
                     {t('settingsLabelAutoRules')}
                   </span>
                   <textarea

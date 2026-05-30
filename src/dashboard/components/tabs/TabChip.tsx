@@ -258,7 +258,7 @@ function TabChipComponent({
           />
         ) : (
           <span
-            className="bg-bg-surface text-text-secondary flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-badge)] text-[var(--text-3xs)] font-semibold"
+            className="bg-bg-surface text-text-secondary flex size-4 shrink-0 items-center justify-center rounded-badge text-3xs font-semibold"
             aria-hidden="true"
           >
             {initial}

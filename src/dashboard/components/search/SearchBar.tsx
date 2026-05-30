@@ -207,7 +207,7 @@ export function SearchBar({
 
           {/* Keyboard shortcut hint */}
           {!focused && value.length === 0 && (
-            <kbd className="rounded-chip border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark font-body text-text-secondary border px-1.5 py-0.5 text-[11px]">
+            <kbd className="rounded-chip border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark font-body text-text-secondary border px-1.5 py-0.5 text-2xs">
               /
             </kbd>
           )}
@@ -220,7 +220,7 @@ export function SearchBar({
           className="absolute top-12 left-0 z-50 w-full rounded-lg border border-border-color bg-bg-card/95 p-1.5 shadow-lg backdrop-blur-md font-body"
           style={{ boxShadow: 'var(--shadow-dropdown)' }}
         >
-          <div className="px-2.5 py-1 text-[10px] font-bold tracking-wider text-text-secondary uppercase select-none">
+          <div className="px-2.5 py-1 text-3xs font-bold tracking-wider text-text-secondary uppercase select-none">
             {value === '' ? t('cmdPanelTitleHint') : t('cmdPanelTitle')}
           </div>
           <div className="flex flex-col gap-0.5 mt-1">
@@ -250,10 +250,10 @@ export function SearchBar({
                         {cmd.label}
                       </span>
                     )}
-                    <span className="text-[11px] text-text-secondary mt-0.5">{cmd.desc}</span>
+                    <span className="text-2xs text-text-secondary mt-0.5">{cmd.desc}</span>
                   </div>
                   {active && (
-                    <span className="text-[10px] opacity-60 text-accent-blue font-medium">
+                    <span className="text-3xs opacity-60 text-accent-blue font-medium">
                       {t('cmdHintEnter')}
                     </span>
                   )}
