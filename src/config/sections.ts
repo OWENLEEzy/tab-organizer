@@ -6,7 +6,7 @@ export const DEFAULT_SECTIONS: Section[] = [
     name: 'Dev',
     order: 0,
     autoRules: [
-      { pattern: 'github|vercel|linear|jira|gitlab|stackoverflow|localhost|figma|bitbucket|sourceforge|gitea|launchpad', type: 'hostname' }
+      { pattern: 'github|jira|gitlab|stackoverflow|localhost|bitbucket|sourceforge|gitea|launchpad', type: 'hostname' }
     ]
   },
   {
@@ -14,7 +14,7 @@ export const DEFAULT_SECTIONS: Section[] = [
     name: 'Work',
     order: 1,
     autoRules: [
-      { pattern: 'notion|google\\.com|slack|loom|zoom|airtable|confluence|asana|clickup|todoist|linear|trello|basecamp|monday|teamviewer|anydesk', type: 'hostname' }
+      { pattern: 'google\\.com|slack|loom|zoom|airtable|confluence|asana|clickup|todoist|linear|trello|basecamp|monday|teamviewer|anydesk', type: 'hostname' }
     ]
   },
   {
