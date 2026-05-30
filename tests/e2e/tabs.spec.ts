@@ -31,7 +31,7 @@ test.describe('Tab Management', () => {
     await expect(dialog.getByRole('button', { name: 'Close all', exact: true })).toBeVisible();
   });
 
-  test('domain card shows correct tab count', async ({ page }) => {
+  test('product group card shows correct tab count', async ({ page }) => {
     // Wait for cards to render
     await page.waitForSelector('[class*="rounded-card"]');
 
