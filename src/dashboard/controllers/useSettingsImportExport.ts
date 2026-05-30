@@ -143,15 +143,14 @@ export function useSettingsImportExport({
         }
       }
 
-      const importedSections = normalizeImportedSections(parsed.sections)
-        ?? normalizeImportedSections(parsed.manualGroups);
+      const importedSections = normalizeImportedSections(parsed.sections);
 
       if (importedSections) {
         const rawAssignments = Array.isArray(parsed.sectionAssignments)
           ? parsed.sectionAssignments
-          : parsed.groupAssignments;
+          : [];
         const sectionAssignments = normalizeImportedAssignments(rawAssignments);
-        const rawUnsectioned = parsed.unsectionedProductKeys ?? parsed.unsortedOverrides;
+        const rawUnsectioned = parsed.unsectionedProductKeys;
         const unsectionedProductKeys = Array.isArray(rawUnsectioned)
           ? (rawUnsectioned as unknown[]).filter((value): value is string => typeof value === 'string')
           : [];

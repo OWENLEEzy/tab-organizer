@@ -1,7 +1,7 @@
 import React, { useEffect, useEffectEvent, useRef } from 'react';
-import type { ConfirmDialogProps } from '../../types';
-import { ActionButton } from './ui/ActionButton';
-import { useI18n } from '../hooks/useI18n';
+import type { ConfirmDialogProps } from '../../../types';
+import { ActionButton } from '../ui/ActionButton';
+import { useI18n } from '../../hooks/useI18n';
 
 // ─── Component ────────────────────────────────────────────────────────
 

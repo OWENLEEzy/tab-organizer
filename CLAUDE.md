@@ -184,8 +184,7 @@ Source placement rules:
 - `src/utils/storage.ts` is the only adapter over `chrome.storage.local`.
 - `src/lib/product-groups.ts` owns product/domain grouping and duplicate counts.
 - `src/lib/recovery-snapshots.ts` owns snapshot creation and replacement rules.
-- `src/dashboard/components/DndOrganizer.tsx` is the only component that imports
-  `@dnd-kit`.
+- `src/dashboard/components/sections/DndSectionOrganizer.tsx` is the only dashboard component that may import `@dnd-kit`.
 
 Import boundary:
 
@@ -251,9 +250,8 @@ config/types -> runtime layer
   `section:<sectionId>`.
 - Cards view uses the lazy drag organizer directly so product groups can move
   between sections without a separate organize mode.
-- `src/dashboard/components/DndOrganizer.tsx` is the only component that may import
-  `@dnd-kit`; the Cards lazy chunk may contain DnD, while the Table path must
-  not import or render DnD handles.
+- `src/dashboard/components/sections/DndSectionOrganizer.tsx` is the only dashboard component that may import `@dnd-kit`.
+- Stores may own state transitions, but raw `chrome.tabs.*`, `chrome.windows.*`, and `chrome.runtime.*` calls belong in `src/utils` adapter modules.
 - `dist/` is generated output. Do not edit it manually.
 - CRXJS reads `manifest.json`; keep `src/dashboard/index.html` as an explicit Vite
   build input so the toolbar dashboard stays bundled.
@@ -279,7 +277,6 @@ For grouping, duplicate, or visible-tab behavior:
 For storage and history changes:
 
 - Route persisted mutations through `src/utils/storage.ts`.
-- Keep non-section legacy normalization at the adapter boundary.
 - Validate snapshot caps, local-only behavior, and internal-page filtering.
 
 For review/fix loops:
@@ -299,10 +296,8 @@ Persisted in `chrome.storage.local`:
 - Product-only organizer sections.
 - Product-to-section assignments.
 - Recovery candidate/recovery snapshots.
-- Legacy `recoveryCandidate` and `recoveryHistory` fields required for
-  migration compatibility.
-- Legacy `manualGroups` and `groupAssignments` are cleanup-only reset fields;
-  section data intentionally does not migrate from them.
+- On schema mismatch, storage resets destructively to the current schema. Do not read legacy storage keys into current state.
+- Current schema keys are `schemaVersion`, `settings`, `groupOrder`, `sections`, `sectionAssignments`, `unsectionedProductKeys`, `viewMode`, `recoveryCandidate`, and `recoverySnapshots`.
 
 Storage rules:
 
@@ -311,7 +306,7 @@ Storage rules:
 - Localized consolidation (stripping TLDs) is limited to known safe variants in `PRODUCT_RULES` only.
 - All read-modify-write mutations go through the serial write queue in
   `src/utils/storage.ts`.
-- Normalize non-section legacy storage shapes at the adapter boundary.
+- On schema mismatch, storage resets to current schema defaults (see above).
 - Prune product assignments when the product is no longer open or the group no
   longer exists.
 - Product-to-section assignments are group-level label relationships:

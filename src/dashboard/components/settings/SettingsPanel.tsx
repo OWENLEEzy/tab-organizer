@@ -2,10 +2,11 @@ import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { CustomGroup, AppSettings, Section } from '../../../types';
 import { ACCENT_OPTIONS, type AccentKey } from '../../../config/themes';
 import { useI18n } from '../../hooks/useI18n';
-
-// ─── Constants ────────────────────────────────────────────────────────
-
-const DEFAULT_EMPTY_GROUPS: Section[] = [];
+import { SelectRow } from './SelectRow';
+import { ToggleRow } from './ToggleRow';
+import { CustomGroupsSection } from './CustomGroupsSection';
+import { SectionsSection } from './SectionsSection';
+import { KeyboardSection } from './KeyboardSection';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -56,6 +57,10 @@ interface TabItem {
   icon: React.ReactNode;
 }
 
+// ─── Constants ───────────────────────────────────────────────────────
+
+const DEFAULT_SECTIONS: Section[] = [];
+
 // ─── Component ────────────────────────────────────────────────────────
 
 export function SettingsPanel({
@@ -79,7 +84,7 @@ export function SettingsPanel({
   onSetStaleThresholdDays,
   onExportSettings,
   onImportSettings,
-  sections = DEFAULT_EMPTY_GROUPS,
+  sections = DEFAULT_SECTIONS,
   onUpdateSection = () => {},
   onDeleteSection = () => {},
   onCreateSection = () => {},
@@ -287,7 +292,7 @@ export function SettingsPanel({
           {/* Header */}
           <div className="flex items-center justify-between p-6 pb-4 border-b border-border-color/20">
             <h4 className="font-heading text-text-primary-light dark:text-text-primary-dark text-sm font-semibold">
-              {TAB_ITEMS.find((t) => t.id === activeTab)?.label}
+              {TAB_ITEMS.find((tab) => tab.id === activeTab)?.label}
             </h4>
             <button
               type="button"
@@ -324,14 +329,14 @@ export function SettingsPanel({
                   options={STALE_THRESHOLD_OPTIONS}
                   onChange={onSetStaleThresholdDays}
                 />
-                
+
                 <ToggleRow
                   id="setting-sound"
                   label={t('settingsOptionsSound')}
                   checked={soundEnabled}
                   onChange={onToggleSound}
                 />
-                
+
                 <ToggleRow
                   id="setting-confetti"
                   label={t('settingsOptionsConfetti')}
@@ -358,9 +363,9 @@ export function SettingsPanel({
                   onAdd={onAddCustomGroup}
                   onRemove={onRemoveCustomGroup}
                 />
-                
+
                 <hr className="border-border-color/20" />
-                
+
                 <div className="flex items-center justify-between">
                   <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm">
                     {t('settingsSortOrderTitle')}
@@ -413,7 +418,7 @@ export function SettingsPanel({
                   options={LANGUAGE_OPTIONS}
                   onChange={(val) => onSetLanguage(val as 'en' | 'zh' | 'system')}
                 />
-                
+
                 <SelectRow
                   id="setting-theme"
                   label={t('settingsTheme')}
@@ -492,449 +497,6 @@ export function SettingsPanel({
             )}
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Dropdown Row helper sub-component ────────────────────────────────
-
-interface SelectRowProps<T extends string | number> {
-  id: string;
-  label: string;
-  value: T;
-  options: { value: T; label: string }[];
-  onChange: (val: T) => void;
-}
-
-function SelectRow<T extends string | number>({
-  id,
-  label,
-  value,
-  options,
-  onChange,
-}: SelectRowProps<T>): React.ReactElement {
-  return (
-    <div className="flex items-center justify-between">
-      <label htmlFor={id} className="font-body text-text-primary-light dark:text-text-primary-dark text-sm">
-        {label}
-      </label>
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => {
-          const val = e.target.value;
-          const num = Number(val);
-          onChange((isNaN(num) ? val : num) as T);
-        }}
-        className="settings-select focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-// ─── Toggle sub-component ─────────────────────────────────────────────
-
-interface ToggleRowProps {
-  id: string;
-  label: string;
-  checked: boolean;
-  onChange: () => void;
-}
-
-function ToggleRow({ id, label, checked, onChange }: ToggleRowProps): React.ReactElement {
-  return (
-    <div className="flex items-center justify-between">
-      <label
-        htmlFor={id}
-        className="font-body text-text-primary-light dark:text-text-primary-dark text-sm"
-      >
-        {label}
-      </label>
-      <button
-        id={id}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        onClick={onChange}
-        className={`settings-toggle ${checked ? 'is-checked' : ''} focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none`}
-      >
-        <span className="settings-toggle-thumb" aria-hidden="true" />
-      </button>
-    </div>
-  );
-}
-
-// ─── Custom Groups sub-component ──────────────────────────────────────
-
-interface CustomGroupsSectionProps {
-  groups: CustomGroup[];
-  onAdd: (group: CustomGroup) => void;
-  onRemove: (groupKey: string) => void;
-}
-
-function CustomGroupsSection({
-  groups,
-  onAdd,
-  onRemove,
-}: CustomGroupsSectionProps): React.ReactElement {
-  const { t } = useI18n();
-  const [hostname, setHostname] = useState('');
-  const [label, setLabel] = useState('');
-  const [error, setError] = useState('');
-
-  const handleAdd = () => {
-    const h = hostname.trim().toLowerCase();
-    const l = label.trim();
-    if (!h) { setError(t('settingsRuleRequiredHostname')); return; }
-    if (!l) { setError(t('settingsRuleRequiredLabel')); return; }
-    const key = h.replace(/[^a-z0-9]/g, '-');
-    if (groups.some((g) => g.groupKey === key || g.hostname === h)) {
-      setError(t('settingsRuleDuplicateHostname'));
-      return;
-    }
-    onAdd({ hostname: h, groupKey: key, groupLabel: l });
-    setHostname('');
-    setLabel('');
-    setError('');
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleAdd();
-  };
-
-  return (
-    <div className="flex flex-col gap-3">
-      <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm font-medium">
-        {t('settingsCustomRulesTitle')}
-      </span>
-
-      <div className="rounded-md border border-accent-blue/15 bg-accent-blue/[0.03] p-3 text-xs text-text-secondary leading-relaxed font-body mb-1 flex gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="text-accent-blue size-4 shrink-0 mt-0.5" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
-        </svg>
-        <div>
-          <strong className="text-text-primary-light dark:text-text-primary-dark block mb-0.5">
-            {t('settingsCustomRulesExplanationTitle')}
-          </strong>
-          <p>
-            {t('settingsCustomRulesExplanationDesc')}
-          </p>
-        </div>
-      </div>
-
-      {/* Existing rules */}
-      {groups.length > 0 && (
-        <ul className="flex flex-col gap-1">
-          {groups.map((g) => (
-            <li
-              key={g.groupKey}
-              className="flex items-center justify-between rounded-chip bg-surface-light dark:bg-surface-dark px-3 py-1.5"
-            >
-              <div className="flex flex-col min-w-0">
-                <span className="font-body text-text-primary-light dark:text-text-primary-dark text-xs font-medium truncate">
-                  {g.groupLabel}
-                </span>
-                <span className="font-body text-text-secondary text-xs truncate">
-                  {g.hostname ?? g.hostnameEndsWith}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => onRemove(g.groupKey)}
-                aria-label={`Remove ${g.groupLabel} group`}
-                className="ml-2 shrink-0 text-accent-red hover:bg-accent-red/10 focus-visible:ring-accent-red/40 rounded-chip flex size-7 items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-3.5" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Add form */}
-      <div className="flex flex-col gap-2">
-        <label htmlFor="custom-group-hostname" className="sr-only">
-          {t('settingsPlaceholderHostname')}
-        </label>
-        <input
-          id="custom-group-hostname"
-          type="text"
-          placeholder={t('settingsPlaceholderHostname')}
-          value={hostname}
-          onChange={(e) => { setHostname(e.target.value); setError(''); }}
-          onKeyDown={handleKeyDown}
-          className="settings-input placeholder:text-text-secondary w-full focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
-        />
-        <label htmlFor="custom-group-label" className="sr-only">
-          {t('settingsPlaceholderLabel')}
-        </label>
-        <input
-          id="custom-group-label"
-          type="text"
-          placeholder={t('settingsPlaceholderLabel')}
-          value={label}
-          onChange={(e) => { setLabel(e.target.value); setError(''); }}
-          onKeyDown={handleKeyDown}
-          className="settings-input placeholder:text-text-secondary w-full focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
-        />
-        {error && (
-          <span className="text-accent-red text-xs font-body">{error}</span>
-        )}
-        <button
-          type="button"
-          onClick={handleAdd}
-          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 rounded-chip px-3 py-1.5 self-end transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-[var(--spacing-button-height)]"
-        >
-          {t('settingsBtnAddRule')}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Sections Section sub-component ─────────────────────────────────────
-
-interface SectionsSectionProps {
-  sections: Section[];
-  onUpdateSection: (id: string, updates: Partial<Omit<Section, 'id'>>) => void;
-  onDeleteSection: (id: string) => void;
-  onCreateSection?: (name: string) => void;
-}
-
-function SectionsSection({ sections, onUpdateSection, onDeleteSection, onCreateSection }: SectionsSectionProps): React.ReactElement {
-  const { t } = useI18n();
-  const [newSectionName, setNewSectionName] = useState('');
-
-  const handleAddSection = () => {
-    const name = newSectionName.trim();
-    if (!name) return;
-    onCreateSection?.(name);
-    setNewSectionName('');
-  };
-
-  return (
-    <div className="flex flex-col gap-4">
-      <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm font-medium">
-        {t('settingsSectionsTitle')}
-      </span>
-
-      <div className="rounded-md border border-accent-blue/15 bg-accent-blue/[0.03] p-3 text-xs text-text-secondary leading-relaxed font-body mb-1 flex gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="text-accent-blue size-4 shrink-0 mt-0.5" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
-        </svg>
-        <div>
-          <strong className="text-text-primary-light dark:text-text-primary-dark block mb-0.5">
-            {t('settingsSectionsExplanationTitle')}
-          </strong>
-          <p>
-            {t('settingsSectionsExplanationDesc')}
-          </p>
-        </div>
-      </div>
-
-      {/* Add Section Form */}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          placeholder={t('settingsPlaceholderSectionName')}
-          aria-label={t('settingsPlaceholderSectionName')}
-          value={newSectionName}
-          onChange={(e) => setNewSectionName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAddSection()}
-          className="flex-1 settings-input placeholder:text-text-secondary focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
-        />
-        <button
-          type="button"
-          onClick={handleAddSection}
-          className="font-body text-xs text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 rounded-chip px-3 py-1.5 transition-colors focus-visible:ring-2 focus-visible:outline-none cursor-pointer min-h-[var(--spacing-button-height)] font-medium"
-        >
-          {t('settingsBtnAddSection')}
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-4 max-h-[300px] overflow-y-auto pr-1">
-        {sections.length === 0 ? (
-          <span className="text-text-secondary text-xs font-body italic py-4 text-center">
-            {t('settingsNoSectionsCreated')}
-          </span>
-        ) : (
-          sections.map((section) => {
-            const rulesText = (section.autoRules ?? []).map(r => r.pattern).join('\n');
-            return (
-              <div key={section.id} className="border border-border-color rounded-md p-3 bg-surface-light dark:bg-surface-dark flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="relative w-10 shrink-0">
-                    <label htmlFor={`section-emoji-${section.id}`} className="sr-only">
-                      {t('settingsLabelEmoji')}
-                    </label>
-                    <input
-                      id={`section-emoji-${section.id}`}
-                      type="text"
-                      maxLength={2}
-                      value={section.emoji ?? ''}
-                      onChange={(e) => onUpdateSection(section.id, { emoji: e.target.value })}
-                      className="w-full h-full text-center settings-input focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
-                      aria-label={t('settingsLabelEmoji')}
-                    />
-                    {!section.emoji && (
-                      <span className="absolute inset-0 flex items-center justify-center pointer-events-none text-text-secondary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
-                        </svg>
-                      </span>
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    aria-label={t('settingsPlaceholderSectionName')}
-                    value={section.name}
-                    onChange={(e) => onUpdateSection(section.id, { name: e.target.value })}
-                    className="flex-1 settings-input focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => onDeleteSection(section.id)}
-                    aria-label={t('settingsBtnDeleteSection')}
-                    className="text-accent-red hover:bg-accent-red/10 rounded p-1 flex items-center justify-center cursor-pointer shrink-0"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.34 12m-4.72 0-.34-12M4.75 6.75h14.5M3.375 5.25h17.25m-1.5 0-.825 15.6a2.25 2.25 0 0 1-2.247 2.13H7.43a2.25 2.25 0 0 1-2.247-2.13L4.35 5.25" />
-                    </svg>
-                  </button>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="font-body text-text-secondary text-[var(--text-3xs)]">
-                    {t('settingsLabelAutoRules')}
-                  </span>
-                  <textarea
-                    id="settings-auto-rules"
-                    value={rulesText}
-                    placeholder="e.g. github&#10;vercel"
-                    onChange={(e) => {
-                      const patterns = e.target.value.split('\n').filter(Boolean);
-                      onUpdateSection(section.id, {
-                        autoRules: patterns.map(p => ({ pattern: p, type: 'hostname' }))
-                      });
-                    }}
-                    className="settings-input placeholder:text-text-secondary w-full h-16 resize-none focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
-                    aria-label={t('settingsLabelAutoRules')}
-                  />
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Keyboard Shortcuts Section sub-component ─────────────────────────
-
-interface KeyboardSectionProps {
-  keyBindings: AppSettings['keyBindings'];
-  onUpdateKeyBinding: (key: keyof AppSettings['keyBindings'], binding: string) => void;
-  onResetKeyBindings: () => void;
-}
-
-function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBindings }: KeyboardSectionProps): React.ReactElement {
-  const { t } = useI18n();
-  const [recordingKey, setRecordingKey] = useState<keyof AppSettings['keyBindings'] | null>(null);
-
-  const SHORTCUT_LABELS: Record<string, string> = {
-    switchSectionN: t('settingsShortcutLabelSwitchSectionN'),
-    switchSectionAll: t('settingsShortcutLabelSwitchSectionAll'),
-    cyclePrev: t('settingsShortcutLabelCycleSectionPrev'),
-    cycleNext: t('settingsShortcutLabelCycleSectionNext'),
-    focusSearch: t('settingsShortcutLabelFocusSearch'),
-    clearFilter: t('settingsShortcutLabelClearSectionFilter'),
-  };
-
-  const onUpdateKeyBindingEffect = useEffectEvent(onUpdateKeyBinding);
-
-  useEffect(() => {
-    if (!recordingKey) return;
-
-    function handleKeyDown(e: KeyboardEvent) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (e.key === 'Escape') {
-        setRecordingKey(null);
-        return;
-      }
-
-      const parts: string[] = [];
-      if (e.metaKey) parts.push('Meta');
-      if (e.ctrlKey) parts.push('Control');
-      if (e.altKey) parts.push('Alt');
-      if (e.shiftKey) parts.push('Shift');
-
-      let mainKey = e.key;
-      if (mainKey === ' ') mainKey = 'Space';
-      if (mainKey.length === 1) mainKey = mainKey.toUpperCase();
-
-      if (!['Meta', 'Control', 'Alt', 'Shift'].includes(e.key)) {
-        parts.push(mainKey);
-        const formatted = parts.join('+');
-        if (recordingKey) {
-          onUpdateKeyBindingEffect(recordingKey, formatted);
-        }
-        setRecordingKey(null);
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [recordingKey]);
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm font-medium">
-          {t('settingsShortcutsTitle')}
-        </span>
-        <button
-          type="button"
-          onClick={onResetKeyBindings}
-          className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 px-2 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none min-h-[var(--spacing-button-height)]"
-        >
-          {t('settingsShortcutsResetBtn')}
-        </button>
-      </div>
-      <div className="flex flex-col gap-2">
-        {Object.entries(SHORTCUT_LABELS).map(([key, label]) => {
-          const binding = keyBindings[key as keyof typeof keyBindings] || 'None';
-          const isRecording = recordingKey === key;
-
-          return (
-            <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded bg-surface-light dark:bg-surface-dark border border-border-color/50 min-h-[var(--spacing-button-height)]">
-              <span className="font-body text-xs text-text-primary-light dark:text-text-primary-dark">{label}</span>
-              <button
-                type="button"
-                data-recording-shortcut={isRecording ? 'true' : undefined}
-                onClick={() => setRecordingKey(isRecording ? null : (key as keyof AppSettings['keyBindings']))}
-                className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-[var(--spacing-button-height-sm)] min-w-[var(--width-button-min)] ${
-                  isRecording
-                    ? 'bg-[var(--accent-amber)]/10 dark:bg-[var(--accent-amber)]/20 text-[var(--accent-amber)] dark:text-[var(--accent-amber)] border-[var(--accent-amber)] dark:border-[var(--accent-amber)] animate-pulse'
-                    : 'bg-[var(--bg-card)] dark:bg-[var(--bg-card)] text-text-secondary border-border-color hover:border-text-muted dark:hover:border-text-muted-dark'
-                }`}
-              >
-                {isRecording ? t('settingsShortcutRecording') : binding}
-              </button>
-            </div>
-          );
-        })}
       </div>
     </div>
   );

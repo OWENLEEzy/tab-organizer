@@ -60,7 +60,7 @@ describe('useChromeStorageSync', () => {
       {
         settings: { oldValue: {}, newValue: { maxChipsVisible: 12 } },
         sections: { oldValue: [], newValue: [{ id: 'work', name: 'Work', order: 0 }] },
-        history: { oldValue: [], newValue: [{ id: 'snapshot-1' }] },
+        recoverySnapshots: { oldValue: [], newValue: [{ id: 'snapshot-1' }] },
       },
       'local',
     );

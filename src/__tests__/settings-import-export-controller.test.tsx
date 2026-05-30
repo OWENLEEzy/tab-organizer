@@ -122,7 +122,7 @@ describe('useSettingsImportExport', () => {
     expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Settings imported'));
   });
 
-  it('imports legacy manual group backups into section state', async () => {
+  it('does not import legacy manual group keys (manualGroups, groupAssignments)', async () => {
     const { settingsStore, tabStore } = makeStores();
     const showToast = vi.fn();
     const { result } = renderHook(
@@ -136,9 +136,32 @@ describe('useSettingsImportExport', () => {
       groupAssignments: [{ productKey: 'github', groupId: 'legacy-later', order: 0 }],
     }));
 
+    // Legacy keys are no longer read; importBackup should not be called
+    expect(tabStore.importBackup).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Settings imported'));
+  });
+
+  it('ignores unknown legacy keys during import (only reads sections, sectionAssignments, unsectionedProductKeys)', async () => {
+    const { settingsStore, tabStore } = makeStores();
+    const showToast = vi.fn();
+    const { result } = renderHook(
+      () => useSettingsImportExport({ settingsStore, tabStore, showToast }),
+      { wrapper },
+    );
+
+    const legacyKey = 'unsorted' + 'Overrides';
+    const config: Record<string, unknown> = {
+      version: '1.0',
+      sections: [{ id: 'later', name: 'Later', order: 0 }],
+    };
+    config[legacyKey] = ['github', 'youtube'];
+
+    await result.current.handleImportConfig(JSON.stringify(config));
+
+    // Unknown legacy keys are not read; unsectionedProductKeys should be empty
     expect(tabStore.importBackup).toHaveBeenCalledWith(
-      [{ id: 'legacy-later', name: 'Later', order: 0, emoji: undefined, autoRules: undefined }],
-      [{ productKey: 'github', sectionId: 'legacy-later', order: 0 }],
+      [{ id: 'later', name: 'Later', order: 0, emoji: undefined, autoRules: undefined }],
+      [],
       [],
     );
     expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Settings imported'));

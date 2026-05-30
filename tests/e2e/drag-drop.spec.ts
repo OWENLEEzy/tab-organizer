@@ -6,7 +6,7 @@ test.describe('Drag & Drop', () => {
   });
 
 
-  test('domain cards are visible', async ({ page }) => {
+  test('product group cards are visible', async ({ page }) => {
     await page.waitForSelector('[class*="rounded-card"]');
 
     const cards = page.locator('[class*="rounded-card"]');
@@ -15,7 +15,7 @@ test.describe('Drag & Drop', () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test('domain card shows drag handle by default', async ({ page }) => {
+  test('product group card shows drag handle by default', async ({ page }) => {
     await page.waitForSelector('[class*="rounded-card"]');
 
     // With direct drag, grab cursor should be visible without clicking Organize
@@ -36,7 +36,7 @@ test.describe('Drag & Drop', () => {
     expect(cursor).toContain('grab');
   });
 
-  test('domain cards have grab cursor by default', async ({ page }) => {
+  test('product group cards have grab cursor by default', async ({ page }) => {
     await page.waitForSelector('[class*="rounded-card"]');
 
     const grabbableElements = page.locator('.cursor-grab');

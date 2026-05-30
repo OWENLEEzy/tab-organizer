@@ -52,7 +52,7 @@ describe('TabChip selection mode', () => {
     expect(chip.closest('.group')?.className).toContain('chip-closing');
   });
 
-  it('updates memoized domain cards when chip selection changes', () => {
+  it('updates memoized product group cards when chip selection changes', () => {
     const tab: Tab = {
       id: 1,
       url: 'https://example.com/page',

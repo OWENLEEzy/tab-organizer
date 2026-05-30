@@ -4,14 +4,14 @@ import { LoadingState } from './components/states/LoadingState';
 import { ProductGroupTableMemo as ProductGroupTable } from './components/product-groups/ProductGroupTable';
 import { SelectionBar } from './components/tabs/SelectionBar';
 import { EmptyState } from './components/states/EmptyState';
-import { Footer } from './components/Footer';
+import { Footer } from './components/layout/Footer';
 import { Toast } from './components/states/Toast';
-import { ConfirmationDialog } from './components/ConfirmationDialog';
-import { PromptDialog } from './components/PromptDialog';
+import { ConfirmationDialog } from './components/states/ConfirmationDialog';
+import { PromptDialog } from './components/states/PromptDialog';
 import { DashboardShell } from './components/layout/DashboardShell';
 import { DashboardHeader } from './components/layout/DashboardHeader';
 
-import type { FooterAlert } from './components/Footer';
+import type { FooterAlert } from './components/layout/Footer';
 import { useDashboardController } from './controllers/useDashboardController';
 import { useI18n } from './hooks/useI18n';
 import { useTheme } from './hooks/useTheme';
@@ -23,8 +23,8 @@ const SettingsPanel = React.lazy(() =>
   import('./components/settings/SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
 );
 
-const DndOrganizer = React.lazy(() =>
-  import('./components/organizer/DndOrganizer').then((module) => ({ default: module.DndOrganizer })),
+const DndSectionOrganizer = React.lazy(() =>
+  import('./components/sections/DndSectionOrganizer').then((module) => ({ default: module.DndSectionOrganizer })),
 );
 
 const RecoveryPanel = React.lazy(() =>
@@ -41,9 +41,7 @@ export function App(): React.ReactElement {
   const { settings } = settingsStore;
   const { recoverySnapshots, viewMode } = tabStore;
 
-  const appVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
-    ? chrome.runtime.getManifest().version
-    : '2.0.0';
+  const { appVersion } = derived;
 
   useTheme(settings.theme);
 
@@ -265,7 +263,7 @@ export function App(): React.ReactElement {
                   onCloseProduct={handlers.handleCloseProduct}
                   onCloseDuplicates={handlers.handleCloseDuplicates}
                   onFocusTab={handlers.handleFocusTab}
-                  expandedProductGroups={state.expandedDomains}
+                  expandedProductGroups={state.expandedProductGroups}
                   onToggleProductGroupExpanded={handlers.handleToggleExpanded}
                   onCloseTab={handlers.handleCloseTabAnimated}
                   onChipClick={handlers.handleChipClick}
@@ -279,14 +277,14 @@ export function App(): React.ReactElement {
               ) : viewMode === 'cards' ? (
                 <ErrorBoundary>
                   <React.Suspense fallback={<LoadingState />}>
-                    <DndOrganizer
+                    <DndSectionOrganizer
                       filteredProducts={derived.filteredProducts}
                       unassignedProducts={derived.unassignedProducts}
                       orderedSections={derived.cardsSections}
                       productsBySection={derived.productsBySection}
                       assignmentByItemId={derived.assignmentByItemId}
                       itemIdForProduct={derived.itemIdForProduct}
-                      expandedProductGroups={state.expandedDomains}
+                      expandedProductGroups={state.expandedProductGroups}
                       maxChipsVisible={settings.maxChipsVisible}
                       staleThresholdDays={settings.staleThresholdDays ?? 3}
                       focusedUrl={state.focusedUrl}

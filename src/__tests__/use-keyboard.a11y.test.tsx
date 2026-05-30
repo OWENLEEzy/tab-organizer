@@ -4,7 +4,7 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useKeyboard } from '../dashboard/hooks/useKeyboard';
 import { I18nProvider } from '../dashboard/providers/I18nProvider';
-import { SectionSwitcher } from '../dashboard/components/organizer/SectionSwitcher';
+import { SectionSwitcher } from '../dashboard/components/sections/SectionSwitcher';
 
 afterEach(() => {
   cleanup();

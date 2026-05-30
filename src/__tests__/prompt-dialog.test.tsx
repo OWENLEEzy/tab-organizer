@@ -2,7 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '../dashboard/providers/I18nProvider';
-import { PromptDialog } from '../dashboard/components/PromptDialog';
+import { PromptDialog } from '../dashboard/components/states/PromptDialog';
 import type { PromptDialogProps } from '../types';
 
 afterEach(() => {

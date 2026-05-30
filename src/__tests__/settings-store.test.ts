@@ -45,6 +45,7 @@ describe('useSettingsStore', () => {
       theme: 'sage' as const,
       soundEnabled: false,
     };
+    chromeStorage.data['schemaVersion'] = 5;
     chromeStorage.data['settings'] = customSettings;
 
     await useSettingsStore.getState().fetchSettings();

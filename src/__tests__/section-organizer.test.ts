@@ -98,7 +98,7 @@ describe('buildOrganizerModel', () => {
       sections,
       products,
       assignments,
-      noSectionOverrides: [],
+      unsectionedProductKeys: [],
       activeSectionId: null,
     });
 
@@ -112,7 +112,7 @@ describe('buildOrganizerModel', () => {
     expect(getProductSectionId('example.com', model.assignmentByProductKey)).toBe(NO_SECTION_ID);
   });
 
-  it('includes products in noSectionOverrides in unassignedProducts bucket', () => {
+  it('includes products in unsectionedProductKeys in unassignedProducts bucket', () => {
     const products = [
       product('github', ['https://github.com/a']),
       product('youtube', ['https://youtube.com/watch?v=1']),
@@ -126,7 +126,7 @@ describe('buildOrganizerModel', () => {
       sections,
       products,
       assignments,
-      noSectionOverrides: ['youtube'],
+      unsectionedProductKeys: ['youtube'],
       activeSectionId: null,
     });
 
@@ -147,7 +147,7 @@ describe('autoAssignProducts', () => {
       products,
       sections,
       assignments: [{ productKey: 'github', sectionId: 'section-dev', order: 0 }],
-      noSectionOverrides: ['youtube'],
+      unsectionedProductKeys: ['youtube'],
       hostnamesByProductKey: new Map([
         ['github', ['github.com']],
         ['youtube', ['youtube.com']],
@@ -174,7 +174,7 @@ describe('autoAssignProducts', () => {
       products,
       sections: [multiRuleSection],
       assignments: [],
-      noSectionOverrides: [],
+      unsectionedProductKeys: [],
       hostnamesByProductKey: new Map([['github', ['github.com']]]),
     });
 
@@ -194,7 +194,7 @@ describe('autoAssignProducts', () => {
       products,
       sections,
       assignments: existingAssignments,
-      noSectionOverrides: [],
+      unsectionedProductKeys: [],
       hostnamesByProductKey: new Map([
         ['github', ['github.com']],
         ['vercel', ['vercel.com']],
@@ -223,7 +223,7 @@ describe('autoAssignProducts', () => {
       products,
       sections: [multiRuleSection],
       assignments: [],
-      noSectionOverrides: [],
+      unsectionedProductKeys: [],
       hostnamesByProductKey: new Map([['github', ['github.com']]]),
     });
 
@@ -324,7 +324,7 @@ describe('autoAssignProducts edge cases', () => {
       products,
       sections,
       assignments,
-      noSectionOverrides: [],
+      unsectionedProductKeys: [],
       hostnamesByProductKey: new Map([['github', ['github.com']]]),
     });
 
@@ -338,7 +338,7 @@ describe('autoAssignProducts edge cases', () => {
       products,
       sections,
       assignments: [],
-      noSectionOverrides: [],
+      unsectionedProductKeys: [],
       hostnamesByProductKey: new Map([['unknown', ['unknown.com']]]),
     });
 
@@ -355,7 +355,7 @@ describe('buildOrganizerModel with activeSectionId', () => {
       sections,
       products,
       assignments,
-      noSectionOverrides: [],
+      unsectionedProductKeys: [],
       activeSectionId: 'section-dev',
     });
 
@@ -378,7 +378,7 @@ describe('buildOrganizerModel product.order fallback sorting', () => {
       sections,
       products,
       assignments,
-      noSectionOverrides: [],
+      unsectionedProductKeys: [],
       activeSectionId: null,
     });
 

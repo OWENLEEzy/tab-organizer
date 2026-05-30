@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState } from 'react';
 import { closestCenter, DndContext, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import type { Section, TabGroup } from '../../../types';
@@ -10,6 +10,7 @@ import {
   toSectionDropId,
 } from '../../../lib/section-organizer';
 import { ProductGroupCard } from '../product-groups/ProductGroupCard';
+import { SectionActionsDropdown } from './SectionActionsDropdown';
 import { useI18n } from '../../hooks/useI18n';
 
 // ─── Draggable card wrapper ────────────────────────────────────────────
@@ -106,93 +107,6 @@ interface DndGroupBoardProps {
   searchQuery?: string;
 }
 
-interface SectionActionsDropdownProps {
-  section?: Section;
-  tabCount: number;
-  title: string;
-  onRenameSection?: (group: Section) => void;
-  onDeleteSection?: (group: Section) => void;
-  onCloseSection: (groups: TabGroup[], title: string) => void;
-  items: TabGroup[];
-}
-
-function SectionActionsDropdown({
-  section,
-  tabCount,
-  title,
-  onRenameSection,
-  onDeleteSection,
-  onCloseSection,
-  items,
-}: SectionActionsDropdownProps) {
-  const { t } = useI18n();
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
-
-  if (!section && tabCount === 0) return null;
-
-  return (
-    <div className="relative" ref={menuRef}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="rounded-chip text-text-secondary hover:bg-surface-light dark:hover:bg-surface-dark flex h-6 w-6 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none"
-        aria-label="Section options"
-        aria-expanded={isOpen}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-        </svg>
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-1 z-50 w-36 overflow-hidden rounded-md border border-border-color bg-bg-card shadow-lg flex flex-col font-body py-1">
-          {section && (
-            <>
-              <button
-                type="button"
-                onClick={() => { setIsOpen(false); onRenameSection?.(section); }}
-                className="w-full text-left px-3 py-1.5 text-xs text-text-primary hover:bg-surface-light dark:hover:bg-surface-dark cursor-pointer transition-colors"
-              >
-                {t('organizerBtnRename')}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setIsOpen(false); onDeleteSection?.(section); }}
-                className="w-full text-left px-3 py-1.5 text-xs text-text-primary hover:bg-surface-light dark:hover:bg-surface-dark cursor-pointer transition-colors"
-              >
-                {t('organizerBtnDelete')}
-              </button>
-            </>
-          )}
-          {section && tabCount > 0 && <div className="mx-2 my-1 h-px bg-border-light dark:bg-border-dark opacity-50" />}
-          {tabCount > 0 && (
-            <button
-              type="button"
-              onClick={() => { setIsOpen(false); onCloseSection(items, title); }}
-              className="w-full text-left px-3 py-1.5 text-xs text-accent-red hover:bg-accent-red/10 cursor-pointer transition-colors"
-            >
-              {t('organizerBtnCloseAll')}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function DndGroupBoard({
   id,
   title,
@@ -225,7 +139,7 @@ export function DndGroupBoard({
       <div className="group-header">
         <div className="flex items-center gap-4 mb-1">
           <div className="flex items-baseline gap-3 shrink-0">
-            <h2 className="font-heading text-xl italic text-text-primary font-normal">
+            <h2 className="font-heading text-xl text-text-primary font-medium">
               {title}
             </h2>
             <span className="font-mono text-[0.65rem] font-bold uppercase tracking-[0.1em] text-text-muted">
@@ -275,7 +189,7 @@ export function DndGroupBoard({
 
 // ─── Root organizer ───────────────────────────────────────────────────
 
-interface DndOrganizerProps {
+interface DndSectionOrganizerProps {
   filteredProducts: TabGroup[];
   unassignedProducts: TabGroup[];
   orderedSections: Section[];
@@ -304,7 +218,7 @@ interface DndOrganizerProps {
   activeSectionId?: string | null;
 }
 
-export function DndOrganizer({
+export function DndSectionOrganizer({
   filteredProducts,
   unassignedProducts,
   orderedSections,
@@ -331,7 +245,7 @@ export function DndOrganizer({
   onToggleProductGroupExpanded,
   searchQuery = '',
   activeSectionId = null,
-}: DndOrganizerProps): React.ReactElement {
+}: DndSectionOrganizerProps): React.ReactElement {
   const { t } = useI18n();
   const [activeGroup, setActiveGroup] = useState<TabGroup | null>(null);
 

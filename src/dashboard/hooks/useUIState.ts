@@ -19,7 +19,7 @@ interface UIState {
   selectedUrls: Set<string>;
   selectedTabIds: Set<number>;
   lastClickedIndex: number | null;
-  expandedDomains: Set<string>;
+  expandedProductGroups: Set<string>;
   promptDialog: {
     id: string;
     open: boolean;
@@ -45,7 +45,7 @@ export type UIAction =
   | { type: 'SET_SELECTED_URLS'; urls: Set<string> | ((prev: Set<string>) => Set<string>) }
   | { type: 'SET_SELECTED_TAB_IDS'; tabIds: Set<number> | ((prev: Set<number>) => Set<number>) }
   | { type: 'SET_LAST_CLICKED_INDEX'; index: number | null }
-  | { type: 'SET_EXPANDED_DOMAINS'; domains: Set<string> | ((prev: Set<string>) => Set<string>) }
+  | { type: 'SET_EXPANDED_PRODUCT_GROUPS'; productGroups: Set<string> | ((prev: Set<string>) => Set<string>) }
   | { type: 'SET_PROMPT_DIALOG'; dialog: UIState['promptDialog'] }
   | { type: 'CLOSE_PROMPT_DIALOG' }
   | { type: 'RESET_INTERACTION' }
@@ -63,7 +63,7 @@ const initialState: UIState = {
   selectedUrls: new Set(),
   selectedTabIds: new Set(),
   lastClickedIndex: null,
-  expandedDomains: new Set(),
+  expandedProductGroups: new Set(),
   promptDialog: { id: '', open: false, title: '', label: '', initialValue: '', confirmLabel: '', onConfirm: () => {} },
   sectionSwitcherFocused: false,
 };
@@ -94,8 +94,8 @@ function uiReducer(state: UIState, action: UIAction): UIState {
       return { ...state, selectedTabIds: typeof action.tabIds === 'function' ? action.tabIds(state.selectedTabIds) : action.tabIds };
     case 'SET_LAST_CLICKED_INDEX':
       return { ...state, lastClickedIndex: action.index };
-    case 'SET_EXPANDED_DOMAINS':
-      return { ...state, expandedDomains: typeof action.domains === 'function' ? action.domains(state.expandedDomains) : action.domains };
+    case 'SET_EXPANDED_PRODUCT_GROUPS':
+      return { ...state, expandedProductGroups: typeof action.productGroups === 'function' ? action.productGroups(state.expandedProductGroups) : action.productGroups };
     case 'SET_PROMPT_DIALOG':
       return { ...state, promptDialog: action.dialog };
     case 'CLOSE_PROMPT_DIALOG':

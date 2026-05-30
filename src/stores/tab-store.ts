@@ -22,6 +22,17 @@ import { duplicateTabIdsToClose } from '../lib/duplicate-tabs';
 import { getTabDomain, isRealTab } from '../lib/url-rules';
 import { isTabOrganizerPage } from '../utils/browser-url';
 import { getErrorMessage } from '../utils/error';
+import {
+  closeTabIds,
+  createChromeTab,
+  focusChromeTab,
+  getCurrentTab,
+  getCurrentWindow,
+  moveChromeTab,
+  queryAllTabs,
+  queryTabs,
+  subscribeToTabEvents,
+} from '../utils/chrome-tabs';
 import { useSettingsStore } from './settings-store';
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -217,7 +228,7 @@ export const useTabStore = create<TabStore>((set) => ({
   fetchTabs: async () => {
     set({ error: null });
     try {
-      const rawTabs = await chrome.tabs.query({});
+      const rawTabs = await queryAllTabs();
       const rawMapped = rawTabs.map(toAppTab);
       const dashboardCount = rawMapped.filter((tab) => tab.isDashboard).length;
       const mapped = rawMapped.filter((tab) => isRealTab(tab.url));
@@ -234,7 +245,7 @@ export const useTabStore = create<TabStore>((set) => ({
         products: productGroups,
         sections,
         assignments: sectionAssignments,
-        noSectionOverrides: organizerState.unsectionedProductKeys,
+        unsectionedProductKeys: organizerState.unsectionedProductKeys,
         hostnamesByProductKey,
       });
 
@@ -269,11 +280,11 @@ export const useTabStore = create<TabStore>((set) => ({
   closeTabByUrl: async (url: string) => {
     if (!url) return;
     try {
-      const allTabs = await chrome.tabs.query({});
+      const allTabs = await queryAllTabs();
       const match = allTabs.find((t) => t.url === url);
       if (match?.id != null) {
         await protectRecoveryBeforeClosing(allTabs);
-        await chrome.tabs.remove(match.id);
+        await closeTabIds(match.id);
       }
     } finally {
       await useTabStore.getState().fetchTabs();
@@ -284,7 +295,7 @@ export const useTabStore = create<TabStore>((set) => ({
     if (!urls || urls.length === 0) return;
 
     const uniqueUrls = [...new Set(urls)];
-    const allTabs = await chrome.tabs.query({});
+    const allTabs = await queryAllTabs();
     const toClose = uniqueUrls
       .map((url) => allTabs.find((tab) => tab.url === url)?.id)
       .filter((id): id is number => id != null);
@@ -292,7 +303,7 @@ export const useTabStore = create<TabStore>((set) => ({
     try {
       if (toClose.length > 0) {
         await protectRecoveryBeforeClosing(allTabs);
-        await chrome.tabs.remove(toClose);
+        await closeTabIds(toClose);
       }
     } finally {
       await useTabStore.getState().fetchTabs();
@@ -318,7 +329,7 @@ export const useTabStore = create<TabStore>((set) => ({
       }
     }
 
-    const allTabs = await chrome.tabs.query({});
+    const allTabs = await queryAllTabs();
     const toClose = allTabs
       .filter((tab) => {
         const tabUrl = tab.url ?? '';
@@ -336,7 +347,7 @@ export const useTabStore = create<TabStore>((set) => ({
     try {
       if (toClose.length > 0) {
         await protectRecoveryBeforeClosing(allTabs);
-        await chrome.tabs.remove(toClose);
+        await closeTabIds(toClose);
       }
     } finally {
       await useTabStore.getState().fetchTabs();
@@ -346,7 +357,7 @@ export const useTabStore = create<TabStore>((set) => ({
   closeTabsExact: async (urls: string[]) => {
     if (!urls || urls.length === 0) return;
     const urlSet = new Set(urls);
-    const allTabs = await chrome.tabs.query({});
+    const allTabs = await queryAllTabs();
     const toClose = allTabs
       .filter((t) => t.url && urlSet.has(t.url))
       .map((t) => t.id)
@@ -354,7 +365,7 @@ export const useTabStore = create<TabStore>((set) => ({
     try {
       if (toClose.length > 0) {
         await protectRecoveryBeforeClosing(allTabs);
-        await chrome.tabs.remove(toClose);
+        await closeTabIds(toClose);
       }
     } finally {
       await useTabStore.getState().fetchTabs();
@@ -367,7 +378,7 @@ export const useTabStore = create<TabStore>((set) => ({
     const ids = [...new Set(tabIds)].filter((id) => Number.isInteger(id));
     if (ids.length === 0) return;
 
-    const allTabs = await chrome.tabs.query({});
+    const allTabs = await queryAllTabs();
     const openIds = new Set(
       allTabs
         .map((tab) => tab.id)
@@ -378,7 +389,7 @@ export const useTabStore = create<TabStore>((set) => ({
     try {
       if (toClose.length > 0) {
         await protectRecoveryBeforeClosing(allTabs);
-        await chrome.tabs.remove(toClose);
+        await closeTabIds(toClose);
       }
     } finally {
       await useTabStore.getState().fetchTabs();
@@ -387,13 +398,13 @@ export const useTabStore = create<TabStore>((set) => ({
 
   closeDuplicates: async (urls: string[], keepOne: boolean) => {
     if (!urls || urls.length === 0) return;
-    const allTabs = await chrome.tabs.query({});
+    const allTabs = await queryAllTabs();
     const toClose = duplicateTabIdsToClose(allTabs, new Set(urls), keepOne);
 
     try {
       if (toClose.length > 0) {
         await protectRecoveryBeforeClosing(allTabs);
-        await chrome.tabs.remove(toClose);
+        await closeTabIds(toClose);
       }
     } finally {
       await useTabStore.getState().fetchTabs();
@@ -402,8 +413,8 @@ export const useTabStore = create<TabStore>((set) => ({
 
   focusTab: async (url: string) => {
     if (!url) return;
-    const allTabs = await chrome.tabs.query({});
-    const currentWindow = await chrome.windows.getCurrent();
+    const allTabs = await queryAllTabs();
+    const currentWindow = await getCurrentWindow();
 
     // Try exact URL match first
     let matches = allTabs.filter((t) => t.url === url);
@@ -432,9 +443,8 @@ export const useTabStore = create<TabStore>((set) => ({
 
     try {
       if (match.id != null) {
-        await chrome.tabs.update(match.id, { active: true });
+        await focusChromeTab(match.id, match.windowId);
       }
-      await chrome.windows.update(match.windowId, { focused: true });
     } finally {
       await useTabStore.getState().fetchTabs();
     }
@@ -450,25 +460,10 @@ export const useTabStore = create<TabStore>((set) => ({
       }, 300);
     };
 
-    const onCreated = (): void => refresh();
-    const onRemoved = (): void => refresh();
-    const onMoved = (_tabId: number, _info: chrome.tabs.OnMovedInfo): void => refresh();
-    const onUpdated = (_tabId: number, info: chrome.tabs.OnUpdatedInfo): void => {
-      if (info.url || info.title || info.favIconUrl || info.status === 'complete') {
-        refresh();
-      }
-    };
-
-    chrome.tabs.onCreated.addListener(onCreated);
-    chrome.tabs.onRemoved.addListener(onRemoved);
-    chrome.tabs.onMoved.addListener(onMoved);
-    chrome.tabs.onUpdated.addListener(onUpdated);
+    const unsubscribe = subscribeToTabEvents(refresh);
 
     return () => {
-      chrome.tabs.onCreated.removeListener(onCreated);
-      chrome.tabs.onRemoved.removeListener(onRemoved);
-      chrome.tabs.onMoved.removeListener(onMoved);
-      chrome.tabs.onUpdated.removeListener(onUpdated);
+      unsubscribe();
       if (timer) clearTimeout(timer);
     };
   },
@@ -590,7 +585,7 @@ export const useTabStore = create<TabStore>((set) => ({
 
     try {
       for (const tab of snapshot.tabs) {
-        await chrome.tabs.create({ url: tab.url, active: false });
+        await createChromeTab(tab.url);
       }
     } finally {
       await useTabStore.getState().fetchTabs();
@@ -605,7 +600,7 @@ export const useTabStore = create<TabStore>((set) => ({
     try {
       const productTabs = snapshot.tabs.filter((t) => t.productKey === productKey);
       for (const tab of productTabs) {
-        await chrome.tabs.create({ url: tab.url, active: false });
+        await createChromeTab(tab.url);
       }
     } finally {
       await useTabStore.getState().fetchTabs();
@@ -624,16 +619,16 @@ export const useTabStore = create<TabStore>((set) => ({
 
   closeExtraDashboards: async () => {
     try {
-      const currentTab = await chrome.tabs.getCurrent();
+      const currentTab = await getCurrentTab();
       const currentTabId = currentTab?.id ?? -1;
-      const allTabs = await chrome.tabs.query({});
+      const allTabs = await queryAllTabs();
       const extraDashboards = allTabs
         .filter((tab) => tab.id != null && tab.id !== currentTabId && isTabOrganizerPage(tab.url ?? ''))
         .map((tab) => tab.id)
         .filter((id): id is number => id != null);
 
       if (extraDashboards.length > 0) {
-        await chrome.tabs.remove(extraDashboards);
+        await closeTabIds(extraDashboards);
       }
     } catch (err: unknown) {
       console.warn('[Tab Organizer] Failed to close extra dashboards:', err);
@@ -654,11 +649,11 @@ export const useTabStore = create<TabStore>((set) => ({
 
   sortCurrentWindowTabsByDashboardOrder: async (products: TabGroup[]) => {
     // 1. Get current window
-    const currentWindow = await chrome.windows.getCurrent();
+    const currentWindow = await getCurrentWindow();
     const windowId = currentWindow.id;
 
     // 2. Query all tabs in this window
-    const allTabs = await chrome.tabs.query({ windowId });
+    const allTabs = await queryTabs({ windowId });
 
     // 3. Separate pinned from unpinned; filter to real web tabs only
     const pinnedTabs = allTabs.filter((t) => t.pinned);
@@ -748,7 +743,7 @@ export const useTabStore = create<TabStore>((set) => ({
     // We use sequential moves preserving relative order
     for (const move of moves) {
       try {
-        await chrome.tabs.move(move.id, { index: move.index });
+        await moveChromeTab(move.id, move.index);
       } catch (err) {
         console.warn('[Tab Organizer] Failed to move tab', move.id, err);
       }

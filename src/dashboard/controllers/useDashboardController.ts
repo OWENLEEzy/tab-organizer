@@ -13,6 +13,7 @@ import { isTabStale } from '../../lib/staleness';
 import { analyzeDuplicates } from '../../lib/duplicate-analysis';
 import { createSortComparator } from '../../lib/product-groups';
 import { parseSearchQuery, resolveSectionQueryTarget } from '../lib/search-commands';
+import { getExtensionVersion } from '../../utils/chrome-runtime';
 import { useChromeStorageSync } from './useChromeStorageSync';
 import { buildOrganizerModel, toProductItemId } from '../../lib/section-organizer';
 import { isDefaultSectionId } from '../../config/sections';
@@ -44,7 +45,7 @@ export function useDashboardController() {
   const {
     searchQuery,
     focusedIndex,
-    expandedDomains,
+    expandedProductGroups,
     selectedUrls,
     lastClickedIndex,
   } = state;
@@ -76,7 +77,7 @@ export function useDashboardController() {
     sections,
     products: sortedProducts,
     assignments: sectionAssignments,
-    noSectionOverrides: tabStore.unsectionedProductKeys,
+    unsectionedProductKeys: tabStore.unsectionedProductKeys,
     activeSectionId: tabStore.activeSectionId,
   }), [sections, sortedProducts, sectionAssignments, tabStore.unsectionedProductKeys, tabStore.activeSectionId]);
 
@@ -175,7 +176,7 @@ export function useDashboardController() {
     sections: structureOrganizerModel.sections,
     products: filteredProducts,
     assignments: sectionAssignments,
-    noSectionOverrides: tabStore.unsectionedProductKeys,
+    unsectionedProductKeys: tabStore.unsectionedProductKeys,
     activeSectionId: tabStore.activeSectionId,
   }), [structureOrganizerModel.sections, filteredProducts, sectionAssignments, tabStore.unsectionedProductKeys, tabStore.activeSectionId]);
 
@@ -197,7 +198,7 @@ export function useDashboardController() {
     const isSearching = debouncedSearchQuery.trim().length > 0;
     const activeExpanded = isSearching
       ? new Set(visualProducts.map(p => p.domain))
-      : expandedDomains;
+      : expandedProductGroups;
 
     return flattenVisibleTabs(
       visualProducts,
@@ -211,7 +212,7 @@ export function useDashboardController() {
     contentOrganizerModel.visibleSections,
     viewMode,
     settings.maxChipsVisible,
-    expandedDomains,
+    expandedProductGroups,
     debouncedSearchQuery,
   ]);
 
@@ -423,6 +424,7 @@ export function useDashboardController() {
       assignmentByItemId: structureOrganizerModel.assignmentByProductItemId,
       itemIdForProduct,
       flatChips,
+      appVersion: getExtensionVersion(),
     },
     dispatch,
     handlers: {

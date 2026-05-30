@@ -8,6 +8,7 @@
  * - SectionId: section's stable identity (section.id)
  * - SectionAssignment: { productKey, sectionId, order } — group-level label relationship
  * - NoSection: system bucket for products without section labels; not a real section, not persisted
+ * - unsectionedProductKeys: product keys the user explicitly moved to No section so auto-rules don't re-apply
  * - OrganizerModel: unified UI projection combining sections, products, assignments, and derived maps
  *
  * All UI id encoding/decoding lives here so the rest of the codebase stays pure.
@@ -97,7 +98,7 @@ export interface OrganizerModel {
   /** All explicit section assignments. */
   assignments: SectionAssignment[];
   /** Product keys that should not be auto-assigned (user chose No section). */
-  noSectionOverrides: string[];
+  unsectionedProductKeys: string[];
   /** Products explicitly assigned to each sectionId, sorted by assignment order. */
   productsBySection: Map<string, TabGroup[]>;
   /** Products with no section assignment (implicit NoSection bucket). */
@@ -118,7 +119,7 @@ export interface BuildOrganizerModelInput {
   sections: Section[];
   products: TabGroup[];
   assignments: SectionAssignment[];
-  noSectionOverrides: string[];
+  unsectionedProductKeys: string[];
   activeSectionId: string | null;
 }
 
@@ -129,7 +130,7 @@ export interface BuildOrganizerModelInput {
  * This is the single source of truth for all section-derived state in the UI.
  */
 export function buildOrganizerModel(input: BuildOrganizerModelInput): OrganizerModel {
-  const { sections, products, assignments, noSectionOverrides } = input;
+  const { sections, products, assignments, unsectionedProductKeys } = input;
 
   const sortedSections = [...sections].sort((a, b) => a.order - b.order);
 
@@ -186,7 +187,7 @@ export function buildOrganizerModel(input: BuildOrganizerModelInput): OrganizerM
   }
 
   // Unassigned products — includes products with no assignment, regardless of override status.
-  // noSectionOverrides only blocks auto-assignment; it does not hide products from the No section bucket.
+  // unsectionedProductKeys only blocks auto-assignment; it does not hide products from the No section bucket.
   const unassignedProducts = products.filter((p) => {
     const productKey = getProductKey(p);
     return !assignmentByProductKey.has(productKey);
@@ -215,7 +216,7 @@ export function buildOrganizerModel(input: BuildOrganizerModelInput): OrganizerM
     sections: sortedSections,
     products,
     assignments,
-    noSectionOverrides: noSectionOverrides,
+    unsectionedProductKeys: unsectionedProductKeys,
     productsBySection,
     unassignedProducts,
     visibleSections,
@@ -232,7 +233,7 @@ export interface AutoAssignProductsInput {
   products: TabGroup[];
   sections: Section[];
   assignments: SectionAssignment[];
-  noSectionOverrides: string[];
+  unsectionedProductKeys: string[];
   hostnamesByProductKey: Map<string, string[]>;
 }
 
@@ -242,15 +243,15 @@ export interface AutoAssignProductsInput {
  *
  * Rules:
  * - Only products with no existing assignment are candidates
- * - Products in noSectionOverrides are skipped
+ * - Products in unsectionedProductKeys are skipped
  * - All autoRules within each section are evaluated in order; first match wins
  * - Sections are evaluated in section order (sorted by order field)
  */
 export function autoAssignProducts(input: AutoAssignProductsInput): SectionAssignment[] {
-  const { products, sections, assignments, noSectionOverrides, hostnamesByProductKey } = input;
+  const { products, sections, assignments, unsectionedProductKeys, hostnamesByProductKey } = input;
 
   const assignedKeys = new Set(assignments.map((a) => a.productKey));
-  const overrideSet = new Set(noSectionOverrides);
+  const overrideSet = new Set(unsectionedProductKeys);
   const sortedSections = [...sections].sort((a, b) => a.order - b.order);
 
   const newAssignments: SectionAssignment[] = [];
@@ -319,7 +320,7 @@ export function assignProductToSection(
 }
 
 /**
- * Remove all assignments for the given productKey and add it to noSectionOverrides.
+ * Remove all assignments for the given productKey and add it to unsectionedProductKeys.
  * The productKey will be immune to auto-assignment until explicitly assigned.
  */
 export function moveProductToUnsectioned(
@@ -336,7 +337,7 @@ export function moveProductToUnsectioned(
 
 /**
  * Remove a section and unassign all products that were in it.
- * The affected productKeys are added to noSectionOverrides so autoRules don't re-apply.
+ * The affected productKeys are added to unsectionedProductKeys so autoRules don't re-apply.
  */
 export function deleteSectionAndUnassignProducts(
   currentAssignments: SectionAssignment[],
