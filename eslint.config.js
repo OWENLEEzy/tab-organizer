@@ -357,12 +357,8 @@ export default defineConfig([
   },
 
   // Rule 9: Stores must use Chrome adapters, not raw chrome.* APIs
-  // tab-store.ts is exempted because it contains listener lifecycle wiring
-  // (chrome.tabs.onCreated, onRemoved, etc.) which is event registration, not
-  // action logic. All action calls (query, close, focus, move) use adapters.
   {
     files: ['src/stores/**/*.{ts,tsx}'],
-    ignores: ['src/stores/tab-store.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',

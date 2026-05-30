@@ -31,6 +31,7 @@ import {
   moveChromeTab,
   queryAllTabs,
   queryTabs,
+  subscribeToTabEvents,
 } from '../utils/chrome-tabs';
 import { useSettingsStore } from './settings-store';
 
@@ -459,25 +460,10 @@ export const useTabStore = create<TabStore>((set) => ({
       }, 300);
     };
 
-    const onCreated = (): void => refresh();
-    const onRemoved = (): void => refresh();
-    const onMoved = (_tabId: number, _info: chrome.tabs.OnMovedInfo): void => refresh();
-    const onUpdated = (_tabId: number, info: chrome.tabs.OnUpdatedInfo): void => {
-      if (info.url || info.title || info.favIconUrl || info.status === 'complete') {
-        refresh();
-      }
-    };
-
-    chrome.tabs.onCreated.addListener(onCreated);
-    chrome.tabs.onRemoved.addListener(onRemoved);
-    chrome.tabs.onMoved.addListener(onMoved);
-    chrome.tabs.onUpdated.addListener(onUpdated);
+    const unsubscribe = subscribeToTabEvents(refresh);
 
     return () => {
-      chrome.tabs.onCreated.removeListener(onCreated);
-      chrome.tabs.onRemoved.removeListener(onRemoved);
-      chrome.tabs.onMoved.removeListener(onMoved);
-      chrome.tabs.onUpdated.removeListener(onUpdated);
+      unsubscribe();
       if (timer) clearTimeout(timer);
     };
   },
