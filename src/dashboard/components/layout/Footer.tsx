@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useI18n } from '../hooks/useI18n';
+import { useI18n } from '../../hooks/useI18n';
 
 interface FooterProps {
   tabCount: number;
@@ -104,7 +104,7 @@ export function Footer({
           {alerts.length > 0 && (
             <>
               <span className="footer-sep" aria-hidden="true" />
-              <ul className="footer-metrics" role="list">
+              <ul className="footer-metrics">
                 {alerts.map((alert) => (
                   <li key={alert.id} className="footer-metric footer-metric-warn">
                     <svg className="footer-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true" focusable="false">

@@ -1,7 +1,7 @@
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
-import type { PromptDialogProps } from '../../types';
-import { ActionButton } from './ui/ActionButton';
-import { useI18n } from '../hooks/useI18n';
+import type { PromptDialogProps } from '../../../types';
+import { ActionButton } from '../ui/ActionButton';
+import { useI18n } from '../../hooks/useI18n';
 
 // ─── Component ────────────────────────────────────────────────────────
 

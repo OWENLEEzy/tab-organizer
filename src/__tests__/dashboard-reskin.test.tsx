@@ -6,7 +6,7 @@ import { I18nProvider } from '../dashboard/providers/I18nProvider';
 import { DashboardHeader } from '../dashboard/components/layout/DashboardHeader';
 import { getDateFormatter, getSnapshotDateFormatter } from '../dashboard/lib/date-formatters';
 import { DashboardShell } from '../dashboard/components/layout/DashboardShell';
-import { Footer } from '../dashboard/components/Footer';
+import { Footer } from '../dashboard/components/layout/Footer';
 import { UtilityPanel } from '../dashboard/components/layout/UtilityPanel';
 import { TabChip } from '../dashboard/components/tabs/TabChip';
 

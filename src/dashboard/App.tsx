@@ -4,14 +4,14 @@ import { LoadingState } from './components/states/LoadingState';
 import { ProductGroupTableMemo as ProductGroupTable } from './components/product-groups/ProductGroupTable';
 import { SelectionBar } from './components/tabs/SelectionBar';
 import { EmptyState } from './components/states/EmptyState';
-import { Footer } from './components/Footer';
+import { Footer } from './components/layout/Footer';
 import { Toast } from './components/states/Toast';
-import { ConfirmationDialog } from './components/ConfirmationDialog';
-import { PromptDialog } from './components/PromptDialog';
+import { ConfirmationDialog } from './components/states/ConfirmationDialog';
+import { PromptDialog } from './components/states/PromptDialog';
 import { DashboardShell } from './components/layout/DashboardShell';
 import { DashboardHeader } from './components/layout/DashboardHeader';
 
-import type { FooterAlert } from './components/Footer';
+import type { FooterAlert } from './components/layout/Footer';
 import { useDashboardController } from './controllers/useDashboardController';
 import { useI18n } from './hooks/useI18n';
 import { useTheme } from './hooks/useTheme';
