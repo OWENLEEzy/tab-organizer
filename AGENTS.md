@@ -1,8 +1,10 @@
 # Tab Organizer Agent Notes
 
 Tab Organizer is a local-only Chrome MV3 extension. Clicking the toolbar icon opens a
-React dashboard of the user's currently open Chrome tabs. It is not a server
-app, account system, cloud sync product, bookmark manager, or task manager.
+compact React popup that summarizes the user's open Chrome tabs and offers a one-click
+"organize" action; the popup links to the full React dashboard, which also opens via the
+keyboard command. It is not a server app, account system, cloud sync product, bookmark
+manager, or task manager.
 
 ## How To Work In This Repo
 
@@ -41,6 +43,12 @@ app, account system, cloud sync product, bookmark manager, or task manager.
   but must not slow cleanup or obscure what was closed.
 - Duplicate cleanup means "keep one copy, close extras"; avoid ambiguous bulk
   actions.
+- "Organize" (popup one-click) and "sort window" (dashboard) may physically
+  reorder real Chrome tabs so same-product tabs sit together and may gather each
+  product into a native `chrome.tabGroups` group. Sorting happens before grouping;
+  pinned tabs are never reordered across the pinned/unpinned boundary and are never
+  grouped. The popup organize spans all windows; "sort window" is the current window
+  only and stays behind its confirmation dialog. Both reuse one shared pipeline.
 - Recovery is lightweight local safety from recent snapshots, not full session
   sync or cross-device history.
 
@@ -104,13 +112,22 @@ Source of truth: `docs/frontend-design.md` and
 - Settings panel for local preferences.
 - History panel with local snapshot preview, restore, delete, and clear.
 - Background badge updates from tab lifecycle events.
+- Toolbar popup overview: stats strip, section/group list, duplicate banner, theme- and
+  locale-aware, with a one-click "organize" action and a link to the full dashboard.
+- One-click organize: auto-assign unassigned groups to sections, close duplicate tabs,
+  physically sort tabs into section order, and create native Chrome tab groups across all
+  windows. The dashboard "sort window" reuses the same sort + native-group pipeline for the
+  current window.
 - Browser-internal pages, extension pages, and Tab Organizer pages are filtered out of
   grouping and recovery snapshots.
 
 ## Basic Architecture
 
-Chrome runs two extension surfaces:
+Chrome runs three extension surfaces:
 
+- Toolbar popup: `manifest.json` `action.default_popup` -> `src/popup/index.html` ->
+  `src/popup/main.tsx` -> `src/popup/Popup.tsx`. Opening the popup is the toolbar click
+  behavior; there is no `action.onClicked` handler.
 - Dashboard page: `src/dashboard/index.html` -> `src/dashboard/main.tsx` ->
   `src/dashboard/App.tsx`.
 - Background worker: `manifest.json` -> `src/background/index.ts`.
@@ -119,7 +136,8 @@ Core source layout:
 
 ```text
 src/
-  background/       MV3 service worker and toolbar action behavior
+  background/       MV3 service worker and keyboard command behavior
+  popup/            Toolbar popup surface: overview + one-click organize
   dashboard/           React dashboard UI, hooks, components, styles
   stores/           Zustand state for tabs, settings, sections, recovery
   lib/              Pure domain logic: grouping, titles, history, effects
@@ -179,10 +197,20 @@ Source placement rules:
 - `src/dashboard/App.tsx` is the page orchestrator. It owns store wiring,
   transient UI state, search/keyboard flow, close/focus/dedupe handlers,
   settings, history, confirmations, toast, and the lazy drag organizer.
+- `src/popup/Popup.tsx` is the toolbar popup orchestrator. It reads state via
+  `usePopupData`, applies theme/locale, and runs the one-click organize sequence
+  (assign sections, close duplicates, sort + group). It is a separate React surface
+  from the dashboard.
 - `src/background/index.ts` is the MV3 service worker. It refreshes badge counts
-  and opens or focuses the dashboard from the toolbar action.
+  and opens or focuses the dashboard from the keyboard command.
 - `src/utils/storage.ts` is the only adapter over `chrome.storage.local`.
 - `src/lib/product-groups.ts` owns product/domain grouping and duplicate counts.
+- `src/lib/organize-plan.ts` owns the pure organize plan: which groups to auto-assign,
+  which duplicate tabs to close, and the section-aware group order.
+- `src/lib/window-sort.ts` owns the pure, slot-based, pinned-aware tab-sort math.
+- `src/utils/sort-and-group-tabs.ts` is the shared Chrome-side pipeline that sorts tabs
+  then creates native tab groups. Both the popup organize and the dashboard "sort window"
+  call it; do not reimplement tab sorting elsewhere.
 - `src/lib/recovery-snapshots.ts` owns snapshot creation and replacement rules.
 - `src/dashboard/components/sections/DndSectionOrganizer.tsx` is the only dashboard component that may import `@dnd-kit`.
 
