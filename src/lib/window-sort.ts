@@ -1,11 +1,11 @@
 /**
  * Pure tab-sorting math for a single Chrome window.
  *
- * Real tabs are reordered only within the slot positions they already occupy, so
- * Chrome-internal/extension pages keep their relative positions. Pinned and unpinned
- * tabs are sorted independently because Chrome cannot place an unpinned tab before the
- * pinned block. Known products follow `productOrder`; unknown products stay at the end
- * in their original order.
+ * Only unpinned tabs are reordered, and only within the slot positions they already
+ * occupy, so pinned tabs and Chrome-internal/extension pages keep their exact
+ * positions. Pinned tabs are intentionally never moved — users arrange them
+ * deliberately. Known products follow `productOrder`; unknown products stay at the
+ * end in their original order.
  */
 
 export interface SortableTab {
@@ -36,15 +36,12 @@ export function computeWindowSortMoves(tabs: SortableTab[], productOrder: string
   const orderPos = new Map<string, number>();
   productOrder.forEach((key, i) => orderPos.set(key, i));
 
-  const moves: TabMove[] = [];
-  // Sort the pinned and unpinned areas separately, each within its own existing slots.
-  for (const pinned of [true, false]) {
-    const area = tabs.filter((t) => t.pinned === pinned);
-    if (area.length === 0) continue;
+  // Reorder only unpinned tabs, within their own existing slots. Pinned tabs are
+  // never moved, so they keep their exact positions.
+  const area = tabs.filter((t) => !t.pinned);
+  if (area.length === 0) return [];
 
-    const slots = area.map((t) => t.index).sort((a, b) => a - b);
-    const sorted = sortArea(area, orderPos);
-    sorted.forEach((t, i) => moves.push({ id: t.id, index: slots[i] }));
-  }
-  return moves;
+  const slots = area.map((t) => t.index).sort((a, b) => a - b);
+  const sorted = sortArea(area, orderPos);
+  return sorted.map((t, i) => ({ id: t.id, index: slots[i] }));
 }

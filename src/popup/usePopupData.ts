@@ -155,7 +155,7 @@ export function usePopupData(): PopupData {
           if (!cancelled) setData(newData);
         })
         .catch((err) => {
-          console.warn('[Tab Organizer] Popup data load failed', err);
+          console.error('[Tab Organizer] Popup data load failed', err);
         });
     };
     reload();

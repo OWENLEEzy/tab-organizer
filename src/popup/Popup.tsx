@@ -51,7 +51,7 @@ export function Popup(): React.ReactElement {
 
       setOrganizeState('done');
     } catch (err) {
-      console.warn('[Tab Organizer] Organize failed', err);
+      console.error('[Tab Organizer] Organize failed', err);
       setOrganizeState('error');
     }
   }, [data, organizeState]);
@@ -202,8 +202,14 @@ const BANNER_COLOR = {
 } as const;
 
 function Banner({ tone, text }: { tone: keyof typeof BANNER_RGB; text: string }): React.ReactElement {
+  // Error is urgent (role="alert"); success/warning are polite status updates. Both
+  // are live regions so screen readers announce organize results, which appear
+  // dynamically after the popup has already rendered.
+  const isAlert = tone === 'red';
   return (
     <div
+      role={isAlert ? 'alert' : 'status'}
+      aria-live={isAlert ? 'assertive' : 'polite'}
       className="mx-3 mb-1 rounded-chip px-3 py-1.5 text-2xs font-medium"
       style={{
         color: BANNER_COLOR[tone],

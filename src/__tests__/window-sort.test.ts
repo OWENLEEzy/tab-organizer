@@ -27,16 +27,15 @@ describe('computeWindowSortMoves', () => {
       tab(3, 3, 'c'),
     ];
     const moves = computeWindowSortMoves(tabs, ['b', 'a', 'c']);
-    // Pinned area (1 tab) stays at slot 0. Unpinned area uses slots [1,2,3] only.
+    // Pinned tab is never moved. Unpinned area uses slots [1,2,3] only.
     expect(moves).toEqual([
-      { id: 99, index: 0 }, // pinned stays in its own slot
       { id: 2, index: 1 },  // b → first unpinned slot (1), NOT 0
       { id: 1, index: 2 },  // a
       { id: 3, index: 3 },  // c
     ]);
   });
 
-  it('sorts pinned tabs independently from unpinned tabs', () => {
+  it('never moves pinned tabs — they keep their exact positions', () => {
     const tabs = [
       tab(10, 0, 'a', true),
       tab(11, 1, 'b', true),
@@ -44,11 +43,9 @@ describe('computeWindowSortMoves', () => {
       tab(21, 3, 'b'),
     ];
     const moves = computeWindowSortMoves(tabs, ['b', 'a']);
-    // Pinned slots [0,1] reordered b,a → 11→0, 10→1.
+    // Pinned tabs 10,11 are untouched (no moves emitted for them).
     // Unpinned slots [2,3] reordered b,a → 21→2, 20→3.
     expect(moves).toEqual([
-      { id: 11, index: 0 },
-      { id: 10, index: 1 },
       { id: 21, index: 2 },
       { id: 20, index: 3 },
     ]);

@@ -65,29 +65,44 @@ describe('sortAndGroupTabs', () => {
     chromeMock.tabs.query.mockResolvedValue([
       chromeTab(1, 'alpha.io', 0),
       chromeTab(2, 'alpha.io', 1),
+      chromeTab(3, 'alpha.io', 2),
     ]);
     await sortAndGroupTabs([group('alpha.io', 'Alpha')], { closedTabIds: new Set([2]) });
-    // Only the surviving tab is grouped.
-    expect(chromeMock.tabs.group).toHaveBeenCalledWith({ tabIds: [1] });
+    // The closed tab is dropped; the two survivors are grouped without it.
+    expect(chromeMock.tabs.group).toHaveBeenCalledWith({ tabIds: [1, 3] });
   });
 
   it('does not group pinned tabs', async () => {
     chromeMock.tabs.query.mockResolvedValue([
       chromeTab(1, 'alpha.io', 0, 1, true),  // pinned
       chromeTab(2, 'alpha.io', 1, 1, false),
+      chromeTab(3, 'alpha.io', 2, 1, false),
     ]);
     await sortAndGroupTabs([group('alpha.io', 'Alpha')]);
-    expect(chromeMock.tabs.group).toHaveBeenCalledWith({ tabIds: [2] });
+    // Only the two unpinned tabs are grouped.
+    expect(chromeMock.tabs.group).toHaveBeenCalledWith({ tabIds: [2, 3] });
+  });
+
+  it('does not create a group for a single-tab product', async () => {
+    chromeMock.tabs.query.mockResolvedValue([
+      chromeTab(1, 'alpha.io', 0),
+      chromeTab(2, 'beta.dev', 1),
+    ]);
+    await sortAndGroupTabs([group('alpha.io', 'Alpha'), group('beta.dev', 'Beta')]);
+    // Each product has only one tab — neither is grouped.
+    expect(chromeMock.tabs.group).not.toHaveBeenCalled();
   });
 
   it('groups each window independently', async () => {
     chromeMock.tabs.query.mockResolvedValue([
       chromeTab(1, 'alpha.io', 0, 1),
-      chromeTab(2, 'alpha.io', 0, 2),
+      chromeTab(2, 'alpha.io', 1, 1),
+      chromeTab(3, 'alpha.io', 0, 2),
+      chromeTab(4, 'alpha.io', 1, 2),
     ]);
     await sortAndGroupTabs([group('alpha.io', 'Alpha')]);
-    expect(chromeMock.tabs.group).toHaveBeenCalledWith({ tabIds: [1] });
-    expect(chromeMock.tabs.group).toHaveBeenCalledWith({ tabIds: [2] });
+    expect(chromeMock.tabs.group).toHaveBeenCalledWith({ tabIds: [1, 2] });
+    expect(chromeMock.tabs.group).toHaveBeenCalledWith({ tabIds: [3, 4] });
     expect(chromeMock.tabs.group).toHaveBeenCalledTimes(2);
   });
 
@@ -110,17 +125,21 @@ describe('sortAndGroupTabs', () => {
 
   it('keeps going when a group call fails', async () => {
     chromeMock.tabs.group.mockRejectedValue(new Error('cannot group'));
-    chromeMock.tabs.query.mockResolvedValue([chromeTab(1, 'alpha.io', 0)]);
+    chromeMock.tabs.query.mockResolvedValue([
+      chromeTab(1, 'alpha.io', 0),
+      chromeTab(2, 'alpha.io', 1),
+    ]);
     await expect(sortAndGroupTabs([group('alpha.io', 'Alpha')])).resolves.toBeUndefined();
   });
 
   it('skips internal/extension pages', async () => {
     chromeMock.tabs.query.mockResolvedValue([
-      { ...chromeTab(1, 'alpha.io', 1), url: 'chrome://extensions' },
+      { ...chromeTab(1, 'alpha.io', 2), url: 'chrome://extensions' },
       chromeTab(2, 'alpha.io', 0),
+      chromeTab(3, 'alpha.io', 1),
     ]);
     await sortAndGroupTabs([group('alpha.io', 'Alpha')]);
-    // Only the real tab is grouped.
-    expect(chromeMock.tabs.group).toHaveBeenCalledWith({ tabIds: [2] });
+    // The internal page is skipped; the two real tabs are grouped without it.
+    expect(chromeMock.tabs.group).toHaveBeenCalledWith({ tabIds: [2, 3] });
   });
 });

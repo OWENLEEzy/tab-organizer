@@ -96,7 +96,9 @@ export async function sortAndGroupTabs(
   // 2. Create native Chrome tab groups from the now-adjacent tabs. We reuse the
   // pre-sort snapshot: tab ids are stable across moves, and chrome.tabs.group re-
   // collocates them, so no re-query is needed. Pinned tabs cannot be grouped, so they
-  // are excluded. Skips silently if the API is unavailable.
+  // are excluded. A product with only a single tab in a window is left ungrouped to
+  // avoid cluttering Chrome with one-tab colored groups. Skips silently if the API is
+  // unavailable.
   if (!chrome.tabGroups) return;
   for (const windowTabs of byWindow.values()) {
     const tabIdsByProduct = new Map<string, number[]>();
@@ -108,7 +110,7 @@ export async function sortAndGroupTabs(
       tabIdsByProduct.set(key, list);
     }
     for (const [key, tabIds] of tabIdsByProduct) {
-      if (tabIds.length === 0) continue;
+      if (tabIds.length < 2) continue;
       try {
         const groupId = await (chrome.tabs.group({
           tabIds: tabIds as [number, ...number[]],

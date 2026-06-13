@@ -35,7 +35,7 @@ beforeEach(() => {
 });
 
 describe('sortCurrentWindowTabsByDashboardOrder', () => {
-  it('sorts pinned tabs within the pinned area', async () => {
+  it('never moves pinned tabs — only unpinned tabs are reordered', async () => {
     (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
       { id: 2, url: 'https://example.com', pinned: true, index: 0 } as chrome.tabs.Tab,
       { id: 1, url: 'https://github.com/a', pinned: true, index: 1 } as chrome.tabs.Tab,
@@ -50,9 +50,9 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
     await useTabStore.getState().sortCurrentWindowTabsByDashboardOrder(products);
 
     const moves = (chrome.tabs.move as ReturnType<typeof vi.fn>).mock.calls;
+    // Pinned tabs 1 and 2 keep their exact positions; only the single unpinned tab
+    // is placed within its own slot.
     expect(moves).toEqual([
-      [1, { index: 0 }],
-      [2, { index: 1 }],
       [3, { index: 2 }],
     ]);
   });
