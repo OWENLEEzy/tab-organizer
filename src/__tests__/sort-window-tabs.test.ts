@@ -145,18 +145,15 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
   });
 
   it('uses domain fallback product ids and custom group mappings', async () => {
-    useSettingsStore.setState({
-      settings: {
-        ...useSettingsStore.getState().settings,
-        customGroups: [
-          {
-            hostname: 'app.internal.test',
-            groupKey: 'internal',
-            groupLabel: 'Internal',
-          },
-        ],
-      },
-    });
+    // The shared sort pipeline reads customGroups from storage so the popup (no
+    // settings store) works too — seed a valid current-schema storage snapshot.
+    chromeStorageData.schemaVersion = 5;
+    chromeStorageData.settings = {
+      groupSortBy: 'count',
+      customGroups: [
+        { hostname: 'app.internal.test', groupKey: 'internal', groupLabel: 'Internal' },
+      ],
+    };
     (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
       { id: 2, url: 'https://github.com/a', pinned: false, index: 0 } as chrome.tabs.Tab,
       { id: 1, url: 'https://app.internal.test/a', pinned: false, index: 1 } as chrome.tabs.Tab,
