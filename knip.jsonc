@@ -2,7 +2,8 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "src/dashboard/main.tsx",
-    "src/background/index.ts"
+    "src/background/index.ts",
+    "src/popup/main.tsx"
   ],
   "project": [
     "src/**/*.{ts,tsx}"

@@ -137,10 +137,6 @@ async function openTabOrganizerDashboard(options: { focusSectionSwitcher?: boole
   }
 }
 
-chrome.action.onClicked.addListener(() => {
-  void openTabOrganizerDashboard();
-});
-
 // Initial run when service worker loads
 refreshBadge();
 void captureRecoveryCandidate();
