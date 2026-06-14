@@ -11,6 +11,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         index: path.resolve(process.cwd(), 'src/dashboard/index.html'),
+        popup: path.resolve(process.cwd(), 'src/popup/index.html'),
       },
     },
   },

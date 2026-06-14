@@ -35,7 +35,7 @@ beforeEach(() => {
 });
 
 describe('sortCurrentWindowTabsByDashboardOrder', () => {
-  it('sorts pinned tabs within the pinned area', async () => {
+  it('never moves pinned tabs — only unpinned tabs are reordered', async () => {
     (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
       { id: 2, url: 'https://example.com', pinned: true, index: 0 } as chrome.tabs.Tab,
       { id: 1, url: 'https://github.com/a', pinned: true, index: 1 } as chrome.tabs.Tab,
@@ -50,9 +50,9 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
     await useTabStore.getState().sortCurrentWindowTabsByDashboardOrder(products);
 
     const moves = (chrome.tabs.move as ReturnType<typeof vi.fn>).mock.calls;
+    // Pinned tabs 1 and 2 keep their exact positions; only the single unpinned tab
+    // is placed within its own slot.
     expect(moves).toEqual([
-      [1, { index: 0 }],
-      [2, { index: 1 }],
       [3, { index: 2 }],
     ]);
   });
@@ -145,18 +145,15 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
   });
 
   it('uses domain fallback product ids and custom group mappings', async () => {
-    useSettingsStore.setState({
-      settings: {
-        ...useSettingsStore.getState().settings,
-        customGroups: [
-          {
-            hostname: 'app.internal.test',
-            groupKey: 'internal',
-            groupLabel: 'Internal',
-          },
-        ],
-      },
-    });
+    // The shared sort pipeline reads customGroups from storage so the popup (no
+    // settings store) works too — seed a valid current-schema storage snapshot.
+    chromeStorageData.schemaVersion = 5;
+    chromeStorageData.settings = {
+      groupSortBy: 'count',
+      customGroups: [
+        { hostname: 'app.internal.test', groupKey: 'internal', groupLabel: 'Internal' },
+      ],
+    };
     (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
       { id: 2, url: 'https://github.com/a', pinned: false, index: 0 } as chrome.tabs.Tab,
       { id: 1, url: 'https://app.internal.test/a', pinned: false, index: 1 } as chrome.tabs.Tab,

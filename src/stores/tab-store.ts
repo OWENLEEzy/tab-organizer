@@ -19,6 +19,7 @@ import {
 import { legacyProductKeyForHostname, productForHostname } from '../config/products';
 import { buildRecoverySnapshot } from '../lib/recovery-snapshots';
 import { duplicateTabIdsToClose } from '../lib/duplicate-tabs';
+import { sortAndGroupTabs } from '../utils/sort-and-group-tabs';
 import { getTabDomain, isRealTab } from '../lib/url-rules';
 import { isTabOrganizerPage } from '../utils/browser-url';
 import { getErrorMessage } from '../utils/error';
@@ -28,9 +29,7 @@ import {
   focusChromeTab,
   getCurrentTab,
   getCurrentWindow,
-  moveChromeTab,
   queryAllTabs,
-  queryTabs,
   subscribeToTabEvents,
 } from '../utils/chrome-tabs';
 import { useSettingsStore } from './settings-store';
@@ -648,105 +647,9 @@ export const useTabStore = create<TabStore>((set) => ({
   },
 
   sortCurrentWindowTabsByDashboardOrder: async (products: TabGroup[]) => {
-    // 1. Get current window
+    // Reuse the shared sort + native-group pipeline, scoped to the current window.
     const currentWindow = await getCurrentWindow();
-    const windowId = currentWindow.id;
-
-    // 2. Query all tabs in this window
-    const allTabs = await queryTabs({ windowId });
-
-    // 3. Separate pinned from unpinned; filter to real web tabs only
-    const pinnedTabs = allTabs.filter((t) => t.pinned);
-    const pinnedRealTabs = pinnedTabs.filter((t) => isRealTab(t.url ?? ''));
-    const unpinnedRealTabs = allTabs.filter((t) => !t.pinned && isRealTab(t.url ?? ''));
-
-    if (pinnedRealTabs.length === 0 && unpinnedRealTabs.length === 0) {
-      // Nothing to sort
-      return;
-    }
-
-    // 4. Build product-key -> position-in-products map from dashboard order
-    const productKeyPositions = new Map<string, number>();
-    for (let i = 0; i < products.length; i++) {
-      const key = products[i].productKey ?? products[i].domain;
-      productKeyPositions.set(key, i);
-    }
-
-    type TabWithProduct = { tab: chrome.tabs.Tab; productKey: string; originalIndex: number };
-    const customGroups = useSettingsStore.getState().settings.customGroups;
-
-    const tabsWithProducts = (tabsToSort: chrome.tabs.Tab[]): TabWithProduct[] =>
-      tabsToSort.map((tab) => {
-        const hostname = getTabDomain(tab.url ?? '');
-        const normalizedHost = hostname.toLowerCase();
-        const customOverride = customGroups?.find(
-          (cg) =>
-            cg.hostname?.toLowerCase() === normalizedHost ||
-            (cg.hostnameEndsWith && normalizedHost.endsWith(cg.hostnameEndsWith.toLowerCase())),
-        );
-        const product = customOverride
-          ? { key: customOverride.groupKey }
-          : productForHostname(hostname);
-        return { tab, productKey: product.key, originalIndex: tab.index };
-      });
-
-    // 5. Sort each Chrome tab area independently. Known products follow dashboard order;
-    // unknown products remain at the end in their original order.
-    const sortTabsByProductOrder = (tabsToSort: chrome.tabs.Tab[]): TabWithProduct[] => {
-      const tabsWithProduct = tabsWithProducts(tabsToSort);
-      return [
-        ...tabsWithProduct
-        .filter((tp) => productKeyPositions.has(tp.productKey))
-        .sort((a, b) => {
-          const posA = productKeyPositions.get(a.productKey) ?? Infinity;
-          const posB = productKeyPositions.get(b.productKey) ?? Infinity;
-          if (posA !== posB) return posA - posB;
-          return a.originalIndex - b.originalIndex;
-        }),
-        ...tabsWithProduct
-        .filter((tp) => !productKeyPositions.has(tp.productKey))
-        .sort((a, b) => a.originalIndex - b.originalIndex),
-      ];
-    };
-
-    const sortedPinnedTabs = sortTabsByProductOrder(pinnedRealTabs);
-    const sortedUnpinnedTabs = sortTabsByProductOrder(unpinnedRealTabs);
-
-    // 6. Build move plan. Real tabs sort only within their existing real-tab slots
-    // so Chrome internal and extension pages keep their relative positions.
-    const moves: { id: number; index: number }[] = [];
-    const pinnedRealTargetIndices = pinnedRealTabs
-      .map((tab) => tab.index)
-      .sort((a, b) => a - b);
-    const unpinnedRealTargetIndices = unpinnedRealTabs
-      .map((tab) => tab.index)
-      .sort((a, b) => a - b);
-
-    for (let i = 0; i < sortedPinnedTabs.length; i++) {
-      const tabId = sortedPinnedTabs[i].tab.id;
-      if (tabId != null) {
-        moves.push({ id: tabId, index: pinnedRealTargetIndices[i] });
-      }
-    }
-
-    for (let i = 0; i < sortedUnpinnedTabs.length; i++) {
-      const tabId = sortedUnpinnedTabs[i].tab.id;
-      if (tabId != null) {
-        moves.push({ id: tabId, index: unpinnedRealTargetIndices[i] });
-      }
-    }
-
-    // 7. Execute moves in batch
-    if (moves.length === 0) return;
-
-    // Move one at a time to avoid Chrome API conflicts with same-window reordering
-    // We use sequential moves preserving relative order
-    for (const move of moves) {
-      try {
-        await moveChromeTab(move.id, move.index);
-      } catch (err) {
-        console.warn('[Tab Organizer] Failed to move tab', move.id, err);
-      }
-    }
+    if (currentWindow.id == null) return;
+    await sortAndGroupTabs(products, { windowId: currentWindow.id });
   },
 }));
