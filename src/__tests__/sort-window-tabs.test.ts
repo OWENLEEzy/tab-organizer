@@ -39,7 +39,9 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
     (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
       { id: 2, url: 'https://example.com', pinned: true, index: 0 } as chrome.tabs.Tab,
       { id: 1, url: 'https://github.com/a', pinned: true, index: 1 } as chrome.tabs.Tab,
+      // Two unpinned tabs in the wrong order so a real reorder happens.
       { id: 3, url: 'https://example.com', pinned: false, index: 2 } as chrome.tabs.Tab,
+      { id: 4, url: 'https://github.com/b', pinned: false, index: 3 } as chrome.tabs.Tab,
     ]);
 
     const products = [
@@ -50,11 +52,14 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
     await useTabStore.getState().sortCurrentWindowTabsByDashboardOrder(products);
 
     const moves = (chrome.tabs.move as ReturnType<typeof vi.fn>).mock.calls;
-    // Pinned tabs 1 and 2 keep their exact positions; only the single unpinned tab
-    // is placed within its own slot.
+    // Pinned tabs 1 and 2 are never moved; only the unpinned tabs reorder within
+    // their own slots [2,3]: github (4) → 2, example (3) → 3.
     expect(moves).toEqual([
-      [3, { index: 2 }],
+      [4, { index: 2 }],
+      [3, { index: 3 }],
     ]);
+    expect(moves.map((c) => c[0])).not.toContain(1);
+    expect(moves.map((c) => c[0])).not.toContain(2);
   });
 
   it('sorts unpinned tabs by product order', async () => {
@@ -102,10 +107,12 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
   });
 
   it('keeps unknown products after known products in original order', async () => {
+    // github starts last so a real reorder happens; the two unknowns must keep their
+    // original relative order (unknown-a@0 before unknown-b@1) behind github.
     (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
-      { id: 4, url: 'https://unknown-b.com', pinned: false, index: 0 } as chrome.tabs.Tab,
-      { id: 1, url: 'https://github.com/a', pinned: false, index: 1 } as chrome.tabs.Tab,
-      { id: 5, url: 'https://unknown-a.com', pinned: false, index: 2 } as chrome.tabs.Tab,
+      { id: 5, url: 'https://unknown-a.com', pinned: false, index: 0 } as chrome.tabs.Tab,
+      { id: 4, url: 'https://unknown-b.com', pinned: false, index: 1 } as chrome.tabs.Tab,
+      { id: 1, url: 'https://github.com/a', pinned: false, index: 2 } as chrome.tabs.Tab,
     ]);
 
     const products = [
@@ -115,7 +122,7 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
     await useTabStore.getState().sortCurrentWindowTabsByDashboardOrder(products);
 
     const movedIds = (chrome.tabs.move as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
-    expect(movedIds).toEqual([1, 4, 5]);
+    expect(movedIds).toEqual([1, 5, 4]);
   });
 
   it('continues sorting when one tab move fails', async () => {

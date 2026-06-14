@@ -109,11 +109,12 @@ describe('sortAndGroupTabs', () => {
   });
 
   it('does not create any group when no section info is provided (sort only)', async () => {
+    // Two products out of order so a real sort move happens; no section info → no group.
     chromeMock.tabs.query.mockResolvedValue([
       chromeTab(1, 'alpha.io', 0),
-      chromeTab(2, 'alpha.io', 1),
+      chromeTab(2, 'beta.dev', 1),
     ]);
-    await sortAndGroupTabs([group('alpha.io', 'Alpha')]);
+    await sortAndGroupTabs([group('beta.dev', 'Beta'), group('alpha.io', 'Alpha')]);
     expect(chromeMock.tabs.move).toHaveBeenCalled();
     expect(chromeMock.tabs.group).not.toHaveBeenCalled();
   });
@@ -196,9 +197,10 @@ describe('sortAndGroupTabs', () => {
 
   it('reports move failures instead of silently swallowing them', async () => {
     chromeMock.tabs.move.mockRejectedValue(new Error('cannot move'));
+    // Tabs start out of the desired order so real moves are attempted (and fail).
     chromeMock.tabs.query.mockResolvedValue([
-      chromeTab(1, 'alpha.io', 1),
-      chromeTab(2, 'beta.dev', 0),
+      chromeTab(1, 'alpha.io', 0),
+      chromeTab(2, 'beta.dev', 1),
     ]);
     const result = await sortAndGroupTabs([group('beta.dev', 'Beta'), group('alpha.io', 'Alpha')]);
     expect(result.moveFailures).toBeGreaterThan(0);

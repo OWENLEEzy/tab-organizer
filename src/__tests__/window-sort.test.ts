@@ -14,7 +14,7 @@ describe('computeWindowSortMoves', () => {
     expect(moves).toEqual([
       { id: 2, index: 0 }, // b → first slot
       { id: 1, index: 1 }, // a → second slot
-      { id: 3, index: 2 }, // c → third slot
+      // c is already in slot 2 → no redundant move emitted.
     ]);
   });
 
@@ -31,7 +31,7 @@ describe('computeWindowSortMoves', () => {
     expect(moves).toEqual([
       { id: 2, index: 1 },  // b → first unpinned slot (1), NOT 0
       { id: 1, index: 2 },  // a
-      { id: 3, index: 3 },  // c
+      // c is already in slot 3 → no redundant move emitted.
     ]);
   });
 
@@ -57,7 +57,7 @@ describe('computeWindowSortMoves', () => {
     expect(moves).toEqual([
       { id: 2, index: 0 }, // known first
       { id: 1, index: 1 }, // unknown1 (original order preserved)
-      { id: 3, index: 2 }, // unknown2
+      // unknown2 is already in slot 2 → no redundant move emitted.
     ]);
   });
 
@@ -77,12 +77,15 @@ describe('computeWindowSortMoves', () => {
   });
 
   it('breaks product-order ties by original index', () => {
-    // Two tabs of the same product keep their relative order.
-    const tabs = [tab(1, 0, 'a'), tab(2, 1, 'a')];
-    const moves = computeWindowSortMoves(tabs, ['a']);
+    // Two tabs of product 'a' (ids 2,3) must keep their relative order (idx 1 before
+    // idx 2). 'b' sorts after 'a'. A real reorder happens so the tie-break is visible
+    // in the emitted moves (not hidden by no-op skipping).
+    const tabs = [tab(1, 0, 'b'), tab(2, 1, 'a'), tab(3, 2, 'a')];
+    const moves = computeWindowSortMoves(tabs, ['a', 'b']);
     expect(moves).toEqual([
-      { id: 1, index: 0 },
-      { id: 2, index: 1 },
+      { id: 2, index: 0 }, // a@idx1 → first (tie kept ahead of a@idx2)
+      { id: 3, index: 1 }, // a@idx2 → second
+      { id: 1, index: 2 }, // b → last
     ]);
   });
 });
