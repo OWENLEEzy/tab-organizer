@@ -16,7 +16,7 @@ vi.mock('../dashboard/hooks/useTheme', () => ({ useTheme: vi.fn() }));
 import { Popup } from '../popup/Popup';
 
 const DATA: PopupData = {
-  totalTabs: 5, totalGroups: 2, unassignedCount: 1, duplicateCount: 3, windowCount: 2,
+  totalTabs: 5, totalGroups: 2, unassignedCount: 1, assignableCount: 1, duplicateCount: 3, windowCount: 2,
   activeSections: [], unassignedGroups: [], groups: [], sections: [],
   assignments: [], unsectionedProductKeys: [], groupOrder: {}, theme: 'clay',
   locale: 'en', isLoading: false,
@@ -46,7 +46,7 @@ describe('Popup organize confirmation gate', () => {
     render(<Popup />);
     await userEvent.click(screen.getByRole('button', { name: 'Organize' }));
 
-    // DATA has unassignedCount=1, duplicateCount=3 — the checklist must show what
+    // DATA has assignableCount=1, duplicateCount=3 — the checklist must show what
     // organize will do, not just a duplicate count.
     expect(screen.getByText('Organize will:')).toBeInTheDocument();
     expect(screen.getByText(/Sort & group tabs by section/)).toBeInTheDocument();
@@ -61,6 +61,19 @@ describe('Popup organize confirmation gate', () => {
 
     // No misleading "Close 0 duplicates" — the line just isn't shown.
     expect(screen.queryByText(/Duplicates to close/)).not.toBeInTheDocument();
+    // The core sort/group action is still promised.
+    expect(screen.getByText(/Sort & group tabs by section/)).toBeInTheDocument();
+  });
+
+  it('hides the assign line when nothing can actually be auto-assigned', async () => {
+    // Unassigned groups exist, but none match a section autoRule, so organize
+    // assigns nothing. The checklist must show the honest count (0 → hidden),
+    // never the raw unassigned total.
+    usePopupData.mockReturnValue({ ...DATA, unassignedCount: 3, assignableCount: 0 });
+    render(<Popup />);
+    await userEvent.click(screen.getByRole('button', { name: 'Organize' }));
+
+    expect(screen.queryByText(/Groups to assign/)).not.toBeInTheDocument();
     // The core sort/group action is still promised.
     expect(screen.getByText(/Sort & group tabs by section/)).toBeInTheDocument();
   });

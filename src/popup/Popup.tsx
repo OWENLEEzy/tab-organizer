@@ -123,8 +123,8 @@ export function Popup(): React.ReactElement {
             <div className="flex flex-col gap-0.5">
               <span style={{ fontWeight: 600 }}>{t('popupConfirmLead')}</span>
               <span>· {t('popupConfirmSort')}</span>
-              {data.unassignedCount > 0 && (
-                <span>· {t('popupConfirmAssign', { count: data.unassignedCount })}</span>
+              {data.assignableCount > 0 && (
+                <span>· {t('popupConfirmAssign', { count: data.assignableCount })}</span>
               )}
               {data.duplicateCount > 0 && (
                 <span>· {t('popupConfirmDedupe', { count: data.duplicateCount })}</span>
