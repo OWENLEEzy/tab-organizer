@@ -33,3 +33,15 @@ describe('getDashboardUrl', () => {
     expect(isDashboardUrl('chrome-extension://tab-out/other.html#focus-section-switcher', baseUrl)).toBe(false);
   });
 });
+
+describe('isDashboardUrl', () => {
+  it('returns false for undefined url', () => {
+    expect(isDashboardUrl(undefined, 'chrome-extension://x/src/dashboard/index.html')).toBe(false);
+  });
+
+  it('falls back to string comparison when url is not a valid URL', () => {
+    // Triggers the catch branch — non-parseable URL strings
+    expect(isDashboardUrl('not-a-url/path', 'not-a-url/path')).toBe(true);
+    expect(isDashboardUrl('not-a-url/path', 'not-a-url/other')).toBe(false);
+  });
+});

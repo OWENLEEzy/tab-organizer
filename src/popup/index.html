@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tab Organizer</title>
+  </head>
+  <body>
+    <!--
+      Static header skeleton. It paints the instant the popup window opens — before the
+      React bundle finishes loading — so the popup never flashes blank. React renders into
+      #root and replaces this with the same header, so there is no visible jump.
+    -->
+    <div id="root">
+      <div style="width: 300px; font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg-card, #fffcf7); color: var(--text-primary, #332a24);">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 14px 16px 12px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="flex: none; opacity: 0.55;" aria-hidden="true">
+            <path d="M19.5 21a3 3 0 0 0 3-3v-4.5a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3V18a3 3 0 0 0 3 3h15ZM1.5 10.146V6a3 3 0 0 1 3-3h5.379a2.25 2.25 0 0 1 1.59.659l2.122 2.121c.14.141.331.22.53.22H19.5a3 3 0 0 1 3 3v1.146A4.483 4.483 0 0 0 19.5 9h-15a4.483 4.483 0 0 0-3 1.146Z" />
+          </svg>
+          <span style="font-family: 'Newsreader', Georgia, serif; font-weight: 600; font-size: 14px; letter-spacing: -0.01em;">Tab Organizer</span>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

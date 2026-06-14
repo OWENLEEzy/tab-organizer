@@ -17,6 +17,7 @@ interface HandlerDeps {
   showToast: (msg: string) => void;
   flatChips: { url: string }[];
   visibleProducts: TabGroup[];
+  sectionOrderedProducts: TabGroup[];
   selectedUrls: Set<string>;
   selectedTabIds: Set<number>;
   lastClickedIndex: number | null;
@@ -44,6 +45,7 @@ export function useTabActions({
   showToast,
   flatChips,
   visibleProducts,
+  sectionOrderedProducts,
   selectedUrls,
   selectedTabIds,
   lastClickedIndex,
@@ -434,7 +436,7 @@ export function useTabActions({
         message: t('confirmSortMessage'),
         confirmLabel: t('confirmSortBtn'),
         onConfirm: () => {
-          tabStore.sortCurrentWindowTabsByDashboardOrder(visibleProducts).then(() => {
+          tabStore.sortCurrentWindowTabsByDashboardOrder(sectionOrderedProducts).then(() => {
             showToast(t('toastSortComplete'));
           }).catch((err) => {
             console.error('[Tab Organizer] sortCurrentWindowTabsByDashboardOrder failed:', err);
@@ -444,7 +446,7 @@ export function useTabActions({
         },
       },
     });
-  }, [dispatch, tabStore, visibleProducts, showToast, t]);
+  }, [dispatch, tabStore, sectionOrderedProducts, showToast, t]);
 
   return {
     handleCloseProduct,

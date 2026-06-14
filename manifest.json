@@ -4,13 +4,14 @@
   "version": "2.0.0",
   "default_locale": "en",
   "description": "__MSG_extDesc__",
-  "permissions": ["tabs", "storage", "favicon"],
+  "permissions": ["tabs", "storage", "favicon", "tabGroups"],
   "incognito": "not_allowed",
   "background": {
     "service_worker": "src/background/index.ts",
     "type": "module"
   },
   "action": {
+    "default_popup": "src/popup/index.html",
     "default_title": "__MSG_extName__",
     "default_icon": {
       "16": "public/icons/icon16.png",
