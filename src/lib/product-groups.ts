@@ -1,5 +1,5 @@
 import type { Tab, TabGroup, Section, CustomGroup, GroupSortOption } from '../types';
-import { productForHostname } from '../config/products';
+import { resolveProduct } from './resolve-product';
 import { friendlyDomain } from './title-cleaner';
 import { analyzeDuplicates } from './duplicate-analysis';
 import { getTabDomain } from './url-rules';
@@ -94,21 +94,7 @@ export function groupTabsByProduct(
 
       if (!hostname) continue;
 
-      // 1. Check custom overrides first
-      const normalizedHost = hostname.toLowerCase();
-      const customOverride = customGroups?.find(
-        (cg) =>
-          cg.hostname?.toLowerCase() === normalizedHost ||
-          (cg.hostnameEndsWith && normalizedHost.endsWith(cg.hostnameEndsWith.toLowerCase())),
-      );
-
-      const product = customOverride
-        ? {
-            key: customOverride.groupKey,
-            label: customOverride.groupLabel,
-            iconDomain: hostname,
-          }
-        : productForHostname(hostname);
+      const product = resolveProduct(hostname, customGroups);
 
       productLabels.set(product.key, product.label);
       productIconDomains.set(product.key, product.iconDomain);

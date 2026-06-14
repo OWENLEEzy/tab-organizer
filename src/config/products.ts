@@ -1,4 +1,5 @@
 import type { ProductInfo } from '../types';
+import { isLocalAddressKey } from '../lib/local-address';
 
 interface ProductRule extends ProductInfo {
   hostnames?: string[];
@@ -105,6 +106,12 @@ export function legacyProductKeyForHostname(hostname: string): string {
 }
 
 export function fallbackProductForHostname(hostname: string): ProductInfo {
+  // Local/loopback dev addresses are their own identity AND their own label
+  // (e.g. "localhost:3000") — don't TLD-strip or split them into "127 0 0 1".
+  if (isLocalAddressKey(hostname)) {
+    return { key: hostname, label: hostname, iconDomain: hostname };
+  }
+
   const normalized = legacyProductKeyForHostname(hostname);
   // Improved label extraction: handle common localized TLDs like .co.jp, .com.hk
   const labelBase = normalized.replace(/\.(com|org|net|io|co|ai|dev|app|so|me|xyz|info|us|uk|gov|edu|co\.uk|co\.jp|com\.hk|com\.tw|com\.sg|com\.br|com\.mx|net\.cn|org\.cn|gov\.cn)(\.[a-z]{2,3})?$/, '');

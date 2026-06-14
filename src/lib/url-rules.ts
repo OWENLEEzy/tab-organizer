@@ -1,3 +1,5 @@
+import { parseLocalAddress } from './local-address';
+
 export const LOCAL_FILES_PRODUCT_KEY = 'local-files';
 
 /**
@@ -49,6 +51,10 @@ export function getHostname(url: string): string {
 export function getTabDomain(url: string): string {
   if (!url) return '';
   if (url.startsWith('file://')) return LOCAL_FILES_PRODUCT_KEY;
+  // Local/loopback dev servers group by host+port (localhost:3000), with the
+  // various names for the same machine (localhost, 127.0.0.1, ::1) collapsed.
+  const local = parseLocalAddress(url);
+  if (local) return local.key;
   return getHostname(url);
 }
 
