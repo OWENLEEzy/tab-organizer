@@ -1,4 +1,4 @@
-import { getDashboardUrl, isDashboardUrl } from '../background/dashboard';
+import { getDashboardUrl, isDashboardUrl } from '../lib/dashboard-url';
 
 /**
  * Focus an already-open dashboard tab (preferring the current window) or create

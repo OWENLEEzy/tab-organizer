@@ -1,6 +1,6 @@
 import { updateBadge } from '../utils/badge';
 import { getTabDomain, isRealTab } from '../lib/url-rules';
-import { getDashboardFocusUrl } from './dashboard';
+import { getDashboardFocusUrl } from '../lib/dashboard-url';
 import { openOrFocusDashboard } from '../utils/open-dashboard';
 import { buildRecoverySnapshot } from '../lib/recovery-snapshots';
 import { promoteRecoveryCandidate, updateRecoveryCandidate } from '../utils/storage';
