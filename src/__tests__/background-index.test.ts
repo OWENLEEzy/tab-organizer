@@ -99,37 +99,6 @@ describe('background service worker entry', () => {
     expect(chromeMock.storage.local.set).toHaveBeenCalled();
   });
 
-  it('focuses an existing dashboard tab from the toolbar action', async () => {
-    chromeMock.tabs.query.mockResolvedValue([
-      { id: 10, url: 'chrome-extension://fake-id/src/dashboard/index.html', windowId: 1 },
-    ]);
-
-    await import('../background/index');
-    listeners.onClicked.mock.calls[0][0]();
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(chromeMock.tabs.update).toHaveBeenCalledWith(10, { active: true });
-    expect(chromeMock.windows.update).toHaveBeenCalledWith(1, { focused: true });
-  });
-
-  it('falls back to the first dashboard tab when none is in the current window', async () => {
-    chromeMock.tabs.query.mockResolvedValue([
-      { id: 10, url: 'chrome-extension://fake-id/src/dashboard/index.html', windowId: 2 },
-    ]);
-    chromeMock.windows.getCurrent.mockResolvedValue({ id: 1 });
-
-    await import('../background/index');
-    listeners.onClicked.mock.calls[0][0]();
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(chromeMock.tabs.update).toHaveBeenCalledWith(10, { active: true });
-    expect(chromeMock.windows.update).toHaveBeenCalledWith(2, { focused: true });
-  });
-
   it('opens a focus URL when the command is invoked', async () => {
     chromeMock.tabs.query.mockResolvedValue([]);
 
@@ -144,7 +113,7 @@ describe('background service worker entry', () => {
     });
   });
 
-  it('ignores unrelated commands and creates a dashboard if the candidate tab has no id', async () => {
+  it('ignores unrelated commands', async () => {
     chromeMock.tabs.query.mockResolvedValue([
       { url: 'chrome-extension://fake-id/src/dashboard/index.html', windowId: 1 },
     ]);
@@ -153,30 +122,6 @@ describe('background service worker entry', () => {
     listeners.onCommand.mock.calls[0][0]('not-tab-organizer');
     await Promise.resolve();
     expect(chromeMock.tabs.create).not.toHaveBeenCalled();
-
-    listeners.onClicked.mock.calls[0][0]();
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(chromeMock.tabs.create).toHaveBeenCalledWith({
-      url: 'chrome-extension://fake-id/src/dashboard/index.html',
-    });
-  });
-
-  it('falls back to create when dashboard query fails and clears badge on badge failure', async () => {
-    chromeMock.tabs.query.mockRejectedValue(new Error('query failed'));
-
-    await import('../background/index');
-    listeners.onClicked.mock.calls[0][0]();
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(chromeMock.tabs.create).toHaveBeenCalledWith({
-      url: 'chrome-extension://fake-id/src/dashboard/index.html',
-    });
-    expect(chromeMock.action.setBadgeText).toHaveBeenCalledWith({ text: '' });
   });
 
   it('retries focusing the section switcher after command focus', async () => {
@@ -189,10 +134,8 @@ describe('background service worker entry', () => {
 
     await import('../background/index');
     listeners.onCommand.mock.calls[0][0]('open-section-switcher');
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
+    // Drain the focus-or-create promise chain up to the first sendMessage.
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
     expect(chromeMock.tabs.sendMessage).toHaveBeenCalledTimes(1);
 
     await vi.advanceTimersByTimeAsync(100);
@@ -211,10 +154,8 @@ describe('background service worker entry', () => {
 
     await import('../background/index');
     listeners.onCommand.mock.calls[0][0]('open-section-switcher');
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
+    // Drain the focus-or-create promise chain up to the first sendMessage.
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
     await vi.advanceTimersByTimeAsync(800);
 
     expect(chromeMock.tabs.sendMessage).toHaveBeenCalledTimes(8);

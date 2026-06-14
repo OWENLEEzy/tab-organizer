@@ -1,6 +1,7 @@
 import { updateBadge } from '../utils/badge';
 import { getTabDomain, isRealTab } from '../lib/url-rules';
-import { getDashboardFocusUrl, getDashboardUrl, isDashboardUrl } from './dashboard';
+import { getDashboardFocusUrl } from './dashboard';
+import { openOrFocusDashboard } from '../utils/open-dashboard';
 import { buildRecoverySnapshot } from '../lib/recovery-snapshots';
 import { promoteRecoveryCandidate, updateRecoveryCandidate } from '../utils/storage';
 import type { Tab } from '../types';
@@ -102,44 +103,21 @@ async function sendFocusSectionSwitcher(tabId: number): Promise<void> {
   }
 }
 
-// Open Tab Organizer dashboard when toolbar icon is clicked.
+// Open Tab Organizer dashboard when toolbar icon is clicked. Shares the
+// focus-or-create logic with the toolbar popup via openOrFocusDashboard.
 async function openTabOrganizerDashboard(options: { focusSectionSwitcher?: boolean } = {}): Promise<void> {
-  const dashboardUrl = getDashboardUrl(chrome.runtime.getURL);
   const createUrl = options.focusSectionSwitcher
     ? getDashboardFocusUrl(chrome.runtime.getURL)
-    : dashboardUrl;
+    : undefined;
 
-  try {
-    const tabs = await chrome.tabs.query({});
-    const candidates = tabs.filter((tab) => isDashboardUrl(tab.url, dashboardUrl));
+  const focusedExistingId = await openOrFocusDashboard(chrome.runtime.getURL, createUrl);
 
-    if (candidates.length > 0) {
-      const currentWindow = await chrome.windows.getCurrent();
-      const currentTab = candidates.find((tab) => tab.windowId === currentWindow.id) ?? candidates[0];
-
-      if (currentTab.id != null) {
-        await chrome.tabs.update(currentTab.id, { active: true });
-        await chrome.windows.update(currentTab.windowId, { focused: true });
-        if (options.focusSectionSwitcher) {
-          void sendFocusSectionSwitcher(currentTab.id);
-        }
-        return;
-      }
-    }
-
-    await chrome.tabs.create({ url: createUrl });
-  } catch {
-    try {
-      await chrome.tabs.create({ url: createUrl });
-    } catch {
-      // Ignore if the dashboard cannot be opened.
-    }
+  // When we focused an already-open dashboard, ask it to surface the switcher;
+  // a freshly created tab handles that itself via the focus URL hash.
+  if (options.focusSectionSwitcher && focusedExistingId != null) {
+    void sendFocusSectionSwitcher(focusedExistingId);
   }
 }
-
-chrome.action.onClicked.addListener(() => {
-  void openTabOrganizerDashboard();
-});
 
 // Initial run when service worker loads
 refreshBadge();
