@@ -10,17 +10,21 @@ import {
 import {
   clearRecoverySnapshots,
   deleteRecoverySnapshot,
-  promoteRecoverySnapshot,
   readRecoverySnapshots,
   reconcileOrganizerState,
   writeGroupOrder,
   writeOrganizerState,
 } from '../utils/storage';
-import { legacyProductKeyForHostname, productForHostname } from '../config/products';
-import { buildRecoverySnapshot } from '../lib/recovery-snapshots';
+import { legacyProductKeyForHostname } from '../config/products';
+import { resolveProduct } from '../lib/resolve-product';
 import { duplicateTabIdsToClose } from '../lib/duplicate-tabs';
+import { sortAndGroupTabs } from '../utils/sort-and-group-tabs';
+import { buildSectionByProductKey } from '../lib/section-grouping';
 import { getTabDomain, isRealTab } from '../lib/url-rules';
 import { isTabOrganizerPage } from '../utils/browser-url';
+import { chromeTabToAppTab } from '../utils/tab-mapping';
+import { protectRecoveryBeforeClosing } from '../utils/recovery-protect';
+import { findLastUsedTabId } from '../lib/last-used';
 import { getErrorMessage } from '../utils/error';
 import {
   closeTabIds,
@@ -28,9 +32,7 @@ import {
   focusChromeTab,
   getCurrentTab,
   getCurrentWindow,
-  moveChromeTab,
   queryAllTabs,
-  queryTabs,
   subscribeToTabEvents,
 } from '../utils/chrome-tabs';
 import { useSettingsStore } from './settings-store';
@@ -112,35 +114,33 @@ export type TabStore = {
   error: string | null;
   activeSectionId: string | null;
   dashboardCount: number;
+  /** Id of the single globally most-recently-used real tab (excludes our own pages). */
+  lastUsedTabId: number | null;
+  /** One-shot: make the tab-event listener skip its next debounced refresh. */
+  suppressListenerRefresh: boolean;
 } & TabActions;
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
-/**
- * Map a raw chrome.tabs.Tab into our application Tab type.
- */
-function toAppTab(raw: chrome.tabs.Tab): Tab {
-  const url = raw.url ?? '';
-  return {
-    id: raw.id ?? -1,
-    url,
-    title: raw.title ?? '',
-    favIconUrl: raw.favIconUrl ?? '',
-    domain: getTabDomain(url),
-    windowId: raw.windowId ?? -1,
-    active: raw.active ?? false,
-    isDashboard: isTabOrganizerPage(url),
-    isDuplicate: false,
-    isLandingPage: false,
-    duplicateCount: 0,
-    lastAccessed: raw.lastAccessed,
-    pinned: raw.pinned ?? false,
-    audible: raw.audible ?? false,
-  };
-}
-
 function orderedSections(groups: Section[]): Section[] {
   return [...groups].sort((a, b) => a.order - b.order);
+}
+
+/**
+ * Refresh once after a programmatic tab close. When a close actually happened,
+ * arm the one-shot suppression so the tab-event listener skips its own debounced
+ * refresh — the browser's onRemoved would otherwise trigger a SECOND full rebuild
+ * ~300ms later, making the list visibly jump.
+ *
+ * Only arm when `didClose` is true: if nothing was closed (no match, empty set, or
+ * a failed close) no onRemoved fires, so an unconditional arm would leave the flag
+ * stuck and silently swallow the next genuine tab event's refresh.
+ */
+async function refreshAfterClose(didClose: boolean): Promise<void> {
+  if (didClose) {
+    useTabStore.setState({ suppressListenerRefresh: true });
+  }
+  await useTabStore.getState().fetchTabs();
 }
 
 function buildProductKeyCompatibility(
@@ -159,21 +159,7 @@ function buildProductKeyCompatibility(
     const hostname = getTabDomain(tab.url);
     if (!hostname) continue;
 
-    const normalizedHost = hostname.toLowerCase();
-    const customOverride = customGroups?.find(
-      (cg) =>
-        cg.hostname?.toLowerCase() === normalizedHost ||
-        (cg.hostnameEndsWith && normalizedHost.endsWith(cg.hostnameEndsWith.toLowerCase())),
-    );
-
-    const product = customOverride
-      ? {
-          key: customOverride.groupKey,
-          label: customOverride.groupLabel,
-          iconDomain: hostname,
-        }
-      : productForHostname(hostname);
-
+    const product = resolveProduct(hostname, customGroups);
     const legacyKey = legacyProductKeyForHostname(hostname);
 
     currentProductKeys.add(product.key);
@@ -197,15 +183,6 @@ function buildProductKeyCompatibility(
   };
 }
 
-async function protectRecoveryBeforeClosing(allTabs: chrome.tabs.Tab[]): Promise<void> {
-  try {
-    const snapshot = buildRecoverySnapshot(allTabs.map(toAppTab));
-    await promoteRecoverySnapshot(snapshot);
-  } catch (err: unknown) {
-    console.warn('[Tab Organizer] Failed to protect recovery before closing tabs:', err);
-  }
-}
-
 // ─── Store ──────────────────────────────────────────────────────────
 
 export const useTabStore = create<TabStore>((set) => ({
@@ -220,6 +197,8 @@ export const useTabStore = create<TabStore>((set) => ({
   error: null,
   activeSectionId: null,
   dashboardCount: 0,
+  lastUsedTabId: null,
+  suppressListenerRefresh: false,
 
   setActiveSection: (id) => set({ activeSectionId: id }),
 
@@ -229,7 +208,7 @@ export const useTabStore = create<TabStore>((set) => ({
     set({ error: null });
     try {
       const rawTabs = await queryAllTabs();
-      const rawMapped = rawTabs.map(toAppTab);
+      const rawMapped = rawTabs.map(chromeTabToAppTab);
       const dashboardCount = rawMapped.filter((tab) => tab.isDashboard).length;
       const mapped = rawMapped.filter((tab) => isRealTab(tab.url));
       const customGroups = useSettingsStore.getState().settings.customGroups;
@@ -271,23 +250,27 @@ export const useTabStore = create<TabStore>((set) => ({
         viewMode: organizerState.viewMode,
         loading: false,
         dashboardCount,
+        // The single globally most-recently-used real tab, computed from all tabs.
+        lastUsedTabId: findLastUsedTabId(rawMapped),
       });
     } catch (err: unknown) {
-      set({ tabs: [], products: [], loading: false, dashboardCount: 0, error: getErrorMessage(err, 'Failed to fetch tabs') });
+      set({ tabs: [], products: [], loading: false, dashboardCount: 0, lastUsedTabId: null, error: getErrorMessage(err, 'Failed to fetch tabs') });
     }
   },
 
   closeTabByUrl: async (url: string) => {
     if (!url) return;
+    let closed = false;
     try {
       const allTabs = await queryAllTabs();
       const match = allTabs.find((t) => t.url === url);
       if (match?.id != null) {
         await protectRecoveryBeforeClosing(allTabs);
         await closeTabIds(match.id);
+        closed = true;
       }
     } finally {
-      await useTabStore.getState().fetchTabs();
+      await refreshAfterClose(closed);
     }
   },
 
@@ -300,13 +283,15 @@ export const useTabStore = create<TabStore>((set) => ({
       .map((url) => allTabs.find((tab) => tab.url === url)?.id)
       .filter((id): id is number => id != null);
 
+    let closed = false;
     try {
       if (toClose.length > 0) {
         await protectRecoveryBeforeClosing(allTabs);
         await closeTabIds(toClose);
+        closed = true;
       }
     } finally {
-      await useTabStore.getState().fetchTabs();
+      await refreshAfterClose(closed);
     }
   },
 
@@ -344,13 +329,15 @@ export const useTabStore = create<TabStore>((set) => ({
       .map((tab) => tab.id)
       .filter((id): id is number => id != null);
 
+    let closed = false;
     try {
       if (toClose.length > 0) {
         await protectRecoveryBeforeClosing(allTabs);
         await closeTabIds(toClose);
+        closed = true;
       }
     } finally {
-      await useTabStore.getState().fetchTabs();
+      await refreshAfterClose(closed);
     }
   },
 
@@ -362,13 +349,15 @@ export const useTabStore = create<TabStore>((set) => ({
       .filter((t) => t.url && urlSet.has(t.url))
       .map((t) => t.id)
       .filter((id): id is number => id != null);
+    let closed = false;
     try {
       if (toClose.length > 0) {
         await protectRecoveryBeforeClosing(allTabs);
         await closeTabIds(toClose);
+        closed = true;
       }
     } finally {
-      await useTabStore.getState().fetchTabs();
+      await refreshAfterClose(closed);
     }
   },
 
@@ -386,13 +375,15 @@ export const useTabStore = create<TabStore>((set) => ({
     );
     const toClose = ids.filter((id) => openIds.has(id));
 
+    let closed = false;
     try {
       if (toClose.length > 0) {
         await protectRecoveryBeforeClosing(allTabs);
         await closeTabIds(toClose);
+        closed = true;
       }
     } finally {
-      await useTabStore.getState().fetchTabs();
+      await refreshAfterClose(closed);
     }
   },
 
@@ -401,13 +392,15 @@ export const useTabStore = create<TabStore>((set) => ({
     const allTabs = await queryAllTabs();
     const toClose = duplicateTabIdsToClose(allTabs, new Set(urls), keepOne);
 
+    let closed = false;
     try {
       if (toClose.length > 0) {
         await protectRecoveryBeforeClosing(allTabs);
         await closeTabIds(toClose);
+        closed = true;
       }
     } finally {
-      await useTabStore.getState().fetchTabs();
+      await refreshAfterClose(closed);
     }
   },
 
@@ -456,6 +449,12 @@ export const useTabStore = create<TabStore>((set) => ({
     const refresh = (): void => {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
+        // A programmatic close already refreshed; skip this redundant rebuild once
+        // so the list doesn't visibly jump from a second back-to-back refresh.
+        if (useTabStore.getState().suppressListenerRefresh) {
+          useTabStore.setState({ suppressListenerRefresh: false });
+          return;
+        }
         useTabStore.getState().fetchTabs();
       }, 300);
     };
@@ -648,105 +647,11 @@ export const useTabStore = create<TabStore>((set) => ({
   },
 
   sortCurrentWindowTabsByDashboardOrder: async (products: TabGroup[]) => {
-    // 1. Get current window
+    // Reuse the shared sort + native-group pipeline, scoped to the current window.
     const currentWindow = await getCurrentWindow();
-    const windowId = currentWindow.id;
-
-    // 2. Query all tabs in this window
-    const allTabs = await queryTabs({ windowId });
-
-    // 3. Separate pinned from unpinned; filter to real web tabs only
-    const pinnedTabs = allTabs.filter((t) => t.pinned);
-    const pinnedRealTabs = pinnedTabs.filter((t) => isRealTab(t.url ?? ''));
-    const unpinnedRealTabs = allTabs.filter((t) => !t.pinned && isRealTab(t.url ?? ''));
-
-    if (pinnedRealTabs.length === 0 && unpinnedRealTabs.length === 0) {
-      // Nothing to sort
-      return;
-    }
-
-    // 4. Build product-key -> position-in-products map from dashboard order
-    const productKeyPositions = new Map<string, number>();
-    for (let i = 0; i < products.length; i++) {
-      const key = products[i].productKey ?? products[i].domain;
-      productKeyPositions.set(key, i);
-    }
-
-    type TabWithProduct = { tab: chrome.tabs.Tab; productKey: string; originalIndex: number };
-    const customGroups = useSettingsStore.getState().settings.customGroups;
-
-    const tabsWithProducts = (tabsToSort: chrome.tabs.Tab[]): TabWithProduct[] =>
-      tabsToSort.map((tab) => {
-        const hostname = getTabDomain(tab.url ?? '');
-        const normalizedHost = hostname.toLowerCase();
-        const customOverride = customGroups?.find(
-          (cg) =>
-            cg.hostname?.toLowerCase() === normalizedHost ||
-            (cg.hostnameEndsWith && normalizedHost.endsWith(cg.hostnameEndsWith.toLowerCase())),
-        );
-        const product = customOverride
-          ? { key: customOverride.groupKey }
-          : productForHostname(hostname);
-        return { tab, productKey: product.key, originalIndex: tab.index };
-      });
-
-    // 5. Sort each Chrome tab area independently. Known products follow dashboard order;
-    // unknown products remain at the end in their original order.
-    const sortTabsByProductOrder = (tabsToSort: chrome.tabs.Tab[]): TabWithProduct[] => {
-      const tabsWithProduct = tabsWithProducts(tabsToSort);
-      return [
-        ...tabsWithProduct
-        .filter((tp) => productKeyPositions.has(tp.productKey))
-        .sort((a, b) => {
-          const posA = productKeyPositions.get(a.productKey) ?? Infinity;
-          const posB = productKeyPositions.get(b.productKey) ?? Infinity;
-          if (posA !== posB) return posA - posB;
-          return a.originalIndex - b.originalIndex;
-        }),
-        ...tabsWithProduct
-        .filter((tp) => !productKeyPositions.has(tp.productKey))
-        .sort((a, b) => a.originalIndex - b.originalIndex),
-      ];
-    };
-
-    const sortedPinnedTabs = sortTabsByProductOrder(pinnedRealTabs);
-    const sortedUnpinnedTabs = sortTabsByProductOrder(unpinnedRealTabs);
-
-    // 6. Build move plan. Real tabs sort only within their existing real-tab slots
-    // so Chrome internal and extension pages keep their relative positions.
-    const moves: { id: number; index: number }[] = [];
-    const pinnedRealTargetIndices = pinnedRealTabs
-      .map((tab) => tab.index)
-      .sort((a, b) => a - b);
-    const unpinnedRealTargetIndices = unpinnedRealTabs
-      .map((tab) => tab.index)
-      .sort((a, b) => a - b);
-
-    for (let i = 0; i < sortedPinnedTabs.length; i++) {
-      const tabId = sortedPinnedTabs[i].tab.id;
-      if (tabId != null) {
-        moves.push({ id: tabId, index: pinnedRealTargetIndices[i] });
-      }
-    }
-
-    for (let i = 0; i < sortedUnpinnedTabs.length; i++) {
-      const tabId = sortedUnpinnedTabs[i].tab.id;
-      if (tabId != null) {
-        moves.push({ id: tabId, index: unpinnedRealTargetIndices[i] });
-      }
-    }
-
-    // 7. Execute moves in batch
-    if (moves.length === 0) return;
-
-    // Move one at a time to avoid Chrome API conflicts with same-window reordering
-    // We use sequential moves preserving relative order
-    for (const move of moves) {
-      try {
-        await moveChromeTab(move.id, move.index);
-      } catch (err) {
-        console.warn('[Tab Organizer] Failed to move tab', move.id, err);
-      }
-    }
+    if (currentWindow.id == null) return;
+    const { sections, sectionAssignments } = useTabStore.getState();
+    const sectionByProductKey = buildSectionByProductKey(sections, sectionAssignments);
+    await sortAndGroupTabs(products, { windowId: currentWindow.id, sectionByProductKey });
   },
 }));

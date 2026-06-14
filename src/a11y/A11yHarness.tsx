@@ -30,7 +30,7 @@ export function A11yHarness(): React.ReactElement {
             url="https://github.com/OWENLEEzy/tab-out"
             title="Tab Organizer repo"
             duplicateCount={2}
-            active
+            isLastUsed
             onFocus={() => {}}
             onClose={() => {}}
           />

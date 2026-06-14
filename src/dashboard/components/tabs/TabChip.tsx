@@ -26,7 +26,8 @@ interface TabChipProps {
   title: string;
   favIconUrl?: string;
   duplicateCount: number;
-  active?: boolean;
+  /** Whether this is the single globally most-recently-used tab (the one to highlight). */
+  isLastUsed?: boolean;
   isFocused?: boolean;
   isClosing?: boolean;
   isSelected?: boolean;
@@ -136,7 +137,7 @@ function TabChipComponent({
   title,
   favIconUrl = '',
   duplicateCount,
-  active = false,
+  isLastUsed = false,
   isFocused = false,
   isClosing = false,
   isSelected = false,
@@ -162,10 +163,10 @@ function TabChipComponent({
   const faviconFailed = faviconUrl !== '' && failedFaviconUrl === faviconUrl;
 
   const isStale = React.useMemo(() => {
-    if (active || pinned || audible || !lastAccessed) return false;
+    if (isLastUsed || pinned || audible || !lastAccessed) return false;
     // eslint-disable-next-line react-hooks/purity
     return Date.now() - lastAccessed > staleThresholdDays * 24 * 60 * 60 * 1000;
-  }, [lastAccessed, active, pinned, audible, staleThresholdDays]);
+  }, [lastAccessed, isLastUsed, pinned, audible, staleThresholdDays]);
 
   useEffect(() => {
     if (isFocused && chipRef.current) {
@@ -211,7 +212,7 @@ function TabChipComponent({
     isSelected ? '' : 'hover:border-border-color hover:bg-bg-surface hover:translate-x-1',
     'focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none',
     duplicateCount > 1 ? 'border-accent-amber/25 bg-accent-amber/10' : '',
-    active && !isSelected ? 'tab-active' : '',
+    isLastUsed && !isSelected ? 'tab-active' : '',
     isFocused && !isSelected ? 'ring-2 ring-accent-primary/40 border-border-color bg-bg-surface' : '',
     isClosing ? 'chip-closing' : '',
     isSelected ? 'ring-2 ring-accent-primary border-accent-primary bg-accent-primary/[0.12]' : '',
@@ -220,7 +221,7 @@ function TabChipComponent({
       : '',
   ]
     .filter(Boolean)
-    .join(' '), [isSelected, isFocused, isClosing, isStale, duplicateCount, active]);
+    .join(' '), [isSelected, isFocused, isClosing, isStale, duplicateCount, isLastUsed]);
 
   return (
     <div className={`group flex items-center gap-1${isClosing ? ' chip-closing' : ''}`}>
@@ -231,16 +232,15 @@ function TabChipComponent({
         data-tab-url={safeUrl}
         title={displayLabel}
         onClick={handleFocusOrSelect}
-        aria-current={active ? 'page' : undefined}
+        aria-current={isLastUsed ? 'page' : undefined}
       >
-        {/* 
-          Active indicator dot 
-          This indicator shows if a tab is the currently active (selected) tab in its window.
-          - In a multi-window setup, each window will have exactly one active tab.
-          - If the user is viewing this Dashboard, the Dashboard tab itself is active (but filtered out),
-            so dots will only appear for active tabs in OTHER windows.
+        {/*
+          Last-used indicator dot.
+          Marks the SINGLE globally most-recently-used real tab — the one you'd
+          jump back to — not each window's foreground tab. Our own dashboard/popup
+          pages are excluded, so opening the dashboard never steals the marker.
         */}
-        {active && (
+        {isLastUsed && (
           <span
             className="bg-accent-sage size-1.5 shrink-0 rounded-full"
             style={{ boxShadow: 'var(--shadow-focus)' }}
@@ -266,7 +266,7 @@ function TabChipComponent({
         )}
 
         {/* Title */}
-        <span className={`min-w-0 flex-1 truncate text-text-primary font-mono text-xs${active ? ' font-semibold' : ''}`}>
+        <span className={`min-w-0 flex-1 truncate text-text-primary font-mono text-xs${isLastUsed ? ' font-semibold' : ''}`}>
           <HighlightedText text={displayLabel} highlight={searchQuery} />
         </span>
 
@@ -302,7 +302,7 @@ function areTabChipPropsEqual(prev: TabChipProps, next: TabChipProps): boolean {
     prev.title === next.title &&
     prev.favIconUrl === next.favIconUrl &&
     prev.duplicateCount === next.duplicateCount &&
-    prev.active === next.active &&
+    prev.isLastUsed === next.isLastUsed &&
     prev.isFocused === next.isFocused &&
     prev.isClosing === next.isClosing &&
     prev.isSelected === next.isSelected &&

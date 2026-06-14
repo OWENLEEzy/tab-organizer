@@ -21,6 +21,7 @@ interface DraggableProductGroupCardProps {
   expanded?: boolean;
   maxChipsVisible: number;
   staleThresholdDays: number;
+  lastUsedTabId?: number | null;
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
@@ -40,6 +41,7 @@ function DraggableProductGroupCard({
   expanded,
   maxChipsVisible,
   staleThresholdDays,
+  lastUsedTabId,
   focusedUrl,
   closingUrls,
   selectedUrls,
@@ -63,6 +65,7 @@ function DraggableProductGroupCard({
         expanded={expanded}
         maxChipsVisible={maxChipsVisible}
         staleThresholdDays={staleThresholdDays}
+        lastUsedTabId={lastUsedTabId}
         onCloseProductGroup={onCloseProductGroup}
         onCloseDuplicates={onCloseDuplicates}
         onCloseTab={onCloseTab}
@@ -90,6 +93,7 @@ interface DndGroupBoardProps {
   expandedProductGroups: Set<string>;
   maxChipsVisible: number;
   staleThresholdDays: number;
+  lastUsedTabId?: number | null;
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
@@ -116,6 +120,7 @@ export function DndGroupBoard({
   expandedProductGroups,
   maxChipsVisible,
   staleThresholdDays,
+  lastUsedTabId,
   focusedUrl,
   closingUrls,
   selectedUrls,
@@ -169,6 +174,7 @@ export function DndGroupBoard({
             expanded={expandedProductGroups.has(p.domain)}
             maxChipsVisible={maxChipsVisible}
             staleThresholdDays={staleThresholdDays}
+            lastUsedTabId={lastUsedTabId}
             focusedUrl={focusedUrl}
             closingUrls={closingUrls}
             selectedUrls={selectedUrls}
@@ -199,6 +205,7 @@ interface DndSectionOrganizerProps {
   expandedProductGroups: Set<string>;
   maxChipsVisible: number;
   staleThresholdDays: number;
+  lastUsedTabId?: number | null;
   focusedUrl?: string | null;
   closingUrls: Set<string>;
   selectedUrls: Set<string>;
@@ -228,6 +235,7 @@ export function DndSectionOrganizer({
   expandedProductGroups,
   maxChipsVisible,
   staleThresholdDays,
+  lastUsedTabId,
   focusedUrl,
   closingUrls,
   selectedUrls,
@@ -289,6 +297,7 @@ export function DndSectionOrganizer({
     expandedProductGroups,
     maxChipsVisible,
     staleThresholdDays,
+    lastUsedTabId,
     focusedUrl,
     closingUrls,
     selectedUrls,
@@ -343,6 +352,7 @@ export function DndSectionOrganizer({
             expanded={expandedProductGroups.has(activeGroup.domain)}
             maxChipsVisible={maxChipsVisible}
             staleThresholdDays={staleThresholdDays}
+            lastUsedTabId={lastUsedTabId}
             onCloseProductGroup={onCloseProduct}
             onCloseDuplicates={onCloseDuplicates}
             onCloseTab={onCloseTab}

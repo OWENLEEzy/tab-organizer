@@ -273,6 +273,7 @@ export function App(): React.ReactElement {
                   focusedUrl={state.focusedUrl}
                   searchQuery={state.searchQuery}
                   staleThresholdDays={settings.staleThresholdDays ?? 3}
+                  lastUsedTabId={state.lastUsedTabId}
                 />
               ) : viewMode === 'cards' ? (
                 <ErrorBoundary>
@@ -287,6 +288,7 @@ export function App(): React.ReactElement {
                       expandedProductGroups={state.expandedProductGroups}
                       maxChipsVisible={settings.maxChipsVisible}
                       staleThresholdDays={settings.staleThresholdDays ?? 3}
+                      lastUsedTabId={state.lastUsedTabId}
                       focusedUrl={state.focusedUrl}
                       closingUrls={state.closingUrls}
                       selectedUrls={state.selectedUrls}
