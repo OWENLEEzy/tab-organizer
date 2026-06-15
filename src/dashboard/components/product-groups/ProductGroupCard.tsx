@@ -25,6 +25,8 @@ interface ProductGroupCardProps {
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   onToggleProductGroupExpanded?: (domain: string) => void;
   searchQuery?: string;
+  /** Id of the single globally most-recently-used tab, to highlight it. */
+  lastUsedTabId?: number | null;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -67,6 +69,7 @@ function TabChipRow({
   onChipClick,
   searchQuery,
   staleThresholdDays,
+  lastUsedTabId,
 }: {
   tab: TabGroup['tabs'][number];
   duplicateCount: number;
@@ -80,6 +83,7 @@ function TabChipRow({
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   searchQuery?: string;
   staleThresholdDays?: number;
+  lastUsedTabId?: number | null;
 }): React.ReactElement {
   return (
     <div className="tab-chip-row cursor-pointer">
@@ -88,7 +92,7 @@ function TabChipRow({
         title={tab.title}
         favIconUrl={tab.favIconUrl}
         duplicateCount={duplicateCount}
-        active={tab.active}
+        isLastUsed={tab.id === lastUsedTabId}
         isFocused={tab.url === focusedUrl}
         isClosing={closingUrls?.has(tab.url)}
         isSelected={selectedUrls?.has(tab.url) || (selectedTabIds?.has(tab.id) ?? false)}
@@ -124,6 +128,7 @@ function ProductGroupCardComponent({
   onChipClick,
   onToggleProductGroupExpanded,
   searchQuery = '',
+  lastUsedTabId = null,
 }: ProductGroupCardProps): React.ReactElement {
   const { t } = useI18n();
   const tabs = useMemo(() => group.tabs || [], [group.tabs]);
@@ -275,6 +280,7 @@ function ProductGroupCardComponent({
               onChipClick={onChipClick}
               searchQuery={searchQuery}
               staleThresholdDays={staleThresholdDays}
+              lastUsedTabId={lastUsedTabId}
             />
           ))}
         </div>

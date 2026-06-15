@@ -651,6 +651,26 @@ export async function writeOrganizerState(state: {
   }));
 }
 
+/**
+ * Apply a batch of section assignments as a DELTA merge: each update replaces any
+ * prior assignment for the same product, all other assignments are preserved, and
+ * the affected products drop out of `unsectionedProductKeys`. Unlike a snapshot
+ * replace, this reads the freshest storage inside the write queue, so it never
+ * clobbers concurrent edits made elsewhere (e.g. the dashboard).
+ */
+export async function applyAssignmentUpdates(updates: SectionAssignment[]): Promise<void> {
+  if (updates.length === 0) return;
+  const updatedKeys = new Set(updates.map((u) => u.productKey));
+  await updateStorage((storage) => ({
+    ...storage,
+    sectionAssignments: [
+      ...storage.sectionAssignments.filter((a) => !updatedKeys.has(a.productKey)),
+      ...updates,
+    ],
+    unsectionedProductKeys: storage.unsectionedProductKeys.filter((k) => !updatedKeys.has(k)),
+  }));
+}
+
 export async function assignProductToSection(productKey: string, sectionId: string): Promise<{
   sectionAssignments: SectionAssignment[];
   unsectionedProductKeys: string[];

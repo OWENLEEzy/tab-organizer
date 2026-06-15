@@ -74,6 +74,24 @@ describe('usePopupData', () => {
     expect(result.current.unassignedCount).toBe(2);
   });
 
+  it('assignableCount counts only groups that match a section autoRule', async () => {
+    // A "Dev" section auto-matches github; claude matches nothing. Both are still
+    // unassigned (assignments not persisted yet), so unassignedCount=2, but only
+    // github can actually be auto-assigned → assignableCount=1.
+    vi.mocked(readStorage).mockResolvedValue({
+      ...mockStorage,
+      sections: [{ id: 'dev', name: 'Dev', order: 0, autoRules: [{ pattern: 'github', type: 'hostname' }] }],
+    });
+    vi.mocked(queryAllTabs).mockResolvedValue([
+      mockTab(1, 'https://github.com/'),
+      mockTab(2, 'https://claude.ai/'),
+    ]);
+    const { result } = renderHook(() => usePopupData());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.unassignedCount).toBe(2);
+    expect(result.current.assignableCount).toBe(1);
+  });
+
   it('counts duplicates across all groups', async () => {
     vi.mocked(queryAllTabs).mockResolvedValue([
       mockTab(1, 'https://github.com/repo'),

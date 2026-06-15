@@ -56,4 +56,24 @@ describe('tab store listeners', () => {
 
     stopListeners();
   });
+
+  it('skips one debounced refresh after a programmatic close, then resumes', () => {
+    const fetchTabs = vi.fn(() => Promise.resolve());
+    useTabStore.setState({ fetchTabs, suppressListenerRefresh: true });
+
+    const stopListeners = useTabStore.getState().startListeners();
+
+    // First event after a close is suppressed (the close already refreshed).
+    onUpdatedListener?.(1, { favIconUrl: 'https://www.youtube.com/favicon.ico' });
+    vi.advanceTimersByTime(300);
+    expect(fetchTabs).not.toHaveBeenCalled();
+    expect(useTabStore.getState().suppressListenerRefresh).toBe(false);
+
+    // The very next event refreshes normally again.
+    onUpdatedListener?.(1, { favIconUrl: 'https://www.youtube.com/favicon.ico' });
+    vi.advanceTimersByTime(300);
+    expect(fetchTabs).toHaveBeenCalledTimes(1);
+
+    stopListeners();
+  });
 });

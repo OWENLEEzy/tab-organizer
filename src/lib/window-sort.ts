@@ -43,5 +43,13 @@ export function computeWindowSortMoves(tabs: SortableTab[], productOrder: string
 
   const slots = area.map((t) => t.index).sort((a, b) => a - b);
   const sorted = sortArea(area, orderPos);
-  return sorted.map((t, i) => ({ id: t.id, index: slots[i] }));
+
+  // Emit a move only when a tab actually changes slot. A tab already in its target
+  // slot needs no chrome.tabs.move — skipping it avoids a redundant API call and a
+  // spurious onMoved event (which would otherwise trigger an extra list refresh).
+  const moves: TabMove[] = [];
+  sorted.forEach((t, i) => {
+    if (slots[i] !== t.index) moves.push({ id: t.id, index: slots[i] });
+  });
+  return moves;
 }

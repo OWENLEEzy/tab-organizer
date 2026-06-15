@@ -107,6 +107,22 @@ describe('computeOrganizePlan', () => {
     expect(plan.orderedGroups.map((g) => g.productKey)).toEqual(['large-product', 'small-product']);
   });
 
+  it('exposes a productKey -> section map for native grouping', () => {
+    const github = makeGroup('github', [10, 11]);
+    const claude = makeGroup('claude', [20]);
+    const assignments: SectionAssignment[] = [
+      { productKey: 'claude', sectionId: 'ai', order: 0 },
+    ];
+    const plan = computeOrganizePlan({
+      groups: [github, claude],
+      sections: [devSection, aiSection],
+      assignments, unsectionedProductKeys: [], groupOrder: {},
+    });
+    // claude is explicitly assigned to ai; github auto-assigns to dev via autoRules.
+    expect(plan.sectionByProductKey.get('claude')).toMatchObject({ sectionId: 'ai', name: 'AI' });
+    expect(plan.sectionByProductKey.get('github')).toMatchObject({ sectionId: 'dev' });
+  });
+
   it('orders groups by section then assignment order', () => {
     const github = makeGroup('github', [10, 11]);
     const claude = makeGroup('claude', [20]);

@@ -59,6 +59,13 @@ describe('friendlyDomain', () => {
     // .com is stripped, leaving subdomain.domain -> two parts
     expect(friendlyDomain('sub.example.com')).toBe('Sub Example');
   });
+
+  it('renders local-address keys verbatim (not "127 0 0 1")', () => {
+    expect(friendlyDomain('localhost:3000')).toBe('localhost:3000');
+    expect(friendlyDomain('localhost')).toBe('localhost');
+    expect(friendlyDomain('127.0.0.1')).toBe('127.0.0.1');
+    expect(friendlyDomain('192.168.1.5:5000')).toBe('192.168.1.5:5000');
+  });
 });
 
 // ---------------------------------------------------------------------------

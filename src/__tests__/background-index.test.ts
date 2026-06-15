@@ -134,10 +134,8 @@ describe('background service worker entry', () => {
 
     await import('../background/index');
     listeners.onCommand.mock.calls[0][0]('open-section-switcher');
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
+    // Drain the focus-or-create promise chain up to the first sendMessage.
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
     expect(chromeMock.tabs.sendMessage).toHaveBeenCalledTimes(1);
 
     await vi.advanceTimersByTimeAsync(100);
@@ -156,10 +154,8 @@ describe('background service worker entry', () => {
 
     await import('../background/index');
     listeners.onCommand.mock.calls[0][0]('open-section-switcher');
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
+    // Drain the focus-or-create promise chain up to the first sendMessage.
+    for (let i = 0; i < 12; i += 1) await Promise.resolve();
     await vi.advanceTimersByTimeAsync(800);
 
     expect(chromeMock.tabs.sendMessage).toHaveBeenCalledTimes(8);

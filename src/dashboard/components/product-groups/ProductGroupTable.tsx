@@ -26,6 +26,8 @@ interface ProductGroupTableProps {
   focusedUrl?: string | null;
   searchQuery?: string;
   staleThresholdDays?: number;
+  /** Id of the single globally most-recently-used tab, to highlight it. */
+  lastUsedTabId?: number | null;
 }
 
 function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
@@ -91,6 +93,7 @@ export function ProductGroupTable({
   focusedUrl = null,
   searchQuery = '',
   staleThresholdDays = 3,
+  lastUsedTabId = null,
 }: ProductGroupTableProps): React.ReactElement {
   const { t } = useI18n();
   const rows = items;
@@ -190,7 +193,7 @@ export function ProductGroupTable({
                             title={tab.title}
                             favIconUrl={tab.favIconUrl}
                             duplicateCount={p.tabs.filter(t => t.url === tab.url).length}
-                            active={tab.active}
+                            isLastUsed={tab.id === lastUsedTabId}
                             isFocused={tab.url === focusedUrl}
                             isClosing={closingUrls?.has(tab.url)}
                             isSelected={selectedUrls?.has(tab.url) || (selectedTabIds?.has(tab.id) ?? false)}

@@ -8,6 +8,7 @@ import { isRealTab, getTabDomain } from '../lib/url-rules';
 import { groupTabsByProduct } from '../lib/product-groups';
 import { getProductKey } from '../lib/product-key';
 import { duplicateTabIdsToClose } from '../lib/duplicate-tabs';
+import { computeOrganizePlan } from '../lib/organize-plan';
 
 const DEFAULT_LOCALE: Locale = resolveLocale(
   undefined,
@@ -33,6 +34,8 @@ export interface PopupData {
   totalTabs: number;
   totalGroups: number;
   unassignedCount: number;
+  /** How many unassigned groups organize can actually auto-assign (match autoRules). */
+  assignableCount: number;
   duplicateCount: number;
   windowCount: number;
   activeSections: PopupSection[];
@@ -48,7 +51,7 @@ export interface PopupData {
 }
 
 const EMPTY: PopupData = {
-  totalTabs: 0, totalGroups: 0, unassignedCount: 0, duplicateCount: 0, windowCount: 0,
+  totalTabs: 0, totalGroups: 0, unassignedCount: 0, assignableCount: 0, duplicateCount: 0, windowCount: 0,
   activeSections: [], unassignedGroups: [], groups: [], sections: [],
   assignments: [], unsectionedProductKeys: [], groupOrder: {}, theme: 'clay',
   locale: DEFAULT_LOCALE, isLoading: true,
@@ -123,12 +126,25 @@ export function usePopupData(): PopupData {
     const allTabs = groups.flatMap((g) => g.tabs);
     const dupIds = duplicateTabIdsToClose(allTabs, undefined, true);
 
+    // How many unassigned groups organize will ACTUALLY auto-assign — only those
+    // matching a section's autoRules, not every unassigned group. The confirm
+    // checklist reports this honest number (computeOrganizePlan is the same plan
+    // run-organize executes).
+    const plan = computeOrganizePlan({
+      groups,
+      sections,
+      assignments: sectionAssignments,
+      unsectionedProductKeys,
+      groupOrder,
+    });
+
     const windowIds = new Set(realChromeTabs.map((t) => t.windowId));
 
     return {
       totalTabs: tabs.length,
       totalGroups: groups.length,
       unassignedCount: unassignedGroups.length,
+      assignableCount: plan.assignmentUpdates.length,
       duplicateCount: dupIds.length,
       windowCount: windowIds.size,
       activeSections,
@@ -160,9 +176,19 @@ export function usePopupData(): PopupData {
     };
     reload();
     const unsubscribe = subscribeToTabEvents(reload);
+
+    // Also react to storage changes (settings, section assignments) so the popup
+    // never shows a stale snapshot — e.g. when the dashboard or organize updates state.
+    const storageEvents = typeof chrome !== 'undefined' ? chrome.storage?.onChanged : undefined;
+    const onStorageChanged = (_changes: Record<string, chrome.storage.StorageChange>, areaName: string): void => {
+      if (areaName === 'local') reload();
+    };
+    storageEvents?.addListener(onStorageChanged);
+
     return () => {
       cancelled = true;
       unsubscribe();
+      storageEvents?.removeListener(onStorageChanged);
     };
   }, [fetchData]);
 

@@ -1,4 +1,5 @@
 import { FRIENDLY_DOMAINS } from '../config/friendly-domains';
+import { isLocalAddressKey } from '../config/local-address';
 
 /**
  * Map a hostname to a human-friendly display name.
@@ -8,7 +9,11 @@ import { FRIENDLY_DOMAINS } from '../config/friendly-domains';
  */
 export function friendlyDomain(hostname: string): string {
   if (!hostname) return '';
-  
+
+  // Local/loopback dev addresses are already their own display string
+  // (e.g. "localhost:3000"); never run them through TLD stripping.
+  if (isLocalAddressKey(hostname)) return hostname;
+
   // Normalize hostname by stripping common prefixes (www, m)
   const normalized = hostname.toLowerCase().replace(/^(www|m)\./, '');
   

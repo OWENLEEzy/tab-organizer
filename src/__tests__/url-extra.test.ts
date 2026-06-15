@@ -31,4 +31,15 @@ describe('getTabDomain extra', () => {
     // Line 39 in url.ts
     expect(getTabDomain('')).toBe('');
   });
+
+  it('canonicalizes local addresses by host+port (localhost === 127.0.0.1)', () => {
+    expect(getTabDomain('http://localhost:3000/x')).toBe('localhost:3000');
+    expect(getTabDomain('http://127.0.0.1:3000/x')).toBe('localhost:3000');
+    expect(getTabDomain('http://localhost:8080/x')).toBe('localhost:8080');
+  });
+
+  it('leaves normal hostnames unchanged (no port appended)', () => {
+    expect(getTabDomain('https://github.com/foo')).toBe('github.com');
+    expect(getTabDomain('https://example.com')).toBe('example.com');
+  });
 });

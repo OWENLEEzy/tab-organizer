@@ -7,7 +7,7 @@ import type { TabGroup } from '../../types';
 import { useUIState } from '../hooks/useUIState';
 import { useTabActions } from './useTabActions';
 import { useI18n } from '../hooks/useI18n';
-import { DASHBOARD_SECTION_SWITCHER_FOCUS_HASH } from '../../background/dashboard';
+import { DASHBOARD_SECTION_SWITCHER_FOCUS_HASH } from '../../lib/dashboard-url';
 import { useNow } from '../hooks/useNow';
 import { isTabStale } from '../../lib/staleness';
 import { analyzeDuplicates } from '../../lib/duplicate-analysis';
@@ -411,6 +411,7 @@ export function useDashboardController() {
       totalProducts: products.length,
       totalDupes,
       dashboardCount,
+      lastUsedTabId: tabStore.lastUsedTabId,
       showEmptyState: products.length === 0,
       visibleSectionCount: structureOrganizerModel.visibleSections.length,
       focusedUrl,

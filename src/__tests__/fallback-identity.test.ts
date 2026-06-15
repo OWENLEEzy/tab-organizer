@@ -41,13 +41,17 @@ describe('Fallback Identity Rigorous Isolation', () => {
     expect(jp.key).toBe('unmapped-brand.jp');
   });
 
-  it('handles IP addresses and localhost correctly', () => {
+  it('renders local-address keys verbatim instead of mangling them', () => {
     const ip = fallbackProductForHostname('127.0.0.1');
     const local = fallbackProductForHostname('localhost');
+    const ported = fallbackProductForHostname('localhost:3000');
 
     expect(ip.key).toBe('127.0.0.1');
     expect(local.key).toBe('localhost');
-    expect(ip.label).toBe('127 0 0 1');
+    // Was the buggy "127 0 0 1"; now shown as-is.
+    expect(ip.label).toBe('127.0.0.1');
+    expect(local.label).toBe('localhost');
+    expect(ported.label).toBe('localhost:3000');
   });
 
   it('properly handles complex hyphenated and dotted domains', () => {

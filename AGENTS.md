@@ -45,8 +45,9 @@ manager, or task manager.
   actions.
 - "Organize" (popup one-click) and "sort window" (dashboard) may physically
   reorder real Chrome tabs so same-product tabs sit together and may gather each
-  product that has two or more tabs in a window into a native `chrome.tabGroups`
-  group; a product with a single tab in a window is left ungrouped. Sorting happens
+  section's product groups into a native `chrome.tabGroups` group (one group per
+  section, titled with the section name); product groups outside any section are
+  left ungrouped. Sorting happens
   before grouping; pinned tabs are never reordered and never grouped. The popup
   organize spans all windows; "sort window" is the current window only and stays
   behind its confirmation dialog. Both reuse one shared pipeline.
@@ -116,8 +117,8 @@ Source of truth: `docs/frontend-design.md` and
 - Toolbar popup overview: stats strip, section/group list, duplicate banner, theme- and
   locale-aware, with a one-click "organize" action and a link to the full dashboard.
 - One-click organize: auto-assign unassigned groups to sections, close duplicate tabs,
-  physically sort tabs into section order, and create native Chrome tab groups (for
-  products with two or more tabs in a window) across all windows. The dashboard "sort
+  physically sort tabs into section order, and create native Chrome tab groups (one
+  per section, spanning that section's product groups) across all windows. The dashboard "sort
   window" reuses the same sort + native-group pipeline for the current window.
 - Browser-internal pages, extension pages, and Tab Organizer pages are filtered out of
   grouping and recovery snapshots.

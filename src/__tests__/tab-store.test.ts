@@ -564,7 +564,8 @@ describe('useTabStore', () => {
   it('registers and cleans up tab listeners', () => {
     vi.useFakeTimers();
     const fetchTabs = vi.fn().mockResolvedValue(undefined);
-    useTabStore.setState({ fetchTabs });
+    // A prior close test may have armed the one-shot suppression; clear it.
+    useTabStore.setState({ fetchTabs, suppressListenerRefresh: false });
 
     const cleanup = useTabStore.getState().startListeners();
     const onUpdated = chromeTabs.onUpdated.addListener.mock.calls[0][0];

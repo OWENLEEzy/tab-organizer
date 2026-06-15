@@ -5,7 +5,7 @@ import {
   getDashboardFocusUrl,
   getDashboardUrl,
   isDashboardUrl,
-} from '../background/dashboard';
+} from '../lib/dashboard-url';
 
 describe('DASHBOARD_RELATIVE_PATH', () => {
   it('points at the built dashboard entry', () => {
