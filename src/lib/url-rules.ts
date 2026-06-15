@@ -1,4 +1,4 @@
-import { parseLocalAddress } from './local-address';
+import { parseLocalAddress } from '../config/local-address';
 
 export const LOCAL_FILES_PRODUCT_KEY = 'local-files';
 

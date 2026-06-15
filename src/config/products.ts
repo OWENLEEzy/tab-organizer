@@ -1,5 +1,5 @@
 import type { ProductInfo } from '../types';
-import { isLocalAddressKey } from '../lib/local-address';
+import { isLocalAddressKey } from './local-address';
 
 interface ProductRule extends ProductInfo {
   hostnames?: string[];

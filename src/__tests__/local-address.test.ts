@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseLocalAddress, isLocalAddressKey } from '../lib/local-address';
+import { parseLocalAddress, isLocalAddressKey } from '../config/local-address';
 
 describe('parseLocalAddress', () => {
   it('returns null for non-local hostnames', () => {

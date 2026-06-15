@@ -1,5 +1,5 @@
 import { FRIENDLY_DOMAINS } from '../config/friendly-domains';
-import { isLocalAddressKey } from './local-address';
+import { isLocalAddressKey } from '../config/local-address';
 
 /**
  * Map a hostname to a human-friendly display name.
