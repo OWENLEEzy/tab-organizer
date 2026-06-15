@@ -144,7 +144,10 @@ export function Popup(): React.ReactElement {
             <ActionButton variant="quiet" className="flex-1" onClick={() => setOrganizeState('idle')}>
               {t('popupCancel')}
             </ActionButton>
-            <ActionButton variant="primary" className="flex-1" onClick={() => void runOrganizeFlow()}>
+            {/* Move focus into the gate when it opens (it mounts fresh on each
+                idle→confirming transition), so keyboard/screen-reader users land
+                on Confirm instead of having focus drop to <body>. */}
+            <ActionButton autoFocus variant="primary" className="flex-1" onClick={() => void runOrganizeFlow()}>
               {t('popupConfirm')}
             </ActionButton>
           </div>

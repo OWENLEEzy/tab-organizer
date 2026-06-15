@@ -42,6 +42,13 @@ describe('Popup organize confirmation gate', () => {
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
 
+  it('moves focus to Confirm when the gate opens (focus must not drop to body)', async () => {
+    render(<Popup />);
+    await userEvent.click(screen.getByRole('button', { name: 'Organize' }));
+
+    expect(screen.getByRole('button', { name: 'Confirm' })).toHaveFocus();
+  });
+
   it('confirm checklist spells out the real actions with live counts', async () => {
     render(<Popup />);
     await userEvent.click(screen.getByRole('button', { name: 'Organize' }));
