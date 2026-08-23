@@ -105,7 +105,7 @@ describe('storage extra', () => {
     await writeOrganizerState({
       viewMode: 'table',
       sections: [{ id: '1', name: 'Test', order: 0 }],
-      sectionAssignments: [{ productKey: 'a', sectionId: '1', order: 0 }]
+      sectionAssignments: [{ productKey: 'a', sectionId: '1' }]
     });
 
     const storage = await readStorage();

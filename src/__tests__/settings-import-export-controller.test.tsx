@@ -45,7 +45,7 @@ function makeStores() {
 
   const tabStore = {
     sections: [{ id: 'work', name: 'Work', order: 0 }],
-    sectionAssignments: [{ productKey: 'github', sectionId: 'work', order: 0 }],
+    sectionAssignments: [{ productKey: 'github', sectionId: 'work' }],
     unsectionedProductKeys: [],
     importBackup: vi.fn(async () => {}),
   } as unknown as TabStore;
@@ -116,7 +116,7 @@ describe('useSettingsImportExport', () => {
     expect(settingsStore.addCustomGroup).toHaveBeenCalledWith({ groupKey: 'new', groupLabel: 'New', hostname: 'new.test' });
     expect(tabStore.importBackup).toHaveBeenCalledWith(
       [{ id: 'later', name: 'Later', order: 0 }],
-      [{ productKey: 'github', sectionId: 'later', order: 0 }],
+      [{ productKey: 'github', sectionId: 'later' }],
       ['youtube'],
     );
     expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Settings imported'));

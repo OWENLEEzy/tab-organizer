@@ -17,7 +17,6 @@ type LegacyGroupAssignment = {
   itemKey?: unknown;
   groupId?: unknown;
   sectionId?: unknown;
-  order?: unknown;
 };
 
 type ImportedAutoRule = NonNullable<Section['autoRules']>[number];
@@ -38,12 +37,13 @@ function normalizeImportedSections(value: unknown): Section[] | null {
       order: Number.isFinite(section.order) ? Number(section.order) : index,
       emoji: typeof section.emoji === 'string' ? section.emoji : undefined,
       autoRules: Array.isArray(section.autoRules)
-        ? section.autoRules.filter((rule): rule is ImportedAutoRule => (
-            rule != null &&
-            typeof rule === 'object' &&
-            (rule as Record<string, unknown>).type === 'hostname' &&
-            typeof (rule as Record<string, unknown>).pattern === 'string'
-          ))
+        ? section.autoRules.filter((rule): rule is ImportedAutoRule => {
+            if (rule == null || typeof rule !== 'object') return false;
+            const candidate = rule as Record<string, unknown>;
+            if (candidate.kind === 'keyword') return typeof candidate.value === 'string';
+            if (candidate.kind === 'regex') return typeof candidate.pattern === 'string';
+            return false;
+          })
         : undefined,
     }));
 }
@@ -53,7 +53,7 @@ function normalizeImportedAssignments(value: unknown): SectionAssignment[] {
 
   return value
     .filter((assignment): assignment is LegacyGroupAssignment => assignment != null && typeof assignment === 'object')
-    .flatMap((assignment, index): SectionAssignment[] => {
+    .flatMap((assignment): SectionAssignment[] => {
       const productKey = typeof assignment.productKey === 'string'
         ? assignment.productKey
         : assignment.itemType === 'product' && typeof assignment.itemKey === 'string'
@@ -67,11 +67,7 @@ function normalizeImportedAssignments(value: unknown): SectionAssignment[] {
 
       if (!productKey || !sectionId) return [];
 
-      return [{
-        productKey,
-        sectionId,
-        order: Number.isFinite(assignment.order) ? Number(assignment.order) : index,
-      }];
+      return [{ productKey, sectionId }];
     });
 }
 

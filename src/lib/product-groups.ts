@@ -1,4 +1,4 @@
-import type { Tab, TabGroup, Section, CustomGroup, GroupSortOption } from '../types';
+import type { Tab, TabGroup, CustomGroup, GroupSortOption } from '../types';
 import { resolveProduct } from './resolve-product';
 import { friendlyDomain } from './title-cleaner';
 import { analyzeDuplicates } from './duplicate-analysis';
@@ -158,24 +158,4 @@ export function groupTabsByProduct(
   }
 
   return groups;
-}
-
-/**
- * Auto-assign a product to a section based on its hostname rules.
- */
-export function autoAssignProductToSection(
-  hostnames: readonly string[],
-  sections: Section[]
-): string | null {
-  for (const section of sections) {
-    for (const rule of section.autoRules ?? []) {
-      try {
-        const re = new RegExp(rule.pattern, 'i');
-        if (hostnames.some((hostname) => re.test(hostname))) return section.id;
-      } catch {
-        // Skip invalid regex patterns
-      }
-    }
-  }
-  return null;
 }

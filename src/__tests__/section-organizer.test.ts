@@ -56,13 +56,13 @@ const sections: Section[] = [
     id: 'section-dev',
     name: 'Dev',
     order: 0,
-    autoRules: [{ pattern: 'github|vercel', type: 'hostname' }],
+    autoRules: [{ kind: 'regex', pattern: 'github|vercel' }],
   },
   {
     id: 'section-media',
     name: 'Media',
     order: 1,
-    autoRules: [{ pattern: 'youtube', type: 'hostname' }],
+    autoRules: [{ kind: 'keyword', value: 'youtube' }],
   },
 ];
 
@@ -90,8 +90,8 @@ describe('buildOrganizerModel', () => {
       product('example.com', ['https://example.com'], 0),
     ];
     const assignments: SectionAssignment[] = [
-      { productKey: 'github', sectionId: 'section-dev', order: 0 },
-      { productKey: 'youtube', sectionId: 'section-media', order: 0 },
+      { productKey: 'github', sectionId: 'section-dev' },
+      { productKey: 'youtube', sectionId: 'section-media' },
     ];
 
     const model = buildOrganizerModel({
@@ -119,7 +119,7 @@ describe('buildOrganizerModel', () => {
     ];
     // github is assigned, youtube is not assigned
     const assignments: SectionAssignment[] = [
-      { productKey: 'github', sectionId: 'section-dev', order: 0 },
+      { productKey: 'github', sectionId: 'section-dev' },
     ];
     // youtube is explicitly moved to No section
     const model = buildOrganizerModel({
@@ -146,7 +146,7 @@ describe('autoAssignProducts', () => {
     const next = autoAssignProducts({
       products,
       sections,
-      assignments: [{ productKey: 'github', sectionId: 'section-dev', order: 0 }],
+      assignments: [{ productKey: 'github', sectionId: 'section-dev' }],
       unsectionedProductKeys: ['youtube'],
       hostnamesByProductKey: new Map([
         ['github', ['github.com']],
@@ -155,7 +155,7 @@ describe('autoAssignProducts', () => {
       ]),
     });
 
-    expect(next).toEqual([{ productKey: 'vercel', sectionId: 'section-dev', order: 1 }]);
+    expect(next).toEqual([{ productKey: 'vercel', sectionId: 'section-dev' }]);
   });
 
   it('iterates all rules in a section and assigns on second rule match', () => {
@@ -164,8 +164,8 @@ describe('autoAssignProducts', () => {
       name: 'Multi',
       order: 0,
       autoRules: [
-        { pattern: 'nomatch', type: 'hostname' },
-        { pattern: 'github|vercel', type: 'hostname' },
+        { kind: 'keyword', value: 'nomatch' },
+        { kind: 'regex', pattern: 'github|vercel' },
       ],
     };
     const products = [product('github', ['https://github.com/a'])];
@@ -178,16 +178,16 @@ describe('autoAssignProducts', () => {
       hostnamesByProductKey: new Map([['github', ['github.com']]]),
     });
 
-    expect(next).toEqual([{ productKey: 'github', sectionId: 'section-multi', order: 0 }]);
+    expect(next).toEqual([{ productKey: 'github', sectionId: 'section-multi' }]);
   });
 
-  it('assigns order based on existing assignments count + new count', () => {
+  it('assigns every matching product in a single pass', () => {
     const products = [
       product('github', ['https://github.com/a']),
       product('vercel', ['https://vercel.com/dashboard']),
     ];
     const existingAssignments: SectionAssignment[] = [
-      { productKey: 'existing', sectionId: 'section-dev', order: 0 },
+      { productKey: 'existing', sectionId: 'section-dev' },
     ];
 
     const next = autoAssignProducts({
@@ -201,10 +201,9 @@ describe('autoAssignProducts', () => {
       ]),
     });
 
-    // github gets order 1 (existing count = 1, new count in section = 0)
-    // vercel gets order 2 (existing count = 1, new count in section = 1)
-    expect(next).toContainEqual({ productKey: 'github', sectionId: 'section-dev', order: 1 });
-    expect(next).toContainEqual({ productKey: 'vercel', sectionId: 'section-dev', order: 2 });
+    // Both products match section-dev; the unrelated existing assignment is untouched.
+    expect(next).toContainEqual({ productKey: 'github', sectionId: 'section-dev' });
+    expect(next).toContainEqual({ productKey: 'vercel', sectionId: 'section-dev' });
   });
 
   it('skips invalid regex patterns without affecting other rules', () => {
@@ -213,8 +212,8 @@ describe('autoAssignProducts', () => {
       name: 'Multi',
       order: 0,
       autoRules: [
-        { pattern: '***invalid', type: 'hostname' }, // invalid regex
-        { pattern: 'github', type: 'hostname' },
+        { kind: 'regex', pattern: '***invalid' }, // invalid regex
+        { kind: 'keyword', value: 'github' },
       ],
     };
     const products = [product('github', ['https://github.com/a'])];
@@ -228,29 +227,29 @@ describe('autoAssignProducts', () => {
     });
 
     // Should still match the second rule despite the first being invalid
-    expect(next).toEqual([{ productKey: 'github', sectionId: 'section-multi', order: 0 }]);
+    expect(next).toEqual([{ productKey: 'github', sectionId: 'section-multi' }]);
   });
 });
 
 describe('assignment mutations', () => {
   it('assigns, moves to No section, and deletes sections without mutating inputs', () => {
     const assignments: SectionAssignment[] = [
-      { productKey: 'github', sectionId: 'section-dev', order: 0 },
+      { productKey: 'github', sectionId: 'section-dev' },
     ];
 
     const assigned = assignProductToSection(assignments, 'youtube', 'section-media');
     expect(assigned).toEqual([
-      { productKey: 'github', sectionId: 'section-dev', order: 0 },
-      { productKey: 'youtube', sectionId: 'section-media', order: 0 },
+      { productKey: 'github', sectionId: 'section-dev' },
+      { productKey: 'youtube', sectionId: 'section-media' },
     ]);
-    expect(assignments).toEqual([{ productKey: 'github', sectionId: 'section-dev', order: 0 }]);
+    expect(assignments).toEqual([{ productKey: 'github', sectionId: 'section-dev' }]);
 
     const moved = moveProductToUnsectioned(assigned, [], 'youtube');
-    expect(moved.assignments).toEqual([{ productKey: 'github', sectionId: 'section-dev', order: 0 }]);
+    expect(moved.assignments).toEqual([{ productKey: 'github', sectionId: 'section-dev' }]);
     expect(moved.overrides).toEqual(['youtube']);
 
     const deleted = deleteSectionAndUnassignProducts(assigned, ['existing'], 'section-dev');
-    expect(deleted.assignments).toEqual([{ productKey: 'youtube', sectionId: 'section-media', order: 0 }]);
+    expect(deleted.assignments).toEqual([{ productKey: 'youtube', sectionId: 'section-media' }]);
     expect(deleted.overrides).toEqual(['existing', 'github']);
   });
 });
@@ -318,7 +317,7 @@ describe('getProductSectionId', () => {
 describe('autoAssignProducts edge cases', () => {
   it('returns empty when all products already assigned', () => {
     const products = [product('github', ['https://github.com/a'])];
-    const assignments: SectionAssignment[] = [{ productKey: 'github', sectionId: 'section-dev', order: 0 }];
+    const assignments: SectionAssignment[] = [{ productKey: 'github', sectionId: 'section-dev' }];
 
     const next = autoAssignProducts({
       products,
@@ -349,7 +348,7 @@ describe('autoAssignProducts edge cases', () => {
 describe('buildOrganizerModel with activeSectionId', () => {
   it('populates activeSectionIds for sections with products', () => {
     const products = [product('github', ['https://github.com/a'])];
-    const assignments: SectionAssignment[] = [{ productKey: 'github', sectionId: 'section-dev', order: 0 }];
+    const assignments: SectionAssignment[] = [{ productKey: 'github', sectionId: 'section-dev' }];
 
     const model = buildOrganizerModel({
       sections,
@@ -371,7 +370,7 @@ describe('buildOrganizerModel product.order fallback sorting', () => {
       product('a', ['https://a.com'], 2),
     ];
     const assignments: SectionAssignment[] = [
-      { productKey: 'a', sectionId: 'section-dev', order: 1 },
+      { productKey: 'a', sectionId: 'section-dev' },
     ];
 
     const model = buildOrganizerModel({
@@ -398,9 +397,9 @@ describe('buildOrganizerModel section bucket sort priority', () => {
       product('google', ['https://google.com/a'], 0),
     ];
     const assignments: SectionAssignment[] = [
-      { productKey: 'github', sectionId: 'section-dev', order: 5 }, // stale order
-      { productKey: 'gitlab', sectionId: 'section-dev', order: 1 },
-      { productKey: 'google', sectionId: 'section-dev', order: 9 },
+      { productKey: 'google', sectionId: 'section-dev' },
+      { productKey: 'github', sectionId: 'section-dev' },
+      { productKey: 'gitlab', sectionId: 'section-dev' },
     ];
 
     const model = buildOrganizerModel({
@@ -412,7 +411,7 @@ describe('buildOrganizerModel section bucket sort priority', () => {
     });
 
     const sectionProducts = model.productsBySection.get('section-dev') ?? [];
-    // Should follow products array order (github, gitlab, google), not assignment.order
+    // Should follow products array order (github, gitlab, google), not assignment order
     expect(sectionProducts.map((p) => p.productKey)).toEqual(['github', 'gitlab', 'google']);
   });
 });

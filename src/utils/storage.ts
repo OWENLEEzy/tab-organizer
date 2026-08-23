@@ -168,7 +168,6 @@ type LegacyAssignment = Partial<SectionAssignment> & {
   itemType?: unknown;
   itemKey?: unknown;
   sectionId?: unknown;
-  order?: unknown;
 };
 
 function normalizeAssignments(value: unknown): SectionAssignment[] {
@@ -181,17 +180,12 @@ function normalizeAssignments(value: unknown): SectionAssignment[] {
       const hasProductItem = candidate.itemType === 'product' && typeof candidate.itemKey === 'string';
       return (hasLegacyProductKey || hasProductItem) && typeof candidate.sectionId === 'string';
     })
-    .map((assignment, index) => {
-      const productKey = typeof assignment.productKey === 'string'
+    .map((assignment) => ({
+      productKey: typeof assignment.productKey === 'string'
         ? assignment.productKey
-        : String(assignment.itemKey);
-
-      return {
-        productKey,
-        sectionId: assignment.sectionId,
-        order: Number.isFinite(assignment.order) ? Number(assignment.order) : index,
-      };
-    });
+        : String(assignment.itemKey),
+      sectionId: assignment.sectionId,
+    }));
 }
 
 function normalizeUnsectionedProductKeys(value: unknown): string[] {
@@ -270,29 +264,21 @@ function reconcileAssignments(
   legacyKeyMap: Map<string, string>,
 ): SectionAssignment[] {
   const sectionIds = new Set(groups.map((group) => group.id));
-  const bestByProduct = new Map<string, SectionAssignment & { originalIndex: number }>();
+  const firstByProduct = new Map<string, SectionAssignment>();
 
-  assignments.forEach((assignment, index) => {
-    if (!sectionIds.has(assignment.sectionId)) return;
+  for (const assignment of assignments) {
+    if (!sectionIds.has(assignment.sectionId)) continue;
 
     const productKey = legacyKeyMap.get(assignment.productKey) ?? assignment.productKey;
-    if (!currentProductKeys.has(productKey)) return;
+    if (!currentProductKeys.has(productKey)) continue;
 
-    const candidate = { ...assignment, productKey, originalIndex: index };
-    const existing = bestByProduct.get(productKey);
+    // A product belongs to one section: the first surviving entry wins and later
+    // duplicates are dropped. Map insertion order preserves the stored order.
+    if (firstByProduct.has(productKey)) continue;
+    firstByProduct.set(productKey, { ...assignment, productKey });
+  }
 
-    if (
-      !existing ||
-      candidate.order < existing.order ||
-      (candidate.order === existing.order && candidate.originalIndex < existing.originalIndex)
-    ) {
-      bestByProduct.set(productKey, candidate);
-    }
-  });
-
-  return [...bestByProduct.values()]
-    .sort((a, b) => a.originalIndex - b.originalIndex)
-    .map(({ originalIndex: _originalIndex, ...assignment }) => assignment);
+  return [...firstByProduct.values()];
 }
 
 function reconcileUnsectionedProductKeys(
@@ -681,12 +667,9 @@ export async function assignProductToSection(productKey: string, sectionId: stri
   };
 
   await updateStorage((storage) => {
-    const existingInGroup = storage.sectionAssignments.filter(
-      (assignment) => assignment.sectionId === sectionId && assignment.productKey !== productKey,
-    );
     const sectionAssignments = [
       ...storage.sectionAssignments.filter((assignment) => assignment.productKey !== productKey),
-      { productKey, sectionId, order: existingInGroup.length },
+      { productKey, sectionId },
     ];
     const unsectionedProductKeys = storage.unsectionedProductKeys.filter((key) => key !== productKey);
 

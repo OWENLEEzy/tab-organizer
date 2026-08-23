@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { groupTabsByProduct, autoAssignProductToSection, createSortComparator } from '../lib/product-groups';
+import { groupTabsByProduct, createSortComparator } from '../lib/product-groups';
 import { LOCAL_FILES_PRODUCT_KEY } from '../lib/url-rules';
-import type { Tab, Section, TabGroup } from '../types';
+import type { Tab, TabGroup } from '../types';
 
 function makeTab(overrides: Partial<Tab> & Pick<Tab, 'id' | 'url'>): Tab {
   return {
@@ -300,60 +300,6 @@ describe('groupTabsByProduct', () => {
       expect(groups[0].productKey).toBe('example.com');
       expect(groups[0].tabs).toHaveLength(3);
     });
-  });
-});
-
-describe('autoAssignProductToSection', () => {
-  const mockSections: Section[] = [
-    {
-      id: 'dev',
-      name: 'Dev',
-      order: 0,
-      autoRules: [{ pattern: 'github|vercel|localhost', type: 'hostname' }],
-    },
-    {
-      id: 'media',
-      name: 'Media',
-      order: 1,
-      autoRules: [{ pattern: 'youtube|bilibili', type: 'hostname' }],
-    },
-  ];
-
-  it('matches hostname against regex rules', () => {
-    expect(autoAssignProductToSection(['github.com'], mockSections)).toBe('dev');
-    expect(autoAssignProductToSection(['vercel.com'], mockSections)).toBe('dev');
-    expect(autoAssignProductToSection(['youtube.com'], mockSections)).toBe('media');
-  });
-
-  it('matches canonical Google products through their source hostnames', () => {
-    const sections: Section[] = [
-      {
-        id: 'work',
-        name: 'Work',
-        order: 0,
-        autoRules: [{ pattern: 'google\\.com', type: 'hostname' }],
-      },
-    ];
-
-    expect(autoAssignProductToSection(['mail.google.com'], sections)).toBe('work');
-    expect(autoAssignProductToSection(['docs.google.com'], sections)).toBe('work');
-  });
-
-  it('returns null if no rule matches', () => {
-    expect(autoAssignProductToSection(['google.com'], mockSections)).toBeNull();
-  });
-
-  it('safely ignores invalid regex patterns', () => {
-    const sectionsWithInvalidRegex: Section[] = [
-      {
-        id: 'bad-regex',
-        name: 'Bad',
-        order: 0,
-        autoRules: [{ pattern: '[invalid', type: 'hostname' }],
-      },
-      ...mockSections,
-    ];
-    expect(autoAssignProductToSection(['github.com'], sectionsWithInvalidRegex)).toBe('dev');
   });
 });
 

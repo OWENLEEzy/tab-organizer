@@ -16,9 +16,9 @@ function makeGroup(productKey: string, tabIds: number[]): TabGroup {
 }
 
 const devSection: Section = { id: 'dev', name: 'Dev', order: 0,
-  autoRules: [{ pattern: 'github', type: 'hostname' }] };
+  autoRules: [{ kind: 'keyword', value: 'github' }] };
 const aiSection: Section  = { id: 'ai', name: 'AI', order: 1,
-  autoRules: [{ pattern: 'claude', type: 'hostname' }] };
+  autoRules: [{ kind: 'keyword', value: 'claude' }] };
 
 describe('computeOrganizePlan', () => {
   it('auto-assigns unassigned group matching autoRules', () => {
@@ -42,7 +42,7 @@ describe('computeOrganizePlan', () => {
 
   it('skips groups already assigned', () => {
     const groups = [makeGroup('github', [1])];
-    const existing: SectionAssignment = { productKey: 'github', sectionId: 'dev', order: 0 };
+    const existing: SectionAssignment = { productKey: 'github', sectionId: 'dev' };
     const plan = computeOrganizePlan({
       groups, sections: [devSection],
       assignments: [existing], unsectionedProductKeys: [], groupOrder: {},
@@ -64,7 +64,7 @@ describe('computeOrganizePlan', () => {
 
   it('skips stale assignment where group no longer exists', () => {
     const groups = [makeGroup('github', [1])];
-    const staleAssignment: SectionAssignment = { productKey: 'missing-product', sectionId: 'dev', order: 0 };
+    const staleAssignment: SectionAssignment = { productKey: 'missing-product', sectionId: 'dev' };
     const plan = computeOrganizePlan({
       groups, sections: [devSection],
       assignments: [staleAssignment], unsectionedProductKeys: [], groupOrder: {},
@@ -87,7 +87,7 @@ describe('computeOrganizePlan', () => {
 
   it('handles sections with no assignments without crashing', () => {
     const github = makeGroup('github', [1]);
-    const assignments: SectionAssignment[] = [{ productKey: 'github', sectionId: 'dev', order: 0 }];
+    const assignments: SectionAssignment[] = [{ productKey: 'github', sectionId: 'dev' }];
     // aiSection has no assignments — exercises the `?? []` fallback in section iteration
     const plan = computeOrganizePlan({
       groups: [github], sections: [devSection, aiSection],
@@ -111,7 +111,7 @@ describe('computeOrganizePlan', () => {
     const github = makeGroup('github', [10, 11]);
     const claude = makeGroup('claude', [20]);
     const assignments: SectionAssignment[] = [
-      { productKey: 'claude', sectionId: 'ai', order: 0 },
+      { productKey: 'claude', sectionId: 'ai' },
     ];
     const plan = computeOrganizePlan({
       groups: [github, claude],
@@ -127,8 +127,8 @@ describe('computeOrganizePlan', () => {
     const github = makeGroup('github', [10, 11]);
     const claude = makeGroup('claude', [20]);
     const assignments: SectionAssignment[] = [
-      { productKey: 'github', sectionId: 'dev', order: 0 },
-      { productKey: 'claude', sectionId: 'ai', order: 0 },
+      { productKey: 'github', sectionId: 'dev' },
+      { productKey: 'claude', sectionId: 'ai' },
     ];
     const plan = computeOrganizePlan({
       groups: [claude, github], // intentionally unordered

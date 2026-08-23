@@ -80,7 +80,7 @@ describe('usePopupData', () => {
     // github can actually be auto-assigned → assignableCount=1.
     vi.mocked(readStorage).mockResolvedValue({
       ...mockStorage,
-      sections: [{ id: 'dev', name: 'Dev', order: 0, autoRules: [{ pattern: 'github', type: 'hostname' }] }],
+      sections: [{ id: 'dev', name: 'Dev', order: 0, autoRules: [{ kind: 'keyword', value: 'github' }] }],
     });
     vi.mocked(queryAllTabs).mockResolvedValue([
       mockTab(1, 'https://github.com/'),

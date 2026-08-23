@@ -8,9 +8,9 @@ const fun: Section = { id: 'fun', name: 'Fun', order: 1 };
 describe('buildSectionByProductKey', () => {
   it('maps each assigned product to its section ref', () => {
     const assignments: SectionAssignment[] = [
-      { productKey: 'github', sectionId: 'work', order: 0 },
-      { productKey: 'localhost:3000', sectionId: 'work', order: 1 },
-      { productKey: 'youtube', sectionId: 'fun', order: 0 },
+      { productKey: 'github', sectionId: 'work' },
+      { productKey: 'localhost:3000', sectionId: 'work' },
+      { productKey: 'youtube', sectionId: 'fun' },
     ];
     const map = buildSectionByProductKey([work, fun], assignments);
 
@@ -21,7 +21,7 @@ describe('buildSectionByProductKey', () => {
 
   it('ignores assignments pointing at a missing section', () => {
     const assignments: SectionAssignment[] = [
-      { productKey: 'github', sectionId: 'ghost', order: 0 },
+      { productKey: 'github', sectionId: 'ghost' },
     ];
     expect(buildSectionByProductKey([work], assignments).size).toBe(0);
   });

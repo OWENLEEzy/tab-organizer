@@ -303,7 +303,7 @@ describe('useTabStore', () => {
       'https://www.youtube.com/watch?v=2',
     ]);
     expect(state.sectionAssignments).toEqual([
-      { productKey: 'youtube', sectionId: 'later', order: 0 },
+      { productKey: 'youtube', sectionId: 'later' },
     ]);
     expect(state.viewMode).toBe('table');
     expect(chromeStorage.data['groupOrder']).toEqual({ youtube: 0 });
@@ -321,12 +321,12 @@ describe('useTabStore', () => {
     await useTabStore.getState().fetchTabs();
 
     expect(useTabStore.getState().sectionAssignments).toEqual([
-      { productKey: 'gmail', sectionId: 'section-work', order: 0 },
-      { productKey: 'google-docs', sectionId: 'section-work', order: 1 },
+      { productKey: 'gmail', sectionId: 'section-work' },
+      { productKey: 'google-docs', sectionId: 'section-work' },
     ]);
     expect(chromeStorage.data['sectionAssignments']).toEqual([
-      { productKey: 'gmail', sectionId: 'section-work', order: 0 },
-      { productKey: 'google-docs', sectionId: 'section-work', order: 1 },
+      { productKey: 'gmail', sectionId: 'section-work' },
+      { productKey: 'google-docs', sectionId: 'section-work' },
     ]);
   });
 
@@ -340,7 +340,7 @@ describe('useTabStore', () => {
 
     await useTabStore.getState().fetchTabs();
     expect(useTabStore.getState().sectionAssignments).toEqual([
-      { productKey: 'gmail', sectionId: 'section-work', order: 0 },
+      { productKey: 'gmail', sectionId: 'section-work' },
     ]);
 
     await useTabStore.getState().moveProductToUnsectioned('gmail');
@@ -379,10 +379,10 @@ describe('useTabStore', () => {
     await useTabStore.getState().moveProductGroupToSection('github', 'later');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([
-      { productKey: 'github', sectionId: 'later', order: 0 },
+      { productKey: 'github', sectionId: 'later' },
     ]);
     expect(chromeStorage.data['sectionAssignments']).toEqual([
-      { productKey: 'github', sectionId: 'later', order: 0 },
+      { productKey: 'github', sectionId: 'later' },
     ]);
     expect(chromeStorage.data['unsectionedProductKeys']).toEqual([]);
 
@@ -394,7 +394,7 @@ describe('useTabStore', () => {
     await useTabStore.getState().moveProductGroupToSection('github', 'later');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([
-      { productKey: 'github', sectionId: 'later', order: 0 },
+      { productKey: 'github', sectionId: 'later' },
     ]);
     expect(chromeStorage.data['unsectionedProductKeys']).toEqual([]);
   });
@@ -585,7 +585,7 @@ describe('useTabStore', () => {
     useTabStore.setState({
       fetchTabs,
       sections: [],
-      sectionAssignments: [{ productKey: 'github', sectionId: 'group-1', order: 0 }],
+      sectionAssignments: [{ productKey: 'github', sectionId: 'group-1' }],
     });
 
     await useTabStore.getState().createSection('  ');
@@ -615,7 +615,7 @@ describe('useTabStore', () => {
         id: 'section-dev',
         name: 'Dev',
         order: 0,
-        autoRules: [{ pattern: 'linear', type: 'hostname' }],
+        autoRules: [{ kind: 'keyword', value: 'linear' }],
       },
     ];
     chromeTabs.query.mockResolvedValue([
@@ -624,7 +624,7 @@ describe('useTabStore', () => {
 
     await useTabStore.getState().fetchTabs();
     expect(useTabStore.getState().sectionAssignments).toEqual([
-      { productKey: 'linear.app', sectionId: 'section-dev', order: 0 },
+      { productKey: 'linear.app', sectionId: 'section-dev' },
     ]);
 
     await useTabStore.getState().deleteSection('section-dev');
@@ -642,13 +642,13 @@ describe('useTabStore', () => {
         id: 'section-dev',
         name: 'Dev',
         order: 0,
-        autoRules: [{ pattern: 'linear', type: 'hostname' }],
+        autoRules: [{ kind: 'keyword', value: 'linear' }],
       },
       {
         id: 'section-work',
         name: 'Work',
         order: 1,
-        autoRules: [{ pattern: 'linear', type: 'hostname' }],
+        autoRules: [{ kind: 'keyword', value: 'linear' }],
       },
     ];
     chromeTabs.query.mockResolvedValue([
@@ -657,7 +657,7 @@ describe('useTabStore', () => {
 
     await useTabStore.getState().fetchTabs();
     expect(useTabStore.getState().sectionAssignments).toEqual([
-      { productKey: 'linear.app', sectionId: 'section-dev', order: 0 },
+      { productKey: 'linear.app', sectionId: 'section-dev' },
     ]);
 
     await useTabStore.getState().deleteSection('section-dev');

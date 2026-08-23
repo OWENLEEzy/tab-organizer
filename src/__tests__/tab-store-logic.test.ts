@@ -76,11 +76,11 @@ describe('TabStore Internal Logic', () => {
     const state = useTabStore.getState();
     expect(state.products[0].domain).toBe('google');
     expect(state.sectionAssignments).toEqual([
-      { productKey: 'google', sectionId: 'g1', order: 0 },
+      { productKey: 'google', sectionId: 'g1' },
     ]);
     expect(chromeStorage.data['groupOrder']).toEqual({ google: 3 });
     expect(chromeStorage.data['sectionAssignments']).toEqual([
-      { productKey: 'google', sectionId: 'g1', order: 0 },
+      { productKey: 'google', sectionId: 'g1' },
     ]);
   });
 
@@ -102,12 +102,14 @@ describe('TabStore Internal Logic', () => {
 
     await useTabStore.getState().fetchTabs();
 
+    // The two legacy keys collapse into one canonical assignment; the first
+    // stored entry wins.
     expect(useTabStore.getState().sectionAssignments).toEqual([
-      { productKey: 'google', sectionId: 'research', order: 1 },
+      { productKey: 'google', sectionId: 'later' },
     ]);
     expect(chromeStorage.data['groupOrder']).toEqual({ google: 2 });
     expect(chromeStorage.data['sectionAssignments']).toEqual([
-      { productKey: 'google', sectionId: 'research', order: 1 },
+      { productKey: 'google', sectionId: 'later' },
     ]);
   });
 

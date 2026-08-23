@@ -72,10 +72,14 @@ export interface LandingPagePattern {
 
 export type ViewMode = 'cards' | 'table';
 
-interface SectionAutoRule {
-  pattern: string;
-  type: 'hostname';
-}
+/**
+ * A section auto-rule. `keyword` is the everyday form and is always stored
+ * normalized (lowercase, no whitespace) — see `src/lib/section-keywords.ts`.
+ * `regex` is the advanced escape hatch.
+ */
+export type SectionAutoRule =
+  | { kind: 'keyword'; value: string }
+  | { kind: 'regex'; pattern: string };
 
 export interface Section {
   id: string;
@@ -88,7 +92,6 @@ export interface Section {
 export interface SectionAssignment {
   productKey: string;
   sectionId: string;
-  order: number;
 }
 
 export interface RecoveryProductSummary {

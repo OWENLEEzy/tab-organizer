@@ -256,8 +256,8 @@ describe('readStorage', () => {
     expect(result.sections.map((g) => g.id)).toEqual(['homepages', 'later', 'untitled']);
     expect(result.sections.find((g) => g.id === 'untitled')?.name).toBe('Untitled');
     expect(result.sectionAssignments).toEqual([
-      { productKey: 'youtube', sectionId: 'later', order: 0 },
-      { productKey: 'github', sectionId: 'later', order: 1 },
+      { productKey: 'youtube', sectionId: 'later' },
+      { productKey: 'github', sectionId: 'later' },
     ]);
     expect(result.viewMode).toBe('table');
   });
@@ -474,7 +474,7 @@ describe('organizer storage mutations', () => {
     const result = await readStorage();
 
     expect(result.groupOrder).toEqual({ github: 0 });
-    expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1', order: 0 }]);
+    expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1' }]);
     expect(result.unsectionedProductKeys).toEqual(['github']);
   });
 
@@ -489,7 +489,7 @@ describe('organizer storage mutations', () => {
     const result = await readStorage();
 
     expect(result.groupOrder).toEqual({ github: 0 });
-    expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1', order: 0 }]);
+    expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1' }]);
     expect(result.unsectionedProductKeys).toEqual(['github']);
   });
 
@@ -501,13 +501,13 @@ describe('organizer storage mutations', () => {
 
     let next = await assignProductToSection('vercel', 'group-1');
     expect(next.sectionAssignments).toEqual([
-      { productKey: 'github', sectionId: 'group-1', order: 0 },
-      { productKey: 'vercel', sectionId: 'group-1', order: 1 },
+      { productKey: 'github', sectionId: 'group-1' },
+      { productKey: 'vercel', sectionId: 'group-1' },
     ]);
     expect(next.unsectionedProductKeys).toEqual(['github']);
 
     next = await unassignProductFromSections('vercel');
-    expect(next.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1', order: 0 }]);
+    expect(next.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1' }]);
     expect(next.unsectionedProductKeys).toEqual(['github', 'vercel']);
   });
 
@@ -529,7 +529,7 @@ describe('reconcileOrganizerState', () => {
     const devSection = state.sections.find(g => g.id === 'section-dev');
     expect(devSection).toBeDefined();
     expect(devSection?.name).toBe('Dev');
-    expect(devSection?.autoRules?.[0]?.pattern).toContain('github');
+    expect(devSection?.autoRules?.[0]).toEqual({ kind: 'keyword', value: 'github' });
   });
 
   it('preserves empty sections in current schema without reseeding', async () => {

@@ -14,7 +14,7 @@ interface RuleValidation {
   warnings: string[];
 }
 
-function validateAutoRules(text: string, allSections: Section[], currentSectionId: string): RuleValidation {
+function validateAutoRules(text: string): RuleValidation {
   const errors: string[] = [];
   const warnings: string[] = [];
   const lines = text.split('\n');
@@ -58,19 +58,6 @@ function validateAutoRules(text: string, allSections: Section[], currentSectionI
       warnings.push(`duplicate keyword: "${kw}"`);
     }
     seen.add(kw);
-  }
-
-  // 5. Cross-section duplicates
-  const otherSections = allSections.filter(s => s.id !== currentSectionId);
-  for (const other of otherSections) {
-    for (const rule of other.autoRules ?? []) {
-      const otherKeywords = rule.pattern.split('|').map(s => s.trim().toLowerCase()).filter(Boolean);
-      for (const kw of currentKeywords) {
-        if (otherKeywords.includes(kw)) {
-          warnings.push(`"${kw}" also in "${other.name}"`);
-        }
-      }
-    }
   }
 
   return { errors, warnings };
@@ -141,7 +128,9 @@ export function SectionsSection({ sections, onUpdateSection, onDeleteSection, on
           </span>
         ) : (
           sections.map((section) => {
-            const rulesText = (section.autoRules ?? []).map(r => r.pattern).join('\n');
+            const rulesText = (section.autoRules ?? [])
+              .map((rule) => (rule.kind === 'keyword' ? rule.value : rule.pattern))
+              .join('\n');
             return (
               <div key={section.id} className="border border-border-color rounded-md p-3 bg-surface-light dark:bg-surface-dark flex flex-col gap-2">
                 <div className="flex items-center gap-2">
@@ -194,7 +183,7 @@ export function SectionsSection({ sections, onUpdateSection, onDeleteSection, on
                     placeholder="e.g. github&#10;vercel"
                     onChange={(e) => {
                       const text = e.target.value;
-                      const result = validateAutoRules(text, sections, section.id);
+                      const result = validateAutoRules(text);
                       setRuleIssues(prev => {
                         const next = new Map(prev);
                         if (result.errors.length > 0 || result.warnings.length > 0) {
@@ -206,7 +195,7 @@ export function SectionsSection({ sections, onUpdateSection, onDeleteSection, on
                       });
                       const patterns = text.split('\n').filter(Boolean);
                       onUpdateSection(section.id, {
-                        autoRules: patterns.map(p => ({ pattern: p, type: 'hostname' }))
+                        autoRules: patterns.map((value) => ({ kind: 'keyword' as const, value })),
                       });
                     }}
                     className="settings-input placeholder:text-text-secondary w-full h-16 resize-none focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
