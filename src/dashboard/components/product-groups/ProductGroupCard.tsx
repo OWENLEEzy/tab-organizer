@@ -167,7 +167,10 @@ function ProductGroupCardComponent({
   const { t } = useI18n();
   const tabs = useMemo(() => group.tabs || [], [group.tabs]);
   const displayName = group.friendlyName || group.domain;
-  const isPinned = pinnedProductKeys?.has(getProductKey(group)) ?? false;
+  // `resolveMembership`'s priority is assigned > pinned > auto: an explicit
+  // assignment always wins over the pin, so the badge must not claim "pinned"
+  // for a group that `currentSectionId` already says is assigned somewhere.
+  const isPinned = currentSectionId === null && (pinnedProductKeys?.has(getProductKey(group)) ?? false);
   const selectionMode = (selectedUrls?.size ?? 0) > 0 || (selectedTabIds?.size ?? 0) > 0;
   const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
   const groupFaviconUrl = useMemo(() => getProductGroupIconUrl(tabs), [tabs]);

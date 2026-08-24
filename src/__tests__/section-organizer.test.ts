@@ -229,6 +229,23 @@ describe('autoAssignProducts', () => {
     // Should still match the second rule despite the first being invalid
     expect(next).toEqual([{ productKey: 'github', sectionId: 'section-multi' }]);
   });
+
+  it('accepts readonly products and a readonly hostnames map, unchanged, so callers holding only read access (e.g. OnboardingCard props) can call it directly instead of re-deriving assignments themselves', () => {
+    const readonlyProducts: readonly TabGroup[] = [product('github', ['https://github.com/a'])];
+    const readonlyHostnames: ReadonlyMap<string, readonly string[]> = new Map([
+      ['github', ['github.com'] as const],
+    ]);
+
+    const next = autoAssignProducts({
+      products: readonlyProducts,
+      sections,
+      assignments: [],
+      unsectionedProductKeys: [],
+      hostnamesByProductKey: readonlyHostnames,
+    });
+
+    expect(next).toEqual([{ productKey: 'github', sectionId: 'section-dev' }]);
+  });
 });
 
 describe('assignment mutations', () => {

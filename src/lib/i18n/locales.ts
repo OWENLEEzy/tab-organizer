@@ -603,7 +603,7 @@ export const locales = {
     moveToSection: '移到分区',
     moveToSectionFor: '把 {name} 移到分区',
     moveToNoSection: '移出分区',
-    sectionEmptySlot: '空着 · 把产品组拖进来',
+    sectionEmptySlot: '空着 · 把区域拖进来',
     pinnedUnsectioned: '已固定',
     pinnedUnsectionedHint: '你把它移出过分区，规则不会再收它',
     unpinAction: '取消固定 {name}',

@@ -64,4 +64,72 @@ describe('MoveToSectionMenu', () => {
     fireEvent.click(screen.getByRole('button', { name: /Move GitHub to a section/ }));
     expect(screen.getByRole('menuitem', { name: /Remove from section/ })).toBeInTheDocument();
   });
+
+  it('moves focus onto the first item when opened, and links trigger to menu via aria-controls', () => {
+    render(
+      <I18nProvider>
+        <MoveToSectionMenu
+          sections={SECTIONS}
+          currentSectionId={null}
+          onMoveToSection={vi.fn()}
+          onMoveToNoSection={vi.fn()}
+          groupName="GitHub"
+        />
+      </I18nProvider>,
+    );
+    const trigger = screen.getByRole('button', { name: /Move GitHub to a section/ });
+    fireEvent.click(trigger);
+
+    const menu = screen.getByRole('menu');
+    const items = screen.getAllByRole('menuitem');
+    expect(document.activeElement).toBe(items[0]);
+    expect(trigger).toHaveAttribute('aria-controls', menu.id);
+  });
+
+  it('ArrowDown/ArrowUp rove focus between items, wrapping at both ends', () => {
+    render(
+      <I18nProvider>
+        <MoveToSectionMenu
+          sections={SECTIONS}
+          currentSectionId={null}
+          onMoveToSection={vi.fn()}
+          onMoveToNoSection={vi.fn()}
+          groupName="GitHub"
+        />
+      </I18nProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Move GitHub to a section/ }));
+    const menu = screen.getByRole('menu');
+    const items = screen.getAllByRole('menuitem');
+
+    fireEvent.keyDown(menu, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(items[1]);
+
+    fireEvent.keyDown(menu, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(items[0]);
+
+    fireEvent.keyDown(menu, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(items[1]);
+  });
+
+  it('Escape closes the menu and returns focus to the trigger button', () => {
+    render(
+      <I18nProvider>
+        <MoveToSectionMenu
+          sections={SECTIONS}
+          currentSectionId={null}
+          onMoveToSection={vi.fn()}
+          onMoveToNoSection={vi.fn()}
+          groupName="GitHub"
+        />
+      </I18nProvider>,
+    );
+    const trigger = screen.getByRole('button', { name: /Move GitHub to a section/ });
+    fireEvent.click(trigger);
+
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(trigger);
+  });
 });

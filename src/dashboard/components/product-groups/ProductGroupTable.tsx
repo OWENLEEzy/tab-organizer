@@ -188,7 +188,8 @@ export function ProductGroupTable({
                         </option>
                       ))}
                     </select>
-                    {pinnedProductKeys.has(getProductKey(p)) && (
+                    {/* Assignment wins over the pin (see `resolveMembership`); an assigned row must not also claim pinned. */}
+                    {sectionId === '' && pinnedProductKeys.has(getProductKey(p)) && (
                       <span
                         className="ml-1 inline-flex h-6 items-center gap-1 rounded-chip border border-dashed border-accent-amber/60 bg-bg-surface px-2 text-3xs font-semibold font-mono text-accent-amber"
                         title={t('pinnedUnsectionedHint')}

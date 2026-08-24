@@ -92,7 +92,7 @@ export function rulesMatchHostnames(
 }
 
 /** First section (in `order`) whose rules match, or null. */
-export function findAutoSectionId(
+function findAutoSectionId(
   sections: readonly Section[],
   hostnames: readonly string[],
 ): string | null {

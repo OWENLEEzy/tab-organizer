@@ -677,9 +677,9 @@ export const useTabStore = create<TabStore>((set) => ({
 
   completeOnboarding: async (sections: Section[], assignments: SectionAssignment[]) => {
     const ordered = sections.map((section, index) => ({ ...section, order: index }));
-    set({ sections: ordered, sectionAssignments: assignments, onboardingDone: true });
     await writeOrganizerState({ sections: ordered, sectionAssignments: assignments });
     await setOnboardingDone();
+    set({ sections: ordered, sectionAssignments: assignments, onboardingDone: true });
     await useTabStore.getState().fetchTabs();
   },
 
@@ -688,8 +688,12 @@ export const useTabStore = create<TabStore>((set) => ({
     sectionAssignments: SectionAssignment[],
     unsectionedProductKeys: string[] = [],
   ) => {
-    await writeOrganizerState({ sections, sectionAssignments, unsectionedProductKeys });
-    set({ sections, sectionAssignments, unsectionedProductKeys });
+    const normalized = await writeOrganizerState({ sections, sectionAssignments, unsectionedProductKeys });
+    set({
+      sections: normalized.sections,
+      sectionAssignments: normalized.sectionAssignments,
+      unsectionedProductKeys: normalized.unsectionedProductKeys,
+    });
     await useTabStore.getState().fetchTabs();
   },
 

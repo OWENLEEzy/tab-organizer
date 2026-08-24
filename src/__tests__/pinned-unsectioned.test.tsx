@@ -4,6 +4,7 @@ import { I18nProvider } from '../dashboard/providers/I18nProvider';
 import { ProductGroupCard } from '../dashboard/components/product-groups/ProductGroupCard';
 import { ProductGroupTable } from '../dashboard/components/product-groups/ProductGroupTable';
 import { getProductKey } from '../lib/product-key';
+import { toProductItemId } from '../lib/section-organizer';
 import type { Section, Tab, TabGroup } from '../types';
 
 const SECTIONS: Section[] = [
@@ -126,5 +127,55 @@ describe('pinned-unsectioned badge', () => {
     const unpinButton = screen.getByRole('button', { name: 'Unpin GitHub' });
     fireEvent.click(unpinButton);
     expect(onUnpinProduct).toHaveBeenCalledWith(productKey);
+  });
+
+  it('Cards view: an explicit assignment beats a stale pin — the badge must not claim pinned for a group that is actually in a section', () => {
+    // resolveMembership's priority is assigned > pinned > auto (section-membership.ts).
+    // A productKey can end up in both pinnedProductKeys and currentSectionId (e.g. a
+    // stale unsectionedProductKeys entry from an import); the badge must defer to the
+    // real assignment, not to raw pin-set membership.
+    const group = makeGroup();
+    const productKey = getProductKey(group);
+
+    render(
+      <I18nProvider>
+        <ProductGroupCard
+          group={group}
+          onCloseProductGroup={() => {}}
+          onCloseDuplicates={() => {}}
+          onCloseTab={() => {}}
+          onFocusTab={() => {}}
+          currentSectionId="dev"
+          pinnedProductKeys={new Set([productKey])}
+          onUnpinProduct={() => {}}
+        />
+      </I18nProvider>,
+    );
+
+    expect(screen.queryByText('Pinned')).not.toBeInTheDocument();
+  });
+
+  it('Table view: an explicit assignment beats a stale pin — the badge must not claim pinned for an assigned row', () => {
+    const group = makeGroup();
+    const productKey = getProductKey(group);
+
+    render(
+      <I18nProvider>
+        <ProductGroupTable
+          items={[group]}
+          sections={SECTIONS}
+          assignmentByItemId={new Map([[toProductItemId(productKey), 'dev']])}
+          onMoveItem={() => {}}
+          onCloseProduct={() => {}}
+          onCloseDuplicates={() => {}}
+          onFocusTab={() => {}}
+          pinnedProductKeys={new Set([productKey])}
+          onUnpinProduct={() => {}}
+        />
+      </I18nProvider>,
+    );
+
+    expect(screen.getByRole('combobox')).toHaveValue('dev');
+    expect(screen.queryByText('Pinned')).not.toBeInTheDocument();
   });
 });

@@ -58,7 +58,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   groupSortBy: DEFAULT_GROUP_SORT,
 };
 
-export function isViewMode(value: unknown): value is ViewMode {
+function isViewMode(value: unknown): value is ViewMode {
   return value === 'cards' || value === 'table';
 }
 
@@ -67,7 +67,7 @@ type LegacyKeyBindings = Partial<AppSettings['keyBindings']> & {
   switchSpaceAll?: unknown;
 };
 
-export function normalizeKeyBindings(value: unknown): AppSettings['keyBindings'] {
+function normalizeKeyBindings(value: unknown): AppSettings['keyBindings'] {
   const defaults = DEFAULT_SETTINGS.keyBindings;
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return defaults;
@@ -99,7 +99,7 @@ export function normalizeKeyBindings(value: unknown): AppSettings['keyBindings']
   };
 }
 
-export function isCompilablePattern(pattern: string): boolean {
+function isCompilablePattern(pattern: string): boolean {
   try {
     new RegExp(pattern, 'i');
     return true;
@@ -118,7 +118,7 @@ export function isCompilablePattern(pattern: string): boolean {
  * already treats them at runtime — so an upgrade or an older backup keeps the
  * user's grouping behavior instead of silently blanking every section's rules.
  */
-export function normalizeAutoRule(value: unknown): SectionAutoRule | null {
+function normalizeAutoRule(value: unknown): SectionAutoRule | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as { kind?: unknown; type?: unknown; value?: unknown; pattern?: unknown };
 
@@ -135,7 +135,7 @@ export function normalizeAutoRule(value: unknown): SectionAutoRule | null {
   return null;
 }
 
-export function normalizeAutoRules(value: unknown): SectionAutoRule[] | undefined {
+function normalizeAutoRules(value: unknown): SectionAutoRule[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const rules = value
     .map(normalizeAutoRule)
@@ -143,7 +143,7 @@ export function normalizeAutoRules(value: unknown): SectionAutoRule[] | undefine
   return rules.length > 0 ? rules : undefined;
 }
 
-export function normalizeSections(value: unknown): Section[] {
+function normalizeSections(value: unknown): Section[] {
   if (!Array.isArray(value)) return [];
   return value
     .filter((group): group is Section => {
@@ -168,7 +168,7 @@ type LegacyAssignment = Partial<SectionAssignment> & {
   sectionId?: unknown;
 };
 
-export function normalizeAssignments(value: unknown): SectionAssignment[] {
+function normalizeAssignments(value: unknown): SectionAssignment[] {
   if (!Array.isArray(value)) return [];
   return value
     .filter((assignment): assignment is LegacyAssignment & { sectionId: string } => {
@@ -186,7 +186,7 @@ export function normalizeAssignments(value: unknown): SectionAssignment[] {
     }));
 }
 
-export function normalizeUnsectionedProductKeys(value: unknown): string[] {
+function normalizeUnsectionedProductKeys(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   const seen = new Set<string>();
   const overrides: string[] = [];
@@ -331,7 +331,7 @@ export function normalizeRecoverySnapshot(value: unknown): RecoverySnapshot | nu
   };
 }
 
-export function normalizeRecoverySnapshots(value: unknown): RecoverySnapshot[] {
+function normalizeRecoverySnapshots(value: unknown): RecoverySnapshot[] {
   if (!Array.isArray(value)) return [];
   const result: RecoverySnapshot[] = [];
   const seen = new Set<string>();
@@ -349,7 +349,7 @@ export function normalizeRecoverySnapshots(value: unknown): RecoverySnapshot[] {
   return result;
 }
 
-export function normalizeSettings(value: unknown): AppSettings {
+function normalizeSettings(value: unknown): AppSettings {
   const raw = { ...DEFAULT_SETTINGS, ...(value as Partial<AppSettings> | undefined) };
   return {
     ...raw,
@@ -359,7 +359,7 @@ export function normalizeSettings(value: unknown): AppSettings {
   };
 }
 
-export function normalizeGroupOrder(value: unknown): Record<string, number> {
+function normalizeGroupOrder(value: unknown): Record<string, number> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   return { ...(value as Record<string, number>) };
 }

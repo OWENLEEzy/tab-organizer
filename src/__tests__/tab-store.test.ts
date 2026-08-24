@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTabStore } from '../stores/tab-store';
-import type { RecoverySnapshot, Section } from '../types';
+import type { RecoverySnapshot, Section, SectionAssignment } from '../types';
 
 /**
  * Sections are user-owned now, so tests state the ones they need. This one
@@ -755,6 +755,49 @@ describe('useTabStore', () => {
     expect(state.onboardingDone).toBe(true);
     expect(state.sections.map((section) => section.order)).toEqual([0, 1]);
     expect(state.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'dev' }]);
+  });
+
+  it('does not flip onboardingDone in memory when persistence fails', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+      sections: [],
+      sectionAssignments: [],
+      onboardingDone: false,
+    });
+    chromeStorage.data = { schemaVersion: 6, sections: [] };
+    chromeStorage.set.mockRejectedValueOnce(new Error('disk full'));
+
+    await expect(
+      useTabStore.getState().completeOnboarding(
+        [{ id: 'dev', name: 'Dev', order: 0, autoRules: [{ kind: 'keyword', value: 'github' }] }],
+        [],
+      ),
+    ).rejects.toThrow('disk full');
+
+    const state = useTabStore.getState();
+    expect(state.onboardingDone).toBe(false);
+    expect(state.sections).toEqual([]);
+  });
+
+  it('sets in-memory state from the normalized import, not the raw legacy input', async () => {
+    // Stub fetchTabs so this test observes importBackup's own set() call, not
+    // the storage-reconciled state the following fetchTabs() would settle to.
+    useTabStore.setState({
+      fetchTabs: vi.fn().mockResolvedValue(undefined),
+    });
+    chromeStorage.data = { schemaVersion: 6 };
+
+    const legacyAssignment = { itemType: 'product', itemKey: 'github', sectionId: 'dev' } as unknown as SectionAssignment;
+
+    await useTabStore.getState().importBackup(
+      [{ id: 'dev', name: 'Dev', order: 0 }],
+      [legacyAssignment],
+      [],
+    );
+
+    const normalized = [{ productKey: 'github', sectionId: 'dev' }];
+    expect(useTabStore.getState().sectionAssignments).toEqual(normalized);
+    expect(chromeStorage.data['sectionAssignments']).toEqual(normalized);
   });
 
   it('tracks dashboard tab count before filtering real tabs', async () => {

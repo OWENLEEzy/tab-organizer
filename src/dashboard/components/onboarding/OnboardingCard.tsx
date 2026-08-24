@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import type { Section, SectionAssignment, SectionAutoRule, TabGroup } from '../../../types';
-import type { SectionTemplate } from '../../../config/sections';
+import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
+import type { Section, SectionAssignment, TabGroup } from '../../../types';
+import { templateAutoRules, type SectionTemplate } from '../../../config/sections';
 import { previewRuleMatches, type RulePreviewRow } from '../../../lib/rule-preview';
-import { getProductKey } from '../../../lib/product-key';
+import { autoAssignProducts } from '../../../lib/section-organizer';
 import { KeywordEditor } from '../settings/KeywordEditor';
 import { RuleMatchPreview } from '../settings/RuleMatchPreview';
 import { ActionButton } from '../ui/ActionButton';
@@ -25,20 +25,16 @@ const NO_SECTIONS: Section[] = [];
 const NO_ASSIGNMENTS: SectionAssignment[] = [];
 const NO_UNSECTIONED: string[] = [];
 
-function toKeywordRules(keywords: readonly string[]): SectionAutoRule[] {
-  return keywords.map((value) => ({ kind: 'keyword', value }));
-}
-
 /** Which open groups this template's current keywords would collect, standalone. */
 function willTakeMatches(
-  templateId: string,
+  template: SectionTemplate,
   keywords: readonly string[],
   products: readonly TabGroup[],
   hostnamesByProductKey: ReadonlyMap<string, readonly string[]>,
 ): RulePreviewRow[] {
   return previewRuleMatches({
-    draftSectionId: templateId,
-    draftRules: toKeywordRules(keywords),
+    draftSectionId: template.id,
+    draftRules: templateAutoRules(template, keywords),
     products,
     hostnamesByProductKey,
     sections: NO_SECTIONS,
@@ -55,10 +51,51 @@ function initRows(
   const rows = new Map<string, TemplateRowState>();
   for (const template of templates) {
     const keywords = [...template.keywords];
-    const matches = willTakeMatches(template.id, keywords, products, hostnamesByProductKey);
+    const matches = willTakeMatches(template, keywords, products, hostnamesByProductKey);
     rows.set(template.id, { checked: matches.length > 0, keywords });
   }
   return rows;
+}
+
+/** The draft sections implied by the currently-checked templates, in template order — the same shape `handleConfirm` will actually persist. */
+function buildDraftSections(
+  templates: readonly SectionTemplate[],
+  rows: ReadonlyMap<string, TemplateRowState>,
+): Section[] {
+  return templates
+    .filter((template) => rows.get(template.id)?.checked)
+    .map((template, index) => ({
+      id: template.id,
+      name: template.name,
+      order: index,
+      emoji: template.emoji,
+      autoRules: templateAutoRules(template, rows.get(template.id)?.keywords ?? []),
+    }));
+}
+
+/**
+ * What this template would actually collect right now, arbitrated against
+ * every other currently-checked template — so two templates whose keywords
+ * both match the same group cannot both claim it in the preview, matching
+ * `handleConfirm`'s real first-checked-wins order (design principle in
+ * `rule-preview.ts`: the UI can never promise something the engine won't do).
+ */
+function honestMatches(
+  template: SectionTemplate,
+  keywords: readonly string[],
+  draftSections: readonly Section[],
+  products: readonly TabGroup[],
+  hostnamesByProductKey: ReadonlyMap<string, readonly string[]>,
+): RulePreviewRow[] {
+  return previewRuleMatches({
+    draftSectionId: template.id,
+    draftRules: templateAutoRules(template, keywords),
+    products,
+    hostnamesByProductKey,
+    sections: draftSections,
+    assignments: NO_ASSIGNMENTS,
+    unsectionedProductKeys: NO_UNSECTIONED,
+  }).filter((row) => row.status === 'will-take');
 }
 
 /**
@@ -79,6 +116,68 @@ export function OnboardingCard({
     initRows(templates, products, hostnamesByProductKey),
   );
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  const onSkipEffect = useEffectEvent(onSkip);
+
+  // Close on Escape key, matching ConfirmationDialog/PromptDialog.
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent): void {
+      if (e.key === 'Escape') {
+        onSkipEffect();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Trap focus inside the dialog, matching ConfirmationDialog/PromptDialog.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const focusableSelector =
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+
+    const focusableElements = dialog.querySelectorAll<HTMLElement>(focusableSelector);
+    if (focusableElements.length > 0) {
+      focusableElements[0].focus();
+    }
+
+    function handleTabKey(e: KeyboardEvent): void {
+      if (e.key !== 'Tab') return;
+      if (!dialog) return;
+
+      const focusables = dialog.querySelectorAll<HTMLElement>(focusableSelector);
+      if (focusables.length === 0) return;
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+
+    dialog.addEventListener('keydown', handleTabKey);
+    return () => {
+      dialog.removeEventListener('keydown', handleTabKey);
+      if (previouslyFocused?.isConnected) {
+        previouslyFocused.focus();
+      }
+    };
+  }, []);
 
   function toggleChecked(templateId: string): void {
     setRows((prev) => {
@@ -101,44 +200,26 @@ export function OnboardingCard({
   }
 
   function handleConfirm(): void {
-    const chosen = templates.filter((template) => rows.get(template.id)?.checked);
-    const sections: Section[] = chosen.map((template, index) => ({
-      id: template.id,
-      name: template.name,
-      order: index,
-      emoji: template.emoji,
-      autoRules: toKeywordRules(rows.get(template.id)?.keywords ?? []),
-    }));
-
-    const assignments: SectionAssignment[] = [];
-    const taken = new Set<string>();
-    for (const section of sections) {
-      const matchRows = previewRuleMatches({
-        draftSectionId: section.id,
-        draftRules: section.autoRules ?? [],
-        products,
-        hostnamesByProductKey,
-        sections,
-        assignments,
-        unsectionedProductKeys: NO_UNSECTIONED,
-      });
-      for (const row of matchRows) {
-        const productKey = getProductKey(row.product);
-        if (taken.has(productKey)) continue;
-        taken.add(productKey);
-        assignments.push({ productKey, sectionId: section.id });
-      }
-    }
+    const sections = buildDraftSections(templates, rows);
+    const assignments = autoAssignProducts({
+      products,
+      sections,
+      assignments: NO_ASSIGNMENTS,
+      unsectionedProductKeys: NO_UNSECTIONED,
+      hostnamesByProductKey,
+    });
 
     onConfirm(sections, assignments);
   }
 
   const chosenCount = templates.filter((template) => rows.get(template.id)?.checked).length;
+  const draftSections = buildDraftSections(templates, rows);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="onboarding-card-title"
@@ -157,7 +238,7 @@ export function OnboardingCard({
           {templates.map((template) => {
             const row = rows.get(template.id);
             const keywords = row?.keywords ?? [];
-            const matches = willTakeMatches(template.id, keywords, products, hostnamesByProductKey);
+            const matches = honestMatches(template, keywords, draftSections, products, hostnamesByProductKey);
             const isExpanded = expandedId === template.id;
             const checkboxId = `onboarding-check-${template.id}`;
 

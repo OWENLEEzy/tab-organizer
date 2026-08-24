@@ -92,4 +92,85 @@ describe('OnboardingCard', () => {
     expect(onSkip).toHaveBeenCalled();
     expect(onConfirm).not.toHaveBeenCalled();
   });
+
+  it('carries a template extra rules into the confirmed section autoRules', () => {
+    const onConfirm = vi.fn();
+    const onSkip = vi.fn();
+    const templates: SectionTemplate[] = [
+      {
+        id: 'section-social',
+        name: 'Social',
+        emoji: '💬',
+        keywords: ['discord'],
+        extraRules: [{ kind: 'regex', pattern: 'reddit\\.com/message' }],
+      },
+    ];
+    render(
+      <I18nProvider>
+        <OnboardingCard
+          templates={templates}
+          products={[]}
+          hostnamesByProductKey={new Map()}
+          onConfirm={onConfirm}
+          onSkip={onSkip}
+        />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Social/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Create these/ }));
+
+    expect(onConfirm.mock.calls[0][0][0].autoRules).toEqual([
+      { kind: 'keyword', value: 'discord' },
+      { kind: 'regex', pattern: 'reddit\\.com/message' },
+    ]);
+  });
+
+  it('never shows the same group as a match for two checked templates at once', () => {
+    // 'git' label-prefix-matches github.com, same as 'github' — a real overlap.
+    const templates: SectionTemplate[] = [
+      { id: 'section-dev', name: 'Dev', emoji: '💻', keywords: ['github'] },
+      { id: 'section-broad', name: 'Broad', emoji: '🌐', keywords: ['git'] },
+    ];
+    const products = [{
+      id: 'github', domain: 'github.com', friendlyName: 'GitHub', productKey: 'github',
+      tabs: [], collapsed: false, order: 0, color: '#000', hasDuplicates: false, duplicateCount: 0,
+    }];
+    const hostnames = new Map<string, readonly string[]>([['github', ['github.com']]]);
+
+    render(
+      <I18nProvider>
+        <OnboardingCard
+          templates={templates}
+          products={products}
+          hostnamesByProductKey={hostnames}
+          onConfirm={vi.fn()}
+          onSkip={vi.fn()}
+        />
+      </I18nProvider>,
+    );
+
+    // Both templates independently match github.com, so both preselect checked.
+    expect(screen.getByRole('checkbox', { name: /Dev/ })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /Broad/ })).toBeChecked();
+
+    // Dev comes first in template order and wins the real arbitration; Broad
+    // must not also claim it in the preview shown next to its checkbox.
+    expect(screen.getByText('collects 1 groups')).toBeInTheDocument();
+    expect(screen.getByText('No groups matched')).toBeInTheDocument();
+  });
+
+  it('traps focus inside the dialog and closes on Escape', () => {
+    const { onSkip } = setup();
+
+    const dialog = screen.getByRole('dialog');
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    expect(focusable.length).toBeGreaterThan(0);
+    expect(document.activeElement).toBe(focusable[0]);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onSkip).toHaveBeenCalled();
+  });
 });

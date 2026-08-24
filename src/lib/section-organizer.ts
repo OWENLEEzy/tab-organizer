@@ -241,11 +241,11 @@ export function buildOrganizerModel(input: BuildOrganizerModelInput): OrganizerM
 // ─── Auto-Assignment ─────────────────────────────────────────────────────────
 
 export interface AutoAssignProductsInput {
-  products: TabGroup[];
+  products: readonly TabGroup[];
   sections: Section[];
   assignments: SectionAssignment[];
   unsectionedProductKeys: string[];
-  hostnamesByProductKey: Map<string, string[]>;
+  hostnamesByProductKey: ReadonlyMap<string, readonly string[]>;
 }
 
 /**

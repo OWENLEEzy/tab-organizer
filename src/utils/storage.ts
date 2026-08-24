@@ -312,14 +312,25 @@ export async function writeOrganizerState(state: {
   sectionAssignments?: SectionAssignment[];
   unsectionedProductKeys?: string[];
   viewMode?: ViewMode;
-}): Promise<void> {
-  await updateStorage((storage) => ({
+}): Promise<{
+  sections: Section[];
+  sectionAssignments: SectionAssignment[];
+  unsectionedProductKeys: string[];
+  viewMode: ViewMode;
+}> {
+  const next = await updateStorage((storage) => ({
     ...storage,
     sections: state.sections ?? storage.sections,
     sectionAssignments: state.sectionAssignments ?? storage.sectionAssignments,
     unsectionedProductKeys: state.unsectionedProductKeys ?? storage.unsectionedProductKeys,
     viewMode: state.viewMode ?? storage.viewMode,
   }));
+  return {
+    sections: next.sections,
+    sectionAssignments: next.sectionAssignments,
+    unsectionedProductKeys: next.unsectionedProductKeys,
+    viewMode: next.viewMode,
+  };
 }
 
 /** Mark the one-time onboarding as finished. */

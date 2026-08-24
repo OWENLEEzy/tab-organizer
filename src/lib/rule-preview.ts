@@ -14,7 +14,7 @@ import { resolveMembership, rulesMatchHostnames } from './section-membership';
  * `blocked` and `pinned` exist so the settings preview cannot claim a move the
  * engine will not perform. See design spec §3.3.
  */
-export type RulePreviewStatus = 'will-take' | 'blocked' | 'pinned';
+type RulePreviewStatus = 'will-take' | 'blocked' | 'pinned';
 
 export interface RulePreviewRow {
   product: TabGroup;
