@@ -354,7 +354,23 @@ export const locales = {
     settingsShortcutLabelCycleSectionPrev: 'Cycle Section Left',
     settingsShortcutLabelCycleSectionNext: 'Cycle Section Right',
     settingsShortcutLabelFocusSearch: 'Focus Search',
-    settingsShortcutLabelClearSectionFilter: 'Clear Section Filter'
+    settingsShortcutLabelClearSectionFilter: 'Clear Section Filter',
+
+    // Keyword Editor / Rule Match Preview
+    keywordEditorLabel: 'Keywords',
+    keywordEditorAdd: 'Add word',
+    keywordEditorPlaceholder: 'e.g. github',
+    keywordEditorRemove: 'Remove keyword {word}',
+    keywordErrorEmpty: 'Cannot be empty',
+    keywordErrorWhitespace: 'Cannot contain spaces',
+    keywordErrorDuplicate: 'This section already has that word',
+    rulePreviewTitle: 'What happens now',
+    rulePreviewWillTake: 'Will move here',
+    rulePreviewBlocked: '"{section}" claims it — rules here will not move it',
+    rulePreviewPinned: 'Pinned out of sections — rules will not collect it',
+    rulePreviewMoveThem: 'Move these {count} here too',
+    rulePreviewNone: 'No groups match yet',
+    rulePreviewTabCount: '{count} tabs',
   },
   zh: {
     // Greetings
@@ -711,6 +727,22 @@ export const locales = {
     settingsShortcutLabelCycleSectionPrev: '循环切回上个分区',
     settingsShortcutLabelCycleSectionNext: '循环切至下个分区',
     settingsShortcutLabelFocusSearch: '聚焦搜索框',
-    settingsShortcutLabelClearSectionFilter: '清除分区筛选'
+    settingsShortcutLabelClearSectionFilter: '清除分区筛选',
+
+    // Keyword Editor / Rule Match Preview
+    keywordEditorLabel: '关键词',
+    keywordEditorAdd: '加词',
+    keywordEditorPlaceholder: '例如 github',
+    keywordEditorRemove: '删除关键词 {word}',
+    keywordErrorEmpty: '不能为空',
+    keywordErrorWhitespace: '不能含空格',
+    keywordErrorDuplicate: '这个分区已有这个词',
+    rulePreviewTitle: '现在会怎样',
+    rulePreviewWillTake: '将移到这里',
+    rulePreviewBlocked: '「{section}」占着它，这里的规则不会移动它',
+    rulePreviewPinned: '已固定在未分区，规则不会收它',
+    rulePreviewMoveThem: '把这 {count} 个也搬过来',
+    rulePreviewNone: '暂时没有匹配到区域',
+    rulePreviewTabCount: '{count} 个页面',
   }
 } as const;
