@@ -13,7 +13,7 @@ test.describe('a11y harness', () => {
     await expect(firstTabButton).toBeFocused();
 
     await page.keyboard.press('Shift+Tab');
-    await expect(page.getByRole('switch', { name: 'Confetti Burst' })).toBeFocused();
+    await expect(page.getByRole('combobox', { name: 'Maximum visible tabs per product' })).toBeFocused();
 
     await page.keyboard.press('Tab');
     await expect(firstTabButton).toBeFocused();

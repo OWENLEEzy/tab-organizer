@@ -16,7 +16,7 @@ test.describe('Hybrid Organizer', () => {
     await expect(dialog).not.toBeVisible();
 
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
-    await page.getByRole('button', { name: 'System' }).click();
+    await page.getByRole('button', { name: 'Appearance' }).click();
     await page.locator('#setting-view-mode').selectOption('table');
     await page.keyboard.press('Escape');
     const youtubeRow = page.getByRole('row', { name: /YouTube/ });
@@ -39,7 +39,7 @@ test.describe('Hybrid Organizer', () => {
     await expect(reloadedYoutubeRow.locator('select')).toHaveValue(laterValue);
 
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
-    await page.getByRole('button', { name: 'System' }).click();
+    await page.getByRole('button', { name: 'Appearance' }).click();
     await page.locator('#setting-view-mode').selectOption('cards');
     await page.keyboard.press('Escape');
     const laterSection = page.locator('section').filter({
@@ -72,7 +72,7 @@ test.describe('Hybrid Organizer', () => {
     await dialog.getByRole('button', { name: 'Create Section' }).click();
 
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
-    await page.getByRole('button', { name: 'System' }).click();
+    await page.getByRole('button', { name: 'Appearance' }).click();
     await page.locator('#setting-view-mode').selectOption('table');
     await page.keyboard.press('Escape');
     const youtubeRow = page.getByRole('row', { name: /YouTube/ });
@@ -89,7 +89,7 @@ test.describe('Hybrid Organizer', () => {
     await expect(page.locator('footer')).toContainText(/3\s*sections/i);
 
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
-    await page.getByRole('button', { name: 'System' }).click();
+    await page.getByRole('button', { name: 'Appearance' }).click();
     await page.locator('#setting-view-mode').selectOption('cards');
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'No section' })).toBeVisible();

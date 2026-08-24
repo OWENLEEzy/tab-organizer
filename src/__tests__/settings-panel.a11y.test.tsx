@@ -55,15 +55,15 @@ describe('SettingsPanel accessibility', () => {
 
     await user.click(openButton);
 
-    const generalTabButton = screen.getByRole('button', { name: 'Tab' });
-    expect(generalTabButton).toHaveFocus();
+    const appearanceNavButton = screen.getByRole('button', { name: 'Appearance' });
+    expect(appearanceNavButton).toHaveFocus();
 
     await user.keyboard('{Shift>}{Tab}{/Shift}');
-    // The last focusable in Tab tab (default active tab) is the Confetti Burst toggle
-    expect(screen.getByRole('switch', { name: 'Confetti Burst' })).toHaveFocus();
+    // The last focusable on the Appearance page (default active page) is the max-chips select
+    expect(screen.getByRole('combobox', { name: 'Maximum visible tabs per product' })).toHaveFocus();
 
     await user.keyboard('{Tab}');
-    expect(generalTabButton).toHaveFocus();
+    expect(appearanceNavButton).toHaveFocus();
 
     await user.keyboard('{Escape}');
     expect(openButton).toHaveFocus();

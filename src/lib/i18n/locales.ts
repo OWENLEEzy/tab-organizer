@@ -196,11 +196,15 @@ export const locales = {
 
     // Settings Panel
     settingsTitle: 'Settings',
-    settingsTabTab: 'Tab',
-    settingsTabGroup: 'Group',
-    settingsTabSection: 'Section',
     settingsTabShortcuts: 'Shortcuts',
-    settingsTabSystem: 'System',
+    settingsGroupPreferences: 'Preferences',
+    settingsGroupCustomize: 'Customize',
+    settingsGroupAbout: 'About',
+    settingsNavAppearance: 'Appearance',
+    settingsNavBehavior: 'Behavior',
+    settingsNavSectionRules: 'Sections & Rules',
+    settingsNavProductRules: 'Product Group Rules',
+    settingsNavBackup: 'Backup & Version',
     settingsVersionTitle: 'Version',
     settingsVersionDesc: 'Local extension build and update information.',
 
@@ -549,11 +553,15 @@ export const locales = {
 
     // Settings Panel
     settingsTitle: '设置选项',
-    settingsTabTab: 'Tab (页面)',
-    settingsTabGroup: 'Group (产品组)',
-    settingsTabSection: 'Section (分区)',
     settingsTabShortcuts: '快捷键',
-    settingsTabSystem: 'System (系统)',
+    settingsGroupPreferences: '偏好',
+    settingsGroupCustomize: '客制',
+    settingsGroupAbout: '关于',
+    settingsNavAppearance: '外观',
+    settingsNavBehavior: '行为',
+    settingsNavSectionRules: '分区与规则',
+    settingsNavProductRules: '产品组规则',
+    settingsNavBackup: '备份与版本',
     settingsVersionTitle: '版本信息',
     settingsVersionDesc: '当前本地扩展构建与更新信息。',
 
