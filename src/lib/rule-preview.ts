@@ -6,7 +6,9 @@ import { resolveMembership, rulesMatchHostnames } from './section-membership';
  * What a draft rule set would actually do, told honestly.
  *
  * - `will-take`   the group ends up in the draft section
- * - `blocked`     the rules match, but an explicit assignment elsewhere wins
+ * - `blocked`     the rules match, but something else wins: either an
+ *                 explicit assignment elsewhere, or another section's own
+ *                 rules auto-claiming the product first by `order`
  * - `pinned`      the rules match, but the user's explicit veto wins
  *
  * `blocked` and `pinned` exist so the settings preview cannot claim a move the
@@ -17,7 +19,11 @@ export type RulePreviewStatus = 'will-take' | 'blocked' | 'pinned';
 export interface RulePreviewRow {
   product: TabGroup;
   status: RulePreviewStatus;
-  /** Section currently holding the product, when `status` is `blocked`. */
+  /**
+   * Section that actually wins the product when `status` is `blocked` —
+   * either the section holding an explicit assignment, or the section whose
+   * own rules auto-claim the product ahead of the draft section by `order`.
+   */
   blockedBySectionId: string | null;
 }
 
@@ -36,6 +42,19 @@ export function previewRuleMatches(input: RulePreviewInput): RulePreviewRow[] {
   const pinned = new Set(input.unsectionedProductKeys);
   const rows: RulePreviewRow[] = [];
 
+  // Arbitrate against the section set as it will exist once the draft is
+  // saved, so the preview and the engine cannot disagree about who wins by
+  // order. If `draftSectionId` names a brand-new, not-yet-saved section, it
+  // is absent from `input.sections` and this map is a no-op: `resolveMembership`
+  // can then never resolve to it, so any other section that auto-claims the
+  // product correctly yields `blocked` — a new section's `order` is unknown,
+  // so promising `will-take` would be a guess.
+  const draftedSections = input.sections.map((section) =>
+    section.id === input.draftSectionId
+      ? { ...section, autoRules: [...input.draftRules] }
+      : section,
+  );
+
   for (const product of input.products) {
     const productKey = getProductKey(product);
     const hostnames = input.hostnamesByProductKey.get(productKey) ?? [productKey];
@@ -44,17 +63,20 @@ export function previewRuleMatches(input: RulePreviewInput): RulePreviewRow[] {
 
     const membership = resolveMembership({
       hostnames,
-      sections: input.sections,
+      sections: draftedSections,
       assignedSectionId: assignedBy.get(productKey) ?? null,
       isPinnedUnsectioned: pinned.has(productKey),
     });
 
-    if (membership.kind === 'assigned' && membership.sectionId !== input.draftSectionId) {
-      rows.push({ product, status: 'blocked', blockedBySectionId: membership.sectionId });
-      continue;
-    }
     if (membership.kind === 'pinned-unsectioned') {
       rows.push({ product, status: 'pinned', blockedBySectionId: null });
+      continue;
+    }
+    if (
+      (membership.kind === 'assigned' || membership.kind === 'auto') &&
+      membership.sectionId !== input.draftSectionId
+    ) {
+      rows.push({ product, status: 'blocked', blockedBySectionId: membership.sectionId });
       continue;
     }
 

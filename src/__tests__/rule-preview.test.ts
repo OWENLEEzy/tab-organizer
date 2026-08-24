@@ -141,4 +141,67 @@ describe('previewRuleMatches', () => {
 
     expect(rows).toHaveLength(1);
   });
+
+  it('blocks a match an earlier-order section already auto-claims via its own rules', () => {
+    // dev (order 0) already has a `github` keyword rule, which label-matches
+    // gist.github.com. Drafting a `gist` rule on design (order 1) must not
+    // promise will-take: findAutoSectionId would resolve this product to dev.
+    const rows = previewRuleMatches({
+      draftSectionId: 'design',
+      draftRules: [{ kind: 'keyword', value: 'gist' }],
+      products: [GIST],
+      hostnamesByProductKey: HOSTNAMES,
+      sections: SECTIONS,
+      assignments: [],
+      unsectionedProductKeys: [],
+    });
+
+    expect(rows).toEqual([
+      { product: GIST, status: 'blocked', blockedBySectionId: 'dev' },
+    ]);
+  });
+
+  it('reports will-take when the draft section itself sorts earlier and wins', () => {
+    // A naive fix that just checks `membership.sectionId !== draftSectionId`
+    // against the *unmodified* sections would see `other` (the only section
+    // whose current rules match) and wrongly report blocked. The draft
+    // section sorts earlier (order 0) and, once its draft rules are applied,
+    // matches too — so it is the one the engine would actually pick.
+    const sections: Section[] = [
+      { id: 'dev', name: 'Dev', order: 0, autoRules: [] },
+      { id: 'other', name: 'Other', order: 1, autoRules: [{ kind: 'keyword', value: 'github' }] },
+    ];
+    const rows = previewRuleMatches({
+      draftSectionId: 'dev',
+      draftRules: [{ kind: 'keyword', value: 'gist' }],
+      products: [GIST],
+      hostnamesByProductKey: HOSTNAMES,
+      sections,
+      assignments: [],
+      unsectionedProductKeys: [],
+    });
+
+    expect(rows).toEqual([
+      { product: GIST, status: 'will-take', blockedBySectionId: null },
+    ]);
+  });
+
+  it('blocks when the draft section is brand new and not yet in sections', () => {
+    // A not-yet-saved section has no known `order`, so we cannot honestly
+    // claim it would win against a section that already auto-claims the
+    // product. `blocked` is the honest answer here, not a guess.
+    const rows = previewRuleMatches({
+      draftSectionId: 'new-section',
+      draftRules: [{ kind: 'keyword', value: 'gist' }],
+      products: [GIST],
+      hostnamesByProductKey: HOSTNAMES,
+      sections: [SECTIONS[0]],
+      assignments: [],
+      unsectionedProductKeys: [],
+    });
+
+    expect(rows).toEqual([
+      { product: GIST, status: 'blocked', blockedBySectionId: 'dev' },
+    ]);
+  });
 });
