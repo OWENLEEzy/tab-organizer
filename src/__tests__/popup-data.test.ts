@@ -22,6 +22,7 @@ import type { StorageSchema } from '../types';
 
 const mockStorage: StorageSchema = {
   schemaVersion: 1,
+  onboardingDone: true,
   settings: {
     theme: 'clay',
     soundEnabled: true,

@@ -32,7 +32,7 @@ describe('TabStore Internal Logic', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     chromeStorage.data = {
-        schemaVersion: 5,
+        schemaVersion: 6,
         sections: [],
         sectionAssignments: [],
         groupOrder: {},

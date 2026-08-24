@@ -3,11 +3,12 @@ import type {
   AppSettings,
   Section,
   SectionAssignment,
+  SectionAutoRule,
   ViewMode,
   RecoverySnapshot,
 } from '../types';
 import { recoveryUrlSignature, shouldReplaceRecoveryCandidate } from '../lib/recovery-snapshots';
-import { DEFAULT_SECTIONS } from '../config/sections';
+import { normalizeKeyword } from '../lib/section-keywords';
 import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
 import { DEFAULT_GROUP_SORT, normalizeGroupSortBy } from '../config/group-sort';
 
@@ -32,9 +33,10 @@ function isRealTab(url: string): boolean {
   );
 }
 
-const CURRENT_SCHEMA_VERSION = 5;
+const CURRENT_SCHEMA_VERSION = 6;
 const STORAGE_KEYS = [
   'schemaVersion',
+  'onboardingDone',
   'settings',
   'groupOrder',
   'sections',
@@ -80,11 +82,16 @@ export const DEFAULT_SETTINGS: AppSettings = {
   groupSortBy: DEFAULT_GROUP_SORT,
 };
 
+/**
+ * A fresh install owns no sections: the onboarding card is where the user picks
+ * and confirms them, so nothing is written until they do. See design spec §3.9.
+ */
 const EMPTY_SCHEMA: StorageSchema = {
   schemaVersion: CURRENT_SCHEMA_VERSION,
+  onboardingDone: false,
   settings: DEFAULT_SETTINGS,
   groupOrder: {},
-  sections: DEFAULT_SECTIONS,
+  sections: [],
   sectionAssignments: [],
   unsectionedProductKeys: [],
   viewMode: 'cards',
@@ -92,17 +99,7 @@ const EMPTY_SCHEMA: StorageSchema = {
   recoverySnapshots: [],
 };
 
-const DEFAULT_STORAGE: StorageSchema = {
-  schemaVersion: CURRENT_SCHEMA_VERSION,
-  settings: DEFAULT_SETTINGS,
-  groupOrder: {},
-  sections: DEFAULT_SECTIONS,
-  sectionAssignments: [],
-  unsectionedProductKeys: [],
-  viewMode: 'cards',
-  recoveryCandidate: null,
-  recoverySnapshots: [],
-};
+const DEFAULT_STORAGE: StorageSchema = EMPTY_SCHEMA;
 
 function isViewMode(value: unknown): value is ViewMode {
   return value === 'cards' || value === 'table';
@@ -145,6 +142,50 @@ function normalizeKeyBindings(value: unknown): AppSettings['keyBindings'] {
   };
 }
 
+function isCompilablePattern(pattern: string): boolean {
+  try {
+    new RegExp(pattern, 'i');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validate one persisted auto-rule against the union type. This is the last
+ * gate before a rule enters the domain, and it is shared by every write path
+ * including backup import — see design spec §3.12.
+ *
+ * Rules persisted or exported before the union carry `{ pattern, type: 'hostname' }`.
+ * They convert to `{ kind: 'regex', pattern }` — exactly how `ruleMatchesHostnames`
+ * already treats them at runtime — so an upgrade or an older backup keeps the
+ * user's grouping behavior instead of silently blanking every section's rules.
+ */
+function normalizeAutoRule(value: unknown): SectionAutoRule | null {
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as { kind?: unknown; type?: unknown; value?: unknown; pattern?: unknown };
+
+  if (candidate.kind === 'keyword' && typeof candidate.value === 'string') {
+    const result = normalizeKeyword(candidate.value);
+    return result.ok ? { kind: 'keyword', value: result.value } : null;
+  }
+
+  const isRegexRule = candidate.kind === 'regex' || candidate.type === 'hostname';
+  if (isRegexRule && typeof candidate.pattern === 'string' && isCompilablePattern(candidate.pattern)) {
+    return { kind: 'regex', pattern: candidate.pattern };
+  }
+
+  return null;
+}
+
+function normalizeAutoRules(value: unknown): SectionAutoRule[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const rules = value
+    .map(normalizeAutoRule)
+    .filter((rule): rule is SectionAutoRule => rule !== null);
+  return rules.length > 0 ? rules : undefined;
+}
+
 function normalizeSections(value: unknown): Section[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -158,7 +199,7 @@ function normalizeSections(value: unknown): Section[] {
       name: group.name.trim() || 'Untitled',
       order: Number.isFinite(group.order) ? group.order : index,
       emoji: typeof group.emoji === 'string' ? group.emoji : undefined,
-      autoRules: Array.isArray(group.autoRules) ? group.autoRules : undefined,
+      autoRules: normalizeAutoRules(group.autoRules),
     }))
     .sort((a, b) => a.order - b.order);
 }
@@ -373,6 +414,7 @@ function normalizeGroupOrder(value: unknown): Record<string, number> {
 function normalizeCurrentSchema(data: Record<string, unknown>): StorageSchema {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
+    onboardingDone: data['onboardingDone'] === true,
     settings: normalizeSettings(data['settings']),
     groupOrder: normalizeGroupOrder(data['groupOrder']),
     sections: normalizeSections(data['sections']),
@@ -392,6 +434,7 @@ async function readStorageSnapshot(): Promise<Record<string, unknown>> {
 async function persistStorage(data: StorageSchema): Promise<void> {
   await chrome.storage.local.set({
     schemaVersion: data.schemaVersion,
+    onboardingDone: data.onboardingDone,
     settings: data.settings,
     groupOrder: data.groupOrder,
     sections: data.sections,
@@ -550,6 +593,7 @@ export async function reconcileOrganizerState(
   sectionAssignments: SectionAssignment[];
   unsectionedProductKeys: string[];
   viewMode: ViewMode;
+  onboardingDone: boolean;
 }> {
   let nextStorage: StorageSchema;
 
@@ -602,6 +646,7 @@ export async function reconcileOrganizerState(
     sectionAssignments: nextStorage.sectionAssignments,
     unsectionedProductKeys: nextStorage.unsectionedProductKeys,
     viewMode: nextStorage.viewMode,
+    onboardingDone: nextStorage.onboardingDone,
   };
 }
 
@@ -611,6 +656,7 @@ export async function readOrganizerState(): Promise<{
   sectionAssignments: SectionAssignment[];
   unsectionedProductKeys: string[];
   viewMode: ViewMode;
+  onboardingDone: boolean;
 }> {
   const storage = await readStorage();
   return {
@@ -619,6 +665,7 @@ export async function readOrganizerState(): Promise<{
     sectionAssignments: storage.sectionAssignments,
     unsectionedProductKeys: storage.unsectionedProductKeys,
     viewMode: storage.viewMode,
+    onboardingDone: storage.onboardingDone,
   };
 }
 
@@ -635,6 +682,11 @@ export async function writeOrganizerState(state: {
     unsectionedProductKeys: state.unsectionedProductKeys ?? storage.unsectionedProductKeys,
     viewMode: state.viewMode ?? storage.viewMode,
   }));
+}
+
+/** Mark the one-time onboarding as finished. */
+export async function setOnboardingDone(): Promise<void> {
+  await updateStorage((storage) => ({ ...storage, onboardingDone: true }));
 }
 
 /**

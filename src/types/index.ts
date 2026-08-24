@@ -148,6 +148,11 @@ export interface AppSettings {
 
 export interface StorageSchema {
   schemaVersion: number;
+  /**
+   * Application flow state, not a user preference — deliberately outside
+   * `settings`, which holds only things the user goes looking for.
+   */
+  onboardingDone: boolean;
   settings: AppSettings;
   groupOrder: Record<string, number>;
   sections: Section[];

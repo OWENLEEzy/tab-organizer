@@ -154,7 +154,7 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
   it('uses domain fallback product ids and custom group mappings', async () => {
     // The shared sort pipeline reads customGroups from storage so the popup (no
     // settings store) works too — seed a valid current-schema storage snapshot.
-    chromeStorageData.schemaVersion = 5;
+    chromeStorageData.schemaVersion = 6;
     chromeStorageData.settings = {
       groupSortBy: 'count',
       customGroups: [

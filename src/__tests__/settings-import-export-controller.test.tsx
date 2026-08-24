@@ -1,10 +1,35 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import type { Section } from '../types';
 import type { SettingsStore } from '../stores/settings-store';
-import type { TabStore } from '../stores/tab-store';
+import { useTabStore, type TabStore } from '../stores/tab-store';
 import { I18nProvider } from '../dashboard/providers/I18nProvider';
 import { useSettingsImportExport } from '../dashboard/controllers/useSettingsImportExport';
+
+const chromeStorageData: Record<string, unknown> = {};
+
+vi.stubGlobal('chrome', {
+  storage: {
+    local: {
+      get: vi.fn(async (keys: string[] | string) => {
+        const result: Record<string, unknown> = {};
+        for (const key of Array.isArray(keys) ? keys : [keys]) {
+          if (key in chromeStorageData) result[key] = chromeStorageData[key];
+        }
+        return result;
+      }),
+      set: vi.fn(async (items: Record<string, unknown>) => {
+        Object.assign(chromeStorageData, items);
+      }),
+      remove: vi.fn(async (keys: string | string[]) => {
+        for (const key of Array.isArray(keys) ? keys : [keys]) delete chromeStorageData[key];
+      }),
+    },
+  },
+  tabs: { query: vi.fn(async () => []) },
+  runtime: { getURL: vi.fn((path: string) => `chrome-extension://fake-id/${path}`) },
+});
 
 function wrapper({ children }: { children: ReactNode }) {
   return <I18nProvider>{children}</I18nProvider>;
@@ -54,6 +79,12 @@ function makeStores() {
 }
 
 describe('useSettingsImportExport', () => {
+  beforeEach(() => {
+    for (const key of Object.keys(chromeStorageData)) delete chromeStorageData[key];
+    chromeStorageData.schemaVersion = 6;
+    useTabStore.setState(useTabStore.getInitialState(), true);
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -122,11 +153,17 @@ describe('useSettingsImportExport', () => {
     expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Settings imported'));
   });
 
-  it('converts a legacy hostname auto-rule into a regex rule instead of dropping it', async () => {
-    const { settingsStore, tabStore } = makeStores();
+  it('stores a legacy hostname auto-rule as a regex rule instead of blanking it', async () => {
+    // End-to-end on purpose: the controller hands rules over raw, and storage is
+    // the single gate that validates them. Only the stored result proves that.
+    const { settingsStore } = makeStores();
     const showToast = vi.fn();
     const { result } = renderHook(
-      () => useSettingsImportExport({ settingsStore, tabStore, showToast }),
+      () => useSettingsImportExport({
+        settingsStore,
+        tabStore: useTabStore.getState(),
+        showToast,
+      }),
       { wrapper },
     );
 
@@ -138,27 +175,21 @@ describe('useSettingsImportExport', () => {
         order: 0,
         autoRules: [
           { pattern: 'github|gitlab', type: 'hostname' },
-          { kind: 'keyword', value: 'jira' },
+          { kind: 'keyword', value: 'JIRA' },
           { type: 'hostname' },
         ],
       }],
     }));
 
-    await waitFor(() => expect(tabStore.importBackup).toHaveBeenCalled());
-    expect(tabStore.importBackup).toHaveBeenCalledWith(
-      [{
-        id: 'dev',
-        name: 'Dev',
-        order: 0,
-        emoji: undefined,
-        autoRules: [
-          { kind: 'regex', pattern: 'github|gitlab' },
-          { kind: 'keyword', value: 'jira' },
-        ],
-      }],
-      [],
-      [],
-    );
+    await waitFor(() => expect(chromeStorageData.sections).toHaveLength(1));
+    expect((chromeStorageData.sections as Section[])[0].autoRules).toEqual([
+      { kind: 'regex', pattern: 'github|gitlab' },
+      { kind: 'keyword', value: 'jira' },
+    ]);
+    expect(useTabStore.getState().sections[0].autoRules).toEqual([
+      { kind: 'regex', pattern: 'github|gitlab' },
+      { kind: 'keyword', value: 'jira' },
+    ]);
   });
 
   it('does not import legacy manual group keys (manualGroups, groupAssignments)', async () => {

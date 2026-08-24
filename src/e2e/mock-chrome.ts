@@ -17,6 +17,52 @@ export const mockChromeApi = (scenario: E2EScenario = 'default') => {
   const writeStorageData = (data: Record<string, unknown>): void => {
     window.localStorage.setItem(storageKey, JSON.stringify(data));
   };
+
+  /**
+   * Sections are user-owned: storage ships none, and the user confirms them once
+   * in onboarding. The dashboard specs exercise life after that, so the harness
+   * seeds the sections that state implies. Keys a spec injected itself are kept.
+   */
+  const seedOnboardedSections = (): void => {
+    const data = readStorageData();
+    if (Array.isArray(data.sections)) return;
+    writeStorageData({
+      ...data,
+      schemaVersion: 6,
+      onboardingDone: true,
+      sections: [
+        {
+          id: 'section-dev',
+          name: 'Dev',
+          order: 0,
+          emoji: '💻',
+          autoRules: [
+            { kind: 'keyword', value: 'github' },
+            { kind: 'keyword', value: 'stackoverflow' },
+          ],
+        },
+        {
+          id: 'section-media',
+          name: 'Media',
+          order: 1,
+          emoji: '🎬',
+          autoRules: [
+            { kind: 'keyword', value: 'youtube' },
+            { kind: 'keyword', value: 'reddit' },
+          ],
+        },
+        {
+          id: 'section-work',
+          name: 'Work',
+          order: 2,
+          emoji: '💼',
+          autoRules: [{ kind: 'keyword', value: 'google.com' }],
+        },
+      ],
+    });
+  };
+
+  seedOnboardedSections();
   const createEvent = () => ({
     addListener: () => {},
     removeListener: () => {},

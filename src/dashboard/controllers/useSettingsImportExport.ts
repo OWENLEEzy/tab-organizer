@@ -19,33 +19,14 @@ type LegacyGroupAssignment = {
   sectionId?: unknown;
 };
 
-type ImportedAutoRule = NonNullable<Section['autoRules']>[number];
-
 /**
- * Read one auto-rule out of a backup file.
+ * Shape a backup's sections without judging their rules.
  *
- * Backups exported before the rule union carry `{ pattern, type: 'hostname' }`.
- * Those are converted to `{ kind: 'regex', pattern }` — exactly how
- * `ruleMatchesHostnames` already treats them at runtime — so importing an older
- * backup preserves the user's rules instead of silently blanking them.
- * Anything that is neither shape is rejected.
+ * Auto-rules pass through raw: `importBackup` writes via `writeOrganizerState`,
+ * so `normalizeSections` in the storage adapter is the single gate that validates
+ * rules, normalizes keywords, and converts pre-union `{ pattern, type: 'hostname' }`
+ * entries. Re-checking them here would only duplicate that gate.
  */
-function parseImportedAutoRule(rule: unknown): ImportedAutoRule | null {
-  if (rule == null || typeof rule !== 'object') return null;
-  const candidate = rule as Record<string, unknown>;
-
-  if (candidate.kind === 'keyword' && typeof candidate.value === 'string') {
-    return { kind: 'keyword', value: candidate.value };
-  }
-  if (candidate.kind === 'regex' && typeof candidate.pattern === 'string') {
-    return { kind: 'regex', pattern: candidate.pattern };
-  }
-  if (candidate.type === 'hostname' && typeof candidate.pattern === 'string') {
-    return { kind: 'regex', pattern: candidate.pattern };
-  }
-  return null;
-}
-
 function normalizeImportedSections(value: unknown): Section[] | null {
   if (!Array.isArray(value)) return null;
 
@@ -61,10 +42,9 @@ function normalizeImportedSections(value: unknown): Section[] | null {
       name: (section.name as string).trim() || 'Untitled',
       order: Number.isFinite(section.order) ? Number(section.order) : index,
       emoji: typeof section.emoji === 'string' ? section.emoji : undefined,
+      // Asserted, not trusted: storage re-validates every rule on write.
       autoRules: Array.isArray(section.autoRules)
-        ? section.autoRules
-            .map(parseImportedAutoRule)
-            .filter((rule): rule is ImportedAutoRule => rule !== null)
+        ? (section.autoRules as Section['autoRules'])
         : undefined,
     }));
 }

@@ -123,12 +123,6 @@ export function sectionsFromTemplates(templates: readonly SectionTemplate[]): Se
   }));
 }
 
-/**
- * Storage default until Task 4 flips it to `[]`. Kept as a derived value so the
- * template list stays the single definition.
- */
-export const DEFAULT_SECTIONS: Section[] = sectionsFromTemplates(SECTION_TEMPLATES);
-
 const DEFAULT_SECTION_IDS = new Set(SECTION_TEMPLATES.map((template) => template.id));
 
 export function isDefaultSectionId(sectionId: string): boolean {

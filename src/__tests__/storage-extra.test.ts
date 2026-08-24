@@ -61,7 +61,7 @@ const validSnapshot: RecoverySnapshot = {
 describe('storage extra', () => {
   beforeEach(() => {
     chromeStorage.data = {
-      schemaVersion: 5,
+      schemaVersion: 6,
       recoverySnapshots: [],
       recoveryCandidate: null,
       sections: [],
@@ -95,7 +95,7 @@ describe('storage extra', () => {
   });
 
   it('writeStorage replaces full data', async () => {
-    const newData = { schemaVersion: 5, viewMode: 'table' } as StorageSchema;
+    const newData = { schemaVersion: 6, viewMode: 'table' } as StorageSchema;
     await writeStorage(newData);
     const storage = await readStorage();
     expect(storage.viewMode).toBe('table');
@@ -149,9 +149,10 @@ describe('storage extra', () => {
     Object.assign(chromeStorage.data, legacyData);
 
     const storage = await readStorage();
-    expect(storage.schemaVersion).toBe(5);
+    expect(storage.schemaVersion).toBe(6);
     // Schema mismatch resets to DEFAULT_STORAGE; legacy data is not read
-    expect(storage.sections.length).toBeGreaterThan(0);
+    expect(storage.sections).toEqual([]);
+    expect(storage.onboardingDone).toBe(false);
     expect(storage.sectionAssignments).toEqual([]);
     expect(storage.recoveryCandidate).toBeNull();
     expect(storage.recoverySnapshots).toEqual([]);

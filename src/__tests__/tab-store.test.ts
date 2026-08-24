@@ -1,7 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTabStore } from '../stores/tab-store';
-import { DEFAULT_SECTIONS } from '../config/sections';
-import type { RecoverySnapshot } from '../types';
+import type { RecoverySnapshot, Section } from '../types';
+
+/**
+ * Sections are user-owned now, so tests state the ones they need. This one
+ * carries the rule that claims Google products for the auto-assign cases.
+ */
+const STORED_SECTIONS: Section[] = [
+  {
+    id: 'section-work',
+    name: 'Work',
+    order: 0,
+    autoRules: [{ kind: 'keyword', value: 'google.com' }],
+  },
+];
 
 const chromeTabs = {
   query: vi.fn(),
@@ -156,7 +168,7 @@ describe('useTabStore', () => {
     chromeTabs.onUpdated.removeListener.mockClear();
     chromeStorage.get.mockClear();
     chromeStorage.set.mockClear();
-    chromeStorage.data = { schemaVersion: 5, sections: DEFAULT_SECTIONS };
+    chromeStorage.data = { schemaVersion: 6, sections: STORED_SECTIONS };
     useTabStore.setState({
       tabs: [],
       products: [],
@@ -269,7 +281,7 @@ describe('useTabStore', () => {
       fetchTabs: useTabStore.getInitialState().fetchTabs,
     });
     chromeStorage.data = {
-      schemaVersion: 5,
+      schemaVersion: 6,
       deferred: [],
       workspaces: [],
       settings: {
@@ -407,7 +419,7 @@ describe('useTabStore', () => {
       unsectionedProductKeys: [],
     });
     chromeStorage.data = {
-      schemaVersion: 5,
+      schemaVersion: 6,
       sections: [{ id: 'later', name: 'Later', order: 0 }],
       sectionAssignments: [],
       unsectionedProductKeys: [],
@@ -684,6 +696,38 @@ describe('useTabStore', () => {
 
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
     expect(useTabStore.getState().unsectionedProductKeys).toEqual(['gmail']);
+  });
+
+  it('completes onboarding by persisting the confirmed sections and the flag', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+      sections: [],
+      sectionAssignments: [],
+      onboardingDone: false,
+    });
+    chromeStorage.data = { schemaVersion: 6, sections: [] };
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(71, 'https://github.com/OWENLEEzy/tab-organizer'),
+    ]);
+
+    await useTabStore.getState().completeOnboarding(
+      [
+        { id: 'dev', name: 'Dev', order: 7, autoRules: [{ kind: 'keyword', value: 'github' }] },
+        { id: 'media', name: 'Media', order: 3 },
+      ],
+      [{ productKey: 'github', sectionId: 'dev' }],
+    );
+
+    expect(chromeStorage.data['onboardingDone']).toBe(true);
+    expect(chromeStorage.data['sections']).toEqual([
+      { id: 'dev', name: 'Dev', order: 0, emoji: undefined, autoRules: [{ kind: 'keyword', value: 'github' }] },
+      { id: 'media', name: 'Media', order: 1, emoji: undefined, autoRules: undefined },
+    ]);
+
+    const state = useTabStore.getState();
+    expect(state.onboardingDone).toBe(true);
+    expect(state.sections.map((section) => section.order)).toEqual([0, 1]);
+    expect(state.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'dev' }]);
   });
 
   it('tracks dashboard tab count before filtering real tabs', async () => {

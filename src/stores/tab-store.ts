@@ -12,6 +12,7 @@ import {
   deleteRecoverySnapshot,
   readRecoverySnapshots,
   reconcileOrganizerState,
+  setOnboardingDone,
   writeGroupOrder,
   writeOrganizerState,
 } from '../utils/storage';
@@ -92,6 +93,8 @@ interface TabActions {
   closeExtraDashboards: () => Promise<void>;
   /** Set the currently active section to filter the dashboard. */
   setActiveSection: (id: string | null) => void;
+  /** Persist the sections the user confirmed in onboarding and close it for good. */
+  completeOnboarding: (sections: Section[], assignments: SectionAssignment[]) => Promise<void>;
   /** Overwrite sections and sectionAssignments with imported backup. */
   importBackup: (
     sections: Section[],
@@ -110,6 +113,8 @@ export type TabStore = {
   unsectionedProductKeys: string[];
   recoverySnapshots: RecoverySnapshot[];
   viewMode: ViewMode;
+  /** True once the user has confirmed their sections in the one-time onboarding. */
+  onboardingDone: boolean;
   loading: boolean;
   error: string | null;
   activeSectionId: string | null;
@@ -193,6 +198,7 @@ export const useTabStore = create<TabStore>((set) => ({
   unsectionedProductKeys: [],
   recoverySnapshots: [],
   viewMode: 'cards',
+  onboardingDone: false,
   loading: false,
   error: null,
   activeSectionId: null,
@@ -248,6 +254,7 @@ export const useTabStore = create<TabStore>((set) => ({
         sectionAssignments,
         unsectionedProductKeys: organizerState.unsectionedProductKeys,
         viewMode: organizerState.viewMode,
+        onboardingDone: organizerState.onboardingDone,
         loading: false,
         dashboardCount,
         // The single globally most-recently-used real tab, computed from all tabs.
@@ -634,6 +641,14 @@ export const useTabStore = create<TabStore>((set) => ({
     } finally {
       await useTabStore.getState().fetchTabs();
     }
+  },
+
+  completeOnboarding: async (sections: Section[], assignments: SectionAssignment[]) => {
+    const ordered = sections.map((section, index) => ({ ...section, order: index }));
+    set({ sections: ordered, sectionAssignments: assignments, onboardingDone: true });
+    await writeOrganizerState({ sections: ordered, sectionAssignments: assignments });
+    await setOnboardingDone();
+    await useTabStore.getState().fetchTabs();
   },
 
   importBackup: async (
