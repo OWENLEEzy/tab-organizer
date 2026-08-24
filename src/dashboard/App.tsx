@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { ErrorBoundary } from './components/states/ErrorBoundary';
 import { LoadingState } from './components/states/LoadingState';
 import { ProductGroupTableMemo as ProductGroupTable } from './components/product-groups/ProductGroupTable';
@@ -50,6 +50,10 @@ export function App(): React.ReactElement {
     tabStore,
     showToast: handlers.showToast,
   });
+
+  const handleAssignProducts = useCallback((productKeys: readonly string[], sectionId: string) => {
+    productKeys.forEach((productKey) => { void tabStore.moveProductGroupToSection(productKey, sectionId); });
+  }, [tabStore]);
 
   if (state.loading || state.tabsLoading) {
     return <LoadingState />;
@@ -369,9 +373,15 @@ export function App(): React.ReactElement {
             onExportSettings={handleExportConfig}
             onImportSettings={handleImportConfig}
             sections={tabStore.sections}
+            products={tabStore.products}
+            hostnamesByProductKey={tabStore.hostnamesByProductKey}
+            assignments={tabStore.sectionAssignments}
+            unsectionedProductKeys={tabStore.unsectionedProductKeys}
+            productCountBySectionId={derived.productCountBySectionId}
             onUpdateSection={tabStore.updateSection}
             onDeleteSection={tabStore.deleteSection}
             onCreateSection={tabStore.createSection}
+            onAssignProducts={handleAssignProducts}
             keyBindings={settings.keyBindings}
             onUpdateKeyBinding={settingsStore.updateKeyBinding}
             onResetKeyBindings={settingsStore.resetKeyBindings}

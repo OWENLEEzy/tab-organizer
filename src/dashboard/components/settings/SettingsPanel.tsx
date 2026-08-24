@@ -1,9 +1,9 @@
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
-import type { CustomGroup, AppSettings, Section } from '../../../types';
+import type { CustomGroup, AppSettings, Section, SectionAssignment, TabGroup } from '../../../types';
 import type { AccentKey } from '../../../config/themes';
 import { useI18n, type TranslationKey } from '../../hooks/useI18n';
 import { CustomGroupsSection } from './CustomGroupsSection';
-import { SectionsSection } from './SectionsSection';
+import { SectionRulesWorkbench } from './SectionRulesWorkbench';
 import { KeyboardSection } from './KeyboardSection';
 import { AppearanceSection } from './AppearanceSection';
 import { BehaviorSection } from './BehaviorSection';
@@ -35,9 +35,15 @@ interface SettingsPanelProps {
   onImportSettings: (json: string) => Promise<void>;
   // Sections & Rules props
   sections?: Section[];
+  products?: TabGroup[];
+  hostnamesByProductKey?: ReadonlyMap<string, readonly string[]>;
+  assignments?: SectionAssignment[];
+  unsectionedProductKeys?: string[];
+  productCountBySectionId?: ReadonlyMap<string, number>;
   onUpdateSection?: (id: string, updates: Partial<Omit<Section, 'id'>>) => void;
   onDeleteSection?: (id: string) => void;
   onCreateSection?: (name: string) => void;
+  onAssignProducts?: (productKeys: readonly string[], sectionId: string) => void;
   // Keyboard Bindings props
   keyBindings?: AppSettings['keyBindings'];
   onUpdateKeyBinding?: (key: keyof AppSettings['keyBindings'], binding: string) => void;
@@ -50,6 +56,11 @@ interface SettingsPanelProps {
 }
 
 const DEFAULT_SECTIONS: Section[] = [];
+const DEFAULT_PRODUCTS: TabGroup[] = [];
+const DEFAULT_HOSTNAMES_BY_PRODUCT_KEY: ReadonlyMap<string, readonly string[]> = new Map();
+const DEFAULT_ASSIGNMENTS: SectionAssignment[] = [];
+const DEFAULT_UNSECTIONED_PRODUCT_KEYS: string[] = [];
+const DEFAULT_PRODUCT_COUNT_BY_SECTION_ID: ReadonlyMap<string, number> = new Map();
 
 export function SettingsPanel({
   open,
@@ -73,9 +84,15 @@ export function SettingsPanel({
   onExportSettings,
   onImportSettings,
   sections = DEFAULT_SECTIONS,
+  products = DEFAULT_PRODUCTS,
+  hostnamesByProductKey = DEFAULT_HOSTNAMES_BY_PRODUCT_KEY,
+  assignments = DEFAULT_ASSIGNMENTS,
+  unsectionedProductKeys = DEFAULT_UNSECTIONED_PRODUCT_KEYS,
+  productCountBySectionId = DEFAULT_PRODUCT_COUNT_BY_SECTION_ID,
   onUpdateSection = () => {},
   onDeleteSection = () => {},
   onCreateSection = () => {},
+  onAssignProducts = () => {},
   keyBindings,
   onUpdateKeyBinding = () => {},
   onResetKeyBindings = () => {},
@@ -267,11 +284,17 @@ export function SettingsPanel({
               />
             )}
             {activePage === 'section-rules' && (
-              <SectionsSection
+              <SectionRulesWorkbench
                 sections={sections}
+                products={products}
+                hostnamesByProductKey={hostnamesByProductKey}
+                assignments={assignments}
+                unsectionedProductKeys={unsectionedProductKeys}
+                productCountBySectionId={productCountBySectionId}
                 onUpdateSection={onUpdateSection}
-                onDeleteSection={onDeleteSection}
                 onCreateSection={onCreateSection}
+                onDeleteSection={onDeleteSection}
+                onAssignProducts={onAssignProducts}
               />
             )}
             {activePage === 'product-rules' && (

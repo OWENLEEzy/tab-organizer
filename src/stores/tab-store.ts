@@ -108,6 +108,8 @@ interface TabActions {
 export type TabStore = {
   tabs: Tab[];
   products: TabGroup[];
+  /** Hostnames observed for each product key, from the most recent `fetchTabs`. */
+  hostnamesByProductKey: Map<string, string[]>;
   sections: Section[];
   sectionAssignments: SectionAssignment[];
   unsectionedProductKeys: string[];
@@ -193,6 +195,7 @@ function buildProductKeyCompatibility(
 export const useTabStore = create<TabStore>((set) => ({
   tabs: [],
   products: [],
+  hostnamesByProductKey: new Map(),
   sections: [],
   sectionAssignments: [],
   unsectionedProductKeys: [],
@@ -250,6 +253,7 @@ export const useTabStore = create<TabStore>((set) => ({
       set({
         tabs: mapped,
         products,
+        hostnamesByProductKey,
         sections,
         sectionAssignments,
         unsectionedProductKeys: organizerState.unsectionedProductKeys,

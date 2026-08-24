@@ -371,6 +371,14 @@ export const locales = {
     rulePreviewMoveThem: 'Move these {count} here too',
     rulePreviewNone: 'No groups match yet',
     rulePreviewTabCount: '{count} tabs',
+
+    // Sections & Rules workbench
+    workbenchNewSection: 'New section',
+    workbenchPickSection: 'Pick a section on the left',
+    workbenchAdvancedRegex: 'Advanced: use a regex',
+    workbenchRegexPlaceholder: 'Regular expression, one per line',
+    workbenchRegexInvalid: 'Invalid regular expression',
+    workbenchGroupCount: '{count}',
   },
   zh: {
     // Greetings
@@ -744,5 +752,13 @@ export const locales = {
     rulePreviewMoveThem: '把这 {count} 个也搬过来',
     rulePreviewNone: '暂时没有匹配到区域',
     rulePreviewTabCount: '{count} 个页面',
+
+    // Sections & Rules workbench
+    workbenchNewSection: '新建分区',
+    workbenchPickSection: '在左边选一个分区',
+    workbenchAdvancedRegex: '进阶：改用正则',
+    workbenchRegexPlaceholder: '正则表达式，每行一条',
+    workbenchRegexInvalid: '正则表达式不合法',
+    workbenchGroupCount: '{count}',
   }
 } as const;

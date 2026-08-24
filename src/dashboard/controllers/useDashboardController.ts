@@ -180,6 +180,16 @@ export function useDashboardController() {
     activeSectionId: tabStore.activeSectionId,
   }), [structureOrganizerModel.sections, filteredProducts, sectionAssignments, tabStore.unsectionedProductKeys, tabStore.activeSectionId]);
 
+  // True total counts per section, independent of the dashboard's current search
+  // query — built from the unfiltered structure model, not the filtered content
+  // model other views use, so opening Settings never shows a search-narrowed count.
+  const productCountBySectionId = useMemo(
+    () => new Map(
+      [...structureOrganizerModel.productsBySection].map(([id, products]) => [id, products.length]),
+    ),
+    [structureOrganizerModel.productsBySection],
+  );
+
   const cardsSections = useMemo(() => {
     return structureOrganizerModel.sections.filter((section) => {
       const hasRenderedProducts = (contentOrganizerModel.productsBySection.get(section.id)?.length ?? 0) > 0;
@@ -431,6 +441,7 @@ export function useDashboardController() {
       cardsSections: cardsSections,
       sectionNavigationIds: structureOrganizerModel.navigationSections,
       productsBySection: contentOrganizerModel.productsBySection,
+      productCountBySectionId,
       assignmentByItemId: structureOrganizerModel.assignmentByProductItemId,
       itemIdForProduct,
       flatChips,
