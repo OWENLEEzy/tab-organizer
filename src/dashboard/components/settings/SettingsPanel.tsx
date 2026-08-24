@@ -179,32 +179,43 @@ export function SettingsPanel({
           >
             {t('settingsTitle')}
           </h3>
-          {SETTINGS_NAVIGATION.map((group) => (
-            <div key={group.labelKey} className="flex flex-col gap-1">
-              <span className="font-body text-text-secondary px-3 pt-3 pb-1 text-3xs font-bold uppercase tracking-wider">
-                {t(group.labelKey as TranslationKey)}
-              </span>
-              {group.pages.map((page) => {
-                const isActive = activePage === page.id;
-                return (
-                  <button
-                    key={page.id}
-                    type="button"
-                    onClick={() => setActivePage(page.id)}
-                    className={`w-full text-left font-body text-xs rounded-chip px-3 py-2 transition-all cursor-pointer flex items-center gap-2 min-h-[var(--spacing-button-height)] outline-none ${
-                      isActive
-                        ? 'bg-accent-blue/10 text-accent-blue dark:bg-accent-blue/15 dark:text-accent-blue font-semibold border-l border-accent-blue pl-[11px]'
-                        : 'text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark'
-                    }`}
-                  >
-                    <span>{t(page.labelKey as TranslationKey)}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+          {SETTINGS_NAVIGATION.map((group) => {
+            const groupHeadingId = `settings-nav-group-${group.labelKey}`;
+            return (
+              <div
+                key={group.labelKey}
+                role="group"
+                aria-labelledby={groupHeadingId}
+                className="flex flex-col gap-1"
+              >
+                <span
+                  id={groupHeadingId}
+                  className="font-body text-text-secondary px-3 pt-3 pb-1 text-3xs font-bold uppercase tracking-wider"
+                >
+                  {t(group.labelKey as TranslationKey)}
+                </span>
+                {group.pages.map((page) => {
+                  const isActive = activePage === page.id;
+                  return (
+                    <button
+                      key={page.id}
+                      type="button"
+                      onClick={() => setActivePage(page.id)}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`w-full text-left font-body text-xs rounded-chip px-3 py-2 transition-all cursor-pointer flex items-center gap-2 min-h-[var(--spacing-button-height)] outline-none ${
+                        isActive
+                          ? 'bg-accent-blue/10 text-accent-blue dark:bg-accent-blue/15 dark:text-accent-blue font-semibold border-l border-accent-blue pl-[11px]'
+                          : 'text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark'
+                      }`}
+                    >
+                      <span>{t(page.labelKey as TranslationKey)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
-
         {/* Right Column - Active Content */}
         <div className="flex-1 flex flex-col overflow-hidden bg-card-light dark:bg-card-dark">
           {/* Header */}
@@ -218,24 +229,11 @@ export function SettingsPanel({
               className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark flex size-[var(--spacing-button-icon-sm)] cursor-pointer items-center justify-center transition-colors focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
               aria-label="Close settings"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2.0}
-                stroke="currentColor"
-                className="size-4"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18 18 6M6 6l12 12"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.0} stroke="currentColor" className="size-4" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-
           {/* Page Viewport */}
           <div className="flex-1 overflow-y-auto p-6">
             {activePage === 'appearance' && (
