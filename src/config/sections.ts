@@ -48,14 +48,13 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
     id: 'section-academic',
     name: 'Academic',
     emoji: '🎓',
-    keywords: ['arxiv', 'scholar.google', 'pubmed', 'ieee', 'acm.org', 'jstor', 'nature', 'science.org', 'sciencedirect', 'springer', 'wiley', 'researchgate', 'semanticscholar', '阑', 'center', 'plos', 'frontiersin', 'mdpi', 'hindawi', 'biorxiv', 'medrxiv'],
+    keywords: ['arxiv', 'scholar.google', 'pubmed', 'ieee', 'acm.org', 'jstor', 'nature', 'science.org', 'sciencedirect', 'springer', 'wiley', 'researchgate', 'semanticscholar', 'center', 'plos', 'frontiersin', 'mdpi', 'hindawi', 'biorxiv', 'medrxiv'],
   },
   {
     id: 'section-social',
     name: 'Social',
     emoji: '💬',
     keywords: ['linkedin', 'discord', 'telegram', 'whatsapp', 'weixin.com', 'wechat', 'signal', 'irc'],
-    extraRules: [{ kind: 'regex', pattern: 'reddit\\.com/message' }],
   },
   {
     id: 'section-news',
@@ -80,20 +79,12 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
     name: 'AI',
     emoji: '🤖',
     keywords: ['openai', 'anthropic', 'chatgpt', 'claude', 'gemini', 'deepseek', 'perplexity', 'huggingface', 'replicate', 'ollama', 'groq', 'mistral', 'cohere'],
-    extraRules: [
-      { kind: 'regex', pattern: 'aws[ _]bedrock' },
-      { kind: 'regex', pattern: 'azure ai' },
-    ],
   },
   {
     id: 'section-devops',
     name: 'DevOps',
     emoji: '⚙️',
     keywords: ['aws.com', 'azure.com', 'gcp', 'googleapis', 'cloudflare', 'digitalocean', 'heroku', 'vercel', 'netlify', 'render', 'railway', 'fly.io', 'supabase', 'firebase', 'datadog', 'sentry', 'grafana', 'prometheus', 'jenkins', 'travis', 'circleci'],
-    extraRules: [
-      { kind: 'regex', pattern: 'github\\.com/actions' },
-      { kind: 'regex', pattern: 'gitlab\\.com/ci' },
-    ],
   },
   {
     id: 'section-design',
@@ -106,37 +97,24 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
     name: 'Productivity',
     emoji: '✅',
     keywords: ['obsidian', 'roam', 'logseq', 'notion', 'coda', 'evernote', 'ticktick', 'any.do', 'habitica', 'anotepad', 'pomodorotracker', 'forest'],
-    extraRules: [
-      { kind: 'regex', pattern: 'microsoft[ _]onenote' },
-      { kind: 'regex', pattern: 'apple[ _]notes' },
-    ],
   },
   {
     id: 'section-maps',
     name: 'Maps',
     emoji: '🗺️',
     keywords: ['maps.google', 'mapquest', 'wikimedia', 'openstreetmap', 'gismastery'],
-    extraRules: [
-      { kind: 'regex', pattern: 'google\\.com/maps' },
-      { kind: 'regex', pattern: 'bing\\.com/maps' },
-    ],
   },
   {
     id: 'section-travel',
     name: 'Travel',
     emoji: '✈️',
     keywords: ['booking.com', 'airbnb', 'expedia', 'tripadvisor', 'kayak', 'hotels.com', 'hostelworld', 'couchsurfing', 'hostel', 'trivago', 'priceline', 'cheaptickets', 'flightcentre', 'airline.com', 'united', 'delta', 'southwest', 'lufthansa', 'ba.com', 'france.com', 'ryanair', 'easyjet'],
-    extraRules: [{ kind: 'regex', pattern: 'american eagle' }],
   },
   {
     id: 'section-music',
     name: 'Music',
     emoji: '🎵',
     keywords: ['spotify', 'soundcloud', 'bandcamp', 'deezer', 'tidal', 'pandora', 'musify', 'qq.music'],
-    extraRules: [
-      { kind: 'regex', pattern: 'apple\\.com/music' },
-      { kind: 'regex', pattern: 'youtube\\.com/music' },
-    ],
   },
 ];
 
