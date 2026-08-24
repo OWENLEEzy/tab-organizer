@@ -643,6 +643,31 @@ describe('schema 6', () => {
     expect(result.sections[0].autoRules).toEqual([{ kind: 'regex', pattern: '^aws\\.' }]);
   });
 
+  it('dedupes case-different keyword rules and duplicate regex rules from a backup import', async () => {
+    storage['schemaVersion'] = 6;
+    storage['onboardingDone'] = true;
+    storage['sections'] = [{
+      id: 'dev',
+      name: 'Dev',
+      order: 0,
+      autoRules: [
+        { kind: 'keyword', value: 'GitHub' },
+        { kind: 'keyword', value: 'github' },
+        { kind: 'regex', pattern: '^aws\\.' },
+        { kind: 'regex', pattern: '^aws\\.' },
+        { kind: 'keyword', value: 'gitlab' },
+      ],
+    }];
+
+    const result = await readStorage();
+
+    expect(result.sections[0].autoRules).toEqual([
+      { kind: 'keyword', value: 'github' },
+      { kind: 'regex', pattern: '^aws\\.' },
+      { kind: 'keyword', value: 'gitlab' },
+    ]);
+  });
+
   it('setOnboardingDone flips the flag', async () => {
     storage['schemaVersion'] = 6;
     storage['onboardingDone'] = false;

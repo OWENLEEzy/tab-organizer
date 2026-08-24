@@ -135,11 +135,30 @@ function normalizeAutoRule(value: unknown): SectionAutoRule | null {
   return null;
 }
 
+/**
+ * Drop later rules that duplicate an earlier one's discriminant. Values are
+ * already normalized by `normalizeKeyword` before this runs, so a straight
+ * equality check on `value`/`pattern` is enough — no need to re-normalize.
+ * Duplicates otherwise reach `KeywordEditor`, which keys each chip by
+ * keyword value and would render two chips sharing one React key.
+ */
+function dedupeAutoRules(rules: readonly SectionAutoRule[]): SectionAutoRule[] {
+  const seen = new Set<string>();
+  return rules.filter((rule) => {
+    const key = rule.kind === 'keyword' ? `keyword:${rule.value}` : `regex:${rule.pattern}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function normalizeAutoRules(value: unknown): SectionAutoRule[] | undefined {
   if (!Array.isArray(value)) return undefined;
-  const rules = value
-    .map(normalizeAutoRule)
-    .filter((rule): rule is SectionAutoRule => rule !== null);
+  const rules = dedupeAutoRules(
+    value
+      .map(normalizeAutoRule)
+      .filter((rule): rule is SectionAutoRule => rule !== null),
+  );
   return rules.length > 0 ? rules : undefined;
 }
 
