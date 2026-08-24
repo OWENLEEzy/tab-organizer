@@ -21,6 +21,31 @@ type LegacyGroupAssignment = {
 
 type ImportedAutoRule = NonNullable<Section['autoRules']>[number];
 
+/**
+ * Read one auto-rule out of a backup file.
+ *
+ * Backups exported before the rule union carry `{ pattern, type: 'hostname' }`.
+ * Those are converted to `{ kind: 'regex', pattern }` — exactly how
+ * `ruleMatchesHostnames` already treats them at runtime — so importing an older
+ * backup preserves the user's rules instead of silently blanking them.
+ * Anything that is neither shape is rejected.
+ */
+function parseImportedAutoRule(rule: unknown): ImportedAutoRule | null {
+  if (rule == null || typeof rule !== 'object') return null;
+  const candidate = rule as Record<string, unknown>;
+
+  if (candidate.kind === 'keyword' && typeof candidate.value === 'string') {
+    return { kind: 'keyword', value: candidate.value };
+  }
+  if (candidate.kind === 'regex' && typeof candidate.pattern === 'string') {
+    return { kind: 'regex', pattern: candidate.pattern };
+  }
+  if (candidate.type === 'hostname' && typeof candidate.pattern === 'string') {
+    return { kind: 'regex', pattern: candidate.pattern };
+  }
+  return null;
+}
+
 function normalizeImportedSections(value: unknown): Section[] | null {
   if (!Array.isArray(value)) return null;
 
@@ -37,13 +62,9 @@ function normalizeImportedSections(value: unknown): Section[] | null {
       order: Number.isFinite(section.order) ? Number(section.order) : index,
       emoji: typeof section.emoji === 'string' ? section.emoji : undefined,
       autoRules: Array.isArray(section.autoRules)
-        ? section.autoRules.filter((rule): rule is ImportedAutoRule => {
-            if (rule == null || typeof rule !== 'object') return false;
-            const candidate = rule as Record<string, unknown>;
-            if (candidate.kind === 'keyword') return typeof candidate.value === 'string';
-            if (candidate.kind === 'regex') return typeof candidate.pattern === 'string';
-            return false;
-          })
+        ? section.autoRules
+            .map(parseImportedAutoRule)
+            .filter((rule): rule is ImportedAutoRule => rule !== null)
         : undefined,
     }));
 }

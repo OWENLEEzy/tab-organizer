@@ -122,6 +122,45 @@ describe('useSettingsImportExport', () => {
     expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Settings imported'));
   });
 
+  it('converts a legacy hostname auto-rule into a regex rule instead of dropping it', async () => {
+    const { settingsStore, tabStore } = makeStores();
+    const showToast = vi.fn();
+    const { result } = renderHook(
+      () => useSettingsImportExport({ settingsStore, tabStore, showToast }),
+      { wrapper },
+    );
+
+    await result.current.handleImportConfig(JSON.stringify({
+      version: '1.0',
+      sections: [{
+        id: 'dev',
+        name: 'Dev',
+        order: 0,
+        autoRules: [
+          { pattern: 'github|gitlab', type: 'hostname' },
+          { kind: 'keyword', value: 'jira' },
+          { type: 'hostname' },
+        ],
+      }],
+    }));
+
+    await waitFor(() => expect(tabStore.importBackup).toHaveBeenCalled());
+    expect(tabStore.importBackup).toHaveBeenCalledWith(
+      [{
+        id: 'dev',
+        name: 'Dev',
+        order: 0,
+        emoji: undefined,
+        autoRules: [
+          { kind: 'regex', pattern: 'github|gitlab' },
+          { kind: 'keyword', value: 'jira' },
+        ],
+      }],
+      [],
+      [],
+    );
+  });
+
   it('does not import legacy manual group keys (manualGroups, groupAssignments)', async () => {
     const { settingsStore, tabStore } = makeStores();
     const showToast = vi.fn();
