@@ -29,9 +29,11 @@ manager, or task manager.
 - The first screen is the working dashboard, not a marketing page.
 - Tabs are single pages. They are grouped automatically into product/domain
   `TabGroup`s; this grouping is the source of truth for the UI.
-- Sections are local label containers for automatic product groups. Init release
-  starts with built-in smart section templates, and users can create, rename,
-  delete, and edit sections locally.
+- Sections are local label containers for automatic product groups. Storage
+  starts with no sections; `SECTION_TEMPLATES` in `src/config/sections.ts` are
+  onboarding candidates the user picks from and edits once, and only confirmed
+  templates become real sections. Users can create, rename, delete, and edit
+  sections locally at any time.
 - Assigning a group to a section means applying a section label to the
   product/domain `TabGroup`; it must not rewrite grouping semantics or become
   URL-level task management.
@@ -205,7 +207,11 @@ Source placement rules:
   from the dashboard.
 - `src/background/index.ts` is the MV3 service worker. It refreshes badge counts
   and opens or focuses the dashboard from the keyboard command.
-- `src/utils/storage.ts` is the only adapter over `chrome.storage.local`.
+- `src/utils/storage.ts` is the only adapter over `chrome.storage.local`. Pure
+  schema normalization, reconciliation, and validation (`normalize*`,
+  `reconcile*`, `prune*`, `DEFAULT_SETTINGS`) live in `src/lib/storage-schema.ts`;
+  `storage.ts` re-exports `DEFAULT_SETTINGS` for its existing consumers and keeps
+  only the `chrome.storage.local` I/O, write queue, and storage-key constants.
 - `src/lib/product-groups.ts` owns product/domain grouping and duplicate counts.
 - `src/lib/organize-plan.ts` owns the pure organize plan: which groups to auto-assign,
   which duplicate tabs to close, and the section-aware group order.
@@ -215,6 +221,14 @@ Source placement rules:
   call it; do not reimplement tab sorting elsewhere.
 - `src/lib/recovery-snapshots.ts` owns snapshot creation and replacement rules.
 - `src/dashboard/components/sections/DndSectionOrganizer.tsx` is the only dashboard component that may import `@dnd-kit`.
+- `src/lib/section-membership.ts` is the single source of the section-membership
+  priority `explicit assignment > explicit veto > rule inference`. Auto-assignment,
+  the settings rule preview, and the pinned badge all read it; do not re-derive
+  that priority anywhere else.
+- `src/lib/section-keywords.ts` normalizes user-supplied keywords once at the
+  write boundary. Every write path, including backup import, goes through it.
+- `src/lib/rule-preview.ts` projects the arbitration into UI rows so the settings
+  preview cannot promise a move the engine will not make.
 
 Import boundary:
 
@@ -327,7 +341,7 @@ Persisted in `chrome.storage.local`:
 - Product-to-section assignments.
 - Recovery candidate/recovery snapshots.
 - On schema mismatch, storage resets destructively to the current schema. Do not read legacy storage keys into current state.
-- Current schema keys are `schemaVersion`, `settings`, `groupOrder`, `sections`, `sectionAssignments`, `unsectionedProductKeys`, `viewMode`, `recoveryCandidate`, and `recoverySnapshots`.
+- Current schema keys are `schemaVersion`, `onboardingDone`, `settings`, `groupOrder`, `sections`, `sectionAssignments`, `unsectionedProductKeys`, `viewMode`, `recoveryCandidate`, and `recoverySnapshots`.
 
 Storage rules:
 
@@ -340,9 +354,11 @@ Storage rules:
 - Prune product assignments when the product is no longer open or the group no
   longer exists.
 - Product-to-section assignments are group-level label relationships:
-  `{ productKey, sectionId, order }`.
+  `{ productKey, sectionId }`.
 - `unsectionedProductKeys` stores product keys the user explicitly moved to No
   section so auto-rules do not immediately reapply.
+- `onboardingDone` is application flow state, not a user preference. It lives
+  at the storage top level, never inside `settings`.
 - History snapshots are capped and local-only; do not introduce cloud/session
   account semantics.
 
