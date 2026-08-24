@@ -100,9 +100,16 @@ interface TabActions {
   setActiveSection: (id: string | null) => void;
   /** Persist the sections the user confirmed in onboarding and close it for good. */
   completeOnboarding: (sections: Section[], assignments: SectionAssignment[]) => Promise<void>;
-  /** Overwrite sections and sectionAssignments with imported backup. */
+  /**
+   * Overwrite sections and sectionAssignments with imported backup.
+   *
+   * `sections[].autoRules` is left as `unknown[]` rather than typed as
+   * `SectionAutoRule[]` — this is untrusted, unvalidated backup data.
+   * `writeOrganizerState` -> `normalizeSections`/`normalizeAutoRules` in
+   * `src/lib/storage-schema.ts` is the real gate that validates it on write.
+   */
   importBackup: (
-    sections: Section[],
+    sections: Array<Omit<Section, 'autoRules'> & { autoRules?: unknown[] }>,
     sectionAssignments: SectionAssignment[],
     unsectionedProductKeys?: string[],
   ) => Promise<void>;
@@ -684,11 +691,18 @@ export const useTabStore = create<TabStore>((set) => ({
   },
 
   importBackup: async (
-    sections: Section[],
+    sections: Array<Omit<Section, 'autoRules'> & { autoRules?: unknown[] }>,
     sectionAssignments: SectionAssignment[],
     unsectionedProductKeys: string[] = [],
   ) => {
-    const normalized = await writeOrganizerState({ sections, sectionAssignments, unsectionedProductKeys });
+    // The real trust boundary: writeOrganizerState -> normalizeSections
+    // validates every section (including autoRules) before it is persisted,
+    // so asserting the type here — right before that gate — is safe.
+    const normalized = await writeOrganizerState({
+      sections: sections as Section[],
+      sectionAssignments,
+      unsectionedProductKeys,
+    });
     set({
       sections: normalized.sections,
       sectionAssignments: normalized.sectionAssignments,

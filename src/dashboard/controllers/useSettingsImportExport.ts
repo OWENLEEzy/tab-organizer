@@ -20,6 +20,15 @@ type LegacyGroupAssignment = {
 };
 
 /**
+ * A backup section shaped like `Section`, except `autoRules` is left as
+ * `unknown[]` rather than asserted as `SectionAutoRule[]` — nothing here has
+ * actually checked that its elements match that shape. `TabStore.importBackup`
+ * accepts this same shape; `normalizeSections`/`normalizeAutoRules` in
+ * `src/lib/storage-schema.ts` are the real gate that validates it on write.
+ */
+type ImportedSection = Omit<Section, 'autoRules'> & { autoRules?: unknown[] };
+
+/**
  * Shape a backup's sections without judging their rules.
  *
  * Auto-rules pass through raw: `importBackup` writes via `writeOrganizerState`,
@@ -27,7 +36,7 @@ type LegacyGroupAssignment = {
  * rules, normalizes keywords, and converts pre-union `{ pattern, type: 'hostname' }`
  * entries. Re-checking them here would only duplicate that gate.
  */
-function normalizeImportedSections(value: unknown): Section[] | null {
+function normalizeImportedSections(value: unknown): ImportedSection[] | null {
   if (!Array.isArray(value)) return null;
 
   return value
@@ -42,10 +51,8 @@ function normalizeImportedSections(value: unknown): Section[] | null {
       name: (section.name as string).trim() || 'Untitled',
       order: Number.isFinite(section.order) ? Number(section.order) : index,
       emoji: typeof section.emoji === 'string' ? section.emoji : undefined,
-      // Asserted, not trusted: storage re-validates every rule on write.
-      autoRules: Array.isArray(section.autoRules)
-        ? (section.autoRules as Section['autoRules'])
-        : undefined,
+      // Unvalidated, not trusted: storage re-validates every rule on write.
+      autoRules: Array.isArray(section.autoRules) ? section.autoRules : undefined,
     }));
 }
 
