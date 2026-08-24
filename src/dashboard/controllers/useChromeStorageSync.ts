@@ -11,6 +11,7 @@ const ORGANIZER_KEYS = new Set([
   'sectionAssignments',
   'unsectionedProductKeys',
   'viewMode',
+  'onboardingDone',
 ]);
 const HISTORY_KEYS = new Set([
   'schemaVersion',

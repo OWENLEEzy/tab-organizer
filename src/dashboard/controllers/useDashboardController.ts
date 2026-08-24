@@ -410,7 +410,7 @@ export function useDashboardController() {
     onClearFilter: () => {
       tabStore.setActiveSection(null);
     },
-  }, settings.keyBindings, state.settingsOpen || state.confirmDialog.open || state.promptDialog.open);
+  }, settings.keyBindings, state.settingsOpen || state.confirmDialog.open || state.promptDialog.open || !tabStore.onboardingDone);
 
   return {
     state: {

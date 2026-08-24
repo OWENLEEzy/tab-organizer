@@ -10,6 +10,7 @@ import { ConfirmationDialog } from './components/states/ConfirmationDialog';
 import { PromptDialog } from './components/states/PromptDialog';
 import { DashboardShell } from './components/layout/DashboardShell';
 import { DashboardHeader } from './components/layout/DashboardHeader';
+import { OnboardingCard } from './components/onboarding/OnboardingCard';
 
 import type { FooterAlert } from './components/layout/Footer';
 import { useDashboardController } from './controllers/useDashboardController';
@@ -17,7 +18,8 @@ import { useI18n } from './hooks/useI18n';
 import { useTheme } from './hooks/useTheme';
 import { useSettingsImportExport } from './controllers/useSettingsImportExport';
 import { getProductKey } from '../lib/product-key';
-import type { TabGroup } from '../types';
+import { SECTION_TEMPLATES } from '../config/sections';
+import type { Section, SectionAssignment, TabGroup } from '../types';
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -72,6 +74,24 @@ export function App(): React.ReactElement {
     await tabStore.fetchTabs();
   }, [settingsStore, tabStore]);
 
+  const handleOnboardingConfirm = useCallback(async (sections: Section[], assignments: SectionAssignment[]) => {
+    try {
+      await tabStore.completeOnboarding(sections, assignments);
+    } catch (err) {
+      console.error('[Tab Organizer] Failed to complete onboarding:', err);
+      handlers.showToast(t('toastOnboardingFailed'));
+    }
+  }, [tabStore, handlers, t]);
+
+  const handleOnboardingSkip = useCallback(async () => {
+    try {
+      await tabStore.completeOnboarding([], []);
+    } catch (err) {
+      console.error('[Tab Organizer] Failed to complete onboarding:', err);
+      handlers.showToast(t('toastOnboardingFailed'));
+    }
+  }, [tabStore, handlers, t]);
+
   if (state.loading || state.tabsLoading) {
     return <LoadingState />;
   }
@@ -112,6 +132,15 @@ export function App(): React.ReactElement {
           {t('skipToContent')}
         </a>
       </nav>
+      {!tabStore.onboardingDone && (
+        <OnboardingCard
+          templates={SECTION_TEMPLATES}
+          products={tabStore.products}
+          hostnamesByProductKey={tabStore.hostnamesByProductKey}
+          onConfirm={(sections, assignments) => { void handleOnboardingConfirm(sections, assignments); }}
+          onSkip={() => { void handleOnboardingSkip(); }}
+        />
+      )}
       <DashboardShell
         top={null}
         header={

@@ -293,6 +293,7 @@ export const locales = {
     toastSettingsExported: 'Settings exported successfully! 📤',
     toastSettingsImported: 'Settings imported successfully! 📥',
     toastImportFailed: 'Import failed. Verify JSON backup file format. ⚠️',
+    toastOnboardingFailed: 'Could not save your sections. Please try again. ⚠️',
     toastSortOrderReset: 'Sort order reset',
     toastDuplicatesClosed: 'Duplicates closed',
     toastClosedProductTabs: 'Closed all {count} {name} tabs',
@@ -379,6 +380,16 @@ export const locales = {
     rulePreviewMoveThem: 'Move these {count} here too',
     rulePreviewNone: 'No groups match yet',
     rulePreviewTabCount: '{count} tabs',
+
+    // Onboarding
+    onboardingTitle: 'Pick a few sections — the rules are yours',
+    onboardingSubtitle: 'These words are my guess. Delete the wrong ones, add your own.',
+    onboardingCollects: 'collects {count} groups',
+    onboardingNoMatch: 'No groups matched',
+    onboardingConfirm: 'Create these {count}',
+    onboardingSkip: 'Start empty',
+    onboardingOnce: 'This will not show again',
+    onboardingExpand: 'Show keywords for {name}',
 
     // Sections & Rules workbench
     workbenchNewSection: 'New section',
@@ -682,6 +693,7 @@ export const locales = {
     toastSettingsExported: '设置已成功导出！📤',
     toastSettingsImported: '设置已成功导入！📥',
     toastImportFailed: '导入失败，请检查 JSON 备份文件格式是否正确。⚠️',
+    toastOnboardingFailed: '无法保存你的分区，请重试。⚠️',
     toastSortOrderReset: '排序位置已恢复默认',
     toastDuplicatesClosed: '重复页面已清理完毕',
     toastClosedProductTabs: '已关闭 {name} 的全部 {count} 个页面',
@@ -768,6 +780,16 @@ export const locales = {
     rulePreviewMoveThem: '把这 {count} 个也搬过来',
     rulePreviewNone: '暂时没有匹配到区域',
     rulePreviewTabCount: '{count} 个页面',
+
+    // Onboarding
+    onboardingTitle: '挑几个分区，规则你说了算',
+    onboardingSubtitle: '下面这些词是我猜的。删掉不对的，加上你自己的。',
+    onboardingCollects: '收进 {count} 个区域',
+    onboardingNoMatch: '没匹配到区域',
+    onboardingConfirm: '建这 {count} 个',
+    onboardingSkip: '空着开始',
+    onboardingOnce: '之后不再出现',
+    onboardingExpand: '展开 {name} 的关键词',
 
     // Sections & Rules workbench
     workbenchNewSection: '新建分区',
