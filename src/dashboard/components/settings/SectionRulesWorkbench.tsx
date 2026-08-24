@@ -42,6 +42,7 @@ export function SectionRulesWorkbench({
   const { t } = useI18n();
   const [selectedId, setSelectedId] = useState<string | null>(sections[0]?.id ?? null);
   const [newName, setNewName] = useState('');
+  const [nameError, setNameError] = useState('');
   const [showRegex, setShowRegex] = useState(false);
   const [regexError, setRegexError] = useState(false);
 
@@ -82,6 +83,12 @@ export function SectionRulesWorkbench({
   function handleCreate(): void {
     const name = newName.trim();
     if (!name) return;
+    const duplicate = sections.some((s) => s.name.trim().toLowerCase() === name.toLowerCase());
+    if (duplicate) {
+      setNameError(t('settingsDuplicateSectionName'));
+      return;
+    }
+    setNameError('');
     onCreateSection(name);
     setNewName('');
   }
@@ -113,10 +120,15 @@ export function SectionRulesWorkbench({
           value={newName}
           placeholder={t('workbenchNewSection')}
           aria-label={t('workbenchNewSection')}
-          onChange={(e) => setNewName(e.target.value)}
+          onChange={(e) => { setNewName(e.target.value); setNameError(''); }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreate(); } }}
           className="settings-input placeholder:text-text-secondary mt-2 w-full focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
         />
+        {nameError && (
+          <p className="text-accent-red text-3xs font-body" role="alert">
+            {nameError}
+          </p>
+        )}
       </div>
 
       {/* Right: editor */}

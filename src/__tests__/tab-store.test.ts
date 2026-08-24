@@ -439,6 +439,33 @@ describe('useTabStore', () => {
       .sort()).toEqual(['github', 'vercel']);
   });
 
+  it('assigns several product groups to a section in one batched write', async () => {
+    useTabStore.setState({
+      fetchTabs: vi.fn().mockResolvedValue(undefined),
+      sections: [{ id: 'later', name: 'Later', order: 0 }],
+      sectionAssignments: [],
+      unsectionedProductKeys: ['vercel'],
+    });
+    chromeStorage.data = {
+      schemaVersion: 6,
+      sections: [{ id: 'later', name: 'Later', order: 0 }],
+      sectionAssignments: [],
+      unsectionedProductKeys: ['vercel'],
+    };
+
+    await useTabStore.getState().assignProductsToSection(['github', 'vercel'], 'later');
+
+    expect(useTabStore.getState().sectionAssignments).toEqual([
+      { productKey: 'github', sectionId: 'later' },
+      { productKey: 'vercel', sectionId: 'later' },
+    ]);
+    expect(chromeStorage.data['sectionAssignments']).toEqual([
+      { productKey: 'github', sectionId: 'later' },
+      { productKey: 'vercel', sectionId: 'later' },
+    ]);
+    expect(chromeStorage.data['unsectionedProductKeys']).toEqual([]);
+  });
+
   it('refreshes tabs even when a Chrome tab removal races with an already-closed tab', async () => {
     const fetchTabs = vi.fn().mockResolvedValue(undefined);
     useTabStore.setState({ fetchTabs });

@@ -52,7 +52,7 @@ export function App(): React.ReactElement {
   });
 
   const handleAssignProducts = useCallback((productKeys: readonly string[], sectionId: string) => {
-    productKeys.forEach((productKey) => { void tabStore.moveProductGroupToSection(productKey, sectionId); });
+    void tabStore.assignProductsToSection(productKeys, sectionId);
   }, [tabStore]);
 
   if (state.loading || state.tabsLoading) {

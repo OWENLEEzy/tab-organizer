@@ -8,6 +8,7 @@ import {
   moveProductToUnsectioned,
 } from '../lib/section-organizer';
 import {
+  applyAssignmentUpdates,
   clearRecoverySnapshots,
   deleteRecoverySnapshot,
   readRecoverySnapshots,
@@ -73,6 +74,8 @@ interface TabActions {
   reorderSections: (groups: Section[]) => Promise<void>;
   /** Assign a product group to a section. */
   moveProductGroupToSection: (productKey: string, sectionId: string) => Promise<void>;
+  /** Assign several product groups to a section in one batched, race-safe write. */
+  assignProductsToSection: (productKeys: readonly string[], sectionId: string) => Promise<void>;
   /** Remove a product group assignment. */
   moveProductToUnsectioned: (productKey: string) => Promise<void>;
   /** Persist the visible organizer layout mode. */
@@ -563,6 +566,21 @@ export const useTabStore = create<TabStore>((set) => ({
     const nextOverrides = state.unsectionedProductKeys.filter((k) => k !== productKey);
     set({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
     await writeOrganizerState({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
+    await useTabStore.getState().fetchTabs();
+  },
+
+  assignProductsToSection: async (productKeys: readonly string[], sectionId: string) => {
+    if (productKeys.length === 0) return;
+    const state = useTabStore.getState();
+    const keys = new Set(productKeys);
+    const updates: SectionAssignment[] = productKeys.map((productKey) => ({ productKey, sectionId }));
+    const nextAssignments = [
+      ...state.sectionAssignments.filter((a) => !keys.has(a.productKey)),
+      ...updates,
+    ];
+    const nextOverrides = state.unsectionedProductKeys.filter((k) => !keys.has(k));
+    set({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
+    await applyAssignmentUpdates(updates);
     await useTabStore.getState().fetchTabs();
   },
 

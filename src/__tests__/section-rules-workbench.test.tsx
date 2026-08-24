@@ -127,4 +127,14 @@ describe('SectionRulesWorkbench', () => {
 
     expect(props.onCreateSection).toHaveBeenCalledWith('Side');
   });
+
+  it('rejects a duplicate section name, case- and whitespace-insensitively', () => {
+    const props = renderWorkbench();
+
+    fireEvent.change(screen.getByPlaceholderText('New section'), { target: { value: '  DEV  ' } });
+    fireEvent.keyDown(screen.getByPlaceholderText('New section'), { key: 'Enter' });
+
+    expect(props.onCreateSection).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('A section with this name already exists.');
+  });
 });
