@@ -44,7 +44,7 @@ describe('normalizeKeyword', () => {
     expect(normalizeKeyword('gitlab', ['github'])).toEqual({ ok: true, value: 'gitlab' });
   });
 
-  it('does not escape dots — substring semantics need no escaping', () => {
+  it('keeps dots literal — they are label separators, not regex syntax', () => {
     expect(normalizeKeyword('x.com')).toEqual({ ok: true, value: 'x.com' });
   });
 });

@@ -3,6 +3,10 @@
  *
  * Keywords are normalized exactly once, on write. Every read path then compares
  * lowercase-to-lowercase without re-processing case. See the design spec §3.5.
+ *
+ * Dots are kept literal: matching splits both sides on `.` and compares hostname
+ * labels, so a dot is a label separator here, never regex syntax. See
+ * `ruleMatchesHostnames` in `section-membership.ts`.
  */
 
 export type KeywordRejection = 'empty' | 'whitespace' | 'duplicate';
