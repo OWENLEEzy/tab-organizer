@@ -14,6 +14,22 @@ afterEach(() => {
 });
 
 describe('MoveToSectionMenu', () => {
+  it('renders nothing when there are no sections and the group has none to remove from', () => {
+    render(
+      <I18nProvider>
+        <MoveToSectionMenu
+          sections={[]}
+          currentSectionId={null}
+          onMoveToSection={vi.fn()}
+          onMoveToNoSection={vi.fn()}
+          groupName="GitHub"
+        />
+      </I18nProvider>,
+    );
+    expect(screen.queryByRole('button', { name: /Move GitHub to a section/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
   it('lists every section including empty ones', () => {
     render(
       <I18nProvider>

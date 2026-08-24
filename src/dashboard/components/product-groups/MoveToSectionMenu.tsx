@@ -71,6 +71,13 @@ export function MoveToSectionMenu({
     }
   }
 
+  // Nothing to move to: no sections exist and there's no "no section" item
+  // to offer either. Render nothing rather than a trigger that opens an
+  // empty, itemless ARIA menu.
+  if (itemCount === 0) {
+    return <></>;
+  }
+
   return (
     <div className="relative" ref={menuRef}>
       <button
