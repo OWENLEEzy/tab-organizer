@@ -45,6 +45,23 @@ export function SectionRulesWorkbench({
   const [nameError, setNameError] = useState('');
   const [showRegex, setShowRegex] = useState(false);
   const [regexError, setRegexError] = useState(false);
+  // Name of a section just created via `handleCreate`, so it can be selected
+  // once `onCreateSection` round-trips and it actually appears in `sections`.
+  // `onCreateSection` is fire-and-forget and does not hand back the new id.
+  const [pendingSelectName, setPendingSelectName] = useState<string | null>(null);
+  // Tracks the `sections` identity we last reacted to, so the adjustment
+  // below runs only once per actual prop change — the React-recommended
+  // "adjust state during render" pattern instead of a setState-in-effect.
+  const [sectionsSeenForSelect, setSectionsSeenForSelect] = useState(sections);
+
+  if (sections !== sectionsSeenForSelect) {
+    setSectionsSeenForSelect(sections);
+    if (pendingSelectName) {
+      const created = sections.find((s) => s.name === pendingSelectName);
+      if (created) setSelectedId(created.id);
+      setPendingSelectName(null);
+    }
+  }
 
   const selected = sections.find((s) => s.id === selectedId) ?? sections[0] ?? null;
 
@@ -93,6 +110,7 @@ export function SectionRulesWorkbench({
     }
     setNameError('');
     onCreateSection(name);
+    setPendingSelectName(name);
     setNewName('');
   }
 

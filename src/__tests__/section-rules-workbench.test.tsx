@@ -43,12 +43,23 @@ function renderWorkbench(overrides: Partial<React.ComponentProps<typeof SectionR
     onAssignProducts: vi.fn(),
     ...overrides,
   };
-  render(
+  const { rerender } = render(
     <I18nProvider>
       <SectionRulesWorkbench {...props} />
     </I18nProvider>,
   );
-  return props;
+  return {
+    ...props,
+    rerender: (nextOverrides: Partial<React.ComponentProps<typeof SectionRulesWorkbench>>) => {
+      const nextProps = { ...props, ...nextOverrides };
+      rerender(
+        <I18nProvider>
+          <SectionRulesWorkbench {...nextProps} />
+        </I18nProvider>,
+      );
+      return nextProps;
+    },
+  };
 }
 
 describe('SectionRulesWorkbench', () => {
@@ -171,6 +182,28 @@ describe('SectionRulesWorkbench', () => {
     fireEvent.keyDown(screen.getByPlaceholderText('New section'), { key: 'Enter' });
 
     expect(props.onCreateSection).toHaveBeenCalledWith('Side');
+  });
+
+  it('selects a newly created section once it appears in `sections`, instead of leaving the previous selection in place', () => {
+    const props = renderWorkbench();
+
+    // `Dev` (the first section) is selected by default.
+    expect(screen.getByText('github.com')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText('New section'), { target: { value: 'Reading' } });
+    fireEvent.keyDown(screen.getByPlaceholderText('New section'), { key: 'Enter' });
+    expect(props.onCreateSection).toHaveBeenCalledWith('Reading');
+
+    // `onCreateSection` is fire-and-forget; the real app round-trips through
+    // the store and re-renders with the new section appended to `sections`.
+    const newSection: Section = { id: 'reading-id', name: 'Reading', order: 2 };
+    props.rerender({ sections: [...SECTIONS, newSection] });
+
+    // The editor pane now shows the newly created section, not the one that
+    // was selected before, and not the pick-a-section prompt.
+    expect(screen.getByRole('button', { name: /Reading/ })).toHaveClass('text-accent-blue');
+    expect(screen.queryByText('Pick a section on the left')).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue('Reading')).toBeInTheDocument();
   });
 
   it('rejects a duplicate section name, case- and whitespace-insensitively', () => {
