@@ -97,7 +97,7 @@ describe('RuleMatchPreview', () => {
       onMoveBlockedHere,
     });
 
-    const button = screen.getByRole('button', { name: 'Move these 1 here too' });
+    const button = screen.getByRole('button', { name: 'Move this 1 here too' });
     button.click();
 
     expect(onMoveBlockedHere).toHaveBeenCalledTimes(1);
@@ -114,7 +114,7 @@ describe('RuleMatchPreview', () => {
       onMoveBlockedHere: vi.fn(),
     });
 
-    expect(screen.getByRole('button', { name: 'Move these 1 here too' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Move this 1 here too' })).toBeInTheDocument();
     // Both rows are still listed with their own distinct status text.
     expect(screen.getByText('"Design" claims it — rules here will not move it')).toBeInTheDocument();
     expect(screen.getByText('Pinned out of sections — rules will not collect it')).toBeInTheDocument();

@@ -101,7 +101,9 @@ function OnboardingTemplateRowImpl({
         </label>
         <span className="text-text-secondary font-body text-xs whitespace-nowrap">
           {willTake.length > 0
-            ? t('onboardingCollects', { count: willTake.length })
+            ? willTake.length === 1
+              ? t('onboardingCollectsSingle')
+              : t('onboardingCollectsPlural', { count: willTake.length })
             : matches.length > 0
               ? t('onboardingClaimedElsewhere')
               : t('onboardingNoMatch')}

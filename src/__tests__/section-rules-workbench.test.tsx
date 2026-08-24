@@ -158,7 +158,7 @@ describe('SectionRulesWorkbench', () => {
       unsectionedProductKeys: ['gist'],
     });
 
-    const button = screen.getByRole('button', { name: 'Move these 1 here too' });
+    const button = screen.getByRole('button', { name: 'Move this 1 here too' });
     fireEvent.click(button);
 
     expect(props.onAssignProducts).toHaveBeenCalledWith(['figma'], 'dev');

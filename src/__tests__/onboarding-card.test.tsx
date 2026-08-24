@@ -158,7 +158,7 @@ describe('OnboardingCard', () => {
     // must not also claim it in the preview shown next to its checkbox — but
     // it did genuinely match, so it must not claim "No groups matched"
     // either. It shows a distinct "claimed elsewhere" badge instead.
-    expect(screen.getByText('collects 1 groups')).toBeInTheDocument();
+    expect(screen.getByText('collects 1 group')).toBeInTheDocument();
     expect(screen.getByText('Already claimed by a section above')).toBeInTheDocument();
     expect(screen.queryByText('No groups matched')).not.toBeInTheDocument();
 

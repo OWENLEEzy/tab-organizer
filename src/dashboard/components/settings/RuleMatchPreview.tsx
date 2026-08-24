@@ -48,7 +48,9 @@ export function RuleMatchPreview({
               {row.product.friendlyName || row.product.domain}
             </span>
             <span className="text-text-secondary">
-              {t('rulePreviewTabCount', { count: row.product.tabs.length })}
+              {row.product.tabs.length === 1
+                ? t('rulePreviewTabCountSingle')
+                : t('rulePreviewTabCountPlural', { count: row.product.tabs.length })}
             </span>
           </li>
         ))}
@@ -94,7 +96,9 @@ export function RuleMatchPreview({
               onClick={() => onMoveBlockedHere()}
               className="rounded-chip font-body text-accent-blue border-accent-blue/40 hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 mt-2 min-h-[var(--spacing-button-height)] cursor-pointer border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
             >
-              {t('rulePreviewMoveThem', { count: blocked.length })}
+              {blocked.length === 1
+                ? t('rulePreviewMoveThemSingle')
+                : t('rulePreviewMoveThemPlural', { count: blocked.length })}
             </button>
           )}
         </>
