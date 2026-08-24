@@ -180,4 +180,34 @@ describe('OnboardingCard', () => {
     expect(onConfirm).not.toHaveBeenCalled();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
+
+  it('expanding one template row does not remount or reset another template row already-entered keyword edits', () => {
+    const { onConfirm } = setup();
+
+    // Expand Dev and add a keyword.
+    fireEvent.click(screen.getByRole('button', { name: /Show keywords for Dev/ }));
+    fireEvent.change(screen.getByLabelText('Keywords'), { target: { value: 'GitLab' } });
+    fireEvent.keyDown(screen.getByLabelText('Keywords'), { key: 'Enter' });
+    expect(screen.getByText('gitlab')).toBeInTheDocument();
+
+    // Collapse Dev, then expand a sibling template (Shopping). This forces
+    // OnboardingCard's `expandedId` state to change, which re-renders every
+    // row unless sibling rows are memoized. (The toggle button's accessible
+    // name stays "Show keywords for {name}" in both the expanded and
+    // collapsed state — only `aria-expanded` reflects which.)
+    fireEvent.click(screen.getByRole('button', { name: /Show keywords for Dev/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Show keywords for Shopping/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Show keywords for Shopping/ }));
+
+    // Re-expand Dev: the keyword typed earlier must still be there — proving
+    // the sibling toggle above did not remount Dev's row and lose its state.
+    fireEvent.click(screen.getByRole('button', { name: /Show keywords for Dev/ }));
+    expect(screen.getByText('gitlab')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Create these/ }));
+    expect(onConfirm.mock.calls[0][0][0].autoRules).toEqual([
+      { kind: 'keyword', value: 'github' },
+      { kind: 'keyword', value: 'gitlab' },
+    ]);
+  });
 });
