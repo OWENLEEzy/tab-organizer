@@ -122,9 +122,3 @@ export function sectionsFromTemplates(templates: readonly SectionTemplate[]): Se
     autoRules: template.keywords.map((value): SectionAutoRule => ({ kind: 'keyword', value })),
   }));
 }
-
-const DEFAULT_SECTION_IDS = new Set(SECTION_TEMPLATES.map((template) => template.id));
-
-export function isDefaultSectionId(sectionId: string): boolean {
-  return DEFAULT_SECTION_IDS.has(sectionId);
-}

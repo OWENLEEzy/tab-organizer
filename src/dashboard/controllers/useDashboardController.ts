@@ -16,7 +16,6 @@ import { parseSearchQuery, resolveSectionQueryTarget } from '../lib/search-comma
 import { getExtensionVersion } from '../../utils/chrome-runtime';
 import { useChromeStorageSync } from './useChromeStorageSync';
 import { buildOrganizerModel, toProductItemId } from '../../lib/section-organizer';
-import { isDefaultSectionId } from '../../config/sections';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -190,12 +189,10 @@ export function useDashboardController() {
     [structureOrganizerModel.productsBySection],
   );
 
-  const cardsSections = useMemo(() => {
-    return structureOrganizerModel.sections.filter((section) => {
-      const hasRenderedProducts = (contentOrganizerModel.productsBySection.get(section.id)?.length ?? 0) > 0;
-      return hasRenderedProducts || !isDefaultSectionId(section.id);
-    });
-  }, [structureOrganizerModel.sections, contentOrganizerModel.productsBySection]);
+  // Cards view renders every section, including empty ones. An empty section is
+  // a drop target the user deliberately created — hiding it would make it
+  // impossible to ever put anything in. See design spec §3.7.
+  const cardsSections = structureOrganizerModel.sections;
 
   const flatChips = useMemo(() => {
     const visualProducts = viewMode === 'table'

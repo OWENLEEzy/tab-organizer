@@ -193,6 +193,10 @@ export const locales = {
     organizerBtnRename: 'Rename',
     organizerBtnDelete: 'Delete',
     organizerBtnCloseAll: 'Close all',
+    moveToSection: 'Move to section',
+    moveToSectionFor: 'Move {name} to a section',
+    moveToNoSection: 'Remove from section',
+    sectionEmptySlot: 'Empty — drag a product group here',
 
     // Settings Panel
     settingsTitle: 'Settings',
@@ -593,6 +597,10 @@ export const locales = {
     organizerBtnRename: '重命名',
     organizerBtnDelete: '删除分区',
     organizerBtnCloseAll: '关闭全部',
+    moveToSection: '移到分区',
+    moveToSectionFor: '把 {name} 移到分区',
+    moveToNoSection: '移出分区',
+    sectionEmptySlot: '空着 · 把产品组拖进来',
 
     // Settings Panel
     settingsTitle: '设置选项',

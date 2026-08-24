@@ -1,10 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import type { TabGroup } from '../../../types';
+import type { Section, TabGroup } from '../../../types';
 import { TabChip } from '../tabs/TabChip';
 import { getVisibleTabs } from '../../lib/visible-tabs';
 import { analyzeDuplicates } from '../../../lib/duplicate-analysis';
 import { getProductGroupIconUrl } from './product-group-icon';
 import { useI18n } from '../../hooks/useI18n';
+import { MoveToSectionMenu } from './MoveToSectionMenu';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -27,6 +28,12 @@ interface ProductGroupCardProps {
   searchQuery?: string;
   /** Id of the single globally most-recently-used tab, to highlight it. */
   lastUsedTabId?: number | null;
+  /** All sections, for the non-drag "move to section" menu. Menu renders only when provided. */
+  sections?: readonly Section[];
+  /** This card's current section, or null when unassigned. */
+  currentSectionId?: string | null;
+  onMoveToSection?: (sectionId: string) => void;
+  onMoveToNoSection?: () => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -129,6 +136,10 @@ function ProductGroupCardComponent({
   onToggleProductGroupExpanded,
   searchQuery = '',
   lastUsedTabId = null,
+  sections,
+  currentSectionId = null,
+  onMoveToSection,
+  onMoveToNoSection,
 }: ProductGroupCardProps): React.ReactElement {
   const { t } = useI18n();
   const tabs = useMemo(() => group.tabs || [], [group.tabs]);
@@ -256,6 +267,15 @@ function ProductGroupCardComponent({
                 <DedupIcon />
                 <span>{totalExtras}</span>
               </button>
+            )}
+            {onMoveToSection && onMoveToNoSection && (
+              <MoveToSectionMenu
+                sections={sections ?? []}
+                currentSectionId={currentSectionId}
+                onMoveToSection={onMoveToSection}
+                onMoveToNoSection={onMoveToNoSection}
+                groupName={displayName}
+              />
             )}
           </div>
         </div>
