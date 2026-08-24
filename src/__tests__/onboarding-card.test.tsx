@@ -155,9 +155,17 @@ describe('OnboardingCard', () => {
     expect(screen.getByRole('checkbox', { name: /Broad/ })).toBeChecked();
 
     // Dev comes first in template order and wins the real arbitration; Broad
-    // must not also claim it in the preview shown next to its checkbox.
+    // must not also claim it in the preview shown next to its checkbox — but
+    // it did genuinely match, so it must not claim "No groups matched"
+    // either. It shows a distinct "claimed elsewhere" badge instead.
     expect(screen.getByText('collects 1 groups')).toBeInTheDocument();
-    expect(screen.getByText('No groups matched')).toBeInTheDocument();
+    expect(screen.getByText('Already claimed by a section above')).toBeInTheDocument();
+    expect(screen.queryByText('No groups matched')).not.toBeInTheDocument();
+
+    // Expanding Broad's row shows the blocked group and names Dev as the
+    // section that actually claims it, instead of hiding the real match.
+    fireEvent.click(screen.getByRole('button', { name: /Show keywords for Broad/ }));
+    expect(screen.getByText('"Dev" claims it — rules here will not move it')).toBeInTheDocument();
   });
 
   it('traps focus inside the dialog on open', () => {

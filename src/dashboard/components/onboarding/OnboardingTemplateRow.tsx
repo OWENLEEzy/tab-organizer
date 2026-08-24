@@ -24,13 +24,18 @@ interface OnboardingTemplateRowProps {
 }
 
 /**
- * What this template would actually collect right now, arbitrated against
+ * Every group this template's current keywords match, arbitrated against
  * every other currently-checked template — so two templates whose keywords
  * both match the same group cannot both claim it in the preview, matching
  * `handleConfirm`'s real first-checked-wins order (design principle in
  * `rule-preview.ts`: the UI can never promise something the engine won't do).
+ *
+ * Unfiltered on purpose: a group whose match is `blocked` by an earlier
+ * checked template is still a real match — it is just not one this template
+ * will collect — and callers need that row to explain why, not just a count
+ * of the rows that will actually move.
  */
-function honestMatches(
+function previewTemplateMatches(
   template: SectionTemplate,
   keywords: readonly string[],
   draftSections: readonly Section[],
@@ -45,7 +50,7 @@ function honestMatches(
     sections: draftSections,
     assignments: NO_ASSIGNMENTS,
     unsectionedProductKeys: NO_UNSECTIONED,
-  }).filter((row) => row.status === 'will-take');
+  });
 }
 
 function OnboardingTemplateRowImpl({
@@ -64,8 +69,18 @@ function OnboardingTemplateRowImpl({
   const checkboxId = `onboarding-check-${template.id}`;
 
   const matches = useMemo(
-    () => honestMatches(template, keywords, draftSections, products, hostnamesByProductKey),
+    () => previewTemplateMatches(template, keywords, draftSections, products, hostnamesByProductKey),
     [template, keywords, draftSections, products, hostnamesByProductKey],
+  );
+  const willTake = useMemo(
+    () => matches.filter((match) => match.status === 'will-take'),
+    [matches],
+  );
+  // Every draft section's name, so a `blocked` row can name whichever
+  // earlier-checked template actually claims the group — not just this one.
+  const sectionNameById = useMemo(
+    () => new Map(draftSections.map((section) => [section.id, section.name])),
+    [draftSections],
   );
 
   return (
@@ -85,9 +100,11 @@ function OnboardingTemplateRowImpl({
           {template.emoji} {template.name}
         </label>
         <span className="text-text-secondary font-body text-xs whitespace-nowrap">
-          {matches.length > 0
-            ? t('onboardingCollects', { count: matches.length })
-            : t('onboardingNoMatch')}
+          {willTake.length > 0
+            ? t('onboardingCollects', { count: willTake.length })
+            : matches.length > 0
+              ? t('onboardingClaimedElsewhere')
+              : t('onboardingNoMatch')}
         </span>
         <button
           type="button"
@@ -119,7 +136,7 @@ function OnboardingTemplateRowImpl({
           />
           <RuleMatchPreview
             rows={matches}
-            sectionNameById={new Map([[template.id, template.name]])}
+            sectionNameById={sectionNameById}
           />
         </div>
       )}
