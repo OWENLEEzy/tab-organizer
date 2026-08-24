@@ -66,8 +66,11 @@ export function SectionRulesWorkbench({
     });
   }, [selected, products, hostnamesByProductKey, sections, assignments, unsectionedProductKeys]);
 
-  const heldKeys = useMemo(
-    () => rows.filter((r) => r.status !== 'will-take').map((r) => getProductKey(r.product)),
+  // Only rows another section's rules currently claim are a bulk-fix target.
+  // Pinned rows are a deliberate user veto (unsectioned) and must never be
+  // silently reassigned by this button.
+  const blockedKeys = useMemo(
+    () => rows.filter((r) => r.status === 'blocked').map((r) => getProductKey(r.product)),
     [rows],
   );
 
@@ -177,8 +180,8 @@ export function SectionRulesWorkbench({
               rows={rows}
               sectionNameById={sectionNameById}
               onMoveBlockedHere={
-                heldKeys.length > 0
-                  ? () => onAssignProducts(heldKeys, selected.id)
+                blockedKeys.length > 0
+                  ? () => onAssignProducts(blockedKeys, selected.id)
                   : undefined
               }
             />

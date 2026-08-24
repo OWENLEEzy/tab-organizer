@@ -5,7 +5,7 @@ import { useI18n } from '../../hooks/useI18n';
 interface RuleMatchPreviewProps {
   rows: readonly RulePreviewRow[];
   sectionNameById: ReadonlyMap<string, string>;
-  /** Offered only when at least one row is blocked or pinned. */
+  /** Offered only when at least one row is blocked. Never fires for pinned-only rows — those are a deliberate user veto, not a conflict to bulk-resolve. */
   onMoveBlockedHere?: () => void;
 }
 
@@ -17,6 +17,7 @@ export function RuleMatchPreview({
   const { t } = useI18n();
   const willTake = rows.filter((row) => row.status === 'will-take');
   const held = rows.filter((row) => row.status !== 'will-take');
+  const blocked = rows.filter((row) => row.status === 'blocked');
 
   return (
     <div className="border-border-color rounded-md border p-3">
@@ -87,13 +88,13 @@ export function RuleMatchPreview({
             ))}
           </ul>
 
-          {onMoveBlockedHere && (
+          {onMoveBlockedHere && blocked.length > 0 && (
             <button
               type="button"
               onClick={() => onMoveBlockedHere()}
               className="rounded-chip font-body text-accent-blue border-accent-blue/40 hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 mt-2 min-h-[var(--spacing-button-height)] cursor-pointer border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none"
             >
-              {t('rulePreviewMoveThem', { count: held.length })}
+              {t('rulePreviewMoveThem', { count: blocked.length })}
             </button>
           )}
         </>

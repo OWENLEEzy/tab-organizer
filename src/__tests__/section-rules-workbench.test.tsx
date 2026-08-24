@@ -132,6 +132,38 @@ describe('SectionRulesWorkbench', () => {
     expect(screen.getByText('Will move here')).toBeInTheDocument();
   });
 
+  it('"move them here too" moves only the blocked group, never a group the user pinned to unsectioned', () => {
+    // `dev`'s rules match both figma.com (owned by `design`, i.e. blocked)
+    // and gist.github.com (explicitly pinned to unsectioned by the user).
+    const sectionsWithCollision: Section[] = [
+      {
+        id: 'dev', name: 'Dev', order: 0, emoji: '💻',
+        autoRules: [{ kind: 'keyword', value: 'github' }, { kind: 'keyword', value: 'figma' }, { kind: 'keyword', value: 'gist' }],
+      },
+      { id: 'design', name: 'Design', order: 1, emoji: '🎨', autoRules: [{ kind: 'keyword', value: 'figma' }] },
+    ];
+
+    const props = renderWorkbench({
+      sections: sectionsWithCollision,
+      products: [
+        group('github.com', 'github', 7),
+        group('figma.com', 'figma', 3),
+        group('gist.github.com', 'gist', 1),
+      ],
+      hostnamesByProductKey: new Map<string, readonly string[]>([
+        ['github', ['github.com']],
+        ['figma', ['figma.com']],
+        ['gist', ['gist.github.com']],
+      ]),
+      unsectionedProductKeys: ['gist'],
+    });
+
+    const button = screen.getByRole('button', { name: 'Move these 1 here too' });
+    fireEvent.click(button);
+
+    expect(props.onAssignProducts).toHaveBeenCalledWith(['figma'], 'dev');
+  });
+
   it('creating a section trims the name', () => {
     const props = renderWorkbench();
 

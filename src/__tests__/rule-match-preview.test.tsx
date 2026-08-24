@@ -85,7 +85,7 @@ describe('RuleMatchPreview', () => {
     expect(screen.queryByRole('button', { name: /Move these/ })).not.toBeInTheDocument();
   });
 
-  it('offers "move blocked here" when at least one row is blocked or pinned, and fires with no arguments', () => {
+  it('offers "move blocked here" when at least one row is blocked, and fires with no arguments', () => {
     const onMoveBlockedHere = vi.fn();
     renderPreview({
       rows: [
@@ -97,10 +97,35 @@ describe('RuleMatchPreview', () => {
       onMoveBlockedHere,
     });
 
-    const button = screen.getByRole('button', { name: 'Move these 2 here too' });
+    const button = screen.getByRole('button', { name: 'Move these 1 here too' });
     button.click();
 
     expect(onMoveBlockedHere).toHaveBeenCalledTimes(1);
     expect(onMoveBlockedHere).toHaveBeenCalledWith();
+  });
+
+  it('counts only blocked rows in the button, not pinned ones, when both are present', () => {
+    renderPreview({
+      rows: [
+        { product: FIGMA, status: 'blocked', blockedBySectionId: 'design' },
+        { product: GIST, status: 'pinned', blockedBySectionId: null },
+      ],
+      sectionNameById: new Map([['design', 'Design']]),
+      onMoveBlockedHere: vi.fn(),
+    });
+
+    expect(screen.getByRole('button', { name: 'Move these 1 here too' })).toBeInTheDocument();
+    // Both rows are still listed with their own distinct status text.
+    expect(screen.getByText('"Design" claims it — rules here will not move it')).toBeInTheDocument();
+    expect(screen.getByText('Pinned out of sections — rules will not collect it')).toBeInTheDocument();
+  });
+
+  it('does not offer "move blocked here" when every held row is pinned, even with the callback present', () => {
+    renderPreview({
+      rows: [{ product: GIST, status: 'pinned', blockedBySectionId: null }],
+      onMoveBlockedHere: vi.fn(),
+    });
+
+    expect(screen.queryByRole('button', { name: /Move these/ })).not.toBeInTheDocument();
   });
 });
