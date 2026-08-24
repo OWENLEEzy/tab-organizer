@@ -28,6 +28,10 @@ interface ProductGroupTableProps {
   staleThresholdDays?: number;
   /** Id of the single globally most-recently-used tab, to highlight it. */
   lastUsedTabId?: number | null;
+  /** Product keys the user explicitly moved out of a section, so auto-rules won't re-claim them. */
+  pinnedProductKeys?: ReadonlySet<string>;
+  /** Clears a product's pin. */
+  onUnpinProduct?: (productKey: string) => void;
 }
 
 function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
@@ -42,6 +46,22 @@ function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
       aria-hidden="true"
     >
       <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+    </svg>
+  );
+}
+
+function UnpinIcon(): React.ReactElement {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2.5}
+      stroke="currentColor"
+      className="size-3"
+      aria-hidden="true"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
     </svg>
   );
 }
@@ -94,6 +114,8 @@ export function ProductGroupTable({
   searchQuery = '',
   staleThresholdDays = 3,
   lastUsedTabId = null,
+  pinnedProductKeys = new Set(),
+  onUnpinProduct = () => {},
 }: ProductGroupTableProps): React.ReactElement {
   const { t } = useI18n();
   const rows = items;
@@ -166,6 +188,22 @@ export function ProductGroupTable({
                         </option>
                       ))}
                     </select>
+                    {pinnedProductKeys.has(getProductKey(p)) && (
+                      <span
+                        className="ml-1 inline-flex h-6 items-center gap-1 rounded-chip border border-dashed border-accent-amber/60 bg-bg-surface px-2 text-3xs font-semibold font-mono text-accent-amber"
+                        title={t('pinnedUnsectionedHint')}
+                      >
+                        {t('pinnedUnsectioned')}
+                        <button
+                          type="button"
+                          className="flex size-4 items-center justify-center rounded-chip hover:bg-accent-amber/10"
+                          onClick={() => onUnpinProduct(getProductKey(p))}
+                          aria-label={t('unpinAction', { name: p.friendlyName || p.domain })}
+                        >
+                          <UnpinIcon />
+                        </button>
+                      </span>
+                    )}
                   </td>
                   <td className="col-tabs text-center">{p.tabs.length}</td>
                   <td className="col-dupes text-center">{p.duplicateCount}</td>

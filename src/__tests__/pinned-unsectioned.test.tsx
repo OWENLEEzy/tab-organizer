@@ -1,0 +1,130 @@
+import { afterEach, describe, it, expect, vi } from 'vitest';
+import { cleanup, render, screen, fireEvent } from '@testing-library/react';
+import { I18nProvider } from '../dashboard/providers/I18nProvider';
+import { ProductGroupCard } from '../dashboard/components/product-groups/ProductGroupCard';
+import { ProductGroupTable } from '../dashboard/components/product-groups/ProductGroupTable';
+import { getProductKey } from '../lib/product-key';
+import type { Section, Tab, TabGroup } from '../types';
+
+const SECTIONS: Section[] = [
+  { id: 'dev', name: 'Dev', order: 0, emoji: '💻' },
+  { id: 'design', name: 'Design', order: 1, emoji: '🎨' },
+];
+
+afterEach(() => {
+  cleanup();
+});
+
+function makeTab(overrides: Partial<Tab> & Pick<Tab, 'url'>): Tab {
+  return {
+    id: 1,
+    title: 'GitHub',
+    favIconUrl: '',
+    domain: 'github.com',
+    windowId: 1,
+    active: false,
+    isDashboard: false,
+    isDuplicate: false,
+    isLandingPage: false,
+    duplicateCount: 0,
+    ...overrides,
+  };
+}
+
+function makeGroup(): TabGroup {
+  return {
+    id: 'github.com',
+    domain: 'github.com',
+    friendlyName: 'GitHub',
+    itemType: 'product',
+    itemKey: 'github.com',
+    productKey: 'github.com',
+    iconDomain: 'github.com',
+    tabs: [makeTab({ id: 1, url: 'https://github.com/a' })],
+    collapsed: false,
+    order: 0,
+    color: '#4DAB9A',
+    hasDuplicates: false,
+    duplicateCount: 0,
+  };
+}
+
+describe('pinned-unsectioned badge', () => {
+  it('Cards view: renders the pinned badge and unpin action for a pinned product', () => {
+    const group = makeGroup();
+    const productKey = getProductKey(group);
+    const onUnpinProduct = vi.fn();
+
+    render(
+      <I18nProvider>
+        <ProductGroupCard
+          group={group}
+          onCloseProductGroup={() => {}}
+          onCloseDuplicates={() => {}}
+          onCloseTab={() => {}}
+          onFocusTab={() => {}}
+          pinnedProductKeys={new Set([productKey])}
+          onUnpinProduct={() => onUnpinProduct(productKey)}
+        />
+      </I18nProvider>,
+    );
+
+    expect(screen.getByText('Pinned')).toBeInTheDocument();
+
+    const unpinButton = screen.getByRole('button', { name: 'Unpin GitHub' });
+    fireEvent.click(unpinButton);
+    expect(onUnpinProduct).toHaveBeenCalledWith(productKey);
+  });
+
+  it('Cards view: does not render the badge for a group that was never pinned', () => {
+    const group = makeGroup();
+
+    render(
+      <I18nProvider>
+        <ProductGroupCard
+          group={group}
+          onCloseProductGroup={() => {}}
+          onCloseDuplicates={() => {}}
+          onCloseTab={() => {}}
+          onFocusTab={() => {}}
+          pinnedProductKeys={new Set()}
+          onUnpinProduct={() => {}}
+        />
+      </I18nProvider>,
+    );
+
+    expect(screen.queryByText('Pinned')).not.toBeInTheDocument();
+  });
+
+  it('Table view: renders the badge next to the select, and the select is untouched', () => {
+    const group = makeGroup();
+    const productKey = getProductKey(group);
+    const onUnpinProduct = vi.fn();
+
+    render(
+      <I18nProvider>
+        <ProductGroupTable
+          items={[group]}
+          sections={SECTIONS}
+          assignmentByItemId={new Map()}
+          onMoveItem={() => {}}
+          onCloseProduct={() => {}}
+          onCloseDuplicates={() => {}}
+          onFocusTab={() => {}}
+          pinnedProductKeys={new Set([productKey])}
+          onUnpinProduct={onUnpinProduct}
+        />
+      </I18nProvider>,
+    );
+
+    expect(screen.getByText('Pinned')).toBeInTheDocument();
+
+    expect(screen.getByRole('combobox')).toHaveValue('');
+    expect(screen.getAllByRole('option').map((o) => o.textContent))
+      .toEqual(['Unsorted', 'Dev', 'Design']);
+
+    const unpinButton = screen.getByRole('button', { name: 'Unpin GitHub' });
+    fireEvent.click(unpinButton);
+    expect(onUnpinProduct).toHaveBeenCalledWith(productKey);
+  });
+});

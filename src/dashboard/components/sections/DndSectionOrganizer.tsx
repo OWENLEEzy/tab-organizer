@@ -38,6 +38,8 @@ interface DraggableProductGroupCardProps {
   currentSectionId: string | null;
   onMoveProductToSection: (productKey: string, sectionId: string) => void;
   onMoveProductToNoSection: (productKey: string) => void;
+  pinnedProductKeys: ReadonlySet<string>;
+  onUnpinProduct: (productKey: string) => void;
 }
 
 function DraggableProductGroupCard({
@@ -62,6 +64,8 @@ function DraggableProductGroupCard({
   currentSectionId,
   onMoveProductToSection,
   onMoveProductToNoSection,
+  pinnedProductKeys,
+  onUnpinProduct,
 }: DraggableProductGroupCardProps): React.ReactElement {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: draggableId });
   const label = group.friendlyName || group.domain;
@@ -91,6 +95,8 @@ function DraggableProductGroupCard({
         currentSectionId={currentSectionId}
         onMoveToSection={(sectionId) => onMoveProductToSection(productKey, sectionId)}
         onMoveToNoSection={() => onMoveProductToNoSection(productKey)}
+        pinnedProductKeys={pinnedProductKeys}
+        onUnpinProduct={() => onUnpinProduct(productKey)}
       />
     </div>
   );
@@ -126,6 +132,8 @@ interface DndGroupBoardProps {
   sections: Section[];
   onMoveProductToSection: (productKey: string, sectionId: string) => void;
   onMoveProductToNoSection: (productKey: string) => void;
+  pinnedProductKeys: ReadonlySet<string>;
+  onUnpinProduct: (productKey: string) => void;
 }
 
 export function DndGroupBoard({
@@ -156,6 +164,8 @@ export function DndGroupBoard({
   sections,
   onMoveProductToSection,
   onMoveProductToNoSection,
+  pinnedProductKeys,
+  onUnpinProduct,
 }: DndGroupBoardProps): React.ReactElement {
   const { setNodeRef, isOver } = useDroppable({ id });
   const { t } = useI18n();
@@ -217,6 +227,8 @@ export function DndGroupBoard({
               currentSectionId={currentSectionId}
               onMoveProductToSection={onMoveProductToSection}
               onMoveProductToNoSection={onMoveProductToNoSection}
+              pinnedProductKeys={pinnedProductKeys}
+              onUnpinProduct={onUnpinProduct}
             />
           ))
         )}
@@ -255,6 +267,8 @@ interface DndSectionOrganizerProps {
   onToggleProductGroupExpanded: (domain: string) => void;
   searchQuery?: string;
   activeSectionId?: string | null;
+  pinnedProductKeys: ReadonlySet<string>;
+  onUnpinProduct: (productKey: string) => void;
 }
 
 export function DndSectionOrganizer({
@@ -285,6 +299,8 @@ export function DndSectionOrganizer({
   onToggleProductGroupExpanded,
   searchQuery = '',
   activeSectionId = null,
+  pinnedProductKeys,
+  onUnpinProduct,
 }: DndSectionOrganizerProps): React.ReactElement {
   const { t } = useI18n();
   const [activeGroup, setActiveGroup] = useState<TabGroup | null>(null);
@@ -346,6 +362,8 @@ export function DndSectionOrganizer({
     sections: orderedSections,
     onMoveProductToSection,
     onMoveProductToNoSection,
+    pinnedProductKeys,
+    onUnpinProduct,
   };
 
   return (

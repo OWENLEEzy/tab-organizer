@@ -197,6 +197,9 @@ export const locales = {
     moveToSectionFor: 'Move {name} to a section',
     moveToNoSection: 'Remove from section',
     sectionEmptySlot: 'Empty — drag a product group here',
+    pinnedUnsectioned: 'Pinned',
+    pinnedUnsectionedHint: 'You moved it out of a section — rules will not collect it',
+    unpinAction: 'Unpin {name}',
 
     // Settings Panel
     settingsTitle: 'Settings',
@@ -601,6 +604,9 @@ export const locales = {
     moveToSectionFor: '把 {name} 移到分区',
     moveToNoSection: '移出分区',
     sectionEmptySlot: '空着 · 把产品组拖进来',
+    pinnedUnsectioned: '已固定',
+    pinnedUnsectionedHint: '你把它移出过分区，规则不会再收它',
+    unpinAction: '取消固定 {name}',
 
     // Settings Panel
     settingsTitle: '设置选项',

@@ -78,6 +78,8 @@ interface TabActions {
   assignProductsToSection: (productKeys: readonly string[], sectionId: string) => Promise<void>;
   /** Remove a product group assignment. */
   moveProductToUnsectioned: (productKey: string) => Promise<void>;
+  /** Clear a product's explicit "keep unsectioned" pin so auto-rules may re-claim it. */
+  unpinProduct: (productKey: string) => Promise<void>;
   /** Persist the visible organizer layout mode. */
   setViewMode: (viewMode: ViewMode) => Promise<void>;
   /** Clear the current error state. */
@@ -593,6 +595,14 @@ export const useTabStore = create<TabStore>((set) => ({
     );
     set({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
     await writeOrganizerState({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
+    await useTabStore.getState().fetchTabs();
+  },
+
+  unpinProduct: async (productKey: string) => {
+    const state = useTabStore.getState();
+    const nextOverrides = state.unsectionedProductKeys.filter((key) => key !== productKey);
+    set({ unsectionedProductKeys: nextOverrides });
+    await writeOrganizerState({ unsectionedProductKeys: nextOverrides });
     await useTabStore.getState().fetchTabs();
   },
 

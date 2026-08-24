@@ -324,6 +324,8 @@ export function App(): React.ReactElement {
                   searchQuery={state.searchQuery}
                   staleThresholdDays={settings.staleThresholdDays ?? 3}
                   lastUsedTabId={state.lastUsedTabId}
+                  pinnedProductKeys={new Set(tabStore.unsectionedProductKeys)}
+                  onUnpinProduct={(productKey) => { void tabStore.unpinProduct(productKey); }}
                 />
               ) : viewMode === 'cards' ? (
                 <ErrorBoundary>
@@ -356,6 +358,8 @@ export function App(): React.ReactElement {
                       onToggleProductGroupExpanded={handlers.handleToggleExpanded}
                       searchQuery={state.searchQuery}
                       activeSectionId={tabStore.activeSectionId}
+                      pinnedProductKeys={new Set(tabStore.unsectionedProductKeys)}
+                      onUnpinProduct={(productKey) => { void tabStore.unpinProduct(productKey); }}
                     />
                   </React.Suspense>
                 </ErrorBoundary>
