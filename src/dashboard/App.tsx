@@ -16,6 +16,8 @@ import { useDashboardController } from './controllers/useDashboardController';
 import { useI18n } from './hooks/useI18n';
 import { useTheme } from './hooks/useTheme';
 import { useSettingsImportExport } from './controllers/useSettingsImportExport';
+import { getProductKey } from '../lib/product-key';
+import type { TabGroup } from '../types';
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -54,6 +56,21 @@ export function App(): React.ReactElement {
   const handleAssignProducts = useCallback((productKeys: readonly string[], sectionId: string) => {
     void tabStore.assignProductsToSection(productKeys, sectionId);
   }, [tabStore]);
+
+  const handleRenameProductGroup = useCallback(async (group: TabGroup, label: string) => {
+    const productKey = getProductKey(group);
+    await settingsStore.addCustomGroup({
+      hostname: group.domain,
+      groupKey: productKey,
+      groupLabel: label,
+    });
+    await tabStore.fetchTabs();
+  }, [settingsStore, tabStore]);
+
+  const handleRevertProductGroup = useCallback(async (groupKey: string) => {
+    await settingsStore.removeCustomGroup(groupKey);
+    await tabStore.fetchTabs();
+  }, [settingsStore, tabStore]);
 
   if (state.loading || state.tabsLoading) {
     return <LoadingState />;
@@ -358,14 +375,8 @@ export function App(): React.ReactElement {
             onToggleSound={settingsStore.toggleSound}
             onToggleConfetti={settingsStore.toggleConfetti}
             onResetSortOrder={handlers.handleResetSortOrder}
-            onAddCustomGroup={async (group) => {
-              await settingsStore.addCustomGroup(group);
-              await tabStore.fetchTabs();
-            }}
-            onRemoveCustomGroup={async (groupKey) => {
-              await settingsStore.removeCustomGroup(groupKey);
-              await tabStore.fetchTabs();
-            }}
+            onRenameProductGroup={handleRenameProductGroup}
+            onRevertProductGroup={handleRevertProductGroup}
             maxChipsVisible={settings.maxChipsVisible}
             staleThresholdDays={settings.staleThresholdDays}
             onSetMaxChipsVisible={settingsStore.setMaxChipsVisible}

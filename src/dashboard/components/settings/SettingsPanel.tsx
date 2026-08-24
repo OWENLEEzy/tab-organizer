@@ -2,7 +2,7 @@ import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { CustomGroup, AppSettings, Section, SectionAssignment, TabGroup } from '../../../types';
 import type { AccentKey } from '../../../config/themes';
 import { useI18n, type TranslationKey } from '../../hooks/useI18n';
-import { CustomGroupsSection } from './CustomGroupsSection';
+import { ProductGroupRulesSection } from './ProductGroupRulesSection';
 import { SectionRulesWorkbench } from './SectionRulesWorkbench';
 import { KeyboardSection } from './KeyboardSection';
 import { AppearanceSection } from './AppearanceSection';
@@ -23,8 +23,8 @@ interface SettingsPanelProps {
   onToggleSound: () => void;
   onToggleConfetti: () => void;
   onResetSortOrder: () => void;
-  onAddCustomGroup: (group: CustomGroup) => void;
-  onRemoveCustomGroup: (groupKey: string) => void;
+  onRenameProductGroup: (group: TabGroup, label: string) => void;
+  onRevertProductGroup: (groupKey: string) => void;
   // Exposed settings
   maxChipsVisible: number;
   staleThresholdDays: number;
@@ -75,8 +75,8 @@ export function SettingsPanel({
   onToggleSound,
   onToggleConfetti,
   onResetSortOrder,
-  onAddCustomGroup,
-  onRemoveCustomGroup,
+  onRenameProductGroup,
+  onRevertProductGroup,
   maxChipsVisible,
   staleThresholdDays,
   onSetMaxChipsVisible,
@@ -298,10 +298,11 @@ export function SettingsPanel({
               />
             )}
             {activePage === 'product-rules' && (
-              <CustomGroupsSection
-                groups={customGroups}
-                onAdd={onAddCustomGroup}
-                onRemove={onRemoveCustomGroup}
+              <ProductGroupRulesSection
+                products={products}
+                customGroups={customGroups}
+                onRename={onRenameProductGroup}
+                onRevert={onRevertProductGroup}
               />
             )}
             {activePage === 'backup' && (

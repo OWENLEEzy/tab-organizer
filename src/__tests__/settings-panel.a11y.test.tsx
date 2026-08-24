@@ -31,8 +31,8 @@ function SettingsHarness(): React.ReactElement {
         onToggleSound={() => {}}
         onToggleConfetti={() => {}}
         onResetSortOrder={() => {}}
-        onAddCustomGroup={() => {}}
-        onRemoveCustomGroup={() => {}}
+        onRenameProductGroup={() => {}}
+        onRevertProductGroup={() => {}}
         maxChipsVisible={8}
         staleThresholdDays={3}
         onSetMaxChipsVisible={() => {}}
@@ -110,8 +110,8 @@ describe('SettingsPanel accessibility', () => {
         onToggleSound={() => {}}
         onToggleConfetti={() => {}}
         onResetSortOrder={() => {}}
-        onAddCustomGroup={() => {}}
-        onRemoveCustomGroup={() => {}}
+        onRenameProductGroup={() => {}}
+        onRevertProductGroup={() => {}}
         maxChipsVisible={8}
         staleThresholdDays={3}
         onSetMaxChipsVisible={() => {}}
