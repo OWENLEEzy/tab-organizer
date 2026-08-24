@@ -134,7 +134,9 @@ export function SectionRulesWorkbench({
       {/* Right: editor */}
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
         {!selected && (
-          <p className="font-body text-text-secondary text-xs italic">{t('workbenchPickSection')}</p>
+          <p className="font-body text-text-secondary text-xs italic">
+            {sections.length === 0 ? t('workbenchNoSections') : t('workbenchPickSection')}
+          </p>
         )}
 
         {selected && (

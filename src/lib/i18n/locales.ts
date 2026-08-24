@@ -400,6 +400,7 @@ export const locales = {
 
     // Sections & Rules workbench
     workbenchNewSection: 'New section',
+    workbenchNoSections: 'No sections yet — create one on the left to get started',
     workbenchPickSection: 'Pick a section on the left',
     workbenchAdvancedRegex: 'Advanced: use a regex',
     workbenchRegexPlaceholder: 'Regular expression, one per line',
@@ -807,6 +808,7 @@ export const locales = {
 
     // Sections & Rules workbench
     workbenchNewSection: '新建分区',
+    workbenchNoSections: '还没有分区，先在左边新建一个',
     workbenchPickSection: '在左边选一个分区',
     workbenchAdvancedRegex: '进阶：改用正则',
     workbenchRegexPlaceholder: '正则表达式，每行一条',

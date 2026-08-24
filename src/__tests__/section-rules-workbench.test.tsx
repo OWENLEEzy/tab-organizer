@@ -52,6 +52,19 @@ function renderWorkbench(overrides: Partial<React.ComponentProps<typeof SectionR
 }
 
 describe('SectionRulesWorkbench', () => {
+  it('shows a create-one prompt, not the pick-a-section prompt, when there are zero sections', () => {
+    renderWorkbench({
+      sections: [],
+      products: [],
+      hostnamesByProductKey: new Map(),
+      assignments: [],
+      productCountBySectionId: new Map(),
+    });
+
+    expect(screen.getByText('No sections yet — create one on the left to get started')).toBeInTheDocument();
+    expect(screen.queryByText('Pick a section on the left')).not.toBeInTheDocument();
+  });
+
   it('lists every section including empty ones', () => {
     renderWorkbench({ productCountBySectionId: new Map([['dev', 0], ['design', 0]]) });
     expect(screen.getByRole('button', { name: /Dev/ })).toBeInTheDocument();
