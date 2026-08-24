@@ -1,4 +1,4 @@
-import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { Section, SectionAssignment, TabGroup } from '../../../types';
 import { templateAutoRules, type SectionTemplate } from '../../../config/sections';
 import { previewRuleMatches, type RulePreviewRow } from '../../../lib/rule-preview';
@@ -118,19 +118,11 @@ export function OnboardingCard({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  const onSkipEffect = useEffectEvent(onSkip);
-
-  // Close on Escape key, matching ConfirmationDialog/PromptDialog.
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent): void {
-      if (e.key === 'Escape') {
-        onSkipEffect();
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  // Non-cancelable by design: unlike ConfirmationDialog/PromptDialog, Escape
+  // does not skip. The only two exits are the explicit Confirm and Skip
+  // buttons — a stray Escape press must not silently and irreversibly
+  // discard the whole onboarding flow (nothing ever resets `onboardingDone`
+  // back to false). Focus stays trapped inside the card below.
 
   // Trap focus inside the dialog, matching ConfirmationDialog/PromptDialog.
   useEffect(() => {

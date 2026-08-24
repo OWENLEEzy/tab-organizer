@@ -160,8 +160,8 @@ describe('OnboardingCard', () => {
     expect(screen.getByText('No groups matched')).toBeInTheDocument();
   });
 
-  it('traps focus inside the dialog and closes on Escape', () => {
-    const { onSkip } = setup();
+  it('traps focus inside the dialog on open', () => {
+    setup();
 
     const dialog = screen.getByRole('dialog');
     const focusable = dialog.querySelectorAll<HTMLElement>(
@@ -169,8 +169,15 @@ describe('OnboardingCard', () => {
     );
     expect(focusable.length).toBeGreaterThan(0);
     expect(document.activeElement).toBe(focusable[0]);
+  });
+
+  it('does not skip or confirm on Escape — the card is non-cancelable except via its two buttons', () => {
+    const { onSkip, onConfirm } = setup();
 
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(onSkip).toHaveBeenCalled();
+
+    expect(onSkip).not.toHaveBeenCalled();
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 });
