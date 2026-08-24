@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { ErrorBoundary } from './components/states/ErrorBoundary';
 import { LoadingState } from './components/states/LoadingState';
 import { ProductGroupTableMemo as ProductGroupTable } from './components/product-groups/ProductGroupTable';
@@ -91,6 +91,15 @@ export function App(): React.ReactElement {
       handlers.showToast(t('toastOnboardingFailed'));
     }
   }, [tabStore, handlers, t]);
+
+  const pinnedProductKeys = useMemo(
+    () => new Set(tabStore.unsectionedProductKeys),
+    [tabStore.unsectionedProductKeys],
+  );
+
+  const handleUnpinProduct = useCallback((productKey: string) => {
+    void tabStore.unpinProduct(productKey);
+  }, [tabStore]);
 
   if (state.loading || state.tabsLoading) {
     return <LoadingState />;
@@ -324,8 +333,8 @@ export function App(): React.ReactElement {
                   searchQuery={state.searchQuery}
                   staleThresholdDays={settings.staleThresholdDays ?? 3}
                   lastUsedTabId={state.lastUsedTabId}
-                  pinnedProductKeys={new Set(tabStore.unsectionedProductKeys)}
-                  onUnpinProduct={(productKey) => { void tabStore.unpinProduct(productKey); }}
+                  pinnedProductKeys={pinnedProductKeys}
+                  onUnpinProduct={handleUnpinProduct}
                 />
               ) : viewMode === 'cards' ? (
                 <ErrorBoundary>
@@ -358,8 +367,8 @@ export function App(): React.ReactElement {
                       onToggleProductGroupExpanded={handlers.handleToggleExpanded}
                       searchQuery={state.searchQuery}
                       activeSectionId={tabStore.activeSectionId}
-                      pinnedProductKeys={new Set(tabStore.unsectionedProductKeys)}
-                      onUnpinProduct={(productKey) => { void tabStore.unpinProduct(productKey); }}
+                      pinnedProductKeys={pinnedProductKeys}
+                      onUnpinProduct={handleUnpinProduct}
                     />
                   </React.Suspense>
                 </ErrorBoundary>
