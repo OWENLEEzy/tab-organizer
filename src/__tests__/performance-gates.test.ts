@@ -11,8 +11,8 @@ describe('performance gates', () => {
   it('exposes bundle and startup timing checks in the release gate', () => {
     expect(packageJson.scripts['check:bundle']).toBe('node ./scripts/check-bundle-budget.mjs');
     expect(packageJson.scripts['check:startup']).toBe('node ./scripts/check-startup-budget.mjs');
-    expect(packageJson.scripts.check).toContain('npm run check:bundle');
-    expect(packageJson.scripts.check).toContain('npm run check:startup');
+    expect(packageJson.scripts.check).toContain('pnpm run check:bundle');
+    expect(packageJson.scripts.check).toContain('pnpm run check:startup');
     expect(fs.existsSync(path.join(repoRoot, 'scripts/check-bundle-budget.mjs'))).toBe(true);
     expect(fs.existsSync(path.join(repoRoot, 'scripts/check-startup-budget.mjs'))).toBe(true);
   });

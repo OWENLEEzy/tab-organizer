@@ -6,7 +6,7 @@
   **The Local-First Dashboard for Your Browser Tabs.**
 
   [![License: MIT](https://img.shields.io/badge/License-MIT-sage.svg)](https://opensource.org/licenses/MIT)
-  [![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)]()
+  [![Version](https://img.shields.io/badge/Version-2.0.0-blue.svg)]()
   [![Chrome](https://img.shields.io/badge/Chrome-Extension-amber.svg)]()
 
   ### [English](README.md) | [中文说明](docs/README_zh.md) | [Original Project ↗️](https://github.com/OWENLEEzy/tab-out)
@@ -144,7 +144,8 @@ src/
 - **Unit Testing**: Vitest handles core logic testing (grouping, URL parsing).
 - **UI/A11y Testing**: We use a custom Vitest harness to verify component rendering and accessibility.
 - **E2E Testing**: Playwright runs in a real browser environment to ensure tab-closing and navigation flows work as expected.
-- **Gatekeeping**: `npm run check` is required before any merge. It enforces linting, testing, and bundle size budgets.
+- **Dependency installation**: Use `pnpm install` with the committed `pnpm-lock.yaml`.
+- **Gatekeeping**: `pnpm run check` is required before any merge. It enforces linting, testing, and bundle size budgets.
 
 ---
 

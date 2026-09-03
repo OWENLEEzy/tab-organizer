@@ -6,11 +6,12 @@
   "engines": {
     "node": ">=22"
   },
+  "packageManager": "pnpm@11.25.0",
   "scripts": {
     "dev": "vite src/dashboard/index.html",
     "dev:dashboard": "vite src/dashboard/index.html",
     "dev:a11y": "vite --config vite.a11y.config.ts",
-    "build": "tsc -b && vite build && npm run sync:dist",
+    "build": "tsc -b && vite build && pnpm run sync:dist",
     "sync:dist": "node ./scripts/sync-dist.mjs",
     "preview": "vite preview",
     "test": "vitest run",
@@ -24,7 +25,7 @@
     "lint": "eslint . --max-warnings=0",
     "lint:css": "stylelint \"src/**/*.css\"",
     "knip": "knip",
-    "check": "npm run lint && npm run lint:css && npm run knip && npm run test:coverage && npm run build && npm run check:dist-manifest && npm run check:bundle && npm run check:startup && npm run test:e2e"
+    "check": "pnpm run lint && pnpm run lint:css && pnpm run knip && pnpm run test:coverage && pnpm run build && pnpm run check:dist-manifest && pnpm run check:bundle && pnpm run check:startup && pnpm run test:e2e"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

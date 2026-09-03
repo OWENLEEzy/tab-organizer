@@ -1,10 +1,10 @@
 # Tab Organizer Release Checklist
 
 ## Preflight
-- Run `npm install` if dependencies changed.
-- Run `npm run check`.
-- Confirm `dist/` was rebuilt by `npm run build`.
-- Confirm bundle and startup gates pass through `npm run check:bundle` and `npm run check:startup`.
+- Run `pnpm install --frozen-lockfile` if dependencies changed.
+- Run `pnpm run check`.
+- Confirm `dist/` was rebuilt by `pnpm run build`.
+- Confirm bundle and startup gates pass through `pnpm run check:bundle` and `pnpm run check:startup`.
 
 ## Manual Chrome Check
 - Open `chrome://extensions`.
