@@ -18,32 +18,30 @@ describe('tooling gates', () => {
     expect(packageJson.scripts.lint).toBe('eslint . --max-warnings=0');
   });
 
-  it('keeps the full release gate wired through npm run check', () => {
+  it('keeps the full release gate wired through pnpm run check', () => {
     const check = packageJson.scripts.check;
 
-    expect(check).toContain('npm run lint');
-    expect(check).toContain('npm run lint:css');
-    expect(check).toContain('npm run test:coverage');
-    expect(check).toContain('npm run build');
-    expect(check).toContain('npm run check:dist-manifest');
-    expect(check).toContain('npm run check:bundle');
-    expect(check).toContain('npm run check:startup');
-    expect(check).toContain('npm run test:e2e');
+    expect(check).toContain('pnpm run lint');
+    expect(check).toContain('pnpm run lint:css');
+    expect(check).toContain('pnpm run test:coverage');
+    expect(check).toContain('pnpm run build');
+    expect(check).toContain('pnpm run check:dist-manifest');
+    expect(check).toContain('pnpm run check:bundle');
+    expect(check).toContain('pnpm run check:startup');
+    expect(check).toContain('pnpm run test:e2e');
   });
 
-  it('pins Node 22 and keeps release versions aligned', () => {
+  it('uses the pinned pnpm toolchain and keeps release versions aligned', () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'manifest.json'), 'utf8')) as { version: string };
-    const lockfile = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package-lock.json'), 'utf8')) as {
-      version: string;
-      packages: { '': { version: string } };
-    };
+    const pnpmLockfile = fs.readFileSync(path.join(repoRoot, 'pnpm-lock.yaml'), 'utf8');
     const nodeVersion = fs.readFileSync(path.join(repoRoot, '.node-version'), 'utf8').trim();
 
     expect(packageJson.engines.node).toBe('>=22');
     expect(nodeVersion).toBe('22');
+    expect(packageJson.packageManager).toBe('pnpm@11.25.0');
+    expect(fs.existsSync(path.join(repoRoot, 'package-lock.json'))).toBe(false);
+    expect(pnpmLockfile).toContain("lockfileVersion: '9.0'");
     expect(packageJson.version).toBe(manifest.version);
-    expect(lockfile.version).toBe(packageJson.version);
-    expect(lockfile.packages[''].version).toBe(packageJson.version);
   });
 
   it('keeps the privacy policy aligned with local-only storage and current repo support', () => {
@@ -76,9 +74,30 @@ describe('tooling gates', () => {
     const ciWorkflow = fs.readFileSync(path.join(repoRoot, '.github/workflows/ci.yml'), 'utf8');
 
     expect(ciWorkflow).toContain('pull_request:');
-    expect(ciWorkflow).toContain('node-version: 22');
-    expect(ciWorkflow).toContain('npm ci');
-    expect(ciWorkflow).toContain('npm run check');
+    expect(ciWorkflow).toContain('pnpm/setup@v1');
+    expect(ciWorkflow).toContain('runtime: node@22');
+    expect(ciWorkflow).toContain('cache: true');
+    expect(ciWorkflow).toContain('install: false');
+    expect(ciWorkflow).toContain('pnpm install --frozen-lockfile');
+    expect(ciWorkflow).toContain('pnpm exec playwright install --with-deps chromium');
+    expect(ciWorkflow).toContain('pnpm run check');
+    expect(ciWorkflow).not.toContain('npm ci');
+    expect(ciWorkflow).not.toContain('actions/setup-node@v4');
+  });
+
+  it('uses the pinned pnpm toolchain in release CI', () => {
+    const releaseWorkflow = fs.readFileSync(path.join(repoRoot, '.github/workflows/release.yml'), 'utf8');
+
+    expect(releaseWorkflow).toContain('pnpm/setup@v1');
+    expect(releaseWorkflow).toContain('runtime: node@22');
+    expect(releaseWorkflow).toContain('cache: true');
+    expect(releaseWorkflow).toContain('install: false');
+    expect(releaseWorkflow).toContain('pnpm install --frozen-lockfile');
+    expect(releaseWorkflow).toContain('pnpm exec playwright install --with-deps chromium');
+    expect(releaseWorkflow).toContain('pnpm run check');
+    expect(releaseWorkflow).toContain('pnpm run build');
+    expect(releaseWorkflow).not.toContain('run: npm install');
+    expect(releaseWorkflow).not.toContain('actions/setup-node@v4');
   });
 });
 

@@ -9,7 +9,7 @@ const maxEntryParsedBytes = 600 * 1024;
 const maxTotalParsedBytes = 1024 * 1024;
 
 if (!fs.existsSync(assetsDir)) {
-  console.error('[bundle-budget] dist/assets not found. Run npm run build first.');
+  console.error('[bundle-budget] dist/assets not found. Run pnpm run build first.');
   process.exit(1);
 }
 
@@ -32,7 +32,7 @@ for (const file of jsFiles) {
 }
 
 if (!fs.existsSync(dashboardHtmlPath)) {
-  console.error('[bundle-budget] Dashboard HTML not found. Run npm run build first.');
+  console.error('[bundle-budget] Dashboard HTML not found. Run pnpm run build first.');
   process.exit(1);
 }
 

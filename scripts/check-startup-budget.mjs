@@ -9,7 +9,7 @@ const maxHtmlBytes = 25 * 1024;
 const htmlPath = fs.existsSync(indexPath) ? indexPath : fallbackIndexPath;
 
 if (!fs.existsSync(htmlPath)) {
-  console.error('[startup-budget] Dashboard HTML not found. Run npm run build first.');
+  console.error('[startup-budget] Dashboard HTML not found. Run pnpm run build first.');
   process.exit(1);
 }
 

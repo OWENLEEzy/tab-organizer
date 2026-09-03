@@ -18,7 +18,7 @@ manager, or task manager.
 - Preserve unrelated work in the tree. If `git status` shows modified files you
   did not touch, treat them as user work and avoid rewriting or reverting them.
 - Prefer the smallest relevant verification loop while debugging, then run
-  `npm run check` before claiming UI, storage, grouping, accessibility, or build
+  `pnpm run check` before claiming UI, storage, grouping, accessibility, or build
   changes are ready.
 - When updating this file, record durable repo rules only: product contracts,
   architecture boundaries, commands, verification gates, and recurring gotchas.
@@ -366,51 +366,51 @@ Storage rules:
 
 | Command | Use |
 |---|---|
-| `npm install` | Install dependencies when needed. |
-| `npm run dev` | Vite dev server for `src/dashboard/index.html`. |
-| `npm run dev:a11y` | Vite dev server for the a11y harness. |
-| `npm run build` | `tsc -b`, Vite build, then sync Chrome-ready output to `dist/`. |
-| `npm run sync:dist` | Sync generated/static assets into `dist/` after build-only changes. |
-| `npm run preview` | Preview production build. |
-| `npm test` | Run all Vitest tests. |
-| `npm run test:watch` | Run Vitest watch mode. |
-| `npm run test:a11y` | Run accessibility unit tests. |
-| `npm run test:e2e` | Run Playwright a11y/e2e harness. |
-| `npm run lint` | Run ESLint. |
-| `npm run lint:css` | Run Stylelint on `src/**/*.css`. |
-| `npm run knip` | Run knip dead code detection. |
-| `npm run check:bundle` | Check bundle budget. |
-| `npm run check:startup` | Check startup budget. |
-| `npm run check` | Full gate: lint, CSS lint, tests, build, budgets, e2e. |
+| `pnpm install` | Install dependencies when needed. |
+| `pnpm run dev` | Vite dev server for `src/dashboard/index.html`. |
+| `pnpm run dev:a11y` | Vite dev server for the a11y harness. |
+| `pnpm run build` | `tsc -b`, Vite build, then sync Chrome-ready output to `dist/`. |
+| `pnpm run sync:dist` | Sync generated/static assets into `dist/` after build-only changes. |
+| `pnpm run preview` | Preview production build. |
+| `pnpm test` | Run all Vitest tests. |
+| `pnpm run test:watch` | Run Vitest watch mode. |
+| `pnpm run test:a11y` | Run accessibility unit tests. |
+| `pnpm run test:e2e` | Run Playwright a11y/e2e harness. |
+| `pnpm run lint` | Run ESLint. |
+| `pnpm run lint:css` | Run Stylelint on `src/**/*.css`. |
+| `pnpm run knip` | Run knip dead code detection. |
+| `pnpm run check:bundle` | Check bundle budget. |
+| `pnpm run check:startup` | Check startup budget. |
+| `pnpm run check` | Full gate: lint, CSS lint, tests, build, budgets, e2e. |
 
 ## Verification
 
 Use the full gate before claiming code changes are ready:
 
 ```bash
-npm run check
+pnpm run check
 ```
 
 For focused local loops, choose the smallest relevant command from the Commands
-table, then finish with `npm run check` when behavior, UI, storage, grouping,
+table, then finish with `pnpm run check` when behavior, UI, storage, grouping,
 accessibility, or build output changed.
 
 Targeted Vitest examples:
 
 ```bash
-npm test -- src/__tests__/storage.test.ts
-npm test -- src/__tests__/product-groups.test.ts
-npm test -- src/__tests__/recovery-snapshots.test.ts
-npm test -- src/__tests__/tab-store.test.ts
-npm test -- src/__tests__/dashboard-reskin.test.tsx
-npm test -- src/__tests__/visible-tabs.test.ts
+pnpm test -- src/__tests__/storage.test.ts
+pnpm test -- src/__tests__/product-groups.test.ts
+pnpm test -- src/__tests__/recovery-snapshots.test.ts
+pnpm test -- src/__tests__/tab-store.test.ts
+pnpm test -- src/__tests__/dashboard-reskin.test.tsx
+pnpm test -- src/__tests__/visible-tabs.test.ts
 ```
 
 Use targeted tests to debug. Do not substitute them for the final full gate.
 
 ## Extension Loading
 
-After `npm run build`, load `dist/` in Chrome:
+After `pnpm run build`, load `dist/` in Chrome:
 
 ```bash
 cd dist && pwd | pbcopy && open "chrome://extensions" && open .
