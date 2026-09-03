@@ -6,7 +6,7 @@
   **专为您的浏览器标签设计的本地优先控制面板。**
 
   [![License: MIT](https://img.shields.io/badge/License-MIT-sage.svg)](https://opensource.org/licenses/MIT)
-  [![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)]()
+  [![Version](https://img.shields.io/badge/Version-2.0.0-blue.svg)]()
   [![Chrome](https://img.shields.io/badge/Chrome-Extension-amber.svg)]()
 
   ### [English](../README.md) | [中文说明](README_zh.md) | [原项目 ↗️](https://github.com/OWENLEEzy/tab-out)
@@ -143,7 +143,8 @@ src/
 - **单元测试**：Vitest 处理核心逻辑测试（分组、URL 解析）。
 - **UI/无障碍测试**：使用自定义测试环境验证组件渲染和 WCAG 兼容性。
 - **端到端测试**：Playwright 在真实浏览器中模拟标签关闭和导航流程。
-- **准入检查**：代码合并前必须通过 `npm run check`，强制执行 Lint、测试和包大小预算检查。
+- **依赖安装**：使用 `pnpm install`，并遵循仓库提交的 `pnpm-lock.yaml`。
+- **准入检查**：代码合并前必须通过 `pnpm run check`，强制执行 Lint、测试和包大小预算检查。
 
 ---
 

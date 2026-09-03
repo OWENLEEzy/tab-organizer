@@ -40,7 +40,7 @@ function normalizeIcons(iconMap) {
 
 async function main() {
   if (!(await fileExists(path.join(distDir, 'manifest.json')))) {
-    throw new Error('dist/manifest.json not found. Run npm run build first.');
+    throw new Error('dist/manifest.json not found. Run pnpm run build first.');
   }
 
   const foundDashboardPath = await (async () => {
