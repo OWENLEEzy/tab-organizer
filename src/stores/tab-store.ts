@@ -9,11 +9,15 @@ import {
 } from '../lib/section-organizer';
 import {
   applyAssignmentUpdates,
+  applyAutoAssignments,
   clearRecoverySnapshots,
   deleteRecoverySnapshot,
+  deleteSectionInStorage,
   readRecoverySnapshots,
   reconcileOrganizerState,
-  setOnboardingDone,
+  removeUnsectionedPin,
+  unassignProductFromSections,
+  updateSections,
   writeGroupOrder,
   writeOrganizerState,
 } from '../utils/storage';
@@ -202,6 +206,19 @@ function buildProductKeyCompatibility(
   };
 }
 
+/**
+ * Persist an optimistic organizer change, then refetch. Refetching also on
+ * failure puts the store back in line with what storage actually holds; the
+ * error still propagates so the caller can tell the user.
+ */
+async function writeThenResync(write: () => Promise<unknown>): Promise<void> {
+  try {
+    await write();
+  } finally {
+    await useTabStore.getState().fetchTabs();
+  }
+}
+
 // ─── Store ──────────────────────────────────────────────────────────
 
 export const useTabStore = create<TabStore>((set) => ({
@@ -255,7 +272,9 @@ export const useTabStore = create<TabStore>((set) => ({
       }
 
       if (hasNewAssignments) {
-        await writeOrganizerState({ sectionAssignments }).catch(err => {
+        // Delta, not a snapshot: an assignment made since this fetch read
+        // storage must survive.
+        await applyAutoAssignments(newAssignments).catch(err => {
           console.warn('[Tab Organizer] Failed to persist auto-assignments:', err);
         });
       }
@@ -513,9 +532,8 @@ export const useTabStore = create<TabStore>((set) => ({
       name: trimmed,
       order: current.length,
     };
-    const nextSections = [...current, group];
-    set({ sections: nextSections });
-    await writeOrganizerState({ sections: nextSections });
+    set({ sections: [...current, group] });
+    await writeThenResync(() => updateSections((stored) => [...stored, { ...group, order: stored.length }]));
   },
 
   renameSection: async (sectionId: string, name: string) => {
@@ -525,7 +543,8 @@ export const useTabStore = create<TabStore>((set) => ({
       .sections
       .map((g) => g.id === sectionId ? { ...g, name: trimmed } : g);
     set({ sections: nextSections });
-    await writeOrganizerState({ sections: nextSections });
+    await writeThenResync(() => updateSections((stored) =>
+      stored.map((g) => g.id === sectionId ? { ...g, name: trimmed } : g)));
   },
 
   updateSection: async (sectionId: string, updates: Partial<Omit<Section, 'id'>>) => {
@@ -534,9 +553,9 @@ export const useTabStore = create<TabStore>((set) => ({
       .sections
       .map((g) => g.id === sectionId ? { ...g, ...updates } : g);
     set({ sections: nextSections });
-    await writeOrganizerState({ sections: nextSections });
-    // Refetch to apply auto-rules updates immediately
-    await useTabStore.getState().fetchTabs();
+    // The resync also applies changed auto-rules immediately.
+    await writeThenResync(() => updateSections((stored) =>
+      stored.map((g) => g.id === sectionId ? { ...g, ...updates } : g)));
   },
 
   deleteSection: async (sectionId: string) => {
@@ -555,27 +574,26 @@ export const useTabStore = create<TabStore>((set) => ({
       sectionAssignments: nextAssignments,
       unsectionedProductKeys: nextOverrides,
     });
-    await writeOrganizerState({
-      sections: nextSections,
-      sectionAssignments: nextAssignments,
-      unsectionedProductKeys: nextOverrides,
-    });
-    await useTabStore.getState().fetchTabs();
+    await writeThenResync(() => deleteSectionInStorage(sectionId));
   },
 
   reorderSections: async (groups: Section[]) => {
     const nextSections = groups.map((g, index) => ({ ...g, order: index }));
     set({ sections: nextSections });
-    await writeOrganizerState({ sections: nextSections });
+    const orderById = new Map(nextSections.map((g) => [g.id, g.order]));
+    await writeThenResync(() => updateSections((stored) =>
+      [...stored]
+        .sort((a, b) => (orderById.get(a.id) ?? Infinity) - (orderById.get(b.id) ?? Infinity))
+        .map((g, index) => ({ ...g, order: index }))));
   },
 
   moveProductGroupToSection: async (productKey: string, sectionId: string) => {
     const state = useTabStore.getState();
-    const nextAssignments = assignProductToSectionModel(state.sectionAssignments, productKey, sectionId);
-    const nextOverrides = state.unsectionedProductKeys.filter((k) => k !== productKey);
-    set({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
-    await writeOrganizerState({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
-    await useTabStore.getState().fetchTabs();
+    set({
+      sectionAssignments: assignProductToSectionModel(state.sectionAssignments, productKey, sectionId),
+      unsectionedProductKeys: state.unsectionedProductKeys.filter((k) => k !== productKey),
+    });
+    await writeThenResync(() => applyAssignmentUpdates([{ productKey, sectionId }]));
   },
 
   assignProductsToSection: async (productKeys: readonly string[], sectionId: string) => {
@@ -583,39 +601,36 @@ export const useTabStore = create<TabStore>((set) => ({
     const state = useTabStore.getState();
     const keys = new Set(productKeys);
     const updates: SectionAssignment[] = productKeys.map((productKey) => ({ productKey, sectionId }));
-    const nextAssignments = [
-      ...state.sectionAssignments.filter((a) => !keys.has(a.productKey)),
-      ...updates,
-    ];
-    const nextOverrides = state.unsectionedProductKeys.filter((k) => !keys.has(k));
-    set({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
-    await applyAssignmentUpdates(updates);
-    await useTabStore.getState().fetchTabs();
+    set({
+      sectionAssignments: [
+        ...state.sectionAssignments.filter((a) => !keys.has(a.productKey)),
+        ...updates,
+      ],
+      unsectionedProductKeys: state.unsectionedProductKeys.filter((k) => !keys.has(k)),
+    });
+    await writeThenResync(() => applyAssignmentUpdates(updates));
   },
 
   moveProductToUnsectioned: async (productKey: string) => {
     const state = useTabStore.getState();
-    const { assignments: nextAssignments, overrides: nextOverrides } = moveProductToUnsectioned(
+    const { assignments, overrides } = moveProductToUnsectioned(
       state.sectionAssignments,
       state.unsectionedProductKeys,
       productKey,
     );
-    set({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
-    await writeOrganizerState({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
-    await useTabStore.getState().fetchTabs();
+    set({ sectionAssignments: assignments, unsectionedProductKeys: overrides });
+    await writeThenResync(() => unassignProductFromSections(productKey));
   },
 
   unpinProduct: async (productKey: string) => {
     const state = useTabStore.getState();
-    const nextOverrides = state.unsectionedProductKeys.filter((key) => key !== productKey);
-    set({ unsectionedProductKeys: nextOverrides });
-    await writeOrganizerState({ unsectionedProductKeys: nextOverrides });
-    await useTabStore.getState().fetchTabs();
+    set({ unsectionedProductKeys: state.unsectionedProductKeys.filter((key) => key !== productKey) });
+    await writeThenResync(() => removeUnsectionedPin(productKey));
   },
 
   setViewMode: async (viewMode: ViewMode) => {
     set({ viewMode });
-    await writeOrganizerState({ viewMode });
+    await writeThenResync(() => writeOrganizerState({ viewMode }));
   },
 
   fetchRecovery: async () => {
@@ -684,9 +699,13 @@ export const useTabStore = create<TabStore>((set) => ({
 
   completeOnboarding: async (sections: Section[], assignments: SectionAssignment[]) => {
     const ordered = sections.map((section, index) => ({ ...section, order: index }));
-    await writeOrganizerState({ sections: ordered, sectionAssignments: assignments });
-    await setOnboardingDone();
-    set({ sections: ordered, sectionAssignments: assignments, onboardingDone: true });
+    // One write: a failure must not leave sections saved with onboarding still pending.
+    const saved = await writeOrganizerState({
+      sections: ordered,
+      sectionAssignments: assignments,
+      onboardingDone: true,
+    });
+    set({ sections: saved.sections, sectionAssignments: saved.sectionAssignments, onboardingDone: true });
     await useTabStore.getState().fetchTabs();
   },
 

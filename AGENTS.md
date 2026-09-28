@@ -340,7 +340,9 @@ Persisted in `chrome.storage.local`:
 - Product-only organizer sections.
 - Product-to-section assignments.
 - Recovery candidate/recovery snapshots.
-- On schema mismatch, storage resets destructively to the current schema. Do not read legacy storage keys into current state.
+- The previous released schema (`PREVIOUS_SCHEMA_VERSION`) is upgraded in place by
+  `upgradeSchema` in `src/lib/storage-schema.ts`; any other schema mismatch resets
+  destructively to the current schema. Do not read legacy storage keys into current state.
 - Current schema keys are `schemaVersion`, `onboardingDone`, `settings`, `groupOrder`, `sections`, `sectionAssignments`, `unsectionedProductKeys`, `viewMode`, `recoveryCandidate`, and `recoverySnapshots`.
 
 Storage rules:
@@ -350,7 +352,9 @@ Storage rules:
 - Localized consolidation (stripping TLDs) is limited to known safe variants in `PRODUCT_RULES` only.
 - All read-modify-write mutations go through the serial write queue in
   `src/utils/storage.ts`.
-- On schema mismatch, storage resets to current schema defaults (see above).
+- On other schema mismatches, storage resets to current schema defaults (see above).
+- Regex section rules pass `isUsablePattern` in `src/lib/section-regex.ts`
+  (compiles, length-capped, no nested repetition) at every write and read boundary.
 - Prune product assignments when the product is no longer open or the group no
   longer exists.
 - Product-to-section assignments are group-level label relationships:

@@ -123,6 +123,9 @@ export function MoveToSectionMenu({
       moveActive(activeIndex - 1);
     } else if (e.key === 'Escape') {
       e.preventDefault();
+      // The dashboard's global Escape clears search and the section filter;
+      // dismissing this menu must not do that too.
+      e.stopPropagation();
       closeMenu(true);
     } else if (e.key === 'Tab') {
       // Let Tab move on naturally from the trigger's place in the page.
@@ -176,7 +179,8 @@ export function MoveToSectionMenu({
               aria-current={section.id === currentSectionId ? true : undefined}
               onClick={() => {
                 closeMenu(true);
-                onMoveToSection(section.id);
+                // Already here: nothing to write, nothing to announce.
+                if (section.id !== currentSectionId) onMoveToSection(section.id);
               }}
               className="w-full text-left px-3 py-1.5 text-xs text-text-primary hover:bg-surface-light dark:hover:bg-surface-dark cursor-pointer transition-colors"
             >

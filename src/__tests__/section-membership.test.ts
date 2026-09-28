@@ -31,6 +31,14 @@ describe('ruleMatchesHostnames', () => {
     expect(ruleMatchesHostnames({ kind: 'keyword', value: 'mega' }, ['omega.com'])).toBe(false);
   });
 
+  it('never lets a dotless keyword match the domain ending', () => {
+    expect(ruleMatchesHostnames({ kind: 'keyword', value: 'app' }, ['linear.app'])).toBe(false);
+    expect(ruleMatchesHostnames({ kind: 'keyword', value: 'dev' }, ['web.dev'])).toBe(false);
+    expect(ruleMatchesHostnames({ kind: 'keyword', value: 'co' }, ['example.com'])).toBe(false);
+    expect(ruleMatchesHostnames({ kind: 'keyword', value: 'app' }, ['app.example.com'])).toBe(true);
+    expect(ruleMatchesHostnames({ kind: 'keyword', value: 'localhost' }, ['localhost'])).toBe(true);
+  });
+
   it('matches a dotted keyword against a contiguous run of labels', () => {
     expect(ruleMatchesHostnames({ kind: 'keyword', value: 'x.com' }, ['x.com'])).toBe(true);
     expect(ruleMatchesHostnames({ kind: 'keyword', value: 'google.com' }, ['docs.google.com'])).toBe(true);

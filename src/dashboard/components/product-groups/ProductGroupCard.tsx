@@ -7,6 +7,7 @@ import { getProductGroupIconUrl } from './product-group-icon';
 import { getProductKey } from '../../../lib/product-key';
 import { useI18n } from '../../hooks/useI18n';
 import { MoveToSectionMenu } from './MoveToSectionMenu';
+import { PinnedBadge } from './PinnedBadge';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -64,22 +65,6 @@ function DedupIcon(): React.ReactElement {
         strokeLinejoin="round"
         d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182"
       />
-    </svg>
-  );
-}
-
-function UnpinIcon(): React.ReactElement {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={2.5}
-      stroke="currentColor"
-      className="size-3"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
     </svg>
   );
 }
@@ -296,20 +281,12 @@ function ProductGroupCardComponent({
               </button>
             )}
             {isPinned && onUnpinProduct && (
-              <span
-                className="flex h-7 items-center gap-1 rounded-chip border border-dashed border-accent-amber/60 bg-bg-surface px-2.5 text-3xs font-semibold font-mono text-accent-amber"
-                title={t('pinnedUnsectionedHint')}
-              >
-                {t('pinnedUnsectioned')}
-                <button
-                  type="button"
-                  className="flex size-4 items-center justify-center rounded-chip hover:bg-accent-amber/10"
-                  onClick={onUnpinProduct}
-                  aria-label={t('unpinAction', { name: displayName })}
-                >
-                  <UnpinIcon />
-                </button>
-              </span>
+              <PinnedBadge
+                groupName={displayName}
+                onUnpin={onUnpinProduct}
+                focusAfterUnpinSelector={`[data-move-menu-trigger="${CSS.escape(getProductKey(group))}"]`}
+                className="flex h-7 px-2.5"
+              />
             )}
             {onMoveToSection && onMoveToNoSection && (
               <MoveToSectionMenu

@@ -35,9 +35,10 @@ export interface MembershipInput {
  * A *label* is one dot-separated segment of a hostname:
  * `api.github.com` → `['api', 'github', 'com']`.
  *
- * - A keyword with no dot matches when any single label *starts with* it, so
- *   `steam` claims `store.steampowered.com` but `irc` never claims
- *   `circleci.com` and `mega` never claims `omega.com`.
+ * - A keyword with no dot matches when any label but the domain ending
+ *   *starts with* it, so `steam` claims `store.steampowered.com` but `irc`
+ *   never claims `circleci.com`, `mega` never claims `omega.com`, and `app`
+ *   never claims `linear.app`.
  * - A keyword with dots is itself a run of labels, and must match a contiguous
  *   run of hostname labels *exactly*, so `google.com` claims `docs.google.com`
  *   but `ba.com` never claims `alibaba.com`.
@@ -49,7 +50,10 @@ function keywordMatchesHostname(keywordLabels: readonly string[], hostname: stri
 
   if (keywordLabels.length === 1) {
     const keyword = keywordLabels[0];
-    return hostLabels.some((label) => label.startsWith(keyword));
+    // The last label is the domain ending (`com`, `app`, `dev`); a bare word
+    // matching it would claim every site under that ending.
+    const nameLabels = hostLabels.length > 1 ? hostLabels.slice(0, -1) : hostLabels;
+    return nameLabels.some((label) => label.startsWith(keyword));
   }
 
   const lastStart = hostLabels.length - keywordLabels.length;
@@ -73,13 +77,29 @@ export function ruleMatchesHostnames(
     return hostnames.some((hostname) => keywordMatchesHostname(keywordLabels, hostname.toLowerCase()));
   }
 
-  try {
-    const re = new RegExp(rule.pattern, 'i');
-    return hostnames.some((hostname) => re.test(hostname));
-  } catch {
-    // An uncompilable pattern matches nothing rather than breaking its siblings.
-    return false;
+  const re = compiledPattern(rule.pattern);
+  return re !== null && hostnames.some((hostname) => re.test(hostname));
+}
+
+/**
+ * Rules are matched per product × section on every tab event and render, so
+ * compile each pattern once. Patterns are few and user-authored, so the cache
+ * stays small. An uncompilable pattern is cached as null and matches nothing
+ * rather than breaking its siblings.
+ */
+const compiledPatterns = new Map<string, RegExp | null>();
+
+function compiledPattern(pattern: string): RegExp | null {
+  if (!compiledPatterns.has(pattern)) {
+    let re: RegExp | null = null;
+    try {
+      re = new RegExp(pattern, 'i');
+    } catch {
+      re = null;
+    }
+    compiledPatterns.set(pattern, re);
   }
+  return compiledPatterns.get(pattern) ?? null;
 }
 
 /** True when any rule in the set matches. */

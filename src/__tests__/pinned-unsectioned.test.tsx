@@ -1,4 +1,5 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
+import { act } from 'react';
 import { cleanup, render, screen, fireEvent } from '@testing-library/react';
 import { I18nProvider } from '../dashboard/providers/I18nProvider';
 import { ProductGroupCard } from '../dashboard/components/product-groups/ProductGroupCard';
@@ -178,4 +179,69 @@ describe('pinned-unsectioned badge', () => {
     expect(screen.getByRole('combobox')).toHaveValue('dev');
     expect(screen.queryByText('Pinned')).not.toBeInTheDocument();
   });
+
+  describe('focus after unpinning', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('Cards view: focus moves to the card\'s move button instead of dropping to the page', () => {
+      vi.useFakeTimers();
+      const group = makeGroup();
+      const productKey = getProductKey(group);
+      const card = (pinned: ReadonlySet<string>) => (
+        <I18nProvider>
+          <ProductGroupCard
+            group={group}
+            onCloseProductGroup={() => {}}
+            onCloseDuplicates={() => {}}
+            onCloseTab={() => {}}
+            onFocusTab={() => {}}
+            sections={SECTIONS}
+            currentSectionId={null}
+            onMoveToSection={() => {}}
+            onMoveToNoSection={() => {}}
+            pinnedProductKeys={pinned}
+            onUnpinProduct={() => {}}
+          />
+        </I18nProvider>
+      );
+      const { rerender } = render(card(new Set([productKey])));
+      screen.getByRole('button', { name: 'Unpin GitHub' }).focus();
+
+      rerender(card(new Set()));
+      act(() => { vi.advanceTimersByTime(1000); });
+
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: /Move GitHub to a section/ }));
+    });
+
+    it('Table view: focus moves to the row\'s section select', () => {
+      vi.useFakeTimers();
+      const group = makeGroup();
+      const productKey = getProductKey(group);
+      const table = (pinned: ReadonlySet<string>) => (
+        <I18nProvider>
+          <ProductGroupTable
+            items={[group]}
+            sections={SECTIONS}
+            assignmentByItemId={new Map()}
+            onMoveItem={() => {}}
+            onCloseProduct={() => {}}
+            onCloseDuplicates={() => {}}
+            onFocusTab={() => {}}
+            pinnedProductKeys={pinned}
+            onUnpinProduct={() => {}}
+          />
+        </I18nProvider>
+      );
+      const { rerender } = render(table(new Set([productKey])));
+      screen.getByRole('button', { name: 'Unpin GitHub' }).focus();
+
+      rerender(table(new Set()));
+      act(() => { vi.advanceTimersByTime(1000); });
+
+      expect(document.activeElement).toBe(screen.getByRole('combobox'));
+    });
+  });
 });
+

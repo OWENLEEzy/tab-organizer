@@ -2,7 +2,7 @@ import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { AppSettings, Section, SectionAssignment, TabGroup } from '../../../types';
 import type { ProductLabels } from '../../../lib/product-labels';
 import type { AccentKey } from '../../../config/themes';
-import { useI18n, type TranslationKey } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/useI18n';
 import { ProductGroupRulesSection } from './ProductGroupRulesSection';
 import { SectionRulesWorkbench } from './SectionRulesWorkbench';
 import { KeyboardSection } from './KeyboardSection';
@@ -115,7 +115,9 @@ export function SettingsPanel({
     function handleKeyDown(e: KeyboardEvent): void {
       if (e.key === 'Escape') {
         const target = e.target instanceof Element ? e.target : null;
-        if (target?.closest('[data-recording-shortcut="true"]')) return;
+        // Controls that consume Escape themselves (shortcut recording, inline
+        // rename) opt out so it cancels their edit instead of the whole panel.
+        if (target?.closest('[data-handles-escape="true"]')) return;
         onCloseEffect();
       }
     }
@@ -178,7 +180,7 @@ export function SettingsPanel({
       <button
         type="button"
         tabIndex={-1}
-        aria-label="Dismiss backdrop"
+        aria-label={t('settingsClose')}
         className="absolute inset-0 bg-black/35 transition-opacity"
         onClick={onClose}
       />
@@ -210,7 +212,7 @@ export function SettingsPanel({
                   id={groupHeadingId}
                   className="font-body text-text-secondary px-3 pt-3 pb-1 text-3xs font-bold uppercase tracking-wider"
                 >
-                  {t(group.labelKey as TranslationKey)}
+                  {t(group.labelKey)}
                 </span>
                 {group.pages.map((page) => {
                   const isActive = activePage === page.id;
@@ -220,13 +222,13 @@ export function SettingsPanel({
                       type="button"
                       onClick={() => setActivePage(page.id)}
                       aria-current={isActive ? 'page' : undefined}
-                      className={`w-full text-left font-body text-xs rounded-chip px-3 py-2 transition-all cursor-pointer flex items-center gap-2 min-h-[var(--spacing-button-height)] outline-none ${
+                      className={`w-full text-left font-body text-xs rounded-chip px-3 py-2 transition-all cursor-pointer flex items-center gap-2 min-h-[var(--spacing-button-height)] focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none ${
                         isActive
                           ? 'bg-accent-blue/10 text-accent-blue dark:bg-accent-blue/15 dark:text-accent-blue font-semibold border-l border-accent-blue pl-[11px]'
                           : 'text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark'
                       }`}
                     >
-                      <span>{t(page.labelKey as TranslationKey)}</span>
+                      <span>{t(page.labelKey)}</span>
                     </button>
                   );
                 })}
@@ -239,13 +241,13 @@ export function SettingsPanel({
           {/* Header */}
           <div className="flex items-center justify-between p-6 pb-4 border-b border-border-color/20">
             <h4 className="font-heading text-text-primary-light dark:text-text-primary-dark text-sm font-semibold">
-              {t((SETTINGS_NAVIGATION.flatMap((g) => g.pages).find((p) => p.id === activePage)?.labelKey ?? 'settingsTitle') as TranslationKey)}
+              {t(SETTINGS_NAVIGATION.flatMap((g) => g.pages).find((p) => p.id === activePage)?.labelKey ?? 'settingsTitle')}
             </h4>
             <button
               type="button"
               onClick={onClose}
               className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark flex size-[var(--spacing-button-icon-sm)] cursor-pointer items-center justify-center transition-colors focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
-              aria-label="Close settings"
+              aria-label={t('settingsClose')}
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.0} stroke="currentColor" className="size-4" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />

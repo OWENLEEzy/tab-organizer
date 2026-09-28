@@ -46,7 +46,7 @@ describe('Store Rollbacks & Errors Final', () => {
 
   it('SettingsStore rollbacks', async () => {
     chromeStorage.set.mockRejectedValueOnce(new Error('fail'));
-    await useSettingsStore.getState().toggleSound();
+    await expect(useSettingsStore.getState().toggleSound()).rejects.toThrow('fail');
     expect(useSettingsStore.getState().settings.soundEnabled).toBe(DEFAULT_SETTINGS.soundEnabled);
   });
 

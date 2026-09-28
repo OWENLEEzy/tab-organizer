@@ -55,9 +55,20 @@ export function App(): React.ReactElement {
     showToast: handlers.showToast,
   });
 
+  const showSaveFailed = useCallback(() => {
+    handlers.showToast(t('toastSaveFailed'));
+  }, [handlers, t]);
+
+  /** Fire-and-forget a store write, telling the user if it did not stick. */
+  function withSaveToast<A extends unknown[]>(write: (...args: A) => Promise<unknown>): (...args: A) => void {
+    return (...args) => {
+      write(...args).catch(showSaveFailed);
+    };
+  }
+
   const handleAssignProducts = useCallback((productKeys: readonly string[], sectionId: string) => {
-    void tabStore.assignProductsToSection(productKeys, sectionId);
-  }, [tabStore]);
+    tabStore.assignProductsToSection(productKeys, sectionId).catch(showSaveFailed);
+  }, [tabStore, showSaveFailed]);
 
   const handleRenameProductGroup = useCallback(async (productKey: string, label: string) => {
     // The name the product would have with no override, so renaming back to
@@ -66,14 +77,24 @@ export function App(): React.ReactElement {
     const defaultLabel = hostname
       ? resolveProduct(hostname, settingsStore.settings.customGroups).label
       : undefined;
-    await settingsStore.renameProduct(productKey, label, defaultLabel);
+    try {
+      await settingsStore.renameProduct(productKey, label, defaultLabel);
+    } catch {
+      showSaveFailed();
+      return;
+    }
     await tabStore.fetchTabs();
-  }, [settingsStore, tabStore]);
+  }, [settingsStore, tabStore, showSaveFailed]);
 
   const handleRevertProductGroup = useCallback(async (productKey: string) => {
-    await settingsStore.revertProductLabel(productKey);
+    try {
+      await settingsStore.revertProductLabel(productKey);
+    } catch {
+      showSaveFailed();
+      return;
+    }
     await tabStore.fetchTabs();
-  }, [settingsStore, tabStore]);
+  }, [settingsStore, tabStore, showSaveFailed]);
 
   const handleOnboardingConfirm = useCallback(async (sections: Section[], assignments: SectionAssignment[]) => {
     try {
@@ -99,8 +120,8 @@ export function App(): React.ReactElement {
   );
 
   const handleUnpinProduct = useCallback((productKey: string) => {
-    void tabStore.unpinProduct(productKey);
-  }, [tabStore]);
+    tabStore.unpinProduct(productKey).catch(showSaveFailed);
+  }, [tabStore, showSaveFailed]);
 
   if (state.loading || state.tabsLoading) {
     return <LoadingState />;
@@ -162,7 +183,7 @@ export function App(): React.ReactElement {
             resultCount={state.filteredTabCount}
             totalCount={state.totalTabs}
             groupSortBy={settings.groupSortBy}
-            onGroupSortByChange={settingsStore.setGroupSortBy}
+            onGroupSortByChange={withSaveToast(settingsStore.setGroupSortBy)}
             onRefresh={handlers.handleRefresh}
             onCreateSection={handlers.handleCreateSection}
             onOpenSettings={() => dispatch({ type: 'SET_SETTINGS_OPEN', open: true })}
@@ -413,17 +434,17 @@ export function App(): React.ReactElement {
             soundEnabled={settings.soundEnabled}
             confettiEnabled={settings.confettiEnabled}
             productLabels={settings.productLabels}
-            onSetTheme={settingsStore.setTheme}
-            onSetLanguage={settingsStore.setLanguage}
-            onToggleSound={settingsStore.toggleSound}
-            onToggleConfetti={settingsStore.toggleConfetti}
+            onSetTheme={withSaveToast(settingsStore.setTheme)}
+            onSetLanguage={withSaveToast(settingsStore.setLanguage)}
+            onToggleSound={withSaveToast(settingsStore.toggleSound)}
+            onToggleConfetti={withSaveToast(settingsStore.toggleConfetti)}
             onResetSortOrder={handlers.handleResetSortOrder}
             onRenameProductGroup={handleRenameProductGroup}
             onRevertProductGroup={handleRevertProductGroup}
             maxChipsVisible={settings.maxChipsVisible}
             staleThresholdDays={settings.staleThresholdDays}
-            onSetMaxChipsVisible={settingsStore.setMaxChipsVisible}
-            onSetStaleThresholdDays={settingsStore.setStaleThresholdDays}
+            onSetMaxChipsVisible={withSaveToast(settingsStore.setMaxChipsVisible)}
+            onSetStaleThresholdDays={withSaveToast(settingsStore.setStaleThresholdDays)}
             onExportSettings={handleExportConfig}
             onImportSettings={handleImportConfig}
             sections={tabStore.sections}
@@ -432,13 +453,13 @@ export function App(): React.ReactElement {
             assignments={tabStore.sectionAssignments}
             unsectionedProductKeys={tabStore.unsectionedProductKeys}
             productCountBySectionId={derived.productCountBySectionId}
-            onUpdateSection={tabStore.updateSection}
-            onDeleteSection={tabStore.deleteSection}
-            onCreateSection={tabStore.createSection}
+            onUpdateSection={withSaveToast(tabStore.updateSection)}
+            onDeleteSection={withSaveToast(tabStore.deleteSection)}
+            onCreateSection={withSaveToast(tabStore.createSection)}
             onAssignProducts={handleAssignProducts}
             keyBindings={settings.keyBindings}
-            onUpdateKeyBinding={settingsStore.updateKeyBinding}
-            onResetKeyBindings={settingsStore.resetKeyBindings}
+            onUpdateKeyBinding={withSaveToast(settingsStore.updateKeyBinding)}
+            onResetKeyBindings={withSaveToast(settingsStore.resetKeyBindings)}
             appVersion={appVersion}
             viewMode={viewMode}
             onViewModeChange={handlers.handleSetViewMode}

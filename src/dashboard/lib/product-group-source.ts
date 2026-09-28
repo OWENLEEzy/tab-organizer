@@ -1,6 +1,7 @@
 import type { TabGroup } from '../../types';
 import { getProductLabel, type ProductLabels } from '../../lib/product-labels';
 import { getProductKey } from '../../lib/product-key';
+import { fallbackProductForHostname } from '../../config/products';
 
 /**
  * Where a product group's display name came from. Surfacing this lets the
@@ -13,10 +14,12 @@ export function classifyProductGroup(
   group: TabGroup,
   productLabels: ProductLabels,
 ): ProductGroupSource {
-  if (getProductLabel(productLabels, getProductKey(group)) !== undefined) return 'custom';
+  const productKey = getProductKey(group);
+  if (getProductLabel(productLabels, productKey) !== undefined) return 'custom';
 
-  const label = group.friendlyName || group.domain;
-  if (label === group.domain) return 'domain-fallback';
+  // No product rule claimed this site: it was grouped under its own hostname.
+  const hostname = group.tabs[0]?.domain;
+  if (hostname && productKey === fallbackProductForHostname(hostname).key) return 'domain-fallback';
 
   return 'built-in';
 }

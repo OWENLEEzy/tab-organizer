@@ -5,10 +5,10 @@ import { classifyProductGroup } from '../dashboard/lib/product-group-source';
 import { ProductGroupRulesSection } from '../dashboard/components/settings/ProductGroupRulesSection';
 import { I18nProvider } from '../dashboard/providers/I18nProvider';
 
-function group(domain: string, productKey: string, friendlyName: string): TabGroup {
+function group(domain: string, productKey: string, friendlyName: string, hostname = domain): TabGroup {
   return {
     id: productKey, domain, friendlyName, productKey,
-    tabs: [], collapsed: false, order: 0, color: '#000',
+    tabs: [{ domain: hostname, url: `https://${hostname}/`, title: '', favIconUrl: '' } as TabGroup['tabs'][number]], collapsed: false, order: 0, color: '#000',
     hasDuplicates: false, duplicateCount: 0,
   };
 }
@@ -22,20 +22,22 @@ describe('classifyProductGroup', () => {
 
   it('does not treat a built-in default hostname rule as a user rename', () => {
     // e.g. the shipped `.substack.com` rule: nothing for the user to revert.
-    expect(classifyProductGroup(group('substack', 'substack', "Author's Substack"), {})).toBe('built-in');
+    expect(classifyProductGroup(group('substack', 'substack', "Author's Substack", 'author.substack.com'), {}))
+      .toBe('built-in');
   });
 
-  it('marks a group whose friendly name equals its raw domain as a domain fallback', () => {
-    expect(classifyProductGroup(group('notion-static.com', 'notion-static.com', 'notion-static.com'), {}))
+  it('marks an unrecognized site grouped by its hostname as a domain fallback', () => {
+    // Real fallback groups carry a prettified label, not the raw hostname.
+    expect(classifyProductGroup(group('example.com', 'example.com', 'Example', 'www.example.com'), {}))
       .toBe('domain-fallback');
   });
 
   it('does not mistake an inherited object property for a rename', () => {
-    expect(classifyProductGroup(group('constructor', 'constructor', 'Constructor'), {})).toBe('built-in');
+    expect(classifyProductGroup(group('constructor', 'constructor', 'Constructor'), {})).not.toBe('custom');
   });
 
   it('marks everything else as built-in', () => {
-    expect(classifyProductGroup(group('github.com', 'github', 'GitHub'), {})).toBe('built-in');
+    expect(classifyProductGroup(group('github', 'github', 'GitHub', 'github.com'), {})).toBe('built-in');
   });
 });
 
@@ -48,7 +50,7 @@ describe('ProductGroupRulesSection', () => {
     render(
       <I18nProvider>
         <ProductGroupRulesSection
-          products={[group('github.com', 'github', 'GitHub')]}
+          products={[group('github', 'github', 'GitHub', 'github.com')]}
           productLabels={{}}
           onRename={vi.fn()}
           onRevert={vi.fn()}
@@ -63,7 +65,7 @@ describe('ProductGroupRulesSection', () => {
     render(
       <I18nProvider>
         <ProductGroupRulesSection
-          products={[group('notion-static.com', 'notion-static.com', 'notion-static.com')]}
+          products={[group('example.com', 'example.com', 'Example')]}
           productLabels={{}}
           onRename={vi.fn()}
           onRevert={vi.fn()}

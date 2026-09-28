@@ -169,7 +169,7 @@ describe('SectionRulesWorkbench', () => {
       unsectionedProductKeys: ['gist'],
     });
 
-    const button = screen.getByRole('button', { name: 'Move this 1 here too' });
+    const button = screen.getByRole('button', { name: 'Move it here too' });
     fireEvent.click(button);
 
     expect(props.onAssignProducts).toHaveBeenCalledWith(['figma'], 'dev');
@@ -310,6 +310,69 @@ describe('SectionRulesWorkbench', () => {
       fireEvent.click(screen.getByRole('button', { name: /Design/ }));
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
       expect(regexBox().value).toBe('');
+    });
+  });
+  describe('section list and editor', () => {
+    it('marks the selected section as pressed and labels its group count', () => {
+      renderWorkbench({ productCountBySectionId: new Map([['dev', 1], ['design', 4]]) });
+
+      expect(screen.getByRole('button', { name: /Dev/ })).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByRole('button', { name: /Design/ })).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByRole('button', { name: /Dev.*1 group$/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Design.*4 groups$/ })).toBeInTheDocument();
+    });
+
+    it('moves focus off the delete button so a second Enter cannot delete the next section', () => {
+      const { onDeleteSection } = renderWorkbench();
+      const del = screen.getByRole('button', { name: 'Delete Section' });
+      del.focus();
+      fireEvent.click(del);
+
+      expect(onDeleteSection).toHaveBeenCalledWith('dev');
+      expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'New section' }));
+    });
+
+    it('drops a half-typed keyword and its error when another section is selected', () => {
+      renderWorkbench();
+      const input = screen.getByLabelText(/keyword/i, { selector: 'input' }) as HTMLInputElement;
+      fireEvent.change(input, { target: { value: 'half' } });
+      fireEvent.click(screen.getByRole('button', { name: /Design/ }));
+
+      expect((screen.getByLabelText(/keyword/i, { selector: 'input' }) as HTMLInputElement).value).toBe('');
+    });
+
+    it('saves a renamed section once, trimmed, on blur — not on every keystroke', () => {
+      const { onUpdateSection } = renderWorkbench();
+      const name = screen.getByRole('textbox', { name: 'Section name' });
+      fireEvent.change(name, { target: { value: '  Code ' } });
+      expect(onUpdateSection).not.toHaveBeenCalled();
+
+      fireEvent.blur(name);
+      expect(onUpdateSection).toHaveBeenCalledTimes(1);
+      expect(onUpdateSection).toHaveBeenCalledWith('dev', { name: 'Code' });
+    });
+
+    it('rejects an empty or duplicate section name and restores the saved one', () => {
+      const { onUpdateSection } = renderWorkbench();
+      const name = screen.getByRole('textbox', { name: 'Section name' }) as HTMLInputElement;
+
+      fireEvent.change(name, { target: { value: '   ' } });
+      fireEvent.blur(name);
+      expect(name.value).toBe('Dev');
+
+      fireEvent.change(name, { target: { value: ' design ' } });
+      fireEvent.blur(name);
+      expect(name.value).toBe('Dev');
+      expect(screen.getByRole('alert')).toHaveTextContent('A section with this name already exists.');
+      expect(onUpdateSection).not.toHaveBeenCalled();
+    });
+
+    it('accepts a multi-codepoint emoji and keeps only the newest one', () => {
+      const { onUpdateSection } = renderWorkbench();
+      const emoji = screen.getByRole('textbox', { name: /emoji/i });
+      fireEvent.change(emoji, { target: { value: '💻👩‍💻' } });
+
+      expect(onUpdateSection).toHaveBeenCalledWith('dev', { emoji: '👩‍💻' });
     });
   });
 });

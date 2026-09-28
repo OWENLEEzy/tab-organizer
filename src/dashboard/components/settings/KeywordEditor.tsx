@@ -12,6 +12,7 @@ interface KeywordEditorProps {
 const ERROR_KEY_BY_REASON: Record<KeywordRejection, TranslationKey> = {
   empty: 'keywordErrorEmpty',
   whitespace: 'keywordErrorWhitespace',
+  invalid: 'keywordErrorInvalid',
   duplicate: 'keywordErrorDuplicate',
 };
 

@@ -47,4 +47,16 @@ describe('normalizeKeyword', () => {
   it('keeps dots literal — they are label separators, not regex syntax', () => {
     expect(normalizeKeyword('x.com')).toEqual({ ok: true, value: 'x.com' });
   });
+
+  it('strips a port, a leading wildcard label, and a trailing dot', () => {
+    expect(normalizeKeyword('localhost:3000')).toEqual({ ok: true, value: 'localhost' });
+    expect(normalizeKeyword('*.corp.com')).toEqual({ ok: true, value: 'corp.com' });
+    expect(normalizeKeyword('github.com.')).toEqual({ ok: true, value: 'github.com' });
+  });
+
+  it('rejects text that can never match a hostname', () => {
+    expect(normalizeKeyword('a..b')).toEqual({ ok: false, reason: 'invalid' });
+    expect(normalizeKeyword('git*hub')).toEqual({ ok: false, reason: 'invalid' });
+    expect(normalizeKeyword('.')).toEqual({ ok: false, reason: 'invalid' });
+  });
 });

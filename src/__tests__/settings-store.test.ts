@@ -140,10 +140,10 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().settings.productLabels).toEqual({ github: 'Code' });
   });
 
-  it('rolls back a rename when the storage write fails', async () => {
+  it('rolls back a rename when the storage write fails, and reports the failure', async () => {
     chromeStorage.set.mockRejectedValueOnce(new Error('Storage failure'));
 
-    await useSettingsStore.getState().renameProduct('youtube', 'Videos');
+    await expect(useSettingsStore.getState().renameProduct('youtube', 'Videos')).rejects.toThrow('Storage failure');
 
     expect(useSettingsStore.getState().settings.productLabels).toEqual({});
   });
@@ -154,7 +154,7 @@ describe('useSettingsStore', () => {
 
     const rename = useSettingsStore.getState().renameProduct('youtube', 'Videos');
     const theme = useSettingsStore.getState().setTheme(initialTheme === 'clay' ? 'pine' : 'clay');
-    await Promise.all([rename, theme]);
+    await Promise.allSettled([rename, theme]);
 
     const { settings } = useSettingsStore.getState();
     expect(settings.productLabels).toEqual({});
@@ -166,7 +166,7 @@ describe('useSettingsStore', () => {
 
     const first = useSettingsStore.getState().renameProduct('youtube', 'Videos');
     const second = useSettingsStore.getState().renameProduct('youtube', 'Watch later');
-    await Promise.all([first, second]);
+    await Promise.allSettled([first, second]);
 
     expect(useSettingsStore.getState().settings.productLabels).toEqual({ youtube: 'Watch later' });
   });
@@ -175,7 +175,7 @@ describe('useSettingsStore', () => {
     chromeStorage.set.mockRejectedValueOnce(new Error('Storage failure'));
     const initialTheme = useSettingsStore.getState().settings.theme;
 
-    await useSettingsStore.getState().setTheme('clay');
+    await expect(useSettingsStore.getState().setTheme('clay')).rejects.toThrow('Storage failure');
 
     // Should have updated then rolled back
     expect(useSettingsStore.getState().settings.theme).toBe(initialTheme);
@@ -231,7 +231,7 @@ describe('useSettingsStore', () => {
     const previous = useSettingsStore.getState().settings;
     chromeStorage.set.mockRejectedValueOnce(new Error('Storage failure'));
 
-    await act();
+    await expect(act()).rejects.toThrow('Storage failure');
 
     expect(useSettingsStore.getState().settings).toEqual(previous);
   });

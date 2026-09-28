@@ -242,6 +242,30 @@ describe('MoveToSectionMenu', () => {
       expect(document.activeElement).toBe(trigger);
     });
 
+    it('keeps Escape to itself, so it does not also clear the dashboard search or section filter', () => {
+      const documentListener = vi.fn();
+      document.addEventListener('keydown', documentListener);
+      const trigger = renderMenu();
+
+      fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+
+      document.removeEventListener('keydown', documentListener);
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+      expect(document.activeElement).toBe(trigger);
+      expect(documentListener).not.toHaveBeenCalled();
+    });
+
+    it('choosing the section the group is already in just closes the menu', () => {
+      const onMoveToSection = vi.fn();
+      const trigger = renderMenu({ onMoveToSection });
+
+      fireEvent.click(screen.getByRole('menuitem', { name: /Dev/ }));
+
+      expect(onMoveToSection).not.toHaveBeenCalled();
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+      expect(document.activeElement).toBe(trigger);
+    });
+
     it('does not pull focus back to the trigger when the user clicks elsewhere', () => {
       const trigger = renderMenu();
 

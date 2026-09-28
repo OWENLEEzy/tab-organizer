@@ -83,7 +83,7 @@ export function KeyboardSection({ keyBindings, onUpdateKeyBinding, onResetKeyBin
               <span className="font-body text-xs text-text-primary-light dark:text-text-primary-dark">{label}</span>
               <button
                 type="button"
-                data-recording-shortcut={isRecording ? 'true' : undefined}
+                data-handles-escape={isRecording ? 'true' : undefined}
                 onClick={() => setRecordingKey(isRecording ? null : (key as keyof AppSettings['keyBindings']))}
                 className={`font-body text-xs px-2.5 py-1 rounded border transition-all cursor-pointer min-h-[var(--spacing-button-height-sm)] min-w-[var(--width-button-min)] ${
                   isRecording

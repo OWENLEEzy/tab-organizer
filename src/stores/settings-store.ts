@@ -51,7 +51,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => {
    * Apply a settings patch optimistically, then persist it. On failure roll
    * back only the fields this patch set, and only where nothing newer has
    * replaced them — restoring a whole earlier snapshot would erase changes
-   * made while this write was in flight.
+   * made while this write was in flight. The error is rethrown so the caller
+   * can tell the user the change did not stick.
    */
   async function persistSettings(patch: Partial<AppSettings>): Promise<void> {
     const prev = get().settings;
@@ -59,13 +60,14 @@ export const useSettingsStore = create<SettingsStore>((set, get) => {
     set({ settings: updated });
     try {
       await writeSettings(patch);
-    } catch {
+    } catch (err) {
       const current = get().settings;
       const reverted: AppSettings = { ...current };
       for (const key of Object.keys(patch) as (keyof AppSettings)[]) {
         if (current[key] === updated[key]) Object.assign(reverted, { [key]: prev[key] });
       }
       set({ settings: reverted });
+      throw err;
     }
   }
 

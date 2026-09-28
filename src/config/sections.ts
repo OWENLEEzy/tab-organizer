@@ -19,6 +19,12 @@ export interface SectionTemplate {
   extraRules?: SectionAutoRule[];
 }
 
+/**
+ * Order matters: the first matching section wins, so a template whose keywords
+ * are a narrower slice of a broader one's (DevOps's `aws.amazon` inside
+ * Shopping's `amazon`) must come first. Keywords are specific enough not to
+ * claim unrelated sites by label prefix (`delta.com`, not `delta`).
+ */
 export const SECTION_TEMPLATES: SectionTemplate[] = [
   {
     id: 'section-dev',
@@ -30,7 +36,7 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
     id: 'section-work',
     name: 'Work',
     emoji: '💼',
-    keywords: ['google.com', 'slack', 'loom', 'zoom', 'airtable', 'confluence', 'asana', 'clickup', 'todoist', 'linear', 'trello', 'basecamp', 'monday', 'teamviewer', 'anydesk'],
+    keywords: ['docs.google', 'sheets.google', 'slides.google', 'forms.google', 'meet.google', 'calendar.google', 'mail.google', 'slack', 'loom', 'zoom.us', 'airtable', 'confluence', 'asana', 'clickup', 'todoist', 'linear.app', 'trello', 'basecamp', 'monday.com', 'teamviewer', 'anydesk'],
   },
   {
     id: 'section-media',
@@ -39,22 +45,28 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
     keywords: ['youtube', 'twitter', 'x.com', 'reddit', 'instagram', 'tiktok', 'bilibili', 'twitch', 'steam', 'epicgames', 'roblox'],
   },
   {
+    id: 'section-devops',
+    name: 'DevOps',
+    emoji: '⚙️',
+    keywords: ['aws.amazon', 'amazonaws', 'azure.com', 'cloud.google', 'googleapis', 'cloudflare', 'digitalocean', 'heroku', 'vercel', 'netlify', 'render.com', 'railway.app', 'fly.io', 'supabase', 'firebase', 'datadog', 'sentry.io', 'grafana', 'prometheus', 'jenkins', 'travis-ci', 'circleci'],
+  },
+  {
     id: 'section-shopping',
     name: 'Shopping',
     emoji: '🛒',
-    keywords: ['amazon', 'taobao', 'jd.com', 'shopee', 'aliexpress', 'ebay', 'walmart', 'target', 'bestbuy', 'etsy'],
+    keywords: ['amazon', 'taobao', 'jd.com', 'shopee', 'aliexpress', 'ebay', 'walmart', 'target.com', 'bestbuy', 'etsy'],
   },
   {
     id: 'section-academic',
     name: 'Academic',
     emoji: '🎓',
-    keywords: ['arxiv', 'scholar.google', 'pubmed', 'ieee', 'acm.org', 'jstor', 'nature', 'science.org', 'sciencedirect', 'springer', 'wiley', 'researchgate', 'semanticscholar', 'center', 'plos', 'frontiersin', 'mdpi', 'hindawi', 'biorxiv', 'medrxiv'],
+    keywords: ['arxiv', 'scholar.google', 'pubmed', 'ieee', 'acm.org', 'jstor', 'nature.com', 'science.org', 'sciencedirect', 'springer', 'wiley', 'researchgate', 'semanticscholar', 'plos', 'frontiersin', 'mdpi', 'hindawi', 'biorxiv', 'medrxiv'],
   },
   {
     id: 'section-social',
     name: 'Social',
     emoji: '💬',
-    keywords: ['linkedin', 'discord', 'telegram', 'whatsapp', 'weixin.com', 'wechat', 'signal', 'irc'],
+    keywords: ['linkedin', 'discord', 'telegram', 'whatsapp', 'weixin.qq', 'wechat', 'signal.org', 'irc'],
   },
   {
     id: 'section-news',
@@ -66,37 +78,31 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
     id: 'section-finance',
     name: 'Finance',
     emoji: '💰',
-    keywords: ['chase', 'wellsfargo', 'robinhood', 'coinbase', 'binance', 'tradingview', 'fidelity', 'vanguard', 'schwab', 'ameritrade', 'paypal', 'venmo', 'cashapp', 'stripe', 'bankofamerica', 'citibank', 'usbank'],
+    keywords: ['chase.com', 'wellsfargo', 'robinhood', 'coinbase', 'binance', 'tradingview', 'fidelity', 'vanguard', 'schwab', 'ameritrade', 'paypal', 'venmo', 'cashapp', 'stripe', 'bankofamerica', 'citibank', 'usbank'],
   },
   {
     id: 'section-cloud',
     name: 'Cloud',
     emoji: '☁️',
-    keywords: ['drive.google', 'dropbox', 'icloud', 'onedrive', 'box.com', 'mega', 'nzbd', 'mediafire'],
+    keywords: ['drive.google', 'dropbox', 'icloud', 'onedrive', 'box.com', 'mega.nz', 'mega.io', 'nzbd', 'mediafire'],
   },
   {
     id: 'section-ai',
     name: 'AI',
     emoji: '🤖',
-    keywords: ['openai', 'anthropic', 'chatgpt', 'claude', 'gemini', 'deepseek', 'perplexity', 'huggingface', 'replicate', 'ollama', 'groq', 'mistral', 'cohere'],
-  },
-  {
-    id: 'section-devops',
-    name: 'DevOps',
-    emoji: '⚙️',
-    keywords: ['aws.com', 'azure.com', 'gcp', 'googleapis', 'cloudflare', 'digitalocean', 'heroku', 'vercel', 'netlify', 'render', 'railway', 'fly.io', 'supabase', 'firebase', 'datadog', 'sentry', 'grafana', 'prometheus', 'jenkins', 'travis', 'circleci'],
+    keywords: ['openai', 'anthropic', 'chatgpt', 'claude.ai', 'gemini.google', 'deepseek', 'perplexity', 'huggingface', 'replicate.com', 'ollama', 'groq', 'mistral.ai', 'cohere.com'],
   },
   {
     id: 'section-design',
     name: 'Design',
     emoji: '🎨',
-    keywords: ['figma', 'sketch', 'adobe', 'canva', 'framer', 'webflow', 'dribbble', 'behance', 'invision', 'marvel', 'principle', 'zeplin', 'abstract', 'plantuml', 'excalidraw', 'miro', 'figjam'],
+    keywords: ['figma', 'sketch.com', 'adobe', 'canva', 'framer', 'webflow', 'dribbble', 'behance', 'invision', 'marvelapp', 'principleformac', 'zeplin', 'abstract.com', 'plantuml', 'excalidraw', 'miro', 'figjam'],
   },
   {
     id: 'section-productivity',
     name: 'Productivity',
     emoji: '✅',
-    keywords: ['obsidian', 'roam', 'logseq', 'notion', 'coda', 'evernote', 'ticktick', 'any.do', 'habitica', 'anotepad', 'pomodorotracker', 'forest'],
+    keywords: ['obsidian', 'roamresearch', 'logseq', 'notion', 'coda.io', 'evernote', 'ticktick', 'any.do', 'habitica', 'anotepad', 'pomodorotracker', 'forestapp'],
   },
   {
     id: 'section-maps',
@@ -108,13 +114,13 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
     id: 'section-travel',
     name: 'Travel',
     emoji: '✈️',
-    keywords: ['booking.com', 'airbnb', 'expedia', 'tripadvisor', 'kayak', 'hotels.com', 'hostelworld', 'couchsurfing', 'hostel', 'trivago', 'priceline', 'cheaptickets', 'flightcentre', 'airline.com', 'united', 'delta', 'southwest', 'lufthansa', 'ba.com', 'france.com', 'ryanair', 'easyjet'],
+    keywords: ['booking.com', 'airbnb', 'expedia', 'tripadvisor', 'kayak', 'hotels.com', 'hostelworld', 'couchsurfing', 'hostel', 'trivago', 'priceline', 'cheaptickets', 'flightcentre', 'airline.com', 'united.com', 'delta.com', 'southwest', 'lufthansa', 'ba.com', 'france.com', 'ryanair', 'easyjet'],
   },
   {
     id: 'section-music',
     name: 'Music',
     emoji: '🎵',
-    keywords: ['spotify', 'soundcloud', 'bandcamp', 'deezer', 'tidal', 'pandora', 'musify', 'qq.music'],
+    keywords: ['spotify', 'soundcloud', 'bandcamp', 'deezer', 'tidal.com', 'pandora.com', 'musify', 'y.qq', 'music.qq'],
   },
 ];
 

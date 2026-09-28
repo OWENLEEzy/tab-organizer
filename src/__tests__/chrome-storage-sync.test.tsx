@@ -107,4 +107,24 @@ describe('useChromeStorageSync', () => {
     expect(fetchTabs).not.toHaveBeenCalled();
     expect(fetchRecovery).not.toHaveBeenCalled();
   });
+
+  it('regroups tabs only after changed settings (e.g. product names) have loaded', async () => {
+    const listeners: StorageListener[] = [];
+    const order: string[] = [];
+    let finishSettings: () => void = () => {};
+    const fetchSettings = vi.fn(() => new Promise<void>((resolve) => {
+      finishSettings = () => { order.push('settings'); resolve(); };
+    }));
+    const fetchTabs = vi.fn(async () => { order.push('tabs'); });
+    vi.stubGlobal('chrome', {
+      storage: { onChanged: { addListener: (l: StorageListener) => listeners.push(l), removeListener: vi.fn() } },
+    });
+
+    render(<Harness fetchSettings={fetchSettings} fetchTabs={fetchTabs} fetchRecovery={vi.fn(async () => {})} />);
+    listeners[0]({ settings: { newValue: {} } }, 'local');
+
+    expect(fetchTabs).not.toHaveBeenCalled();
+    finishSettings();
+    await waitFor(() => expect(order).toEqual(['settings', 'tabs']));
+  });
 });

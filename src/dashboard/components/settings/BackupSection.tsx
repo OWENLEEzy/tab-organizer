@@ -32,7 +32,7 @@ export function BackupSection({
             {t('settingsBackupExportBtn')}
           </button>
           <label
-            className="flex-1 rounded-chip font-body border border-border-color hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-[var(--spacing-button-height)] cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5 text-center"
+            className="flex-1 rounded-chip font-body border border-border-color hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-[var(--spacing-button-height)] cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5 text-center has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-accent-primary/40"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-3.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
@@ -41,7 +41,8 @@ export function BackupSection({
             <input
               type="file"
               accept=".json"
-              className="hidden"
+              // sr-only, not `hidden`: a display:none input drops out of the tab order.
+              className="sr-only"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;

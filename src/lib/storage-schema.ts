@@ -9,7 +9,7 @@ import type {
 } from '../types';
 import { recoveryUrlSignature } from './recovery-snapshots';
 import { normalizeKeyword } from './section-keywords';
-import { isCompilablePattern } from './section-regex';
+import { isUsablePattern } from './section-regex';
 import { normalizeProductLabels } from './product-labels';
 import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
 import { DEFAULT_GROUP_SORT, normalizeGroupSortBy } from '../config/group-sort';
@@ -122,7 +122,7 @@ function normalizeAutoRule(value: unknown): SectionAutoRule | null {
   }
 
   const isRegexRule = candidate.kind === 'regex' || candidate.type === 'hostname';
-  if (isRegexRule && typeof candidate.pattern === 'string' && isCompilablePattern(candidate.pattern)) {
+  if (isRegexRule && typeof candidate.pattern === 'string' && isUsablePattern(candidate.pattern)) {
     return { kind: 'regex', pattern: candidate.pattern };
   }
 
@@ -380,7 +380,7 @@ function normalizeGroupOrder(value: unknown): Record<string, number> {
 
 /**
  * Normalize current-schema storage data. Only reads current schema keys —
- * no legacy fallback reads. On schema mismatch, callers reset to DEFAULT_STORAGE.
+ * no legacy fallback reads. Older snapshots go through `upgradeSchema`.
  */
 export function normalizeCurrentSchema(data: Record<string, unknown>): StorageSchema {
   return {
@@ -396,3 +396,23 @@ export function normalizeCurrentSchema(data: Record<string, unknown>): StorageSc
     recoverySnapshots: normalizeRecoverySnapshots(data['recoverySnapshots']),
   };
 }
+
+/** The last released schema, which this version can read without loss. */
+const PREVIOUS_SCHEMA_VERSION = 5;
+
+/**
+ * Turn a raw storage snapshot into the current schema, or return null when it
+ * is from a version that cannot be read (callers then reset to defaults).
+ *
+ * v5 differs from v6 only by the missing `onboardingDone` flag and legacy
+ * `{ pattern, type: 'hostname' }` rules, which `normalizeAutoRule` converts.
+ * A v5 user who still has sections has already set them up, so onboarding
+ * must not reappear for them.
+ */
+export function upgradeSchema(raw: Record<string, unknown>): StorageSchema | null {
+  if (raw['schemaVersion'] === CURRENT_SCHEMA_VERSION) return normalizeCurrentSchema(raw);
+  if (raw['schemaVersion'] !== PREVIOUS_SCHEMA_VERSION) return null;
+  const upgraded = normalizeCurrentSchema(raw);
+  return { ...upgraded, onboardingDone: upgraded.sections.length > 0 };
+}
+

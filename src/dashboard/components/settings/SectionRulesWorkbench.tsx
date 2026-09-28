@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import type { Section, SectionAssignment, SectionAutoRule, TabGroup } from '../../../types';
 import { previewRuleMatches } from '../../../lib/rule-preview';
 import { getProductKey } from '../../../lib/product-key';
@@ -28,6 +28,17 @@ function regexPatternsOf(rules: readonly SectionAutoRule[] | undefined): string[
   return (rules ?? []).filter((r) => r.kind === 'regex').map((r) => r.pattern);
 }
 
+function isDuplicateSectionName(sections: readonly Section[], name: string, exceptId?: string): boolean {
+  const normalized = name.trim().toLowerCase();
+  return sections.some((s) => s.id !== exceptId && s.name.trim().toLowerCase() === normalized);
+}
+
+/** An emoji can span several code points (👩‍💻); keep only the newest grapheme typed. */
+function lastGrapheme(value: string): string {
+  const graphemes = [...new Intl.Segmenter().segment(value)];
+  return graphemes.at(-1)?.segment ?? '';
+}
+
 export function SectionRulesWorkbench({
   sections,
   products,
@@ -53,6 +64,7 @@ export function SectionRulesWorkbench({
   // below runs only once per actual prop change — the React-recommended
   // "adjust state during render" pattern instead of a setState-in-effect.
   const [sectionsSeenForSelect, setSectionsSeenForSelect] = useState(sections);
+  const newSectionInputRef = useRef<HTMLInputElement>(null);
 
   if (sections !== sectionsSeenForSelect) {
     setSectionsSeenForSelect(sections);
@@ -103,8 +115,7 @@ export function SectionRulesWorkbench({
   function handleCreate(): void {
     const name = newName.trim();
     if (!name) return;
-    const duplicate = sections.some((s) => s.name.trim().toLowerCase() === name.toLowerCase());
-    if (duplicate) {
+    if (isDuplicateSectionName(sections, name)) {
       setNameError(t('settingsDuplicateSectionName'));
       return;
     }
@@ -112,6 +123,13 @@ export function SectionRulesWorkbench({
     onCreateSection(name);
     setPendingSelectName(name);
     setNewName('');
+  }
+
+  function handleDelete(id: string): void {
+    onDeleteSection(id);
+    // The delete button stays mounted for the next section; leaving focus on
+    // it would let a repeated Enter delete that one too.
+    newSectionInputRef.current?.focus();
   }
 
   return (
@@ -123,6 +141,7 @@ export function SectionRulesWorkbench({
             key={section.id}
             type="button"
             onClick={() => setSelectedId(section.id)}
+            aria-pressed={section.id === selected?.id}
             className={`rounded-chip font-body flex w-full cursor-pointer items-center justify-between px-2 py-1.5 text-left text-xs transition-colors ${
               section.id === selected?.id
                 ? 'bg-accent-blue/10 text-accent-blue font-semibold'
@@ -130,13 +149,12 @@ export function SectionRulesWorkbench({
             }`}
           >
             <span className="truncate">{section.emoji} {section.name}</span>
-            <span className="text-text-secondary shrink-0 pl-1">
-              {t('workbenchGroupCount', { count: productCountBySectionId.get(section.id) ?? 0 })}
-            </span>
+            <SectionGroupCount count={productCountBySectionId.get(section.id) ?? 0} />
           </button>
         ))}
 
         <input
+          ref={newSectionInputRef}
           type="text"
           value={newName}
           placeholder={t('workbenchNewSection')}
@@ -165,22 +183,20 @@ export function SectionRulesWorkbench({
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                maxLength={2}
                 value={selected.emoji ?? ''}
                 aria-label={t('settingsLabelEmoji')}
-                onChange={(e) => onUpdateSection(selected.id, { emoji: e.target.value })}
+                onChange={(e) => onUpdateSection(selected.id, { emoji: lastGrapheme(e.target.value) })}
                 className="settings-input w-10 text-center focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
               />
-              <input
-                type="text"
-                value={selected.name}
-                aria-label={t('settingsPlaceholderSectionName')}
-                onChange={(e) => onUpdateSection(selected.id, { name: e.target.value })}
-                className="settings-input flex-1 focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
+              <SectionNameInput
+                key={selected.id}
+                name={selected.name}
+                isDuplicate={(name) => isDuplicateSectionName(sections, name, selected.id)}
+                onRename={(name) => onUpdateSection(selected.id, { name })}
               />
               <button
                 type="button"
-                onClick={() => onDeleteSection(selected.id)}
+                onClick={() => handleDelete(selected.id)}
                 aria-label={t('settingsBtnDeleteSection')}
                 className="text-accent-red hover:bg-accent-red/10 cursor-pointer rounded p-1"
               >
@@ -189,6 +205,7 @@ export function SectionRulesWorkbench({
             </div>
 
             <KeywordEditor
+              key={selected.id}
               inputId={`section-keywords-${selected.id}`}
               keywords={keywordsOf(selected.autoRules)}
               onChange={(next) => writeRules(next, regexPatternsOf(selected.autoRules))}
@@ -217,6 +234,71 @@ export function SectionRulesWorkbench({
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function SectionGroupCount({ count }: { count: number }): React.ReactElement {
+  const { t } = useI18n();
+  return (
+    <span className="text-text-secondary shrink-0 pl-1">
+      <span aria-hidden="true">{t('workbenchGroupCount', { count })}</span>
+      <span className="sr-only">
+        {count === 1 ? t('workbenchGroupCountSingle') : t('workbenchGroupCountPlural', { count })}
+      </span>
+    </span>
+  );
+}
+
+interface SectionNameInputProps {
+  name: string;
+  isDuplicate: (name: string) => boolean;
+  onRename: (name: string) => void;
+}
+
+/** Edits a draft and saves once on blur/Enter, so a half-typed or clashing name is never persisted. */
+function SectionNameInput({ name, isDuplicate, onRename }: SectionNameInputProps): React.ReactElement {
+  const { t } = useI18n();
+  const [draft, setDraft] = useState(name);
+  const [error, setError] = useState('');
+  const [savedName, setSavedName] = useState(name);
+
+  // A rename saved elsewhere (e.g. a backup import) replaces the draft.
+  if (name !== savedName) {
+    setSavedName(name);
+    setDraft(name);
+  }
+
+  function commit(): void {
+    const trimmed = draft.trim();
+    if (trimmed && isDuplicate(trimmed)) {
+      setError(t('settingsDuplicateSectionName'));
+    }
+    if (!trimmed || isDuplicate(trimmed)) {
+      setDraft(name);
+      return;
+    }
+    setError('');
+    setDraft(trimmed);
+    if (trimmed !== name) onRename(trimmed);
+  }
+
+  return (
+    <div className="flex flex-1 flex-col gap-1">
+      <input
+        type="text"
+        value={draft}
+        aria-label={t('workbenchSectionName')}
+        onChange={(e) => { setDraft(e.target.value); setError(''); }}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
+        className="settings-input w-full focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
+      />
+      {error && (
+        <p className="text-accent-red text-3xs font-body" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

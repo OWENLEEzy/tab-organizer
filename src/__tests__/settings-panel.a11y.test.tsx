@@ -5,13 +5,27 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
 import { SettingsPanel } from '../dashboard/components/settings/SettingsPanel';
+import type { Section, TabGroup } from '../types';
 
 afterEach(() => {
   cleanup();
 });
 
-function SettingsHarness(): React.ReactElement {
-  const [open, setOpen] = useState(false);
+const SECTIONS: Section[] = [
+  { id: 'dev', name: 'Dev', order: 0, emoji: '💻', autoRules: [{ kind: 'keyword', value: 'github' }] },
+];
+
+const PRODUCTS: TabGroup[] = [{
+  id: 'github', domain: 'github', friendlyName: 'GitHub', productKey: 'github',
+  tabs: [{
+    id: 1, url: 'https://github.com/', title: 'GitHub', favIconUrl: '', domain: 'github.com',
+    windowId: 1, active: false, isDashboard: false, isDuplicate: false, isLandingPage: false, duplicateCount: 0,
+  }],
+  collapsed: false, order: 0, color: '#000', hasDuplicates: false, duplicateCount: 0,
+}];
+
+function SettingsHarness({ initiallyOpen = false }: { initiallyOpen?: boolean }): React.ReactElement {
+  const [open, setOpen] = useState(initiallyOpen);
 
   return (
     <>
@@ -40,6 +54,9 @@ function SettingsHarness(): React.ReactElement {
         onExportSettings={() => {}}
         onImportSettings={async () => {}}
         onCreateSection={() => {}}
+        sections={SECTIONS}
+        products={PRODUCTS}
+        productCountBySectionId={new Map([['dev', 1]])}
         appVersion="2.0.0-test"
         viewMode="cards"
         onViewModeChange={() => {}}
@@ -128,5 +145,31 @@ describe('SettingsPanel accessibility', () => {
 
     const results = await axe(container);
     expect(results.violations).toHaveLength(0);
+  });
+
+  it.each([
+    ['Sections & Rules'],
+    ['Product Group Rules'],
+    ['Backup & Version'],
+  ])('has no obvious axe violations on the %s page', async (pageName) => {
+    const user = userEvent.setup();
+    const { container } = render(<I18nProvider><SettingsHarness initiallyOpen /></I18nProvider>);
+
+    await user.click(screen.getByRole('button', { name: pageName }));
+
+    const results = await axe(container);
+    expect(results.violations).toHaveLength(0);
+  });
+
+  it('lets Escape cancel a product-group rename without closing the whole panel', async () => {
+    const user = userEvent.setup();
+    render(<I18nProvider><SettingsHarness initiallyOpen /></I18nProvider>);
+
+    await user.click(screen.getByRole('button', { name: 'Product Group Rules' }));
+    await user.click(screen.getByRole('button', { name: 'Rename' }));
+    await user.keyboard('{Escape}');
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Rename' })).not.toBeInTheDocument();
   });
 });

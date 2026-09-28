@@ -79,6 +79,9 @@ function ProductGroupRuleRow({
   const iconUrl = getProductGroupIconUrl(group.tabs);
   const initial = displayName.trim().charAt(0).toUpperCase() || '?';
   const isFallback = source === 'domain-fallback';
+  const tabCountLabel = group.tabs.length === 1
+    ? t('rulePreviewTabCountSingle')
+    : t('rulePreviewTabCountPlural', { count: group.tabs.length });
 
   function handleStartEdit(): void {
     setDraftLabel(displayName);
@@ -131,6 +134,7 @@ function ProductGroupRuleRow({
             value={draftLabel}
             autoFocus
             aria-label={t('productRulesRename')}
+            data-handles-escape="true"
             onChange={(e) => setDraftLabel(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSave();
@@ -156,9 +160,9 @@ function ProductGroupRuleRow({
 
       <span
         className="font-body text-text-secondary bg-border-color/20 shrink-0 rounded-badge px-1.5 text-3xs font-bold"
-        title={`${group.tabs.length} tabs`}
+        title={tabCountLabel}
       >
-        <span className="sr-only">{group.tabs.length} tabs</span>
+        <span className="sr-only">{tabCountLabel}</span>
         <span aria-hidden="true">{group.tabs.length}</span>
       </span>
 

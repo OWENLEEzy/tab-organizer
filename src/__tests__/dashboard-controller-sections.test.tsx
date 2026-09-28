@@ -182,7 +182,7 @@ describe('dashboard section semantics', () => {
     expect(screen.queryByRole('button', { name: 'Empty' })).not.toBeInTheDocument();
   });
 
-  it('renders non-default empty sections as cards drop zones without counting them as content sections', async () => {
+  it('renders empty sections as cards drop zones without listing them in section navigation', async () => {
     chromeStorageData.sections = [
       { id: 'section-dev', name: 'Dev', order: 0 },
       { id: 'custom-empty', name: 'Custom Empty', order: 1 },
@@ -222,4 +222,83 @@ describe('dashboard section semantics', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Dev' })).toBeInTheDocument());
     expect(screen.getByRole('heading', { name: 'Shopping' })).toBeInTheDocument();
   });
+
+  it('hides sections with no search matches instead of calling them empty', async () => {
+    const user = userEvent.setup();
+    chromeStorageData.onboardingDone = true;
+    chromeStorageData.sections = [
+      { id: 'section-dev', name: 'Dev', order: 0 },
+      { id: 'section-docs', name: 'Docs', order: 1 },
+    ];
+    chromeStorageData.sectionAssignments = [
+      { productKey: 'github', sectionId: 'section-dev', order: 0 },
+      { productKey: 'example.com', sectionId: 'section-docs', order: 0 },
+    ];
+    (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeChromeTab(1, 'https://github.com/OWENLEEzy/tab-organizer', 'Repo'),
+      makeChromeTab(2, 'https://example.com/docs', 'Docs'),
+    ]);
+
+    renderApp();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Docs' })).toBeInTheDocument());
+
+    await user.type(screen.getByRole('searchbox'), 'github');
+
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Docs' })).not.toBeInTheDocument());
+    expect(screen.getByRole('heading', { name: 'Dev' })).toBeInTheDocument();
+    expect(screen.queryByText('Empty — drag a product group here')).not.toBeInTheDocument();
+  });
+
+  it('tells the user when unpinning a group could not be saved', async () => {
+    const user = userEvent.setup();
+    chromeStorageData.onboardingDone = true;
+    chromeStorageData.sections = [{ id: 'section-dev', name: 'Dev', order: 0 }];
+    chromeStorageData.unsectionedProductKeys = ['github'];
+    (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeChromeTab(1, 'https://github.com/OWENLEEzy/tab-organizer', 'Repo'),
+    ]);
+
+    renderApp();
+    const unpin = await screen.findByRole('button', { name: /Unpin GitHub/ });
+    (chrome.storage.local.set as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('disk full'));
+
+    await user.click(unpin);
+
+    expect(await screen.findByText(/Could not save that change/)).toBeInTheDocument();
+  });
+
+  it('tells the user when a settings change could not be saved', async () => {
+    const user = userEvent.setup();
+    chromeStorageData.onboardingDone = true;
+    chromeStorageData.sections = [{ id: 'section-dev', name: 'Dev', order: 0 }];
+    (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeChromeTab(1, 'https://github.com/OWENLEEzy/tab-organizer', 'Repo'),
+    ]);
+
+    renderApp();
+    await user.click(await screen.findByRole('button', { name: 'Settings' }));
+    await user.click(await screen.findByRole('button', { name: 'Behavior' }));
+    (chrome.storage.local.set as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('disk full'));
+    await user.click(screen.getByRole('switch', { name: /sound/i }));
+
+    expect(await screen.findByText(/Could not save that change/)).toBeInTheDocument();
+  });
+
+  it('tells the user when a section edit could not be saved', async () => {
+    const user = userEvent.setup();
+    chromeStorageData.onboardingDone = true;
+    chromeStorageData.sections = [{ id: 'section-dev', name: 'Dev', order: 0 }];
+    (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeChromeTab(1, 'https://github.com/OWENLEEzy/tab-organizer', 'Repo'),
+    ]);
+
+    renderApp();
+    await user.click(await screen.findByRole('button', { name: 'Settings' }));
+    await user.click(await screen.findByRole('button', { name: 'Sections & Rules' }));
+    (chrome.storage.local.set as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('disk full'));
+    await user.click(screen.getByRole('button', { name: 'Delete Section' }));
+
+    expect(await screen.findByText(/Could not save that change/)).toBeInTheDocument();
+  });
 });
+

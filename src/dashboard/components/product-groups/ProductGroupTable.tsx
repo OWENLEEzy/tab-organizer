@@ -7,6 +7,7 @@ import { toProductItemId } from '../../../lib/section-organizer';
 import { getProductGroupIconUrl } from './product-group-icon';
 import { ActionButton } from '../ui/ActionButton';
 import { useI18n } from '../../hooks/useI18n';
+import { PinnedBadge } from './PinnedBadge';
 
 interface ProductGroupTableProps {
   items: TabGroup[];
@@ -46,22 +47,6 @@ function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
       aria-hidden="true"
     >
       <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-    </svg>
-  );
-}
-
-function UnpinIcon(): React.ReactElement {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={2.5}
-      stroke="currentColor"
-      className="size-3"
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
     </svg>
   );
 }
@@ -178,7 +163,8 @@ export function ProductGroupTable({
                     <select
                       value={sectionId}
                       onChange={(event) => onMoveItem(p, event.target.value)}
-                      aria-label={`Move ${p.friendlyName || p.domain}`}
+                      aria-label={t('moveToSectionFor', { name: p.friendlyName || p.domain })}
+                      data-section-select={getProductKey(p)}
                       className="w-full"
                     >
                       <option value="">{t('tableUnsectioned')}</option>
@@ -190,20 +176,12 @@ export function ProductGroupTable({
                     </select>
                     {/* Assignment wins over the pin (see `resolveMembership`); an assigned row must not also claim pinned. */}
                     {sectionId === '' && pinnedProductKeys.has(getProductKey(p)) && (
-                      <span
-                        className="ml-1 inline-flex h-6 items-center gap-1 rounded-chip border border-dashed border-accent-amber/60 bg-bg-surface px-2 text-3xs font-semibold font-mono text-accent-amber"
-                        title={t('pinnedUnsectionedHint')}
-                      >
-                        {t('pinnedUnsectioned')}
-                        <button
-                          type="button"
-                          className="flex size-4 items-center justify-center rounded-chip hover:bg-accent-amber/10"
-                          onClick={() => onUnpinProduct(getProductKey(p))}
-                          aria-label={t('unpinAction', { name: p.friendlyName || p.domain })}
-                        >
-                          <UnpinIcon />
-                        </button>
-                      </span>
+                      <PinnedBadge
+                        groupName={p.friendlyName || p.domain}
+                        onUnpin={() => onUnpinProduct(getProductKey(p))}
+                        focusAfterUnpinSelector={`[data-section-select="${CSS.escape(getProductKey(p))}"]`}
+                        className="ml-1 inline-flex h-6 px-2"
+                      />
                     )}
                   </td>
                   <td className="col-tabs text-center">{p.tabs.length}</td>

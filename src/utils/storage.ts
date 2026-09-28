@@ -7,11 +7,13 @@ import type {
   RecoverySnapshot,
 } from '../types';
 import { recoveryUrlSignature, shouldReplaceRecoveryCandidate } from '../lib/recovery-snapshots';
+import { deleteSectionAndUnassignProducts } from '../lib/section-organizer';
 import {
   CURRENT_SCHEMA_VERSION,
   DEFAULT_SETTINGS,
   normalizeCurrentSchema,
   normalizeRecoverySnapshot,
+  upgradeSchema,
   pruneAssignments,
   reconcileAssignments,
   reconcileGroupOrder,
@@ -91,16 +93,16 @@ async function persistStorage(data: StorageSchema): Promise<void> {
 }
 
 /**
- * Read the full storage schema. On schema mismatch, resets destructively to
- * DEFAULT_STORAGE. On match, normalizes current-schema keys only.
+ * Read the full storage schema. The previous released schema is upgraded in
+ * place; any other version mismatch resets destructively to DEFAULT_STORAGE.
  */
 export async function readStorage(): Promise<StorageSchema> {
   const raw = await readStorageSnapshot();
+  const schema = upgradeSchema(raw) ?? DEFAULT_STORAGE;
   if (raw.schemaVersion !== CURRENT_SCHEMA_VERSION) {
-    await persistStorage(DEFAULT_STORAGE);
-    return DEFAULT_STORAGE;
+    await persistStorage(schema);
   }
-  return normalizeCurrentSchema(raw);
+  return schema;
 }
 
 /**
@@ -124,7 +126,7 @@ async function updateStorage(
   await queuedWrite(async () => {
     const raw = await readStorageSnapshot();
     const isCurrentVersion = raw.schemaVersion === CURRENT_SCHEMA_VERSION;
-    const current = isCurrentVersion ? normalizeCurrentSchema(raw) : DEFAULT_STORAGE;
+    const current = upgradeSchema(raw) ?? DEFAULT_STORAGE;
     const updated = await updater(current);
     nextState = normalizeCurrentSchema(updated as unknown as Record<string, unknown>);
 
@@ -312,6 +314,8 @@ export async function writeOrganizerState(state: {
   sectionAssignments?: SectionAssignment[];
   unsectionedProductKeys?: string[];
   viewMode?: ViewMode;
+  /** Set together with the sections onboarding confirmed, in the same write. */
+  onboardingDone?: boolean;
 }): Promise<{
   sections: Section[];
   sectionAssignments: SectionAssignment[];
@@ -324,6 +328,7 @@ export async function writeOrganizerState(state: {
     sectionAssignments: state.sectionAssignments ?? storage.sectionAssignments,
     unsectionedProductKeys: state.unsectionedProductKeys ?? storage.unsectionedProductKeys,
     viewMode: state.viewMode ?? storage.viewMode,
+    onboardingDone: state.onboardingDone ?? storage.onboardingDone,
   }));
   return {
     sections: next.sections,
@@ -334,8 +339,12 @@ export async function writeOrganizerState(state: {
 }
 
 /** Mark the one-time onboarding as finished. */
-export async function setOnboardingDone(): Promise<void> {
-  await updateStorage((storage) => ({ ...storage, onboardingDone: true }));
+/** Drop one product's "keep unsectioned" pin, reading fresh storage in the queue. */
+export async function removeUnsectionedPin(productKey: string): Promise<void> {
+  await updateStorage((storage) => ({
+    ...storage,
+    unsectionedProductKeys: storage.unsectionedProductKeys.filter((key) => key !== productKey),
+  }));
 }
 
 /**
@@ -356,6 +365,49 @@ export async function applyAssignmentUpdates(updates: SectionAssignment[]): Prom
     ],
     unsectionedProductKeys: storage.unsectionedProductKeys.filter((k) => !updatedKeys.has(k)),
   }));
+}
+
+/**
+ * Auto-rule results computed from a possibly stale read. Inside the queue, skip
+ * any product that meanwhile got an explicit assignment or a No section pin, so
+ * a rule never overrides a user's choice (explicit > veto > rule).
+ */
+export async function applyAutoAssignments(updates: SectionAssignment[]): Promise<void> {
+  if (updates.length === 0) return;
+  await updateStorage((storage) => {
+    const decided = new Set([
+      ...storage.sectionAssignments.map((a) => a.productKey),
+      ...storage.unsectionedProductKeys,
+    ]);
+    const fresh = updates.filter((u) => !decided.has(u.productKey));
+    return fresh.length === 0
+      ? storage
+      : { ...storage, sectionAssignments: [...storage.sectionAssignments, ...fresh] };
+  });
+}
+
+/** Edit the section list against fresh storage, so a concurrent edit is not overwritten. */
+export async function updateSections(transform: (sections: Section[]) => Section[]): Promise<void> {
+  await updateStorage((storage) => ({ ...storage, sections: transform(storage.sections) }));
+}
+
+/** Delete a section and move its groups to No section, computed inside the write queue. */
+export async function deleteSectionInStorage(sectionId: string): Promise<void> {
+  await updateStorage((storage) => {
+    const { assignments, overrides } = deleteSectionAndUnassignProducts(
+      storage.sectionAssignments,
+      storage.unsectionedProductKeys,
+      sectionId,
+    );
+    return {
+      ...storage,
+      sections: storage.sections
+        .filter((section) => section.id !== sectionId)
+        .map((section, index) => ({ ...section, order: index })),
+      sectionAssignments: assignments,
+      unsectionedProductKeys: overrides,
+    };
+  });
 }
 
 export async function assignProductToSection(productKey: string, sectionId: string): Promise<{

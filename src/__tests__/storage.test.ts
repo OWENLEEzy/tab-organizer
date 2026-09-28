@@ -10,9 +10,9 @@ import {
   clearRecoverySnapshots,
   reconcileOrganizerState,
   pruneStaleStorage,
+  applyAutoAssignments,
   assignProductToSection,
   unassignProductFromSections,
-  setOnboardingDone,
 } from '../utils/storage';
 import type { RecoverySnapshot } from '../types';
 
@@ -144,6 +144,89 @@ describe('readStorage', () => {
     expect(result.viewMode).toBe('cards');
     expect(result.recoveryCandidate).toBeNull();
     expect(result.recoverySnapshots).toEqual([]);
+  });
+
+  it('auto-assignment never overrides an explicit assignment or pin written meanwhile', async () => {
+    storage['schemaVersion'] = 6;
+    storage['sections'] = [{ id: 'a', name: 'A', order: 0 }, { id: 'b', name: 'B', order: 1 }];
+    storage['sectionAssignments'] = [{ productKey: 'moved', sectionId: 'a' }];
+    storage['unsectionedProductKeys'] = ['pinned'];
+
+    await applyAutoAssignments([
+      { productKey: 'moved', sectionId: 'b' },
+      { productKey: 'pinned', sectionId: 'b' },
+      { productKey: 'fresh', sectionId: 'b' },
+    ]);
+
+    expect(storage['sectionAssignments']).toEqual([
+      { productKey: 'moved', sectionId: 'a' },
+      { productKey: 'fresh', sectionId: 'b' },
+    ]);
+    expect(storage['unsectionedProductKeys']).toEqual(['pinned']);
+  });
+
+  describe('upgrading from the released v5 schema', () => {
+    function seedV5(sections: unknown[]): void {
+      storage['schemaVersion'] = 5;
+      storage['settings'] = { ...DEFAULT_SETTINGS, theme: 'pine', soundEnabled: false };
+      storage['sections'] = sections;
+      storage['sectionAssignments'] = [{ productKey: 'github', sectionId: 'work' }];
+      storage['unsectionedProductKeys'] = ['youtube'];
+      storage['groupOrder'] = { github: 0 };
+    }
+
+    it('keeps the user\'s settings, sections, and assignments instead of wiping them', async () => {
+      seedV5([{
+        id: 'work', name: 'Work', order: 0,
+        autoRules: [{ pattern: '^git', type: 'hostname' }],
+      }]);
+
+      const result = await readStorage();
+
+      expect(result.schemaVersion).toBe(6);
+      expect(result.settings.theme).toBe('pine');
+      expect(result.settings.soundEnabled).toBe(false);
+      expect(result.settings.productLabels).toEqual({});
+      expect(result.sections).toEqual([
+        { id: 'work', name: 'Work', order: 0, autoRules: [{ kind: 'regex', pattern: '^git' }] },
+      ]);
+      expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'work' }]);
+      expect(result.unsectionedProductKeys).toEqual(['youtube']);
+      expect(result.groupOrder).toEqual({ github: 0 });
+      // A v5 user already has sections, so onboarding must not reappear.
+      expect(result.onboardingDone).toBe(true);
+      expect(storage['schemaVersion']).toBe(6);
+      expect(storage['onboardingDone']).toBe(true);
+    });
+
+    it('keeps a v5 subdomain regex such as ([a-z0-9-]+\\.)*corp\\.com', async () => {
+      const pattern = '^([a-z0-9-]+\\.)*corp\\.com$';
+      seedV5([{ id: 'work', name: 'Work', order: 0, autoRules: [{ pattern, type: 'hostname' }] }]);
+
+      const result = await readStorage();
+
+      expect(result.sections[0].autoRules).toEqual([{ kind: 'regex', pattern }]);
+    });
+
+    it('offers onboarding to a v5 user who had deleted every section', async () => {
+      seedV5([]);
+
+      const result = await readStorage();
+
+      expect(result.onboardingDone).toBe(false);
+      expect(result.settings.theme).toBe('pine');
+    });
+
+    it('keeps v5 data when the first access is a write', async () => {
+      seedV5([{ id: 'work', name: 'Work', order: 0 }]);
+
+      await writeGroupOrder({ github: 1 });
+
+      expect(storage['schemaVersion']).toBe(6);
+      expect(storage['sections']).toEqual([{ id: 'work', name: 'Work', order: 0 }]);
+      expect((storage['settings'] as { theme: string }).theme).toBe('pine');
+      expect(storage['onboardingDone']).toBe(true);
+    });
   });
 
   it('resets to default storage when schemaVersion is outdated (v3)', async () => {
@@ -570,8 +653,8 @@ describe('reconcileOrganizerState', () => {
 });
 
 describe('schema 6', () => {
-  it('resets to empty sections and onboardingDone=false on a version mismatch', async () => {
-    storage['schemaVersion'] = 5;
+  it('resets to empty sections and onboardingDone=false on an unreadable older version', async () => {
+    storage['schemaVersion'] = 4;
     storage['sections'] = [{ id: 'x', name: 'X', order: 0 }];
 
     const result = await readStorage();
@@ -592,6 +675,8 @@ describe('schema 6', () => {
       autoRules: [
         { kind: 'keyword', value: 'GitHub' },
         { kind: 'regex', pattern: '[' },
+        { kind: 'regex', pattern: '' },
+        { kind: 'regex', pattern: '^(a+)+$' },
         { kind: 'keyword', value: 'git hub' },
         'nonsense',
       ],
@@ -666,16 +751,6 @@ describe('schema 6', () => {
       { kind: 'regex', pattern: '^aws\\.' },
       { kind: 'keyword', value: 'gitlab' },
     ]);
-  });
-
-  it('setOnboardingDone flips the flag', async () => {
-    storage['schemaVersion'] = 6;
-    storage['onboardingDone'] = false;
-
-    await setOnboardingDone();
-    const result = await readStorage();
-
-    expect(result.onboardingDone).toBe(true);
   });
 
   it('keeps settings saved before productLabels existed and defaults the new field', async () => {

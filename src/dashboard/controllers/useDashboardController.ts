@@ -184,8 +184,18 @@ export function useDashboardController() {
 
   // Cards view renders every section, including empty ones. An empty section is
   // a drop target the user deliberately created — hiding it would make it
-  // impossible to ever put anything in. See design spec §3.7.
-  const cardsSections = structureOrganizerModel.sections;
+  // impossible to ever put anything in. See design spec §3.7. While searching,
+  // though, a section without matches is not empty, just filtered out: hide it
+  // rather than show a misleading "Empty" drop zone.
+  const isSearching = debouncedSearchQuery.trim() !== '';
+  const cardsSections = useMemo(
+    () => (isSearching
+      ? structureOrganizerModel.sections.filter(
+        (section) => (contentOrganizerModel.productsBySection.get(section.id)?.length ?? 0) > 0,
+      )
+      : structureOrganizerModel.sections),
+    [isSearching, structureOrganizerModel.sections, contentOrganizerModel.productsBySection],
+  );
 
   const flatChips = useMemo(() => {
     const visualProducts = viewMode === 'table'

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SECTION_TEMPLATES, sectionsFromTemplates, templateAutoRules } from '../config/sections';
+import { resolveMembership } from '../lib/section-membership';
 
 describe('templateAutoRules', () => {
   it('combines editable keywords with a template fixed extra rules', () => {
@@ -95,3 +96,59 @@ describe('SECTION_TEMPLATES coverage', () => {
     }
   });
 });
+
+describe('SECTION_TEMPLATES routing with every template checked', () => {
+  const sections = sectionsFromTemplates(SECTION_TEMPLATES);
+
+  function sectionFor(hostname: string): string | null {
+    const membership = resolveMembership({
+      hostnames: [hostname],
+      sections,
+      assignedSectionId: null,
+      isPinnedUnsectioned: false,
+    });
+    return membership.kind === 'auto' ? membership.sectionId : null;
+  }
+
+  it.each([
+    ['docs.google.com', 'section-work'],
+    ['meet.google.com', 'section-work'],
+    ['scholar.google.com', 'section-academic'],
+    ['news.google.com', 'section-news'],
+    ['drive.google.com', 'section-cloud'],
+    ['maps.google.com', 'section-maps'],
+    ['console.cloud.google.com', 'section-devops'],
+    ['aws.amazon.com', 'section-devops'],
+    ['console.aws.amazon.com', 'section-devops'],
+    ['www.amazon.com', 'section-shopping'],
+    ['y.qq.com', 'section-music'],
+    ['music.qq.com', 'section-music'],
+    ['www.delta.com', 'section-travel'],
+    ['www.united.com', 'section-travel'],
+    ['render.com', 'section-devops'],
+    ['www.nature.com', 'section-academic'],
+  ])('%s → %s', (hostname, sectionId) => {
+    expect(sectionFor(hostname)).toBe(sectionId);
+  });
+
+  it.each([
+    'www.deltamath.com',
+    'www.marvel.com',
+    'www.centerparcs.com',
+    'unitedwaytogether.org',
+    'rendering.example.com',
+    'forestservice.gov',
+    'abstractapi.com',
+    'principles.com',
+    'targetprocess.com',
+    'naturehike.com',
+    'signalhire.com',
+    'linearity.io',
+    'mondaynight.com',
+    'chaseamerica.org',
+    'megaphone.fm',
+  ])('does not misfile the unrelated site %s', (hostname) => {
+    expect(sectionFor(hostname)).toBeNull();
+  });
+});
+

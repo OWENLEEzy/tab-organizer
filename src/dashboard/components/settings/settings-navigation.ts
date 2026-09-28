@@ -4,6 +4,8 @@
  * share one flat tab strip — see design spec §3.2.
  */
 
+import type { TranslationKey } from '../../hooks/useI18n';
+
 export type SettingsPageId =
   | 'appearance'
   | 'behavior'
@@ -14,11 +16,11 @@ export type SettingsPageId =
 
 interface SettingsNavPage {
   id: SettingsPageId;
-  labelKey: string;
+  labelKey: TranslationKey;
 }
 
 export interface SettingsNavGroup {
-  labelKey: string;
+  labelKey: TranslationKey;
   pages: readonly SettingsNavPage[];
 }
 
