@@ -94,4 +94,49 @@ test.describe('Hybrid Organizer', () => {
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'No section' })).toBeVisible();
   });
+
+  test('cards-view move-to-section menu is not clipped or covered by the card', async ({ page }) => {
+    await page.waitForSelector('[class*="rounded-card"]');
+
+    // The last card sits in a short section row, so a menu anchored in its
+    // header extends past the card's own box.
+    await page.getByRole('button', { name: /Move .* to a section/ }).last().click();
+
+    const lastItem = page.getByRole('menu').getByRole('menuitem').last();
+    await expect(lastItem).toBeVisible();
+    const box = (await lastItem.boundingBox())!;
+
+    // Hit-test the item's own centre: clipping or an overlapping card element
+    // both leave something other than the menu item on top.
+    const topElementIsMenuItem = await page.evaluate(
+      ({ x, y }) => document.elementFromPoint(x, y)?.closest('[role="menuitem"]') !== null,
+      { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+    );
+    expect(topElementIsMenuItem).toBe(true);
+
+    await lastItem.click();
+    await expect(page.getByRole('menu')).toHaveCount(0);
+  });
+
+  test('keyboard move to another section keeps focus on the moved card', async ({ page }) => {
+    await page.waitForSelector('[class*="rounded-card"]');
+
+    const trigger = page.getByRole('button', { name: /Move .* to a section/ }).first();
+    const productKey = await trigger.getAttribute('data-move-menu-trigger');
+    expect(productKey).toBeTruthy();
+
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('menu')).toBeVisible();
+    // Wrap to the last item: "Remove from section" for a sectioned group, or
+    // the last section for an unsectioned one — a real move either way.
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('menu')).toHaveCount(0);
+
+    // The card remounts under another section; focus follows it.
+    await expect
+      .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-move-menu-trigger')))
+      .toBe(productKey);
+  });
 });

@@ -5,6 +5,7 @@ import { getProductKey } from '../../../lib/product-key';
 import { useI18n } from '../../hooks/useI18n';
 import { KeywordEditor } from './KeywordEditor';
 import { RuleMatchPreview } from './RuleMatchPreview';
+import { RegexRulesEditor } from './RegexRulesEditor';
 
 interface SectionRulesWorkbenchProps {
   sections: readonly Section[];
@@ -44,7 +45,6 @@ export function SectionRulesWorkbench({
   const [newName, setNewName] = useState('');
   const [nameError, setNameError] = useState('');
   const [showRegex, setShowRegex] = useState(false);
-  const [regexError, setRegexError] = useState(false);
   // Name of a section just created via `handleCreate`, so it can be selected
   // once `onCreateSection` round-trips and it actually appears in `sections`.
   // `onCreateSection` is fire-and-forget and does not hand back the new id.
@@ -208,25 +208,11 @@ export function SectionRulesWorkbench({
               <summary className="font-body text-text-secondary cursor-pointer text-xs">
                 {t('workbenchAdvancedRegex')}
               </summary>
-              <textarea
-                value={regexPatternsOf(selected.autoRules).join('\n')}
-                placeholder={t('workbenchRegexPlaceholder')}
-                aria-label={t('workbenchAdvancedRegex')}
-                onChange={(e) => {
-                  const patterns = e.target.value.split('\n').filter(Boolean);
-                  const invalid = patterns.some((p) => {
-                    try { new RegExp(p, 'i'); return false; } catch { return true; }
-                  });
-                  setRegexError(invalid);
-                  if (!invalid) writeRules(keywordsOf(selected.autoRules), patterns);
-                }}
-                className="settings-input mt-2 h-16 w-full resize-none focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
+              <RegexRulesEditor
+                key={selected.id}
+                patterns={regexPatternsOf(selected.autoRules)}
+                onChange={(next) => writeRules(keywordsOf(selected.autoRules), next)}
               />
-              {regexError && (
-                <p className="text-accent-red text-3xs font-body" role="alert">
-                  {t('workbenchRegexInvalid')}
-                </p>
-              )}
             </details>
           </>
         )}

@@ -17,9 +17,9 @@ import { useDashboardController } from './controllers/useDashboardController';
 import { useI18n } from './hooks/useI18n';
 import { useTheme } from './hooks/useTheme';
 import { useSettingsImportExport } from './controllers/useSettingsImportExport';
-import { getProductKey } from '../lib/product-key';
 import { SECTION_TEMPLATES } from '../config/sections';
-import type { Section, SectionAssignment, TabGroup } from '../types';
+import { resolveProduct } from '../lib/resolve-product';
+import type { Section, SectionAssignment } from '../types';
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -59,18 +59,19 @@ export function App(): React.ReactElement {
     void tabStore.assignProductsToSection(productKeys, sectionId);
   }, [tabStore]);
 
-  const handleRenameProductGroup = useCallback(async (group: TabGroup, label: string) => {
-    const productKey = getProductKey(group);
-    await settingsStore.addCustomGroup({
-      hostname: group.domain,
-      groupKey: productKey,
-      groupLabel: label,
-    });
+  const handleRenameProductGroup = useCallback(async (productKey: string, label: string) => {
+    // The name the product would have with no override, so renaming back to
+    // it clears the override instead of storing a no-op one.
+    const hostname = tabStore.hostnamesByProductKey.get(productKey)?.[0];
+    const defaultLabel = hostname
+      ? resolveProduct(hostname, settingsStore.settings.customGroups).label
+      : undefined;
+    await settingsStore.renameProduct(productKey, label, defaultLabel);
     await tabStore.fetchTabs();
   }, [settingsStore, tabStore]);
 
-  const handleRevertProductGroup = useCallback(async (groupKey: string) => {
-    await settingsStore.removeCustomGroup(groupKey);
+  const handleRevertProductGroup = useCallback(async (productKey: string) => {
+    await settingsStore.revertProductLabel(productKey);
     await tabStore.fetchTabs();
   }, [settingsStore, tabStore]);
 
@@ -411,7 +412,7 @@ export function App(): React.ReactElement {
             language={settings.language || 'system'}
             soundEnabled={settings.soundEnabled}
             confettiEnabled={settings.confettiEnabled}
-            customGroups={settings.customGroups}
+            productLabels={settings.productLabels}
             onSetTheme={settingsStore.setTheme}
             onSetLanguage={settingsStore.setLanguage}
             onToggleSound={settingsStore.toggleSound}

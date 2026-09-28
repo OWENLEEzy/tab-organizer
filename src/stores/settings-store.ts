@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { AppSettings, CustomGroup, GroupSortOption } from '../types';
 import { readSettings, writeSettings, DEFAULT_SETTINGS } from '../utils/storage';
 import { type AccentKey } from '../config/themes';
+import { clearProductLabel, setProductLabel } from '../lib/product-labels';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -20,6 +21,12 @@ interface SettingsActions {
   addCustomGroup: (group: CustomGroup) => Promise<void>;
   /** Remove a custom group rule by its groupKey. */
   removeCustomGroup: (groupKey: string) => Promise<void>;
+  /** Give a product group a display name; a blank or built-in label reverts it. */
+  renameProduct: (productKey: string, label: string, defaultLabel?: string) => Promise<void>;
+  /** Drop a product group's display-name override. */
+  revertProductLabel: (productKey: string) => Promise<void>;
+  /** Replace every display-name override, e.g. from a backup import. */
+  replaceProductLabels: (labels: Record<string, string>) => Promise<void>;
   /** Update a specific shortcut keybinding. */
   updateKeyBinding: (key: keyof AppSettings['keyBindings'], binding: string) => Promise<void>;
   /** Reset all key bindings to their defaults. */
@@ -39,160 +46,88 @@ export type SettingsStore = {
 
 // ─── Store ───────────────────────────────────────────────────────────
 
-export const useSettingsStore = create<SettingsStore>((set, get) => ({
-  settings: DEFAULT_SETTINGS,
-  loading: false,
-
-  fetchSettings: async () => {
-    set({ loading: true });
-    try {
-      const settings = await readSettings();
-      set({ settings, loading: false });
-    } catch {
-      set({ settings: DEFAULT_SETTINGS, loading: false });
-    }
-  },
-
-  toggleSound: async () => {
-    const { settings: prev } = get();
-    const updated: AppSettings = { ...prev, soundEnabled: !prev.soundEnabled };
+export const useSettingsStore = create<SettingsStore>((set, get) => {
+  /**
+   * Apply a settings patch optimistically, then persist it. On failure roll
+   * back only the fields this patch set, and only where nothing newer has
+   * replaced them — restoring a whole earlier snapshot would erase changes
+   * made while this write was in flight.
+   */
+  async function persistSettings(patch: Partial<AppSettings>): Promise<void> {
+    const prev = get().settings;
+    const updated: AppSettings = { ...prev, ...patch };
     set({ settings: updated });
     try {
-      await writeSettings({ soundEnabled: updated.soundEnabled });
+      await writeSettings(patch);
     } catch {
-      set({ settings: prev });
+      const current = get().settings;
+      const reverted: AppSettings = { ...current };
+      for (const key of Object.keys(patch) as (keyof AppSettings)[]) {
+        if (current[key] === updated[key]) Object.assign(reverted, { [key]: prev[key] });
+      }
+      set({ settings: reverted });
     }
-  },
+  }
 
-  toggleConfetti: async () => {
-    const { settings: prev } = get();
-    const updated: AppSettings = { ...prev, confettiEnabled: !prev.confettiEnabled };
-    set({ settings: updated });
-    try {
-      await writeSettings({ confettiEnabled: updated.confettiEnabled });
-    } catch {
-      set({ settings: prev });
-    }
-  },
+  return {
+    settings: DEFAULT_SETTINGS,
+    loading: false,
 
-  setTheme: async (theme: AccentKey) => {
-    const { settings: prev } = get();
-    const updated: AppSettings = { ...prev, theme };
-    set({ settings: updated });
-    try {
-      await writeSettings({ theme });
-    } catch {
-      set({ settings: prev });
-    }
-  },
+    fetchSettings: async () => {
+      set({ loading: true });
+      try {
+        const settings = await readSettings();
+        set({ settings, loading: false });
+      } catch {
+        set({ settings: DEFAULT_SETTINGS, loading: false });
+      }
+    },
 
-  addCustomGroup: async (group: CustomGroup) => {
-    const { settings: prev } = get();
-    const updated: AppSettings = {
-      ...prev,
-      customGroups: [...prev.customGroups, group],
-    };
-    set({ settings: updated });
-    try {
-      await writeSettings({ customGroups: updated.customGroups });
-    } catch {
-      set({ settings: prev });
-    }
-  },
+    toggleSound: () => persistSettings({ soundEnabled: !get().settings.soundEnabled }),
 
-  removeCustomGroup: async (groupKey: string) => {
-    const { settings: prev } = get();
-    const updated: AppSettings = {
-      ...prev,
-      customGroups: prev.customGroups.filter((g) => g.groupKey !== groupKey),
-    };
-    set({ settings: updated });
-    try {
-      await writeSettings({ customGroups: updated.customGroups });
-    } catch {
-      set({ settings: prev });
-    }
-  },
+    toggleConfetti: () => persistSettings({ confettiEnabled: !get().settings.confettiEnabled }),
 
-  updateKeyBinding: async (key: keyof AppSettings['keyBindings'], binding: string) => {
-    const { settings: prev } = get();
-    const updated: AppSettings = {
-      ...prev,
-      keyBindings: {
-        ...prev.keyBindings,
-        [key]: binding,
-      },
-    };
-    set({ settings: updated });
-    try {
-      await writeSettings({ keyBindings: updated.keyBindings });
-    } catch {
-      set({ settings: prev });
-    }
-  },
+    setTheme: (theme: AccentKey) => persistSettings({ theme }),
 
-  resetKeyBindings: async () => {
-    const { settings: prev } = get();
-    const updated: AppSettings = {
-      ...prev,
-      keyBindings: {
-        switchSectionN: 'Meta+{n}',
-        switchSectionAll: 'Meta+0',
-        cyclePrev: 'ArrowLeft',
-        cycleNext: 'ArrowRight',
-        focusSearch: '/',
-        clearFilter: 'Escape',
-      },
-    };
-    set({ settings: updated });
-    try {
-      await writeSettings({ keyBindings: updated.keyBindings });
-    } catch {
-      set({ settings: prev });
-    }
-  },
+    addCustomGroup: (group: CustomGroup) =>
+      persistSettings({ customGroups: [...get().settings.customGroups, group] }),
 
-  setMaxChipsVisible: async (count: number) => {
-    const { settings: prev } = get();
-    const updated: AppSettings = { ...prev, maxChipsVisible: count };
-    set({ settings: updated });
-    try {
-      await writeSettings({ maxChipsVisible: count });
-    } catch {
-      set({ settings: prev });
-    }
-  },
+    removeCustomGroup: (groupKey: string) =>
+      persistSettings({
+        customGroups: get().settings.customGroups.filter((g) => g.groupKey !== groupKey),
+      }),
 
-  setStaleThresholdDays: async (days: number) => {
-    const { settings: prev } = get();
-    const updated: AppSettings = { ...prev, staleThresholdDays: days };
-    set({ settings: updated });
-    try {
-      await writeSettings({ staleThresholdDays: days });
-    } catch {
-      set({ settings: prev });
-    }
-  },
+    renameProduct: (productKey: string, label: string, defaultLabel?: string) =>
+      persistSettings({
+        productLabels: setProductLabel(get().settings.productLabels, productKey, label, defaultLabel),
+      }),
 
-  setLanguage: async (language: 'en' | 'zh' | 'system') => {
-    const { settings: prev } = get();
-    const updated: AppSettings = { ...prev, language };
-    set({ settings: updated });
-    try {
-      await writeSettings({ language });
-    } catch {
-      set({ settings: prev });
-    }
-  },
+    revertProductLabel: (productKey: string) =>
+      persistSettings({ productLabels: clearProductLabel(get().settings.productLabels, productKey) }),
 
-  setGroupSortBy: async (groupSortBy: GroupSortOption) => {
-    const { settings: prev } = get();
-    const updated: AppSettings = { ...prev, groupSortBy };
-    set({ settings: updated });
-    try {
-      await writeSettings({ groupSortBy });
-    } catch {
-      set({ settings: prev });
-    }
-  },
-}));
+    replaceProductLabels: (productLabels: Record<string, string>) => persistSettings({ productLabels }),
+
+    updateKeyBinding: (key: keyof AppSettings['keyBindings'], binding: string) =>
+      persistSettings({ keyBindings: { ...get().settings.keyBindings, [key]: binding } }),
+
+    resetKeyBindings: () =>
+      persistSettings({
+        keyBindings: {
+          switchSectionN: 'Meta+{n}',
+          switchSectionAll: 'Meta+0',
+          cyclePrev: 'ArrowLeft',
+          cycleNext: 'ArrowRight',
+          focusSearch: '/',
+          clearFilter: 'Escape',
+        },
+      }),
+
+    setMaxChipsVisible: (count: number) => persistSettings({ maxChipsVisible: count }),
+
+    setStaleThresholdDays: (days: number) => persistSettings({ staleThresholdDays: days }),
+
+    setLanguage: (language: 'en' | 'zh' | 'system') => persistSettings({ language }),
+
+    setGroupSortBy: (groupSortBy: GroupSortOption) => persistSettings({ groupSortBy }),
+  };
+});

@@ -15,25 +15,18 @@ import { createSortComparator } from '../../lib/product-groups';
 import { parseSearchQuery, resolveSectionQueryTarget } from '../lib/search-commands';
 import { getExtensionVersion } from '../../utils/chrome-runtime';
 import { useChromeStorageSync } from './useChromeStorageSync';
+import { focusWhenReady } from '../hooks/useFocusFollow';
 import { buildOrganizerModel, toProductItemId } from '../../lib/section-organizer';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 
 
-function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void {
-  const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tab-url]'));
-  const target = direction === 'first' ? chips[0] : chips.at(-1);
-
-  if (target) {
-    target.focus({ preventScroll: false });
-    target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    return;
-  }
-
-  if (attempts > 0) {
-    window.setTimeout(() => focusTabChipWhenReady(direction, attempts - 1), 50);
-  }
+function focusTabChipWhenReady(direction: 'first' | 'last'): void {
+  focusWhenReady(() => {
+    const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tab-url]'));
+    return direction === 'first' ? chips[0] : chips.at(-1);
+  });
 }
 
 export function useDashboardController() {

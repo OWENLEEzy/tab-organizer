@@ -1,5 +1,6 @@
 import type { Tab, TabGroup, CustomGroup, GroupSortOption } from '../types';
 import { resolveProduct } from './resolve-product';
+import type { ProductLabels } from './product-labels';
 import { friendlyDomain } from './title-cleaner';
 import { analyzeDuplicates } from './duplicate-analysis';
 import { getTabDomain } from './url-rules';
@@ -81,11 +82,12 @@ export function groupTabsByProduct(
   tabs: readonly Tab[],
   customOrder?: Record<string, number>,
   customGroups?: CustomGroup[],
+  productLabels?: ProductLabels,
 ): TabGroup[] {
   if (tabs.length === 0) return [];
 
   const groupMap = new Map<string, Tab[]>();
-  const productLabels = new Map<string, string>();
+  const labelByKey = new Map<string, string>();
   const productIconDomains = new Map<string, string>();
 
   for (const tab of tabs) {
@@ -94,9 +96,9 @@ export function groupTabsByProduct(
 
       if (!hostname) continue;
 
-      const product = resolveProduct(hostname, customGroups);
+      const product = resolveProduct(hostname, customGroups, productLabels);
 
-      productLabels.set(product.key, product.label);
+      labelByKey.set(product.key, product.label);
       productIconDomains.set(product.key, product.iconDomain);
 
       const existing = groupMap.get(product.key);
@@ -142,7 +144,7 @@ export function groupTabsByProduct(
     groups.push({
       id: key,
       domain: key,
-      friendlyName: productLabels.get(key) ?? friendlyDomain(key),
+      friendlyName: labelByKey.get(key) ?? friendlyDomain(key),
       itemType: 'product',
       itemKey: key,
       productKey: key,

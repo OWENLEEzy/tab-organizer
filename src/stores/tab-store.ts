@@ -232,12 +232,12 @@ export const useTabStore = create<TabStore>((set) => ({
       const rawMapped = rawTabs.map(chromeTabToAppTab);
       const dashboardCount = rawMapped.filter((tab) => tab.isDashboard).length;
       const mapped = rawMapped.filter((tab) => isRealTab(tab.url));
-      const customGroups = useSettingsStore.getState().settings.customGroups;
+      const { customGroups, productLabels } = useSettingsStore.getState().settings;
       const { currentProductKeys, legacyKeyMap, hostnamesByProductKey } =
         buildProductKeyCompatibility(mapped, customGroups);
       const organizerState = await reconcileOrganizerState(currentProductKeys, legacyKeyMap);
       const groupOrder = organizerState.groupOrder;
-      const productGroups = groupTabsByProduct(mapped, groupOrder, customGroups);
+      const productGroups = groupTabsByProduct(mapped, groupOrder, customGroups, productLabels);
       const sections = orderedSections(organizerState.sections);
       let sectionAssignments = organizerState.sectionAssignments;
       let hasNewAssignments = false;

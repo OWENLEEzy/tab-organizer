@@ -272,6 +272,22 @@ describe('groupTabsByProduct', () => {
     expect(groups.find((group) => group.domain === 'acme')?.lastAccessed).toBe(30);
   });
 
+  it('shows a user label override as the group name while keeping the product key', () => {
+    const groups = groupTabsByProduct(
+      [
+        makeTab({ id: 1, url: 'https://www.youtube.com/watch?v=1' }),
+        makeTab({ id: 2, url: 'https://m.youtube.com/watch?v=2' }),
+      ],
+      undefined,
+      undefined,
+      { youtube: 'Videos' },
+    );
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0].productKey).toBe('youtube');
+    expect(groups[0].friendlyName).toBe('Videos');
+  });
+
   describe('domain consolidation', () => {
     it('consolidates localized Google domains into a single group', () => {
       const tabs = [

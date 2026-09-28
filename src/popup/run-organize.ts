@@ -22,7 +22,12 @@ export interface OrganizeOutcome {
 async function loadGroups() {
   const [chromeTabs, storage] = await Promise.all([queryAllTabs(), readStorage()]);
   const tabs = chromeTabs.filter((t) => isRealTab(t.url ?? '')).map(chromeTabToAppTab);
-  const groups = groupTabsByProduct(tabs, storage.groupOrder, storage.settings.customGroups);
+  const groups = groupTabsByProduct(
+    tabs,
+    storage.groupOrder,
+    storage.settings.customGroups,
+    storage.settings.productLabels,
+  );
   return { chromeTabs, storage, groups };
 }
 

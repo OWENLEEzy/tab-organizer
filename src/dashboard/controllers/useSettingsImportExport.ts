@@ -138,6 +138,10 @@ export function useSettingsImportExport({
           ));
         }
 
+        if (importedSettings.productLabels) {
+          await settingsStore.replaceProductLabels(importedSettings.productLabels);
+        }
+
         if (importedSettings.keyBindings) {
           const updates: Promise<void>[] = [];
           for (const [key, binding] of Object.entries(importedSettings.keyBindings)) {
@@ -160,6 +164,9 @@ export function useSettingsImportExport({
           : [];
         await tabStore.importBackup(importedSections, sectionAssignments, unsectionedProductKeys);
       }
+
+      // Imported names, hostname rules, and section rules all change grouping.
+      await tabStore.fetchTabs();
 
       showToast(t('toastSettingsImported'));
     } catch (err) {

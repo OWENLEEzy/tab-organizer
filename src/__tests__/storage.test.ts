@@ -677,4 +677,24 @@ describe('schema 6', () => {
 
     expect(result.onboardingDone).toBe(true);
   });
+
+  it('keeps settings saved before productLabels existed and defaults the new field', async () => {
+    storage['schemaVersion'] = 6;
+    storage['onboardingDone'] = true;
+    storage['settings'] = { theme: 'sage' };
+
+    const result = await readStorage();
+
+    expect(result.settings.theme).toBe('sage');
+    expect(result.settings.productLabels).toEqual({});
+  });
+
+  it('drops malformed product label overrides', async () => {
+    storage['schemaVersion'] = 6;
+    storage['settings'] = { productLabels: { youtube: ' Videos ', bad: 1, blank: '  ' } };
+
+    const result = await readStorage();
+
+    expect(result.settings.productLabels).toEqual({ youtube: 'Videos' });
+  });
 });

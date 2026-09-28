@@ -215,4 +215,101 @@ describe('SectionRulesWorkbench', () => {
     expect(props.onCreateSection).not.toHaveBeenCalled();
     expect(screen.getByRole('alert')).toHaveTextContent('A section with this name already exists.');
   });
+
+  describe('advanced regex editor', () => {
+    function regexBox(): HTMLTextAreaElement {
+      return screen.getByRole('textbox', { name: 'Advanced: use a regex' }) as HTMLTextAreaElement;
+    }
+
+    it('keeps an incomplete pattern in the box while the user is still typing it', () => {
+      renderWorkbench();
+
+      fireEvent.focus(regexBox());
+      fireEvent.change(regexBox(), { target: { value: '(' } });
+      expect(regexBox().value).toBe('(');
+      expect(screen.getByRole('alert')).toHaveTextContent('Invalid regular expression');
+
+      fireEvent.change(regexBox(), { target: { value: '(foo)' } });
+      expect(regexBox().value).toBe('(foo)');
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('saves only the finished text on blur, never a half-typed prefix', () => {
+      const props = renderWorkbench();
+
+      fireEvent.focus(regexBox());
+      // `.` alone is valid and would claim every open product if it were saved.
+      fireEvent.change(regexBox(), { target: { value: '.' } });
+      fireEvent.change(regexBox(), { target: { value: '.docs' } });
+      expect(props.onUpdateSection).not.toHaveBeenCalled();
+
+      fireEvent.blur(regexBox());
+      expect(props.onUpdateSection).toHaveBeenCalledTimes(1);
+      expect(props.onUpdateSection).toHaveBeenCalledWith('dev', {
+        autoRules: [
+          { kind: 'keyword', value: 'github' },
+          { kind: 'regex', pattern: '.docs' },
+        ],
+      });
+    });
+
+    it('keeps an invalid draft and its error after blur instead of saving or discarding it', () => {
+      const props = renderWorkbench();
+
+      fireEvent.focus(regexBox());
+      fireEvent.change(regexBox(), { target: { value: 'ok\n(' } });
+      fireEvent.blur(regexBox());
+
+      expect(props.onUpdateSection).not.toHaveBeenCalled();
+      expect(regexBox().value).toBe('ok\n(');
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+    });
+
+    it('keeps a trailing blank line so Enter can start the next pattern', () => {
+      renderWorkbench();
+
+      fireEvent.focus(regexBox());
+      fireEvent.change(regexBox(), { target: { value: 'foo\n' } });
+      expect(regexBox().value).toBe('foo\n');
+    });
+
+    it('does not write when the finished text parses to the saved patterns', () => {
+      const props = renderWorkbench({
+        sections: SECTIONS.map((s) => (s.id === 'dev'
+          ? { ...s, autoRules: [...(s.autoRules ?? []), { kind: 'regex', pattern: 'foo' }] }
+          : s)),
+      });
+
+      fireEvent.focus(regexBox());
+      fireEvent.change(regexBox(), { target: { value: 'foo\n\n' } });
+      fireEvent.blur(regexBox());
+
+      expect(props.onUpdateSection).not.toHaveBeenCalled();
+    });
+
+    it('shows rules saved elsewhere, e.g. by a backup import, when not editing', () => {
+      const props = renderWorkbench();
+      expect(regexBox().value).toBe('');
+
+      props.rerender({
+        sections: SECTIONS.map((s) => (s.id === 'dev'
+          ? { ...s, autoRules: [...(s.autoRules ?? []), { kind: 'regex', pattern: 'imported' }] }
+          : s)),
+      });
+
+      expect(regexBox().value).toBe('imported');
+    });
+
+    it('clears the draft and its error when another section is selected', () => {
+      renderWorkbench();
+
+      fireEvent.focus(regexBox());
+      fireEvent.change(regexBox(), { target: { value: '(' } });
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: /Design/ }));
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(regexBox().value).toBe('');
+    });
+  });
 });

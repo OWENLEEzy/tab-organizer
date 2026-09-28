@@ -9,6 +9,8 @@ import type {
 } from '../types';
 import { recoveryUrlSignature } from './recovery-snapshots';
 import { normalizeKeyword } from './section-keywords';
+import { isCompilablePattern } from './section-regex';
+import { normalizeProductLabels } from './product-labels';
 import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
 import { DEFAULT_GROUP_SORT, normalizeGroupSortBy } from '../config/group-sort';
 
@@ -46,6 +48,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     { hostnameEndsWith: '.substack.com', groupKey: 'substack', groupLabel: "Author's Substack" },
     { hostnameEndsWith: '.github.io', groupKey: 'github-pages', groupLabel: 'GitHub Pages' },
   ],
+  productLabels: {},
   landingPagePatterns: [],
   keyBindings: {
     switchSectionN: 'Meta+{n}',
@@ -97,15 +100,6 @@ function normalizeKeyBindings(value: unknown): AppSettings['keyBindings'] {
     focusSearch: typeof candidate.focusSearch === 'string' ? candidate.focusSearch : defaults.focusSearch,
     clearFilter: typeof candidate.clearFilter === 'string' ? candidate.clearFilter : defaults.clearFilter,
   };
-}
-
-function isCompilablePattern(pattern: string): boolean {
-  try {
-    new RegExp(pattern, 'i');
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 /**
@@ -375,6 +369,7 @@ function normalizeSettings(value: unknown): AppSettings {
     theme: isAccentKey(raw.theme) ? raw.theme : DEFAULT_ACCENT,
     groupSortBy: normalizeGroupSortBy(raw.groupSortBy),
     keyBindings: normalizeKeyBindings(raw.keyBindings),
+    productLabels: normalizeProductLabels(raw.productLabels),
   };
 }
 

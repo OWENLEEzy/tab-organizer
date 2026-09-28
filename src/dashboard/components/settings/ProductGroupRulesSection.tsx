@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import type { CustomGroup, TabGroup } from '../../../types';
+import type { TabGroup } from '../../../types';
+import type { ProductLabels } from '../../../lib/product-labels';
 import { getProductKey } from '../../../lib/product-key';
 import { useI18n, type TranslationKey } from '../../hooks/useI18n';
 import { classifyProductGroup, type ProductGroupSource } from '../../lib/product-group-source';
@@ -7,9 +8,9 @@ import { getProductGroupIconUrl } from '../product-groups/product-group-icon';
 
 interface ProductGroupRulesSectionProps {
   products: readonly TabGroup[];
-  customGroups: readonly CustomGroup[];
-  onRename: (group: TabGroup, label: string) => void;
-  onRevert: (groupKey: string) => void;
+  productLabels: ProductLabels;
+  onRename: (productKey: string, label: string) => void;
+  onRevert: (productKey: string) => void;
 }
 
 const SOURCE_LABEL_KEY: Record<ProductGroupSource, TranslationKey> = {
@@ -21,11 +22,11 @@ const SOURCE_LABEL_KEY: Record<ProductGroupSource, TranslationKey> = {
 /**
  * Lists the product groups the user actually has open right now, in place of
  * two blank hostname/label inputs — see design spec §3.4. Renaming a row
- * writes a custom group rule; reverting removes it.
+ * sets a display-name override for its product key; reverting removes it.
  */
 export function ProductGroupRulesSection({
   products,
-  customGroups,
+  productLabels,
   onRename,
   onRevert,
 }: ProductGroupRulesSectionProps): React.ReactElement {
@@ -45,7 +46,7 @@ export function ProductGroupRulesSection({
             <ProductGroupRuleRow
               key={getProductKey(group)}
               group={group}
-              source={classifyProductGroup(group, customGroups)}
+              source={classifyProductGroup(group, productLabels)}
               onRename={onRename}
               onRevert={onRevert}
             />
@@ -59,8 +60,8 @@ export function ProductGroupRulesSection({
 interface ProductGroupRuleRowProps {
   group: TabGroup;
   source: ProductGroupSource;
-  onRename: (group: TabGroup, label: string) => void;
-  onRevert: (groupKey: string) => void;
+  onRename: (productKey: string, label: string) => void;
+  onRevert: (productKey: string) => void;
 }
 
 function ProductGroupRuleRow({
@@ -87,7 +88,7 @@ function ProductGroupRuleRow({
   function handleSave(): void {
     const trimmed = draftLabel.trim();
     if (trimmed && trimmed !== displayName) {
-      onRename(group, trimmed);
+      onRename(getProductKey(group), trimmed);
     }
     setIsEditing(false);
   }

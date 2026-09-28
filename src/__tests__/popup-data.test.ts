@@ -30,6 +30,7 @@ const mockStorage: StorageSchema = {
     maxChipsVisible: 8,
     staleThresholdDays: 7,
     customGroups: [],
+    productLabels: {},
     landingPagePatterns: [],
     groupSortBy: 'count',
     keyBindings: { switchSectionN: '', switchSectionAll: '', cyclePrev: '', cycleNext: '', focusSearch: '', clearFilter: '' },

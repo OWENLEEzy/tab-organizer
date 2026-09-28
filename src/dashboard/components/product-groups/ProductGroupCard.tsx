@@ -318,6 +318,7 @@ function ProductGroupCardComponent({
                 onMoveToSection={onMoveToSection}
                 onMoveToNoSection={onMoveToNoSection}
                 groupName={displayName}
+                productKey={getProductKey(group)}
               />
             )}
           </div>

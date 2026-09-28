@@ -1,5 +1,6 @@
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
-import type { CustomGroup, AppSettings, Section, SectionAssignment, TabGroup } from '../../../types';
+import type { AppSettings, Section, SectionAssignment, TabGroup } from '../../../types';
+import type { ProductLabels } from '../../../lib/product-labels';
 import type { AccentKey } from '../../../config/themes';
 import { useI18n, type TranslationKey } from '../../hooks/useI18n';
 import { ProductGroupRulesSection } from './ProductGroupRulesSection';
@@ -17,14 +18,14 @@ interface SettingsPanelProps {
   language: 'en' | 'zh' | 'system';
   soundEnabled: boolean;
   confettiEnabled: boolean;
-  customGroups: CustomGroup[];
+  productLabels: ProductLabels;
   onSetTheme: (theme: AccentKey) => void;
   onSetLanguage: (language: 'en' | 'zh' | 'system') => void;
   onToggleSound: () => void;
   onToggleConfetti: () => void;
   onResetSortOrder: () => void;
-  onRenameProductGroup: (group: TabGroup, label: string) => void;
-  onRevertProductGroup: (groupKey: string) => void;
+  onRenameProductGroup: (productKey: string, label: string) => void;
+  onRevertProductGroup: (productKey: string) => void;
   // Exposed settings
   maxChipsVisible: number;
   staleThresholdDays: number;
@@ -69,7 +70,7 @@ export function SettingsPanel({
   language,
   soundEnabled,
   confettiEnabled,
-  customGroups,
+  productLabels,
   onSetTheme,
   onSetLanguage,
   onToggleSound,
@@ -300,7 +301,7 @@ export function SettingsPanel({
             {activePage === 'product-rules' && (
               <ProductGroupRulesSection
                 products={products}
-                customGroups={customGroups}
+                productLabels={productLabels}
                 onRename={onRenameProductGroup}
                 onRevert={onRevertProductGroup}
               />

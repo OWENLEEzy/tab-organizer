@@ -28,4 +28,27 @@ describe('resolveProduct', () => {
     expect(resolveProduct('localhost:3000').key).toBe('localhost:3000');
     expect(resolveProduct('localhost:3000').label).toBe('localhost:3000');
   });
+
+  it('applies a user label override on top of the resolved product without changing its key', () => {
+    const product = resolveProduct('www.youtube.com', undefined, { youtube: 'Videos' });
+    expect(product.key).toBe('youtube');
+    expect(product.label).toBe('Videos');
+  });
+
+  it('applies a label override to a product produced by a custom hostname rule', () => {
+    const custom: CustomGroup[] = [
+      { groupKey: 'work', groupLabel: 'Work', hostname: 'intranet.acme.com' },
+    ];
+    const product = resolveProduct('intranet.acme.com', custom, { work: 'Office' });
+    expect(product.key).toBe('work');
+    expect(product.label).toBe('Office');
+  });
+
+  it('ignores label overrides for other products', () => {
+    expect(resolveProduct('github.com', undefined, { youtube: 'Videos' }).label).toBe('GitHub');
+  });
+
+  it('never treats inherited object properties as a label override', () => {
+    expect(resolveProduct('constructor', undefined, {})).toEqual(resolveProduct('constructor'));
+  });
 });

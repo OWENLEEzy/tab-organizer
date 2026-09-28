@@ -132,6 +132,8 @@ export interface AppSettings {
   maxChipsVisible: number;
   staleThresholdDays: number;
   customGroups: CustomGroup[];
+  /** User display-name overrides keyed by product key. Never affects grouping. */
+  productLabels: Record<string, string>;
   landingPagePatterns: LandingPagePattern[];
   keyBindings: {
     switchSectionN: string;

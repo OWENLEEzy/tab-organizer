@@ -1,4 +1,5 @@
-import type { CustomGroup, TabGroup } from '../../types';
+import type { TabGroup } from '../../types';
+import { getProductLabel, type ProductLabels } from '../../lib/product-labels';
 import { getProductKey } from '../../lib/product-key';
 
 /**
@@ -10,10 +11,9 @@ export type ProductGroupSource = 'built-in' | 'custom' | 'domain-fallback';
 
 export function classifyProductGroup(
   group: TabGroup,
-  customGroups: readonly CustomGroup[],
+  productLabels: ProductLabels,
 ): ProductGroupSource {
-  const productKey = getProductKey(group);
-  if (customGroups.some((custom) => custom.groupKey === productKey)) return 'custom';
+  if (getProductLabel(productLabels, getProductKey(group)) !== undefined) return 'custom';
 
   const label = group.friendlyName || group.domain;
   if (label === group.domain) return 'domain-fallback';

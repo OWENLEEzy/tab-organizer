@@ -45,6 +45,7 @@ function makeStores() {
       maxChipsVisible: 8,
       staleThresholdDays: 3,
       customGroups: [{ groupKey: 'old', groupLabel: 'Old', hostname: 'old.test' }],
+      productLabels: { youtube: 'Videos' },
       landingPagePatterns: [],
       keyBindings: {
         switchSectionN: 'Meta+{n}',
@@ -64,6 +65,7 @@ function makeStores() {
     setGroupSortBy: vi.fn(async () => {}),
     removeCustomGroup: vi.fn(async () => {}),
     addCustomGroup: vi.fn(async () => {}),
+    replaceProductLabels: vi.fn(async () => {}),
     updateKeyBinding: vi.fn(async () => {}),
     setLanguage: vi.fn(async () => {}),
   } as unknown as SettingsStore;
@@ -73,6 +75,7 @@ function makeStores() {
     sectionAssignments: [{ productKey: 'github', sectionId: 'work' }],
     unsectionedProductKeys: [],
     importBackup: vi.fn(async () => {}),
+    fetchTabs: vi.fn(async () => {}),
   } as unknown as TabStore;
 
   return { settingsStore, tabStore };
@@ -132,6 +135,7 @@ describe('useSettingsImportExport', () => {
         soundEnabled: false,
         maxChipsVisible: 12,
         customGroups: [{ groupKey: 'new', groupLabel: 'New', hostname: 'new.test' }],
+        productLabels: { github: ' Code ', bogus: 42 },
         language: 'zh',
       },
       sections: [{ id: 'later', name: 'Later', order: 0 }],
@@ -145,6 +149,7 @@ describe('useSettingsImportExport', () => {
     expect(settingsStore.setMaxChipsVisible).toHaveBeenCalledWith(12);
     expect(settingsStore.removeCustomGroup).toHaveBeenCalledWith('old');
     expect(settingsStore.addCustomGroup).toHaveBeenCalledWith({ groupKey: 'new', groupLabel: 'New', hostname: 'new.test' });
+    expect(settingsStore.replaceProductLabels).toHaveBeenCalledWith({ github: 'Code' });
     expect(tabStore.importBackup).toHaveBeenCalledWith(
       [{ id: 'later', name: 'Later', order: 0 }],
       [{ productKey: 'github', sectionId: 'later' }],
@@ -190,6 +195,22 @@ describe('useSettingsImportExport', () => {
       { kind: 'regex', pattern: 'github|gitlab' },
       { kind: 'keyword', value: 'jira' },
     ]);
+  });
+
+  it('regroups tabs after import so imported names show without a refresh', async () => {
+    const { settingsStore, tabStore } = makeStores();
+    const { result } = renderHook(
+      () => useSettingsImportExport({ settingsStore, tabStore, showToast: vi.fn() }),
+      { wrapper },
+    );
+
+    await result.current.handleImportConfig(JSON.stringify({
+      version: '1.0',
+      settings: { productLabels: { github: 'Code' } },
+    }));
+
+    expect(settingsStore.replaceProductLabels).toHaveBeenCalledWith({ github: 'Code' });
+    expect(tabStore.fetchTabs).toHaveBeenCalledTimes(1);
   });
 
   it('does not import legacy manual group keys (manualGroups, groupAssignments)', async () => {

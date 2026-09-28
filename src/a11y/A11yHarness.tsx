@@ -45,7 +45,7 @@ export function A11yHarness(): React.ReactElement {
           language="system"
           soundEnabled
           confettiEnabled
-          customGroups={[]}
+          productLabels={{}}
           onSetTheme={() => {}}
           onSetLanguage={() => {}}
           onToggleSound={() => {}}

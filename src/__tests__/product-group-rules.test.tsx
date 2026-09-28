@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import type { CustomGroup, TabGroup } from '../types';
+import { afterEach, describe, it, expect, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import type { TabGroup } from '../types';
 import { classifyProductGroup } from '../dashboard/lib/product-group-source';
 import { ProductGroupRulesSection } from '../dashboard/components/settings/ProductGroupRulesSection';
 import { I18nProvider } from '../dashboard/providers/I18nProvider';
@@ -13,30 +13,43 @@ function group(domain: string, productKey: string, friendlyName: string): TabGro
   };
 }
 
-const CUSTOM: CustomGroup[] = [{ hostname: 'figma.com', groupKey: 'figma-com', groupLabel: 'My designs' }];
+const LABELS: Record<string, string> = { 'figma-com': 'My designs' };
 
 describe('classifyProductGroup', () => {
-  it('marks a group whose key matches a custom rule as custom', () => {
-    expect(classifyProductGroup(group('figma.com', 'figma-com', 'My designs'), CUSTOM)).toBe('custom');
+  it('marks a group the user renamed as custom', () => {
+    expect(classifyProductGroup(group('figma.com', 'figma-com', 'My designs'), LABELS)).toBe('custom');
+  });
+
+  it('does not treat a built-in default hostname rule as a user rename', () => {
+    // e.g. the shipped `.substack.com` rule: nothing for the user to revert.
+    expect(classifyProductGroup(group('substack', 'substack', "Author's Substack"), {})).toBe('built-in');
   });
 
   it('marks a group whose friendly name equals its raw domain as a domain fallback', () => {
-    expect(classifyProductGroup(group('notion-static.com', 'notion-static.com', 'notion-static.com'), []))
+    expect(classifyProductGroup(group('notion-static.com', 'notion-static.com', 'notion-static.com'), {}))
       .toBe('domain-fallback');
   });
 
+  it('does not mistake an inherited object property for a rename', () => {
+    expect(classifyProductGroup(group('constructor', 'constructor', 'Constructor'), {})).toBe('built-in');
+  });
+
   it('marks everything else as built-in', () => {
-    expect(classifyProductGroup(group('github.com', 'github', 'GitHub'), [])).toBe('built-in');
+    expect(classifyProductGroup(group('github.com', 'github', 'GitHub'), {})).toBe('built-in');
   });
 });
 
 describe('ProductGroupRulesSection', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   it('lists real open groups instead of blank inputs', () => {
     render(
       <I18nProvider>
         <ProductGroupRulesSection
           products={[group('github.com', 'github', 'GitHub')]}
-          customGroups={[]}
+          productLabels={{}}
           onRename={vi.fn()}
           onRevert={vi.fn()}
         />
@@ -51,7 +64,7 @@ describe('ProductGroupRulesSection', () => {
       <I18nProvider>
         <ProductGroupRulesSection
           products={[group('notion-static.com', 'notion-static.com', 'notion-static.com')]}
-          customGroups={[]}
+          productLabels={{}}
           onRename={vi.fn()}
           onRevert={vi.fn()}
         />
@@ -65,12 +78,49 @@ describe('ProductGroupRulesSection', () => {
       <I18nProvider>
         <ProductGroupRulesSection
           products={[group('figma.com', 'figma-com', 'My designs')]}
-          customGroups={CUSTOM}
+          productLabels={LABELS}
           onRename={vi.fn()}
           onRevert={vi.fn()}
         />
       </I18nProvider>,
     );
     expect(screen.getByRole('button', { name: /Revert/ })).toBeInTheDocument();
+  });
+
+  it('renames by product key, never by the group\'s display domain', () => {
+    const onRename = vi.fn();
+    render(
+      <I18nProvider>
+        <ProductGroupRulesSection
+          products={[group('youtube', 'youtube', 'YouTube')]}
+          productLabels={{}}
+          onRename={onRename}
+          onRevert={vi.fn()}
+        />
+      </I18nProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
+    const input = screen.getByRole('textbox', { name: 'Rename' });
+    fireEvent.change(input, { target: { value: 'Videos' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onRename).toHaveBeenCalledWith('youtube', 'Videos');
+  });
+
+  it('reverts by product key', () => {
+    const onRevert = vi.fn();
+    render(
+      <I18nProvider>
+        <ProductGroupRulesSection
+          products={[group('figma.com', 'figma-com', 'My designs')]}
+          productLabels={LABELS}
+          onRename={vi.fn()}
+          onRevert={onRevert}
+        />
+      </I18nProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Revert' }));
+
+    expect(onRevert).toHaveBeenCalledWith('figma-com');
   });
 });

@@ -25,7 +25,7 @@ function SettingsHarness(): React.ReactElement {
         language="system"
         soundEnabled
         confettiEnabled
-        customGroups={[]}
+        productLabels={{}}
         onSetTheme={() => {}}
         onSetLanguage={() => {}}
         onToggleSound={() => {}}
@@ -104,7 +104,7 @@ describe('SettingsPanel accessibility', () => {
         language="system"
         soundEnabled
         confettiEnabled
-        customGroups={[]}
+        productLabels={{}}
         onSetTheme={() => {}}
         onSetLanguage={() => {}}
         onToggleSound={() => {}}

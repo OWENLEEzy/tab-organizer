@@ -101,6 +101,76 @@ describe('useSettingsStore', () => {
     expect(stored.customGroups).toHaveLength(0);
   });
 
+  it('renaming a product twice keeps a single label override', async () => {
+    await useSettingsStore.getState().renameProduct('youtube', 'Videos');
+    await useSettingsStore.getState().renameProduct('youtube', 'Watch later');
+
+    expect(useSettingsStore.getState().settings.productLabels).toEqual({ youtube: 'Watch later' });
+    const stored = chromeStorage.data['settings'] as AppSettings;
+    expect(stored.productLabels).toEqual({ youtube: 'Watch later' });
+    // Renaming never touches hostname grouping rules.
+    expect(stored.customGroups).toEqual(DEFAULT_SETTINGS.customGroups);
+  });
+
+  it('renaming back to the built-in name leaves no override behind', async () => {
+    await useSettingsStore.getState().renameProduct('youtube', 'Videos', 'YouTube');
+    await useSettingsStore.getState().renameProduct('youtube', 'YouTube', 'YouTube');
+
+    expect(useSettingsStore.getState().settings.productLabels).toEqual({});
+    expect((chromeStorage.data['settings'] as AppSettings).productLabels).toEqual({});
+  });
+
+  it('reverting a label removes only that override', async () => {
+    useSettingsStore.setState({
+      settings: { ...DEFAULT_SETTINGS, productLabels: { youtube: 'Videos', github: 'Code' } },
+    });
+
+    await useSettingsStore.getState().revertProductLabel('youtube');
+
+    expect(useSettingsStore.getState().settings.productLabels).toEqual({ github: 'Code' });
+  });
+
+  it('replaces all label overrides at once (backup import)', async () => {
+    useSettingsStore.setState({
+      settings: { ...DEFAULT_SETTINGS, productLabels: { youtube: 'Videos' } },
+    });
+
+    await useSettingsStore.getState().replaceProductLabels({ github: 'Code' });
+
+    expect(useSettingsStore.getState().settings.productLabels).toEqual({ github: 'Code' });
+  });
+
+  it('rolls back a rename when the storage write fails', async () => {
+    chromeStorage.set.mockRejectedValueOnce(new Error('Storage failure'));
+
+    await useSettingsStore.getState().renameProduct('youtube', 'Videos');
+
+    expect(useSettingsStore.getState().settings.productLabels).toEqual({});
+  });
+
+  it('a failed write rolls back only its own field, not a change made meanwhile', async () => {
+    const initialTheme = useSettingsStore.getState().settings.theme;
+    chromeStorage.set.mockRejectedValueOnce(new Error('Storage failure'));
+
+    const rename = useSettingsStore.getState().renameProduct('youtube', 'Videos');
+    const theme = useSettingsStore.getState().setTheme(initialTheme === 'clay' ? 'pine' : 'clay');
+    await Promise.all([rename, theme]);
+
+    const { settings } = useSettingsStore.getState();
+    expect(settings.productLabels).toEqual({});
+    expect(settings.theme).not.toBe(initialTheme);
+  });
+
+  it('a failed write does not undo a newer value for the same field', async () => {
+    chromeStorage.set.mockRejectedValueOnce(new Error('Storage failure'));
+
+    const first = useSettingsStore.getState().renameProduct('youtube', 'Videos');
+    const second = useSettingsStore.getState().renameProduct('youtube', 'Watch later');
+    await Promise.all([first, second]);
+
+    expect(useSettingsStore.getState().settings.productLabels).toEqual({ youtube: 'Watch later' });
+  });
+
   it('rolls back state if storage write fails', async () => {
     chromeStorage.set.mockRejectedValueOnce(new Error('Storage failure'));
     const initialTheme = useSettingsStore.getState().settings.theme;
