@@ -63,11 +63,10 @@ function orderGroups(
   const groupByKey = new Map(groups.map((g) => [getProductKey(g), g]));
   const sortedSections = [...sections].sort((a, b) => a.order - b.order);
 
-  // Assigned groups first (ordered by section order, then assignment order)
+  // Assigned groups first (ordered by section order, then assignment insertion order)
   const orderedGroups: TabGroup[] = [];
   for (const section of sortedSections) {
-    const sectionAssignments = (assignmentBySectionId.get(section.id) ?? [])
-      .sort((a, b) => a.order - b.order);
+    const sectionAssignments = assignmentBySectionId.get(section.id) ?? [];
     for (const sa of sectionAssignments) {
       const g = groupByKey.get(sa.productKey);
       if (g) orderedGroups.push(g);

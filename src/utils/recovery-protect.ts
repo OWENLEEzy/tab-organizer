@@ -1,5 +1,5 @@
 import { buildRecoverySnapshot } from '../lib/recovery-snapshots';
-import { promoteRecoverySnapshot } from './storage';
+import { promoteRecoverySnapshot, readSettings } from './storage';
 import { chromeTabToAppTab } from './tab-mapping';
 
 /**
@@ -13,7 +13,8 @@ export async function protectRecoveryBeforeClosing(
   chromeTabs: chrome.tabs.Tab[],
 ): Promise<void> {
   try {
-    const snapshot = buildRecoverySnapshot(chromeTabs.map(chromeTabToAppTab));
+    const { customGroups, productLabels } = await readSettings();
+    const snapshot = buildRecoverySnapshot(chromeTabs.map(chromeTabToAppTab), undefined, { customGroups, productLabels });
     await promoteRecoverySnapshot(snapshot);
   } catch (err: unknown) {
     console.warn('[Tab Organizer] Failed to protect recovery before closing tabs:', err);

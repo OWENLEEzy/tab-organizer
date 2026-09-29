@@ -45,14 +45,16 @@ export function A11yHarness(): React.ReactElement {
           language="system"
           soundEnabled
           confettiEnabled
-          customGroups={[]}
+          productLabels={{}}
+          customGroups={[{ hostnameEndsWith: '.substack.com', groupKey: 'substack', groupLabel: "Author's Substack" }]}
+          onRemoveCustomGroup={() => {}}
           onSetTheme={() => {}}
           onSetLanguage={() => {}}
           onToggleSound={() => {}}
           onToggleConfetti={() => {}}
           onResetSortOrder={() => {}}
-          onAddCustomGroup={() => {}}
-          onRemoveCustomGroup={() => {}}
+          onRenameProductGroup={() => {}}
+          onRevertProductGroup={() => {}}
           maxChipsVisible={8}
           staleThresholdDays={3}
           onSetMaxChipsVisible={() => {}}

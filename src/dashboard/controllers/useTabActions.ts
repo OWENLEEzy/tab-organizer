@@ -301,9 +301,10 @@ export function useTabActions({
         initialValue: t('promptCreateGroupValue'),
         confirmLabel: t('promptCreateGroupBtn'),
         onConfirm: (name) => {
-          tabStore.createSection(name).then(() => {
-            showToast(t('toastGroupCreated'));
-          });
+          tabStore.createSection(name).then(
+            () => showToast(t('toastGroupCreated')),
+            () => showToast(t('toastSaveFailed')),
+          );
           dispatch({ type: 'CLOSE_PROMPT_DIALOG' });
         },
       },
@@ -321,9 +322,10 @@ export function useTabActions({
         initialValue: group.name,
         confirmLabel: t('promptRenameGroupBtn'),
         onConfirm: (name) => {
-          tabStore.renameSection(group.id, name).then(() => {
-            showToast(t('toastGroupRenamed'));
-          });
+          tabStore.renameSection(group.id, name).then(
+            () => showToast(t('toastGroupRenamed')),
+            () => showToast(t('toastSaveFailed')),
+          );
           dispatch({ type: 'CLOSE_PROMPT_DIALOG' });
         },
       },
@@ -340,9 +342,10 @@ export function useTabActions({
         message: t('confirmDeleteGroupMsg'),
         confirmLabel: t('confirmDeleteGroupBtn'),
         onConfirm: () => {
-          tabStore.deleteSection(group.id).then(() => {
-            showToast(t('toastGroupDeleted'));
-          });
+          tabStore.deleteSection(group.id).then(
+            () => showToast(t('toastGroupDeleted')),
+            () => showToast(t('toastSaveFailed')),
+          );
           dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
         },
       },
@@ -350,9 +353,10 @@ export function useTabActions({
   }, [dispatch, tabStore, showToast, t]);
 
   const handleSetViewMode = useCallback((mode: 'cards' | 'table') => {
-    tabStore.setViewMode(mode).then(() => {
-      showToast(mode === 'cards' ? t('toastViewModeCards') : t('toastViewModeTable'));
-    });
+    tabStore.setViewMode(mode).then(
+      () => showToast(mode === 'cards' ? t('toastViewModeCards') : t('toastViewModeTable')),
+      () => showToast(t('toastSaveFailed')),
+    );
   }, [tabStore, showToast, t]);
 
   const handleRefresh = useCallback(async () => {
@@ -366,21 +370,24 @@ export function useTabActions({
       ? tabStore.moveProductGroupToSection(productKey, sectionId)
       : tabStore.moveProductToUnsectioned(productKey);
 
-    move.then(() => {
-      showToast(sectionId ? t('toastMovedToGroup') : t('toastMovedToUnsorted'));
-    });
+    move.then(
+      () => showToast(sectionId ? t('toastMovedToGroup') : t('toastMovedToUnsorted')),
+      () => showToast(t('toastSaveFailed')),
+    );
   }, [tabStore, showToast, t]);
 
   const handleMoveProductToNoSection = useCallback((productKey: string) => {
-    tabStore.moveProductToUnsectioned(productKey).then(() => {
-      showToast(t('toastMovedToUnsorted'));
-    });
+    tabStore.moveProductToUnsectioned(productKey).then(
+      () => showToast(t('toastMovedToUnsorted')),
+      () => showToast(t('toastSaveFailed')),
+    );
   }, [tabStore, showToast, t]);
 
   const handleMoveProductToSection = useCallback((productKey: string, sectionId: string) => {
-    tabStore.moveProductGroupToSection(productKey, sectionId).then(() => {
-      showToast(t('toastMovedToGroup'));
-    });
+    tabStore.moveProductGroupToSection(productKey, sectionId).then(
+      () => showToast(t('toastMovedToGroup')),
+      () => showToast(t('toastSaveFailed')),
+    );
   }, [tabStore, showToast, t]);
 
   const handleSelectStaleTabs = useCallback((days = settings.staleThresholdDays ?? 3) => {

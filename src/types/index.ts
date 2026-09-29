@@ -72,10 +72,14 @@ export interface LandingPagePattern {
 
 export type ViewMode = 'cards' | 'table';
 
-interface SectionAutoRule {
-  pattern: string;
-  type: 'hostname';
-}
+/**
+ * A section auto-rule. `keyword` is the everyday form and is always stored
+ * normalized (lowercase, no whitespace) — see `src/lib/section-keywords.ts`.
+ * `regex` is the advanced escape hatch.
+ */
+export type SectionAutoRule =
+  | { kind: 'keyword'; value: string }
+  | { kind: 'regex'; pattern: string };
 
 export interface Section {
   id: string;
@@ -88,7 +92,6 @@ export interface Section {
 export interface SectionAssignment {
   productKey: string;
   sectionId: string;
-  order: number;
 }
 
 export interface RecoveryProductSummary {
@@ -129,6 +132,8 @@ export interface AppSettings {
   maxChipsVisible: number;
   staleThresholdDays: number;
   customGroups: CustomGroup[];
+  /** User display-name overrides keyed by product key. Never affects grouping. */
+  productLabels: Record<string, string>;
   landingPagePatterns: LandingPagePattern[];
   keyBindings: {
     switchSectionN: string;
@@ -145,6 +150,11 @@ export interface AppSettings {
 
 export interface StorageSchema {
   schemaVersion: number;
+  /**
+   * Application flow state, not a user preference — deliberately outside
+   * `settings`, which holds only things the user goes looking for.
+   */
+  onboardingDone: boolean;
   settings: AppSettings;
   groupOrder: Record<string, number>;
   sections: Section[];

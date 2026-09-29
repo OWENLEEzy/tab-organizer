@@ -17,12 +17,26 @@ type LegacyGroupAssignment = {
   itemKey?: unknown;
   groupId?: unknown;
   sectionId?: unknown;
-  order?: unknown;
 };
 
-type ImportedAutoRule = NonNullable<Section['autoRules']>[number];
+/**
+ * A backup section shaped like `Section`, except `autoRules` is left as
+ * `unknown[]` rather than asserted as `SectionAutoRule[]` — nothing here has
+ * actually checked that its elements match that shape. `TabStore.importBackup`
+ * accepts this same shape; `normalizeSections`/`normalizeAutoRules` in
+ * `src/lib/storage-schema.ts` are the real gate that validates it on write.
+ */
+type ImportedSection = Omit<Section, 'autoRules'> & { autoRules?: unknown[] };
 
-function normalizeImportedSections(value: unknown): Section[] | null {
+/**
+ * Shape a backup's sections without judging their rules.
+ *
+ * Auto-rules pass through raw: `importBackup` writes via `writeOrganizerState`,
+ * so `normalizeSections` in the storage adapter is the single gate that validates
+ * rules, normalizes keywords, and converts pre-union `{ pattern, type: 'hostname' }`
+ * entries. Re-checking them here would only duplicate that gate.
+ */
+function normalizeImportedSections(value: unknown): ImportedSection[] | null {
   if (!Array.isArray(value)) return null;
 
   return value
@@ -37,14 +51,8 @@ function normalizeImportedSections(value: unknown): Section[] | null {
       name: (section.name as string).trim() || 'Untitled',
       order: Number.isFinite(section.order) ? Number(section.order) : index,
       emoji: typeof section.emoji === 'string' ? section.emoji : undefined,
-      autoRules: Array.isArray(section.autoRules)
-        ? section.autoRules.filter((rule): rule is ImportedAutoRule => (
-            rule != null &&
-            typeof rule === 'object' &&
-            (rule as Record<string, unknown>).type === 'hostname' &&
-            typeof (rule as Record<string, unknown>).pattern === 'string'
-          ))
-        : undefined,
+      // Unvalidated, not trusted: storage re-validates every rule on write.
+      autoRules: Array.isArray(section.autoRules) ? section.autoRules : undefined,
     }));
 }
 
@@ -53,7 +61,7 @@ function normalizeImportedAssignments(value: unknown): SectionAssignment[] {
 
   return value
     .filter((assignment): assignment is LegacyGroupAssignment => assignment != null && typeof assignment === 'object')
-    .flatMap((assignment, index): SectionAssignment[] => {
+    .flatMap((assignment): SectionAssignment[] => {
       const productKey = typeof assignment.productKey === 'string'
         ? assignment.productKey
         : assignment.itemType === 'product' && typeof assignment.itemKey === 'string'
@@ -67,11 +75,7 @@ function normalizeImportedAssignments(value: unknown): SectionAssignment[] {
 
       if (!productKey || !sectionId) return [];
 
-      return [{
-        productKey,
-        sectionId,
-        order: Number.isFinite(assignment.order) ? Number(assignment.order) : index,
-      }];
+      return [{ productKey, sectionId }];
     });
 }
 
@@ -134,6 +138,10 @@ export function useSettingsImportExport({
           ));
         }
 
+        if (importedSettings.productLabels) {
+          await settingsStore.replaceProductLabels(importedSettings.productLabels);
+        }
+
         if (importedSettings.keyBindings) {
           const updates: Promise<void>[] = [];
           for (const [key, binding] of Object.entries(importedSettings.keyBindings)) {
@@ -156,6 +164,9 @@ export function useSettingsImportExport({
           : [];
         await tabStore.importBackup(importedSections, sectionAssignments, unsectionedProductKeys);
       }
+
+      // Imported names, hostname rules, and section rules all change grouping.
+      await tabStore.fetchTabs();
 
       showToast(t('toastSettingsImported'));
     } catch (err) {

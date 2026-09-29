@@ -8,10 +8,16 @@ import {
   moveProductToUnsectioned,
 } from '../lib/section-organizer';
 import {
+  applyAssignmentUpdates,
+  applyAutoAssignments,
   clearRecoverySnapshots,
   deleteRecoverySnapshot,
+  deleteSectionInStorage,
   readRecoverySnapshots,
   reconcileOrganizerState,
+  removeUnsectionedPin,
+  unassignProductFromSections,
+  updateSections,
   writeGroupOrder,
   writeOrganizerState,
 } from '../utils/storage';
@@ -72,8 +78,12 @@ interface TabActions {
   reorderSections: (groups: Section[]) => Promise<void>;
   /** Assign a product group to a section. */
   moveProductGroupToSection: (productKey: string, sectionId: string) => Promise<void>;
+  /** Assign several product groups to a section in one batched, race-safe write. */
+  assignProductsToSection: (productKeys: readonly string[], sectionId: string) => Promise<void>;
   /** Remove a product group assignment. */
   moveProductToUnsectioned: (productKey: string) => Promise<void>;
+  /** Clear a product's explicit "keep unsectioned" pin so auto-rules may re-claim it. */
+  unpinProduct: (productKey: string) => Promise<void>;
   /** Persist the visible organizer layout mode. */
   setViewMode: (viewMode: ViewMode) => Promise<void>;
   /** Clear the current error state. */
@@ -92,9 +102,18 @@ interface TabActions {
   closeExtraDashboards: () => Promise<void>;
   /** Set the currently active section to filter the dashboard. */
   setActiveSection: (id: string | null) => void;
-  /** Overwrite sections and sectionAssignments with imported backup. */
+  /** Persist the sections the user confirmed in onboarding and close it for good. */
+  completeOnboarding: (sections: Section[], assignments: SectionAssignment[]) => Promise<void>;
+  /**
+   * Overwrite sections and sectionAssignments with imported backup.
+   *
+   * `sections[].autoRules` is left as `unknown[]` rather than typed as
+   * `SectionAutoRule[]` — this is untrusted, unvalidated backup data.
+   * `writeOrganizerState` -> `normalizeSections`/`normalizeAutoRules` in
+   * `src/lib/storage-schema.ts` is the real gate that validates it on write.
+   */
   importBackup: (
-    sections: Section[],
+    sections: Array<Omit<Section, 'autoRules'> & { autoRules?: unknown[] }>,
     sectionAssignments: SectionAssignment[],
     unsectionedProductKeys?: string[],
   ) => Promise<void>;
@@ -105,11 +124,15 @@ interface TabActions {
 export type TabStore = {
   tabs: Tab[];
   products: TabGroup[];
+  /** Hostnames observed for each product key, from the most recent `fetchTabs`. */
+  hostnamesByProductKey: Map<string, string[]>;
   sections: Section[];
   sectionAssignments: SectionAssignment[];
   unsectionedProductKeys: string[];
   recoverySnapshots: RecoverySnapshot[];
   viewMode: ViewMode;
+  /** True once the user has confirmed their sections in the one-time onboarding. */
+  onboardingDone: boolean;
   loading: boolean;
   error: string | null;
   activeSectionId: string | null;
@@ -183,16 +206,31 @@ function buildProductKeyCompatibility(
   };
 }
 
+/**
+ * Persist an optimistic organizer change, then refetch. Refetching also on
+ * failure puts the store back in line with what storage actually holds; the
+ * error still propagates so the caller can tell the user.
+ */
+async function writeThenResync(write: () => Promise<unknown>): Promise<void> {
+  try {
+    await write();
+  } finally {
+    await useTabStore.getState().fetchTabs();
+  }
+}
+
 // ─── Store ──────────────────────────────────────────────────────────
 
 export const useTabStore = create<TabStore>((set) => ({
   tabs: [],
   products: [],
+  hostnamesByProductKey: new Map(),
   sections: [],
   sectionAssignments: [],
   unsectionedProductKeys: [],
   recoverySnapshots: [],
   viewMode: 'cards',
+  onboardingDone: false,
   loading: false,
   error: null,
   activeSectionId: null,
@@ -211,32 +249,32 @@ export const useTabStore = create<TabStore>((set) => ({
       const rawMapped = rawTabs.map(chromeTabToAppTab);
       const dashboardCount = rawMapped.filter((tab) => tab.isDashboard).length;
       const mapped = rawMapped.filter((tab) => isRealTab(tab.url));
-      const customGroups = useSettingsStore.getState().settings.customGroups;
+      const { customGroups, productLabels } = useSettingsStore.getState().settings;
       const { currentProductKeys, legacyKeyMap, hostnamesByProductKey } =
         buildProductKeyCompatibility(mapped, customGroups);
       const organizerState = await reconcileOrganizerState(currentProductKeys, legacyKeyMap);
       const groupOrder = organizerState.groupOrder;
-      const productGroups = groupTabsByProduct(mapped, groupOrder, customGroups);
+      const productGroups = groupTabsByProduct(mapped, groupOrder, customGroups, productLabels);
       const sections = orderedSections(organizerState.sections);
       let sectionAssignments = organizerState.sectionAssignments;
-      let hasNewAssignments = false;
+      let unsectionedProductKeys = organizerState.unsectionedProductKeys;
       const newAssignments = autoAssignProducts({
         products: productGroups,
         sections,
         assignments: sectionAssignments,
-        unsectionedProductKeys: organizerState.unsectionedProductKeys,
+        unsectionedProductKeys,
         hostnamesByProductKey,
       });
 
       if (newAssignments.length > 0) {
-        sectionAssignments = [...sectionAssignments, ...newAssignments];
-        hasNewAssignments = true;
-      }
-
-      if (hasNewAssignments) {
-        await writeOrganizerState({ sectionAssignments }).catch(err => {
+        // Delta, not a snapshot: an assignment or pin made since this fetch
+        // read storage must survive, so publish what storage now holds.
+        try {
+          ({ sectionAssignments, unsectionedProductKeys } = await applyAutoAssignments(newAssignments));
+        } catch (err) {
           console.warn('[Tab Organizer] Failed to persist auto-assignments:', err);
-        });
+          sectionAssignments = [...sectionAssignments, ...newAssignments];
+        }
       }
 
       const products = productGroups;
@@ -244,10 +282,12 @@ export const useTabStore = create<TabStore>((set) => ({
       set({
         tabs: mapped,
         products,
+        hostnamesByProductKey,
         sections,
         sectionAssignments,
-        unsectionedProductKeys: organizerState.unsectionedProductKeys,
+        unsectionedProductKeys,
         viewMode: organizerState.viewMode,
+        onboardingDone: organizerState.onboardingDone,
         loading: false,
         dashboardCount,
         // The single globally most-recently-used real tab, computed from all tabs.
@@ -490,9 +530,8 @@ export const useTabStore = create<TabStore>((set) => ({
       name: trimmed,
       order: current.length,
     };
-    const nextSections = [...current, group];
-    set({ sections: nextSections });
-    await writeOrganizerState({ sections: nextSections });
+    set({ sections: [...current, group] });
+    await writeThenResync(() => updateSections((stored) => [...stored, { ...group, order: stored.length }]));
   },
 
   renameSection: async (sectionId: string, name: string) => {
@@ -502,7 +541,8 @@ export const useTabStore = create<TabStore>((set) => ({
       .sections
       .map((g) => g.id === sectionId ? { ...g, name: trimmed } : g);
     set({ sections: nextSections });
-    await writeOrganizerState({ sections: nextSections });
+    await writeThenResync(() => updateSections((stored) =>
+      stored.map((g) => g.id === sectionId ? { ...g, name: trimmed } : g)));
   },
 
   updateSection: async (sectionId: string, updates: Partial<Omit<Section, 'id'>>) => {
@@ -511,9 +551,9 @@ export const useTabStore = create<TabStore>((set) => ({
       .sections
       .map((g) => g.id === sectionId ? { ...g, ...updates } : g);
     set({ sections: nextSections });
-    await writeOrganizerState({ sections: nextSections });
-    // Refetch to apply auto-rules updates immediately
-    await useTabStore.getState().fetchTabs();
+    // The resync also applies changed auto-rules immediately.
+    await writeThenResync(() => updateSections((stored) =>
+      stored.map((g) => g.id === sectionId ? { ...g, ...updates } : g)));
   },
 
   deleteSection: async (sectionId: string) => {
@@ -532,44 +572,63 @@ export const useTabStore = create<TabStore>((set) => ({
       sectionAssignments: nextAssignments,
       unsectionedProductKeys: nextOverrides,
     });
-    await writeOrganizerState({
-      sections: nextSections,
-      sectionAssignments: nextAssignments,
-      unsectionedProductKeys: nextOverrides,
-    });
-    await useTabStore.getState().fetchTabs();
+    await writeThenResync(() => deleteSectionInStorage(sectionId));
   },
 
   reorderSections: async (groups: Section[]) => {
     const nextSections = groups.map((g, index) => ({ ...g, order: index }));
     set({ sections: nextSections });
-    await writeOrganizerState({ sections: nextSections });
+    const orderById = new Map(nextSections.map((g) => [g.id, g.order]));
+    await writeThenResync(() => updateSections((stored) =>
+      [...stored]
+        .sort((a, b) => (orderById.get(a.id) ?? Infinity) - (orderById.get(b.id) ?? Infinity))
+        .map((g, index) => ({ ...g, order: index }))));
   },
 
   moveProductGroupToSection: async (productKey: string, sectionId: string) => {
     const state = useTabStore.getState();
-    const nextAssignments = assignProductToSectionModel(state.sectionAssignments, productKey, sectionId);
-    const nextOverrides = state.unsectionedProductKeys.filter((k) => k !== productKey);
-    set({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
-    await writeOrganizerState({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
-    await useTabStore.getState().fetchTabs();
+    set({
+      sectionAssignments: assignProductToSectionModel(state.sectionAssignments, productKey, sectionId),
+      unsectionedProductKeys: state.unsectionedProductKeys.filter((k) => k !== productKey),
+    });
+    await writeThenResync(() => applyAssignmentUpdates([{ productKey, sectionId }]));
+  },
+
+  assignProductsToSection: async (productKeys: readonly string[], sectionId: string) => {
+    if (productKeys.length === 0) return;
+    const state = useTabStore.getState();
+    const keys = new Set(productKeys);
+    const updates: SectionAssignment[] = productKeys.map((productKey) => ({ productKey, sectionId }));
+    set({
+      sectionAssignments: [
+        ...state.sectionAssignments.filter((a) => !keys.has(a.productKey)),
+        ...updates,
+      ],
+      unsectionedProductKeys: state.unsectionedProductKeys.filter((k) => !keys.has(k)),
+    });
+    await writeThenResync(() => applyAssignmentUpdates(updates));
   },
 
   moveProductToUnsectioned: async (productKey: string) => {
     const state = useTabStore.getState();
-    const { assignments: nextAssignments, overrides: nextOverrides } = moveProductToUnsectioned(
+    const { assignments, overrides } = moveProductToUnsectioned(
       state.sectionAssignments,
       state.unsectionedProductKeys,
       productKey,
     );
-    set({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
-    await writeOrganizerState({ sectionAssignments: nextAssignments, unsectionedProductKeys: nextOverrides });
-    await useTabStore.getState().fetchTabs();
+    set({ sectionAssignments: assignments, unsectionedProductKeys: overrides });
+    await writeThenResync(() => unassignProductFromSections(productKey));
+  },
+
+  unpinProduct: async (productKey: string) => {
+    const state = useTabStore.getState();
+    set({ unsectionedProductKeys: state.unsectionedProductKeys.filter((key) => key !== productKey) });
+    await writeThenResync(() => removeUnsectionedPin(productKey));
   },
 
   setViewMode: async (viewMode: ViewMode) => {
     set({ viewMode });
-    await writeOrganizerState({ viewMode });
+    await writeThenResync(() => writeOrganizerState({ viewMode }));
   },
 
   fetchRecovery: async () => {
@@ -636,13 +695,36 @@ export const useTabStore = create<TabStore>((set) => ({
     }
   },
 
+  completeOnboarding: async (sections: Section[], assignments: SectionAssignment[]) => {
+    const ordered = sections.map((section, index) => ({ ...section, order: index }));
+    // One write: a failure must not leave sections saved with onboarding still pending.
+    const saved = await writeOrganizerState({
+      sections: ordered,
+      sectionAssignments: assignments,
+      onboardingDone: true,
+    });
+    set({ sections: saved.sections, sectionAssignments: saved.sectionAssignments, onboardingDone: true });
+    await useTabStore.getState().fetchTabs();
+  },
+
   importBackup: async (
-    sections: Section[],
+    sections: Array<Omit<Section, 'autoRules'> & { autoRules?: unknown[] }>,
     sectionAssignments: SectionAssignment[],
     unsectionedProductKeys: string[] = [],
   ) => {
-    await writeOrganizerState({ sections, sectionAssignments, unsectionedProductKeys });
-    set({ sections, sectionAssignments, unsectionedProductKeys });
+    // The real trust boundary: writeOrganizerState -> normalizeSections
+    // validates every section (including autoRules) before it is persisted,
+    // so asserting the type here — right before that gate — is safe.
+    const normalized = await writeOrganizerState({
+      sections: sections as Section[],
+      sectionAssignments,
+      unsectionedProductKeys,
+    });
+    set({
+      sections: normalized.sections,
+      sectionAssignments: normalized.sectionAssignments,
+      unsectionedProductKeys: normalized.unsectionedProductKeys,
+    });
     await useTabStore.getState().fetchTabs();
   },
 

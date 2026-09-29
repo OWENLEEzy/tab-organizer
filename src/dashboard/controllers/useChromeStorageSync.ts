@@ -11,6 +11,7 @@ const ORGANIZER_KEYS = new Set([
   'sectionAssignments',
   'unsectionedProductKeys',
   'viewMode',
+  'onboardingDone',
 ]);
 const HISTORY_KEYS = new Set([
   'schemaVersion',
@@ -47,11 +48,12 @@ export function useChromeStorageSync({
       if (areaName !== 'local') return;
 
       const callbacks = callbacksRef.current;
-      if (hasChangedKey(changes, SETTINGS_KEYS)) {
-        void callbacks.fetchSettings();
-      }
+      const settingsLoaded = hasChangedKey(changes, SETTINGS_KEYS)
+        ? callbacks.fetchSettings()
+        : Promise.resolve();
       if (hasChangedKey(changes, ORGANIZER_KEYS)) {
-        void callbacks.fetchTabs();
+        // Grouping reads settings (product names, hostname rules), so wait for them.
+        void settingsLoaded.catch(() => undefined).then(() => callbacks.fetchTabs());
       }
       if (hasChangedKey(changes, HISTORY_KEYS)) {
         void callbacks.fetchRecovery();

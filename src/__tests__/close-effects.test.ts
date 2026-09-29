@@ -19,6 +19,7 @@ const BASE_SETTINGS: AppSettings = {
   maxChipsVisible: 8,
   staleThresholdDays: 3,
   customGroups: [],
+  productLabels: {},
   landingPagePatterns: [],
   keyBindings: {
     switchSectionN: 'Meta+{n}',

@@ -79,7 +79,12 @@ export function usePopupData(): PopupData {
       lastAccessed: (t as chrome.tabs.Tab & { lastAccessed?: number }).lastAccessed,
     }));
 
-    const groups = groupTabsByProduct(tabs, storage.groupOrder, storage.settings.customGroups);
+    const groups = groupTabsByProduct(
+      tabs,
+      storage.groupOrder,
+      storage.settings.customGroups,
+      storage.settings.productLabels,
+    );
     const { sections, sectionAssignments, unsectionedProductKeys, groupOrder } = storage;
 
     const assignedKeys = new Set(sectionAssignments.map((a) => a.productKey));

@@ -15,26 +15,18 @@ import { createSortComparator } from '../../lib/product-groups';
 import { parseSearchQuery, resolveSectionQueryTarget } from '../lib/search-commands';
 import { getExtensionVersion } from '../../utils/chrome-runtime';
 import { useChromeStorageSync } from './useChromeStorageSync';
+import { focusWhenReady } from '../hooks/useFocusFollow';
 import { buildOrganizerModel, toProductItemId } from '../../lib/section-organizer';
-import { isDefaultSectionId } from '../../config/sections';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 
 
-function focusTabChipWhenReady(direction: 'first' | 'last', attempts = 12): void {
-  const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tab-url]'));
-  const target = direction === 'first' ? chips[0] : chips.at(-1);
-
-  if (target) {
-    target.focus({ preventScroll: false });
-    target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    return;
-  }
-
-  if (attempts > 0) {
-    window.setTimeout(() => focusTabChipWhenReady(direction, attempts - 1), 50);
-  }
+function focusTabChipWhenReady(direction: 'first' | 'last'): void {
+  focusWhenReady(() => {
+    const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tab-url]'));
+    return direction === 'first' ? chips[0] : chips.at(-1);
+  });
 }
 
 export function useDashboardController() {
@@ -180,12 +172,30 @@ export function useDashboardController() {
     activeSectionId: tabStore.activeSectionId,
   }), [structureOrganizerModel.sections, filteredProducts, sectionAssignments, tabStore.unsectionedProductKeys, tabStore.activeSectionId]);
 
-  const cardsSections = useMemo(() => {
-    return structureOrganizerModel.sections.filter((section) => {
-      const hasRenderedProducts = (contentOrganizerModel.productsBySection.get(section.id)?.length ?? 0) > 0;
-      return hasRenderedProducts || !isDefaultSectionId(section.id);
-    });
-  }, [structureOrganizerModel.sections, contentOrganizerModel.productsBySection]);
+  // True total counts per section, independent of the dashboard's current search
+  // query — built from the unfiltered structure model, not the filtered content
+  // model other views use, so opening Settings never shows a search-narrowed count.
+  const productCountBySectionId = useMemo(
+    () => new Map(
+      [...structureOrganizerModel.productsBySection].map(([id, products]) => [id, products.length]),
+    ),
+    [structureOrganizerModel.productsBySection],
+  );
+
+  // Cards view renders every section, including empty ones. An empty section is
+  // a drop target the user deliberately created — hiding it would make it
+  // impossible to ever put anything in. See design spec §3.7. While searching,
+  // though, a section without matches is not empty, just filtered out: hide it
+  // rather than show a misleading "Empty" drop zone.
+  const isSearching = debouncedSearchQuery.trim() !== '';
+  const cardsSections = useMemo(
+    () => (isSearching
+      ? structureOrganizerModel.sections.filter(
+        (section) => (contentOrganizerModel.productsBySection.get(section.id)?.length ?? 0) > 0,
+      )
+      : structureOrganizerModel.sections),
+    [isSearching, structureOrganizerModel.sections, contentOrganizerModel.productsBySection],
+  );
 
   const flatChips = useMemo(() => {
     const visualProducts = viewMode === 'table'
@@ -400,7 +410,7 @@ export function useDashboardController() {
     onClearFilter: () => {
       tabStore.setActiveSection(null);
     },
-  }, settings.keyBindings, state.settingsOpen || state.confirmDialog.open || state.promptDialog.open);
+  }, settings.keyBindings, state.settingsOpen || state.confirmDialog.open || state.promptDialog.open || !tabStore.onboardingDone);
 
   return {
     state: {
@@ -431,6 +441,7 @@ export function useDashboardController() {
       cardsSections: cardsSections,
       sectionNavigationIds: structureOrganizerModel.navigationSections,
       productsBySection: contentOrganizerModel.productsBySection,
+      productCountBySectionId,
       assignmentByItemId: structureOrganizerModel.assignmentByProductItemId,
       itemIdForProduct,
       flatChips,

@@ -7,34 +7,22 @@ import type {
   RecoverySnapshot,
 } from '../types';
 import { recoveryUrlSignature, shouldReplaceRecoveryCandidate } from '../lib/recovery-snapshots';
-import { DEFAULT_SECTIONS } from '../config/sections';
-import { DEFAULT_ACCENT, isAccentKey } from '../config/themes';
-import { DEFAULT_GROUP_SORT, normalizeGroupSortBy } from '../config/group-sort';
+import { deleteSectionAndUnassignProducts } from '../lib/section-organizer';
+import {
+  CURRENT_SCHEMA_VERSION,
+  DEFAULT_SETTINGS,
+  normalizeCurrentSchema,
+  normalizeRecoverySnapshot,
+  upgradeSchema,
+  pruneAssignments,
+  reconcileAssignments,
+  reconcileGroupOrder,
+  reconcileUnsectionedProductKeys,
+} from '../lib/storage-schema';
 
-function isRealTab(url: string): boolean {
-  const browserInternalPrefixes = [
-    'chrome://',
-    'chrome-extension://',
-    'chrome-search://',
-    'devtools://',
-    'about:',
-    'edge://',
-    'brave://',
-  ];
-  const normalized = url.trim().toLowerCase();
-  const target = normalized.startsWith('view-source:')
-    ? normalized.slice('view-source:'.length)
-    : normalized;
-
-  return (
-    target !== '' &&
-    !browserInternalPrefixes.some((prefix) => target.startsWith(prefix))
-  );
-}
-
-const CURRENT_SCHEMA_VERSION = 5;
 const STORAGE_KEYS = [
   'schemaVersion',
+  'onboardingDone',
   'settings',
   'groupOrder',
   'sections',
@@ -57,34 +45,18 @@ function queuedWrite(fn: () => Promise<void>): Promise<void> {
   return task;
 }
 
-export const DEFAULT_SETTINGS: AppSettings = {
-  theme: DEFAULT_ACCENT,
-  language: 'system',
-  soundEnabled: true,
-  confettiEnabled: true,
-  maxChipsVisible: 8,
-  staleThresholdDays: 3,
-  customGroups: [
-    { hostnameEndsWith: '.substack.com', groupKey: 'substack', groupLabel: "Author's Substack" },
-    { hostnameEndsWith: '.github.io', groupKey: 'github-pages', groupLabel: 'GitHub Pages' },
-  ],
-  landingPagePatterns: [],
-  keyBindings: {
-    switchSectionN: 'Meta+{n}',
-    switchSectionAll: 'Meta+0',
-    cyclePrev: 'ArrowLeft',
-    cycleNext: 'ArrowRight',
-    focusSearch: '/',
-    clearFilter: 'Escape',
-  },
-  groupSortBy: DEFAULT_GROUP_SORT,
-};
+export { DEFAULT_SETTINGS } from '../lib/storage-schema';
 
+/**
+ * A fresh install owns no sections: the onboarding card is where the user picks
+ * and confirms them, so nothing is written until they do. See design spec §3.9.
+ */
 const EMPTY_SCHEMA: StorageSchema = {
   schemaVersion: CURRENT_SCHEMA_VERSION,
+  onboardingDone: false,
   settings: DEFAULT_SETTINGS,
   groupOrder: {},
-  sections: DEFAULT_SECTIONS,
+  sections: [],
   sectionAssignments: [],
   unsectionedProductKeys: [],
   viewMode: 'cards',
@@ -92,311 +64,7 @@ const EMPTY_SCHEMA: StorageSchema = {
   recoverySnapshots: [],
 };
 
-const DEFAULT_STORAGE: StorageSchema = {
-  schemaVersion: CURRENT_SCHEMA_VERSION,
-  settings: DEFAULT_SETTINGS,
-  groupOrder: {},
-  sections: DEFAULT_SECTIONS,
-  sectionAssignments: [],
-  unsectionedProductKeys: [],
-  viewMode: 'cards',
-  recoveryCandidate: null,
-  recoverySnapshots: [],
-};
-
-function isViewMode(value: unknown): value is ViewMode {
-  return value === 'cards' || value === 'table';
-}
-
-type LegacyKeyBindings = Partial<AppSettings['keyBindings']> & {
-  switchSpaceN?: unknown;
-  switchSpaceAll?: unknown;
-};
-
-function normalizeKeyBindings(value: unknown): AppSettings['keyBindings'] {
-  const defaults = DEFAULT_SETTINGS.keyBindings;
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return defaults;
-  }
-
-  const candidate = value as LegacyKeyBindings;
-  const switchSectionN = typeof candidate.switchSectionN === 'string'
-    ? candidate.switchSectionN
-    : typeof candidate.switchSpaceN === 'string'
-      ? candidate.switchSpaceN
-      : typeof candidate.switchSpaceN === 'number'
-        ? String(candidate.switchSpaceN)
-        : defaults.switchSectionN;
-  const switchSectionAll = typeof candidate.switchSectionAll === 'string'
-    ? candidate.switchSectionAll
-    : typeof candidate.switchSpaceAll === 'string'
-      ? candidate.switchSpaceAll
-      : typeof candidate.switchSpaceAll === 'number'
-        ? String(candidate.switchSpaceAll)
-        : defaults.switchSectionAll;
-
-  return {
-    switchSectionN,
-    switchSectionAll,
-    cyclePrev: typeof candidate.cyclePrev === 'string' ? candidate.cyclePrev : defaults.cyclePrev,
-    cycleNext: typeof candidate.cycleNext === 'string' ? candidate.cycleNext : defaults.cycleNext,
-    focusSearch: typeof candidate.focusSearch === 'string' ? candidate.focusSearch : defaults.focusSearch,
-    clearFilter: typeof candidate.clearFilter === 'string' ? candidate.clearFilter : defaults.clearFilter,
-  };
-}
-
-function normalizeSections(value: unknown): Section[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((group): group is Section => {
-      if (!group || typeof group !== 'object') return false;
-      const candidate = group as Partial<Section>;
-      return typeof candidate.id === 'string' && candidate.id.trim() !== '' && typeof candidate.name === 'string';
-    })
-    .map((group, index) => ({
-      id: group.id,
-      name: group.name.trim() || 'Untitled',
-      order: Number.isFinite(group.order) ? group.order : index,
-      emoji: typeof group.emoji === 'string' ? group.emoji : undefined,
-      autoRules: Array.isArray(group.autoRules) ? group.autoRules : undefined,
-    }))
-    .sort((a, b) => a.order - b.order);
-}
-
-type LegacyAssignment = Partial<SectionAssignment> & {
-  productKey?: unknown;
-  itemType?: unknown;
-  itemKey?: unknown;
-  sectionId?: unknown;
-  order?: unknown;
-};
-
-function normalizeAssignments(value: unknown): SectionAssignment[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((assignment): assignment is LegacyAssignment & { sectionId: string } => {
-      if (!assignment || typeof assignment !== 'object') return false;
-      const candidate = assignment as LegacyAssignment;
-      const hasLegacyProductKey = typeof candidate.productKey === 'string';
-      const hasProductItem = candidate.itemType === 'product' && typeof candidate.itemKey === 'string';
-      return (hasLegacyProductKey || hasProductItem) && typeof candidate.sectionId === 'string';
-    })
-    .map((assignment, index) => {
-      const productKey = typeof assignment.productKey === 'string'
-        ? assignment.productKey
-        : String(assignment.itemKey);
-
-      return {
-        productKey,
-        sectionId: assignment.sectionId,
-        order: Number.isFinite(assignment.order) ? Number(assignment.order) : index,
-      };
-    });
-}
-
-function normalizeUnsectionedProductKeys(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const seen = new Set<string>();
-  const overrides: string[] = [];
-
-  for (const item of value) {
-    if (typeof item !== 'string') continue;
-    const productKey = item.trim();
-    if (!productKey || seen.has(productKey)) continue;
-    seen.add(productKey);
-    overrides.push(productKey);
-  }
-
-  return overrides;
-}
-
-/**
- * Prune assignments that point to non-existent groups or products.
- */
-function pruneAssignments(
-  assignments: SectionAssignment[],
-  groups: Section[],
-  currentProductKeys: Set<string>,
-): SectionAssignment[] {
-  const sectionIds = new Set(groups.map((g) => g.id));
-  const seen = new Set<string>();
-
-  return assignments.filter((assignment) => {
-    if (!sectionIds.has(assignment.sectionId)) return false;
-    if (!currentProductKeys.has(assignment.productKey)) return false;
-
-    if (seen.has(assignment.productKey)) return false;
-    seen.add(assignment.productKey);
-    return true;
-  });
-}
-
-function reconcileGroupOrder(
-  groupOrder: Record<string, number>,
-  currentProductKeys: Set<string>,
-  legacyKeyMap: Map<string, string>,
-): Record<string, number> {
-  const nextOrder: Record<string, number> = {};
-  const canonicalSources = new Set<string>();
-
-  for (const [productKey, order] of Object.entries(groupOrder)) {
-    const isCanonicalKey = currentProductKeys.has(productKey);
-    const canonicalKey = isCanonicalKey
-      ? productKey
-      : legacyKeyMap.get(productKey) ?? productKey;
-    if (!currentProductKeys.has(canonicalKey)) continue;
-
-    if (isCanonicalKey) {
-      nextOrder[canonicalKey] = order;
-      canonicalSources.add(canonicalKey);
-      continue;
-    }
-
-    if (
-      !canonicalSources.has(canonicalKey) &&
-      (nextOrder[canonicalKey] === undefined || order < nextOrder[canonicalKey])
-    ) {
-      nextOrder[canonicalKey] = order;
-    }
-  }
-
-  return nextOrder;
-}
-
-function reconcileAssignments(
-  assignments: SectionAssignment[],
-  groups: Section[],
-  currentProductKeys: Set<string>,
-  legacyKeyMap: Map<string, string>,
-): SectionAssignment[] {
-  const sectionIds = new Set(groups.map((group) => group.id));
-  const bestByProduct = new Map<string, SectionAssignment & { originalIndex: number }>();
-
-  assignments.forEach((assignment, index) => {
-    if (!sectionIds.has(assignment.sectionId)) return;
-
-    const productKey = legacyKeyMap.get(assignment.productKey) ?? assignment.productKey;
-    if (!currentProductKeys.has(productKey)) return;
-
-    const candidate = { ...assignment, productKey, originalIndex: index };
-    const existing = bestByProduct.get(productKey);
-
-    if (
-      !existing ||
-      candidate.order < existing.order ||
-      (candidate.order === existing.order && candidate.originalIndex < existing.originalIndex)
-    ) {
-      bestByProduct.set(productKey, candidate);
-    }
-  });
-
-  return [...bestByProduct.values()]
-    .sort((a, b) => a.originalIndex - b.originalIndex)
-    .map(({ originalIndex: _originalIndex, ...assignment }) => assignment);
-}
-
-function reconcileUnsectionedProductKeys(
-  overrides: string[],
-  currentProductKeys: Set<string>,
-  legacyKeyMap: Map<string, string>,
-): string[] {
-  const seen = new Set<string>();
-  const nextOverrides: string[] = [];
-
-  for (const override of overrides) {
-    const productKey = legacyKeyMap.get(override) ?? override;
-    if (!currentProductKeys.has(productKey) || seen.has(productKey)) continue;
-    seen.add(productKey);
-    nextOverrides.push(productKey);
-  }
-
-  return nextOverrides;
-}
-
-function normalizeRecoverySnapshot(value: unknown): RecoverySnapshot | null {
-  if (!value || typeof value !== 'object') return null;
-  const candidate = value as Partial<RecoverySnapshot>;
-  if (
-    typeof candidate.id !== 'string' ||
-    typeof candidate.capturedAt !== 'string' ||
-    !Array.isArray(candidate.tabs) ||
-    !Array.isArray(candidate.products)
-  ) {
-    return null;
-  }
-
-  const tabs = candidate.tabs
-    .filter((tab) => tab && typeof tab === 'object')
-    .map((tab) => tab as RecoverySnapshot['tabs'][number])
-    .filter((tab) => typeof tab.url === 'string' && isRealTab(tab.url) && typeof tab.productKey === 'string')
-    .slice(0, 80);
-
-  if (tabs.length === 0) return null;
-
-  const products = candidate.products
-    .filter((product) => product && typeof product === 'object')
-    .map((product) => product as RecoverySnapshot['products'][number])
-    .filter((product) => typeof product.productKey === 'string' && typeof product.label === 'string');
-
-  return {
-    id: candidate.id,
-    capturedAt: candidate.capturedAt,
-    tabCount: tabs.length,
-    products,
-    tabs,
-  };
-}
-
-function normalizeRecoverySnapshots(value: unknown): RecoverySnapshot[] {
-  if (!Array.isArray(value)) return [];
-  const result: RecoverySnapshot[] = [];
-  const seen = new Set<string>();
-
-  for (const item of value) {
-    const snapshot = normalizeRecoverySnapshot(item);
-    if (!snapshot) continue;
-    const signature = recoveryUrlSignature(snapshot);
-    if (seen.has(signature)) continue;
-    seen.add(signature);
-    result.push(snapshot);
-    if (result.length >= 5) break;
-  }
-
-  return result;
-}
-
-function normalizeSettings(value: unknown): AppSettings {
-  const raw = { ...DEFAULT_SETTINGS, ...(value as Partial<AppSettings> | undefined) };
-  return {
-    ...raw,
-    theme: isAccentKey(raw.theme) ? raw.theme : DEFAULT_ACCENT,
-    groupSortBy: normalizeGroupSortBy(raw.groupSortBy),
-    keyBindings: normalizeKeyBindings(raw.keyBindings),
-  };
-}
-
-function normalizeGroupOrder(value: unknown): Record<string, number> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-  return { ...(value as Record<string, number>) };
-}
-
-/**
- * Normalize current-schema storage data. Only reads current schema keys —
- * no legacy fallback reads. On schema mismatch, callers reset to DEFAULT_STORAGE.
- */
-function normalizeCurrentSchema(data: Record<string, unknown>): StorageSchema {
-  return {
-    schemaVersion: CURRENT_SCHEMA_VERSION,
-    settings: normalizeSettings(data['settings']),
-    groupOrder: normalizeGroupOrder(data['groupOrder']),
-    sections: normalizeSections(data['sections']),
-    sectionAssignments: normalizeAssignments(data['sectionAssignments']),
-    unsectionedProductKeys: normalizeUnsectionedProductKeys(data['unsectionedProductKeys']),
-    viewMode: isViewMode(data['viewMode']) ? data['viewMode'] : 'cards',
-    recoveryCandidate: normalizeRecoverySnapshot(data['recoveryCandidate']),
-    recoverySnapshots: normalizeRecoverySnapshots(data['recoverySnapshots']),
-  };
-}
+const DEFAULT_STORAGE: StorageSchema = EMPTY_SCHEMA;
 
 async function readStorageSnapshot(): Promise<Record<string, unknown>> {
   return chrome.storage.local.get([...STORAGE_KEYS]);
@@ -406,6 +74,7 @@ async function readStorageSnapshot(): Promise<Record<string, unknown>> {
 async function persistStorage(data: StorageSchema): Promise<void> {
   await chrome.storage.local.set({
     schemaVersion: data.schemaVersion,
+    onboardingDone: data.onboardingDone,
     settings: data.settings,
     groupOrder: data.groupOrder,
     sections: data.sections,
@@ -424,16 +93,16 @@ async function persistStorage(data: StorageSchema): Promise<void> {
 }
 
 /**
- * Read the full storage schema. On schema mismatch, resets destructively to
- * DEFAULT_STORAGE. On match, normalizes current-schema keys only.
+ * Read the full storage schema. The previous released schema is upgraded in
+ * place; any other version mismatch resets destructively to DEFAULT_STORAGE.
  */
 export async function readStorage(): Promise<StorageSchema> {
   const raw = await readStorageSnapshot();
+  const schema = upgradeSchema(raw) ?? DEFAULT_STORAGE;
   if (raw.schemaVersion !== CURRENT_SCHEMA_VERSION) {
-    await persistStorage(DEFAULT_STORAGE);
-    return DEFAULT_STORAGE;
+    await persistStorage(schema);
   }
-  return normalizeCurrentSchema(raw);
+  return schema;
 }
 
 /**
@@ -457,7 +126,7 @@ async function updateStorage(
   await queuedWrite(async () => {
     const raw = await readStorageSnapshot();
     const isCurrentVersion = raw.schemaVersion === CURRENT_SCHEMA_VERSION;
-    const current = isCurrentVersion ? normalizeCurrentSchema(raw) : DEFAULT_STORAGE;
+    const current = upgradeSchema(raw) ?? DEFAULT_STORAGE;
     const updated = await updater(current);
     nextState = normalizeCurrentSchema(updated as unknown as Record<string, unknown>);
 
@@ -564,6 +233,7 @@ export async function reconcileOrganizerState(
   sectionAssignments: SectionAssignment[];
   unsectionedProductKeys: string[];
   viewMode: ViewMode;
+  onboardingDone: boolean;
 }> {
   let nextStorage: StorageSchema;
 
@@ -616,6 +286,7 @@ export async function reconcileOrganizerState(
     sectionAssignments: nextStorage.sectionAssignments,
     unsectionedProductKeys: nextStorage.unsectionedProductKeys,
     viewMode: nextStorage.viewMode,
+    onboardingDone: nextStorage.onboardingDone,
   };
 }
 
@@ -625,6 +296,7 @@ export async function readOrganizerState(): Promise<{
   sectionAssignments: SectionAssignment[];
   unsectionedProductKeys: string[];
   viewMode: ViewMode;
+  onboardingDone: boolean;
 }> {
   const storage = await readStorage();
   return {
@@ -633,6 +305,7 @@ export async function readOrganizerState(): Promise<{
     sectionAssignments: storage.sectionAssignments,
     unsectionedProductKeys: storage.unsectionedProductKeys,
     viewMode: storage.viewMode,
+    onboardingDone: storage.onboardingDone,
   };
 }
 
@@ -641,13 +314,36 @@ export async function writeOrganizerState(state: {
   sectionAssignments?: SectionAssignment[];
   unsectionedProductKeys?: string[];
   viewMode?: ViewMode;
-}): Promise<void> {
-  await updateStorage((storage) => ({
+  /** Set together with the sections onboarding confirmed, in the same write. */
+  onboardingDone?: boolean;
+}): Promise<{
+  sections: Section[];
+  sectionAssignments: SectionAssignment[];
+  unsectionedProductKeys: string[];
+  viewMode: ViewMode;
+}> {
+  const next = await updateStorage((storage) => ({
     ...storage,
     sections: state.sections ?? storage.sections,
     sectionAssignments: state.sectionAssignments ?? storage.sectionAssignments,
     unsectionedProductKeys: state.unsectionedProductKeys ?? storage.unsectionedProductKeys,
     viewMode: state.viewMode ?? storage.viewMode,
+    onboardingDone: state.onboardingDone ?? storage.onboardingDone,
+  }));
+  return {
+    sections: next.sections,
+    sectionAssignments: next.sectionAssignments,
+    unsectionedProductKeys: next.unsectionedProductKeys,
+    viewMode: next.viewMode,
+  };
+}
+
+/** Mark the one-time onboarding as finished. */
+/** Drop one product's "keep unsectioned" pin, reading fresh storage in the queue. */
+export async function removeUnsectionedPin(productKey: string): Promise<void> {
+  await updateStorage((storage) => ({
+    ...storage,
+    unsectionedProductKeys: storage.unsectionedProductKeys.filter((key) => key !== productKey),
   }));
 }
 
@@ -671,6 +367,52 @@ export async function applyAssignmentUpdates(updates: SectionAssignment[]): Prom
   }));
 }
 
+/**
+ * Auto-rule results computed from a possibly stale read. Inside the queue, skip
+ * any product that meanwhile got an explicit assignment or a No section pin, so
+ * a rule never overrides a user's choice (explicit > veto > rule).
+ */
+export async function applyAutoAssignments(updates: SectionAssignment[]): Promise<{
+  sectionAssignments: SectionAssignment[];
+  unsectionedProductKeys: string[];
+}> {
+  const next = await updateStorage((storage) => {
+    const decided = new Set([
+      ...storage.sectionAssignments.map((a) => a.productKey),
+      ...storage.unsectionedProductKeys,
+    ]);
+    const fresh = updates.filter((u) => !decided.has(u.productKey));
+    return fresh.length === 0
+      ? storage
+      : { ...storage, sectionAssignments: [...storage.sectionAssignments, ...fresh] };
+  });
+  return { sectionAssignments: next.sectionAssignments, unsectionedProductKeys: next.unsectionedProductKeys };
+}
+
+/** Edit the section list against fresh storage, so a concurrent edit is not overwritten. */
+export async function updateSections(transform: (sections: Section[]) => Section[]): Promise<void> {
+  await updateStorage((storage) => ({ ...storage, sections: transform(storage.sections) }));
+}
+
+/** Delete a section and move its groups to No section, computed inside the write queue. */
+export async function deleteSectionInStorage(sectionId: string): Promise<void> {
+  await updateStorage((storage) => {
+    const { assignments, overrides } = deleteSectionAndUnassignProducts(
+      storage.sectionAssignments,
+      storage.unsectionedProductKeys,
+      sectionId,
+    );
+    return {
+      ...storage,
+      sections: storage.sections
+        .filter((section) => section.id !== sectionId)
+        .map((section, index) => ({ ...section, order: index })),
+      sectionAssignments: assignments,
+      unsectionedProductKeys: overrides,
+    };
+  });
+}
+
 export async function assignProductToSection(productKey: string, sectionId: string): Promise<{
   sectionAssignments: SectionAssignment[];
   unsectionedProductKeys: string[];
@@ -681,12 +423,9 @@ export async function assignProductToSection(productKey: string, sectionId: stri
   };
 
   await updateStorage((storage) => {
-    const existingInGroup = storage.sectionAssignments.filter(
-      (assignment) => assignment.sectionId === sectionId && assignment.productKey !== productKey,
-    );
     const sectionAssignments = [
       ...storage.sectionAssignments.filter((assignment) => assignment.productKey !== productKey),
-      { productKey, sectionId, order: existingInGroup.length },
+      { productKey, sectionId },
     ];
     const unsectionedProductKeys = storage.unsectionedProductKeys.filter((key) => key !== productKey);
 

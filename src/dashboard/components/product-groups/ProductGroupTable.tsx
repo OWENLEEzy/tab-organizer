@@ -7,6 +7,7 @@ import { toProductItemId } from '../../../lib/section-organizer';
 import { getProductGroupIconUrl } from './product-group-icon';
 import { ActionButton } from '../ui/ActionButton';
 import { useI18n } from '../../hooks/useI18n';
+import { PinnedBadge } from './PinnedBadge';
 
 interface ProductGroupTableProps {
   items: TabGroup[];
@@ -28,6 +29,10 @@ interface ProductGroupTableProps {
   staleThresholdDays?: number;
   /** Id of the single globally most-recently-used tab, to highlight it. */
   lastUsedTabId?: number | null;
+  /** Product keys the user explicitly moved out of a section, so auto-rules won't re-claim them. */
+  pinnedProductKeys?: ReadonlySet<string>;
+  /** Clears a product's pin. */
+  onUnpinProduct?: (productKey: string) => void;
 }
 
 function ChevronIcon({ expanded }: { expanded: boolean }): React.ReactElement {
@@ -94,6 +99,8 @@ export function ProductGroupTable({
   searchQuery = '',
   staleThresholdDays = 3,
   lastUsedTabId = null,
+  pinnedProductKeys = new Set(),
+  onUnpinProduct = () => {},
 }: ProductGroupTableProps): React.ReactElement {
   const { t } = useI18n();
   const rows = items;
@@ -156,7 +163,8 @@ export function ProductGroupTable({
                     <select
                       value={sectionId}
                       onChange={(event) => onMoveItem(p, event.target.value)}
-                      aria-label={`Move ${p.friendlyName || p.domain}`}
+                      aria-label={t('moveToSectionFor', { name: p.friendlyName || p.domain })}
+                      data-section-select={getProductKey(p)}
                       className="w-full"
                     >
                       <option value="">{t('tableUnsectioned')}</option>
@@ -166,6 +174,15 @@ export function ProductGroupTable({
                         </option>
                       ))}
                     </select>
+                    {/* Assignment wins over the pin (see `resolveMembership`); an assigned row must not also claim pinned. */}
+                    {sectionId === '' && pinnedProductKeys.has(getProductKey(p)) && (
+                      <PinnedBadge
+                        groupName={p.friendlyName || p.domain}
+                        onUnpin={() => onUnpinProduct(getProductKey(p))}
+                        focusAfterUnpinSelector={`[data-section-select="${CSS.escape(getProductKey(p))}"]`}
+                        className="ml-1 inline-flex h-6 px-2"
+                      />
+                    )}
                   </td>
                   <td className="col-tabs text-center">{p.tabs.length}</td>
                   <td className="col-dupes text-center">{p.duplicateCount}</td>

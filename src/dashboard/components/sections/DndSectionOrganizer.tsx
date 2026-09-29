@@ -9,6 +9,7 @@ import {
   fromSectionDropId,
   toSectionDropId,
 } from '../../../lib/section-organizer';
+import { getProductKey } from '../../../lib/product-key';
 import { ProductGroupCard } from '../product-groups/ProductGroupCard';
 import { SectionActionsDropdown } from './SectionActionsDropdown';
 import { useI18n } from '../../hooks/useI18n';
@@ -33,6 +34,12 @@ interface DraggableProductGroupCardProps {
   onChipClick?: (url: string, event: React.MouseEvent) => void;
   onToggleProductGroupExpanded?: (domain: string) => void;
   searchQuery?: string;
+  sections: Section[];
+  currentSectionId: string | null;
+  onMoveProductToSection: (productKey: string, sectionId: string) => void;
+  onMoveProductToNoSection: (productKey: string) => void;
+  pinnedProductKeys: ReadonlySet<string>;
+  onUnpinProduct: (productKey: string) => void;
 }
 
 function DraggableProductGroupCard({
@@ -53,9 +60,16 @@ function DraggableProductGroupCard({
   onChipClick,
   onToggleProductGroupExpanded,
   searchQuery = '',
+  sections,
+  currentSectionId,
+  onMoveProductToSection,
+  onMoveProductToNoSection,
+  pinnedProductKeys,
+  onUnpinProduct,
 }: DraggableProductGroupCardProps): React.ReactElement {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: draggableId });
   const label = group.friendlyName || group.domain;
+  const productKey = getProductKey(group);
 
   return (
     <div ref={setNodeRef} style={{ opacity: isDragging ? 0 : 1 }}>
@@ -77,6 +91,12 @@ function DraggableProductGroupCard({
         onChipClick={onChipClick}
         onToggleProductGroupExpanded={onToggleProductGroupExpanded}
         searchQuery={searchQuery}
+        sections={sections}
+        currentSectionId={currentSectionId}
+        onMoveToSection={(sectionId) => onMoveProductToSection(productKey, sectionId)}
+        onMoveToNoSection={() => onMoveProductToNoSection(productKey)}
+        pinnedProductKeys={pinnedProductKeys}
+        onUnpinProduct={() => onUnpinProduct(productKey)}
       />
     </div>
   );
@@ -109,6 +129,11 @@ interface DndGroupBoardProps {
   onChipClick: (url: string, event: React.MouseEvent) => void;
   onToggleProductGroupExpanded: (domain: string) => void;
   searchQuery?: string;
+  sections: Section[];
+  onMoveProductToSection: (productKey: string, sectionId: string) => void;
+  onMoveProductToNoSection: (productKey: string) => void;
+  pinnedProductKeys: ReadonlySet<string>;
+  onUnpinProduct: (productKey: string) => void;
 }
 
 export function DndGroupBoard({
@@ -136,8 +161,15 @@ export function DndGroupBoard({
   onChipClick,
   onToggleProductGroupExpanded,
   searchQuery = '',
+  sections,
+  onMoveProductToSection,
+  onMoveProductToNoSection,
+  pinnedProductKeys,
+  onUnpinProduct,
 }: DndGroupBoardProps): React.ReactElement {
   const { setNodeRef, isOver } = useDroppable({ id });
+  const { t } = useI18n();
+  const currentSectionId = section?.id ?? null;
 
   return (
     <section ref={setNodeRef} className={`organizer-group ${isOver ? 'is-over' : ''}`}>
@@ -147,7 +179,7 @@ export function DndGroupBoard({
             <h2 className="font-heading text-xl text-text-primary font-medium">
               {title}
             </h2>
-            <span className="font-mono text-[0.65rem] font-bold uppercase tracking-[0.1em] text-text-muted">
+            <span className="font-mono text-[0.65rem] font-bold uppercase tracking-[0.1em] text-text-secondary">
               {tabCount}
             </span>
           </div>
@@ -166,28 +198,40 @@ export function DndGroupBoard({
         </div>
       </div>
       <div className="missions">
-        {items.map((p) => (
-          <DraggableProductGroupCard
-            key={p.id}
-            group={p}
-            draggableId={itemIdForProduct(p)}
-            expanded={expandedProductGroups.has(p.domain)}
-            maxChipsVisible={maxChipsVisible}
-            staleThresholdDays={staleThresholdDays}
-            lastUsedTabId={lastUsedTabId}
-            focusedUrl={focusedUrl}
-            closingUrls={closingUrls}
-            selectedUrls={selectedUrls}
-            selectedTabIds={selectedTabIds}
-            onCloseProductGroup={onCloseProduct}
-            onCloseDuplicates={onCloseDuplicates}
-            onCloseTab={onCloseTab}
-            onFocusTab={onFocusTab}
-            onChipClick={onChipClick}
-            onToggleProductGroupExpanded={onToggleProductGroupExpanded}
-            searchQuery={searchQuery}
-          />
-        ))}
+        {items.length === 0 ? (
+          <div className="col-span-full rounded-card border border-dashed border-border-color px-4 py-6 text-center text-3xs font-mono uppercase tracking-wider text-text-secondary">
+            {t('sectionEmptySlot')}
+          </div>
+        ) : (
+          items.map((p) => (
+            <DraggableProductGroupCard
+              key={p.id}
+              group={p}
+              draggableId={itemIdForProduct(p)}
+              expanded={expandedProductGroups.has(p.domain)}
+              maxChipsVisible={maxChipsVisible}
+              staleThresholdDays={staleThresholdDays}
+              lastUsedTabId={lastUsedTabId}
+              focusedUrl={focusedUrl}
+              closingUrls={closingUrls}
+              selectedUrls={selectedUrls}
+              selectedTabIds={selectedTabIds}
+              onCloseProductGroup={onCloseProduct}
+              onCloseDuplicates={onCloseDuplicates}
+              onCloseTab={onCloseTab}
+              onFocusTab={onFocusTab}
+              onChipClick={onChipClick}
+              onToggleProductGroupExpanded={onToggleProductGroupExpanded}
+              searchQuery={searchQuery}
+              sections={sections}
+              currentSectionId={currentSectionId}
+              onMoveProductToSection={onMoveProductToSection}
+              onMoveProductToNoSection={onMoveProductToNoSection}
+              pinnedProductKeys={pinnedProductKeys}
+              onUnpinProduct={onUnpinProduct}
+            />
+          ))
+        )}
       </div>
     </section>
   );
@@ -223,6 +267,8 @@ interface DndSectionOrganizerProps {
   onToggleProductGroupExpanded: (domain: string) => void;
   searchQuery?: string;
   activeSectionId?: string | null;
+  pinnedProductKeys: ReadonlySet<string>;
+  onUnpinProduct: (productKey: string) => void;
 }
 
 export function DndSectionOrganizer({
@@ -253,6 +299,8 @@ export function DndSectionOrganizer({
   onToggleProductGroupExpanded,
   searchQuery = '',
   activeSectionId = null,
+  pinnedProductKeys,
+  onUnpinProduct,
 }: DndSectionOrganizerProps): React.ReactElement {
   const { t } = useI18n();
   const [activeGroup, setActiveGroup] = useState<TabGroup | null>(null);
@@ -311,6 +359,11 @@ export function DndSectionOrganizer({
     onChipClick,
     onToggleProductGroupExpanded,
     searchQuery,
+    sections: orderedSections,
+    onMoveProductToSection,
+    onMoveProductToNoSection,
+    pinnedProductKeys,
+    onUnpinProduct,
   };
 
   return (

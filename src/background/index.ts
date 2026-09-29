@@ -3,7 +3,7 @@ import { getTabDomain, isRealTab } from '../lib/url-rules';
 import { getDashboardFocusUrl } from '../lib/dashboard-url';
 import { openOrFocusDashboard } from '../utils/open-dashboard';
 import { buildRecoverySnapshot } from '../lib/recovery-snapshots';
-import { promoteRecoveryCandidate, updateRecoveryCandidate } from '../utils/storage';
+import { promoteRecoveryCandidate, readSettings, updateRecoveryCandidate } from '../utils/storage';
 import type { Tab } from '../types';
 
 function toRecoveryTab(raw: chrome.tabs.Tab): Tab {
@@ -25,8 +25,8 @@ function toRecoveryTab(raw: chrome.tabs.Tab): Tab {
 
 async function captureRecoveryCandidate(): Promise<void> {
   try {
-    const tabs = await chrome.tabs.query({});
-    const snapshot = buildRecoverySnapshot(tabs.map(toRecoveryTab));
+    const [tabs, { customGroups, productLabels }] = await Promise.all([chrome.tabs.query({}), readSettings()]);
+    const snapshot = buildRecoverySnapshot(tabs.map(toRecoveryTab), undefined, { customGroups, productLabels });
     await updateRecoveryCandidate(snapshot);
   } catch {
     // Recovery capture should never block core extension behavior.

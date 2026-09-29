@@ -94,7 +94,7 @@ test.describe('Settings & Theme', () => {
   test('dialog contains theme switcher', async ({ page }) => {
     const settingsGear = page.getByRole('button', { name: 'Settings', exact: true });
     await settingsGear.click();
-    await page.getByRole('button', { name: 'System' }).click();
+    await page.getByRole('button', { name: 'Appearance' }).click();
 
     const themeSection = page.locator('text=Theme');
     await expect(themeSection).toBeVisible();
@@ -103,6 +103,7 @@ test.describe('Settings & Theme', () => {
   test('dialog contains sound toggle', async ({ page }) => {
     const settingsGear = page.getByRole('button', { name: 'Settings', exact: true });
     await settingsGear.click();
+    await page.getByRole('button', { name: 'Behavior' }).click();
 
     const soundToggle = page.locator('text=Sound').or(page.locator('text=/sound/i'));
     await expect(soundToggle).toBeVisible();
@@ -111,6 +112,7 @@ test.describe('Settings & Theme', () => {
   test('dialog contains confetti toggle', async ({ page }) => {
     const settingsGear = page.getByRole('button', { name: 'Settings', exact: true });
     await settingsGear.click();
+    await page.getByRole('button', { name: 'Behavior' }).click();
 
     const confettiToggle = page.locator('text=Confetti').or(page.locator('text=/confetti/i'));
     await expect(confettiToggle).toBeVisible();
@@ -139,7 +141,7 @@ test.describe('Settings & Theme', () => {
   test('switching accent theme persists', async ({ page }) => {
     const settingsGear = page.getByRole('button', { name: 'Settings', exact: true });
     await settingsGear.click();
-    await page.getByRole('button', { name: 'System' }).click();
+    await page.getByRole('button', { name: 'Appearance' }).click();
 
     // Open theme dropdown and select Sage
     const themeSelect = page.locator('#setting-theme');
@@ -148,7 +150,7 @@ test.describe('Settings & Theme', () => {
     // Refresh and verify persistence
     await page.reload();
     await settingsGear.click();
-    await page.getByRole('button', { name: 'System' }).click();
+    await page.getByRole('button', { name: 'Appearance' }).click();
     const themeSelectAfterReload = page.locator('#setting-theme');
     await expect(themeSelectAfterReload).toHaveValue('sage');
   });

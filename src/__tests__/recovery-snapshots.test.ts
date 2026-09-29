@@ -56,6 +56,25 @@ describe('buildRecoverySnapshot', () => {
     expect(snapshot?.tabs.map((tab) => tab.productKey)).not.toContain('amazon');
   });
 
+  it('names and groups products the same way the dashboard does', () => {
+    const snapshot = buildRecoverySnapshot(
+      [
+        makeTab({ id: 1, url: 'https://www.youtube.com/watch?v=1' }),
+        makeTab({ id: 2, url: 'https://wiki.corp.example/page' }),
+      ],
+      '2026-05-05T00:00:00.000Z',
+      {
+        productLabels: { youtube: 'Videos' },
+        customGroups: [{ groupKey: 'corp', groupLabel: 'Corp', hostnameEndsWith: '.corp.example' }],
+      },
+    );
+
+    expect(snapshot?.products.map((p) => [p.productKey, p.label])).toEqual(expect.arrayContaining([
+      ['youtube', 'Videos'],
+      ['corp', 'Corp'],
+    ]));
+  });
+
   it('returns null when there are no real tabs and caps snapshots at 80 tabs', () => {
     expect(buildRecoverySnapshot([
       makeTab({ id: 1, url: 'chrome://newtab/' }),

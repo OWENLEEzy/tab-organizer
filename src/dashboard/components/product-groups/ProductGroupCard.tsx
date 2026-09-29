@@ -1,10 +1,13 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import type { TabGroup } from '../../../types';
+import type { Section, TabGroup } from '../../../types';
 import { TabChip } from '../tabs/TabChip';
 import { getVisibleTabs } from '../../lib/visible-tabs';
 import { analyzeDuplicates } from '../../../lib/duplicate-analysis';
 import { getProductGroupIconUrl } from './product-group-icon';
+import { getProductKey } from '../../../lib/product-key';
 import { useI18n } from '../../hooks/useI18n';
+import { MoveToSectionMenu } from './MoveToSectionMenu';
+import { PinnedBadge } from './PinnedBadge';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -27,6 +30,16 @@ interface ProductGroupCardProps {
   searchQuery?: string;
   /** Id of the single globally most-recently-used tab, to highlight it. */
   lastUsedTabId?: number | null;
+  /** All sections, for the non-drag "move to section" menu. Menu renders only when provided. */
+  sections?: readonly Section[];
+  /** This card's current section, or null when unassigned. */
+  currentSectionId?: string | null;
+  onMoveToSection?: (sectionId: string) => void;
+  onMoveToNoSection?: () => void;
+  /** Product keys the user explicitly moved out of a section, so auto-rules won't re-claim them. */
+  pinnedProductKeys?: ReadonlySet<string>;
+  /** Clears this card's pin. Menu renders only when provided alongside a pinned product key. */
+  onUnpinProduct?: () => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────
@@ -129,10 +142,20 @@ function ProductGroupCardComponent({
   onToggleProductGroupExpanded,
   searchQuery = '',
   lastUsedTabId = null,
+  sections,
+  currentSectionId = null,
+  onMoveToSection,
+  onMoveToNoSection,
+  pinnedProductKeys,
+  onUnpinProduct,
 }: ProductGroupCardProps): React.ReactElement {
   const { t } = useI18n();
   const tabs = useMemo(() => group.tabs || [], [group.tabs]);
   const displayName = group.friendlyName || group.domain;
+  // `resolveMembership`'s priority is assigned > pinned > auto: an explicit
+  // assignment always wins over the pin, so the badge must not claim "pinned"
+  // for a group that `currentSectionId` already says is assigned somewhere.
+  const isPinned = currentSectionId === null && (pinnedProductKeys?.has(getProductKey(group)) ?? false);
   const selectionMode = (selectedUrls?.size ?? 0) > 0 || (selectedTabIds?.size ?? 0) > 0;
   const [failedFaviconUrl, setFailedFaviconUrl] = useState('');
   const groupFaviconUrl = useMemo(() => getProductGroupIconUrl(tabs), [tabs]);
@@ -236,7 +259,11 @@ function ProductGroupCardComponent({
           )}
           
           <div className="min-w-0 flex-1 flex items-center gap-2">
-            <h3 className="truncate font-mono text-sm font-medium uppercase tracking-wider text-text-primary">
+            <h3
+              tabIndex={-1}
+              data-product-card-heading={getProductKey(group)}
+              className="truncate font-mono text-sm font-medium uppercase tracking-wider text-text-primary focus-visible:outline-none"
+            >
               {displayName}
             </h3>
             <span className="font-mono text-3xs font-bold bg-border-color/20 text-text-secondary px-1.5 rounded-badge shrink-0" title={`${group.tabs.length} tabs`}>
@@ -256,6 +283,25 @@ function ProductGroupCardComponent({
                 <DedupIcon />
                 <span>{totalExtras}</span>
               </button>
+            )}
+            {isPinned && onUnpinProduct && (
+              <PinnedBadge
+                groupName={displayName}
+                onUnpin={onUnpinProduct}
+                focusAfterUnpinSelector={`[data-move-menu-trigger="${CSS.escape(getProductKey(group))}"]`}
+                focusFallbackSelector={`[data-product-card-heading="${CSS.escape(getProductKey(group))}"]`}
+                className="flex h-7 px-2.5"
+              />
+            )}
+            {onMoveToSection && onMoveToNoSection && (
+              <MoveToSectionMenu
+                sections={sections ?? []}
+                currentSectionId={currentSectionId}
+                onMoveToSection={onMoveToSection}
+                onMoveToNoSection={onMoveToNoSection}
+                groupName={displayName}
+                productKey={getProductKey(group)}
+              />
             )}
           </div>
         </div>

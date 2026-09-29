@@ -6,7 +6,7 @@
  * Object model:
  * - ProductKey: TabGroup's stable identity, from productKey ?? itemKey ?? domain
  * - SectionId: section's stable identity (section.id)
- * - SectionAssignment: { productKey, sectionId, order } — group-level label relationship
+ * - SectionAssignment: { productKey, sectionId } — group-level label relationship
  * - NoSection: system bucket for products without section labels; not a real section, not persisted
  * - unsectionedProductKeys: product keys the user explicitly moved to No section so auto-rules don't re-apply
  * - OrganizerModel: unified UI projection combining sections, products, assignments, and derived maps
@@ -16,6 +16,7 @@
 
 import type { Section, SectionAssignment, TabGroup } from '../types';
 import { getProductKey } from './product-key';
+import { resolveMembership } from './section-membership';
 
 // ─── ID Constants ─────────────────────────────────────────────────────────────
 
@@ -99,7 +100,7 @@ export interface OrganizerModel {
   assignments: SectionAssignment[];
   /** Product keys that should not be auto-assigned (user chose No section). */
   unsectionedProductKeys: string[];
-  /** Products explicitly assigned to each sectionId, sorted by assignment order. */
+  /** Products explicitly assigned to each sectionId, sorted by the active sort option. */
   productsBySection: Map<string, TabGroup[]>;
   /** Products with no section assignment (implicit NoSection bucket). */
   unassignedProducts: TabGroup[];
@@ -127,19 +128,14 @@ export interface BuildOrganizerModelInput {
 
 /**
  * Build a comparator for sorting products within a section bucket.
- * Priority: sort dropdown index > assignment order > creation-time order.
- * DnD only supports cross-section moves (append), not within-section reorder,
- * so assignment.order has no user-intent meaning and should not override the dropdown.
+ * Priority: sort dropdown index > creation-time order.
  */
 function createSectionBucketComparator(
   productOrderByIndex: Map<string, number>,
-  orderMap: Map<string, number> | undefined,
 ): (a: TabGroup, b: TabGroup) => number {
   return (a, b) => {
-    const aKey = getProductKey(a);
-    const bKey = getProductKey(b);
-    const aOrder = productOrderByIndex.get(aKey) ?? orderMap?.get(toProductItemId(aKey)) ?? a.order;
-    const bOrder = productOrderByIndex.get(bKey) ?? orderMap?.get(toProductItemId(bKey)) ?? b.order;
+    const aOrder = productOrderByIndex.get(getProductKey(a)) ?? a.order;
+    const bOrder = productOrderByIndex.get(getProductKey(b)) ?? b.order;
     return aOrder - bOrder;
   };
 }
@@ -161,8 +157,6 @@ export function buildOrganizerModel(input: BuildOrganizerModelInput): OrganizerM
   const assignmentByProductKey = new Map<string, string>();
   // productsBySection: sectionId → products
   const productsBySection = new Map<string, TabGroup[]>();
-  // orderMap: sectionId → (productItemId → order)
-  const orderMaps = new Map<string, Map<string, number>>();
 
   // Initialize buckets
   for (const section of sortedSections) {
@@ -172,19 +166,11 @@ export function buildOrganizerModel(input: BuildOrganizerModelInput): OrganizerM
   // Build assignment lookup maps
   for (const assignment of assignments) {
     const productKey = assignment.productKey;
-    const itemId = toProductItemId(productKey);
-    assignmentByProductItemId.set(itemId, assignment.sectionId);
+    assignmentByProductItemId.set(toProductItemId(productKey), assignment.sectionId);
     assignmentByProductKey.set(productKey, assignment.sectionId);
-
-    const bucket = productsBySection.get(assignment.sectionId);
-    if (bucket) {
-      const orderMap = orderMaps.get(assignment.sectionId) ?? new Map<string, number>();
-      orderMap.set(itemId, assignment.order);
-      orderMaps.set(assignment.sectionId, orderMap);
-    }
   }
 
-  // Assign products to sections (respecting order)
+  // Assign products to sections
   for (const product of products) {
     const productKey = getProductKey(product);
     const sectionId = assignmentByProductKey.get(productKey) ?? null;
@@ -199,18 +185,16 @@ export function buildOrganizerModel(input: BuildOrganizerModelInput): OrganizerM
 
   // Build sort-dropdown order map from the products array index.
   // The caller passes products pre-sorted by the active sort option (count/name/lastAccessed),
-  // so the array index reflects the sort dropdown order. This takes priority over orderMap
-  // because DnD only supports cross-section moves (append), not within-section reorder,
-  // so assignment.order has no user-intent meaning.
+  // so the array index reflects the sort dropdown order.
   const productOrderByIndex = new Map<string, number>();
   for (let i = 0; i < products.length; i++) {
     productOrderByIndex.set(getProductKey(products[i]), i);
   }
 
-  // Sort each bucket using the shared comparator (dropdown > assignment order > creation order)
-  for (const [sectionId, items] of productsBySection) {
-    const orderMap = orderMaps.get(sectionId);
-    items.sort(createSectionBucketComparator(productOrderByIndex, orderMap));
+  // Sort each bucket using the shared comparator (dropdown > creation order)
+  const bucketComparator = createSectionBucketComparator(productOrderByIndex);
+  for (const items of productsBySection.values()) {
+    items.sort(bucketComparator);
   }
 
   // Unassigned products — includes products with no assignment, regardless of override status.
@@ -257,70 +241,45 @@ export function buildOrganizerModel(input: BuildOrganizerModelInput): OrganizerM
 // ─── Auto-Assignment ─────────────────────────────────────────────────────────
 
 export interface AutoAssignProductsInput {
-  products: TabGroup[];
+  products: readonly TabGroup[];
   sections: Section[];
   assignments: SectionAssignment[];
   unsectionedProductKeys: string[];
-  hostnamesByProductKey: Map<string, string[]>;
+  hostnamesByProductKey: ReadonlyMap<string, readonly string[]>;
 }
 
 /**
  * Compute which products should be auto-assigned to sections based on autoRules.
  * Returns a list of new SectionAssignment objects to append.
  *
- * Rules:
- * - Only products with no existing assignment are candidates
- * - Products in unsectionedProductKeys are skipped
- * - All autoRules within each section are evaluated in order; first match wins
- * - Sections are evaluated in section order (sorted by order field)
+ * The priority between explicit assignment, the explicit "No section" veto, and
+ * rule inference lives in `resolveMembership`; this function only turns the
+ * `auto` verdict into a new assignment.
  */
 export function autoAssignProducts(input: AutoAssignProductsInput): SectionAssignment[] {
   const { products, sections, assignments, unsectionedProductKeys, hostnamesByProductKey } = input;
 
-  const assignedKeys = new Set(assignments.map((a) => a.productKey));
+  const sectionIdByProductKey = new Map(assignments.map((a) => [a.productKey, a.sectionId]));
   const overrideSet = new Set(unsectionedProductKeys);
-  const sortedSections = [...sections].sort((a, b) => a.order - b.order);
-
   const newAssignments: SectionAssignment[] = [];
-
-  // Pre-compute existing assignment counts per section
-  const existingCountBySection = new Map<string, number>();
-  for (const a of assignments) {
-    existingCountBySection.set(a.sectionId, (existingCountBySection.get(a.sectionId) ?? 0) + 1);
-  }
 
   for (const product of products) {
     const productKey = getProductKey(product);
-    if (assignedKeys.has(productKey)) continue;
-    if (overrideSet.has(productKey)) continue;
-
     const hostnames = hostnamesByProductKey.get(productKey) ?? [productKey];
 
-    for (const section of sortedSections) {
-      const rules = section.autoRules ?? [];
-      let matched = false;
+    const membership = resolveMembership({
+      hostnames,
+      sections,
+      assignedSectionId: sectionIdByProductKey.get(productKey) ?? null,
+      isPinnedUnsectioned: overrideSet.has(productKey),
+    });
 
-      for (const rule of rules) {
-        try {
-          const re = new RegExp(rule.pattern, 'i');
-          if (hostnames.some((hostname) => re.test(hostname))) {
-            const existingCount = existingCountBySection.get(section.id) ?? 0;
-            const newCount = newAssignments.filter((a) => a.sectionId === section.id).length;
-            newAssignments.push({
-              productKey,
-              sectionId: section.id,
-              order: existingCount + newCount,
-            });
-            assignedKeys.add(productKey);
-            matched = true;
-            break;
-          }
-        } catch {
-          // Skip invalid regex patterns without affecting other rules in the same section
-        }
-      }
-      if (matched) break;
-    }
+    // Only rule inference produces a new assignment. Explicit assignment and
+    // the explicit veto both mean "leave it alone".
+    if (membership.kind !== 'auto') continue;
+
+    newAssignments.push({ productKey, sectionId: membership.sectionId });
+    sectionIdByProductKey.set(productKey, membership.sectionId);
   }
 
   return newAssignments;
@@ -337,12 +296,9 @@ export function assignProductToSection(
   productKey: string,
   sectionId: string,
 ): SectionAssignment[] {
-  const existingInSection = currentAssignments.filter(
-    (a) => a.sectionId === sectionId && a.productKey !== productKey,
-  );
   return [
-    ...currentAssignments.filter((a) => a.productKey !== productKey),
-    { productKey, sectionId, order: existingInSection.length },
+    ...currentAssignments.filter((assignment) => assignment.productKey !== productKey),
+    { productKey, sectionId },
   ];
 }
 

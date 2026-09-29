@@ -1,6 +1,7 @@
 import type { AppSettings, CustomGroup } from '../../types';
 import { isAccentKey } from '../../config/themes';
 import { isGroupSortOption, normalizeGroupSortBy } from '../../config/group-sort';
+import { normalizeProductLabels } from '../../lib/product-labels';
 
 type ImportedSettings = Partial<Omit<AppSettings, 'keyBindings'>> & {
   keyBindings?: Partial<AppSettings['keyBindings']>;
@@ -56,6 +57,10 @@ export function parseImportedSettings(input: unknown): ImportedSettings {
 
   if (Array.isArray(input.customGroups)) {
     parsed.customGroups = input.customGroups.filter(isCustomGroup);
+  }
+
+  if (isRecord(input.productLabels)) {
+    parsed.productLabels = normalizeProductLabels(input.productLabels);
   }
 
   if (input.groupSortBy === 'default' || isGroupSortOption(input.groupSortBy)) {

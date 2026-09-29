@@ -10,6 +10,7 @@ import {
   clearRecoverySnapshots,
   reconcileOrganizerState,
   pruneStaleStorage,
+  applyAutoAssignments,
   assignProductToSection,
   unassignProductFromSections,
 } from '../utils/storage';
@@ -70,11 +71,11 @@ vi.stubGlobal('chrome', {
 describe('readStorage', () => {
   it('returns default schema when storage is empty', async () => {
     const result = await readStorage();
-    expect(result.schemaVersion).toBe(5);
+    expect(result.schemaVersion).toBe(6);
     expect(result.settings.theme).toBe('clay');
     expect(result.settings.groupSortBy).toBe('count');
     expect(result.groupOrder).toEqual({});
-    expect(result.sections.length).toBeGreaterThan(0);
+    expect(result.sections).toEqual([]);
     expect(result.sectionAssignments).toEqual([]);
     expect(result.unsectionedProductKeys).toEqual([]);
     expect(result.viewMode).toBe('cards');
@@ -83,7 +84,7 @@ describe('readStorage', () => {
   });
 
   it('normalizes legacy and unknown group sort settings', async () => {
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     storage['settings'] = { groupSortBy: 'default' };
     await expect(readStorage()).resolves.toMatchObject({
       settings: { groupSortBy: 'count' },
@@ -96,7 +97,7 @@ describe('readStorage', () => {
   });
 
   it('maps legacy space shortcut settings to section shortcut settings', async () => {
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     storage['settings'] = {
       keyBindings: {
         switchSpaceN: 'Alt+{n}',
@@ -114,7 +115,7 @@ describe('readStorage', () => {
   });
 
   it('prefers current section shortcuts over legacy space shortcut settings', async () => {
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     storage['settings'] = {
       keyBindings: {
         switchSpaceN: 'Alt+{n}',
@@ -132,16 +133,109 @@ describe('readStorage', () => {
 
   it('resets to default storage when no schemaVersion exists (fresh install)', async () => {
     const result = await readStorage();
-    expect(result.schemaVersion).toBe(5);
+    expect(result.schemaVersion).toBe(6);
+    expect(result.onboardingDone).toBe(false);
     expect(result.settings.theme).toBe('clay');
     expect(result.settings.groupSortBy).toBe('count');
     expect(result.groupOrder).toEqual({});
-    expect(result.sections.length).toBeGreaterThan(0);
+    expect(result.sections).toEqual([]);
     expect(result.sectionAssignments).toEqual([]);
     expect(result.unsectionedProductKeys).toEqual([]);
     expect(result.viewMode).toBe('cards');
     expect(result.recoveryCandidate).toBeNull();
     expect(result.recoverySnapshots).toEqual([]);
+  });
+
+  it('auto-assignment never overrides an explicit assignment or pin written meanwhile', async () => {
+    storage['schemaVersion'] = 6;
+    storage['sections'] = [{ id: 'a', name: 'A', order: 0 }, { id: 'b', name: 'B', order: 1 }];
+    storage['sectionAssignments'] = [{ productKey: 'moved', sectionId: 'a' }];
+    storage['unsectionedProductKeys'] = ['pinned'];
+
+    const result = await applyAutoAssignments([
+      { productKey: 'moved', sectionId: 'b' },
+      { productKey: 'pinned', sectionId: 'b' },
+      { productKey: 'fresh', sectionId: 'b' },
+    ]);
+
+    // The caller publishes what storage holds, not its stale inference.
+    expect(result).toEqual({
+      sectionAssignments: [
+        { productKey: 'moved', sectionId: 'a' },
+        { productKey: 'fresh', sectionId: 'b' },
+      ],
+      unsectionedProductKeys: ['pinned'],
+    });
+
+    expect(storage['sectionAssignments']).toEqual([
+      { productKey: 'moved', sectionId: 'a' },
+      { productKey: 'fresh', sectionId: 'b' },
+    ]);
+    expect(storage['unsectionedProductKeys']).toEqual(['pinned']);
+  });
+
+  describe('upgrading from the released v5 schema', () => {
+    function seedV5(sections: unknown[]): void {
+      storage['schemaVersion'] = 5;
+      storage['settings'] = { ...DEFAULT_SETTINGS, theme: 'pine', soundEnabled: false };
+      storage['sections'] = sections;
+      storage['sectionAssignments'] = [{ productKey: 'github', sectionId: 'work' }];
+      storage['unsectionedProductKeys'] = ['youtube'];
+      storage['groupOrder'] = { github: 0 };
+    }
+
+    it('keeps the user\'s settings, sections, and assignments instead of wiping them', async () => {
+      seedV5([{
+        id: 'work', name: 'Work', order: 0,
+        autoRules: [{ pattern: '^git', type: 'hostname' }],
+      }]);
+
+      const result = await readStorage();
+
+      expect(result.schemaVersion).toBe(6);
+      expect(result.settings.theme).toBe('pine');
+      expect(result.settings.soundEnabled).toBe(false);
+      expect(result.settings.productLabels).toEqual({});
+      expect(result.sections).toEqual([
+        { id: 'work', name: 'Work', order: 0, autoRules: [{ kind: 'regex', pattern: '^git' }] },
+      ]);
+      expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'work' }]);
+      expect(result.unsectionedProductKeys).toEqual(['youtube']);
+      expect(result.groupOrder).toEqual({ github: 0 });
+      // A v5 user already has sections, so onboarding must not reappear.
+      expect(result.onboardingDone).toBe(true);
+      expect(storage['schemaVersion']).toBe(6);
+      expect(storage['onboardingDone']).toBe(true);
+    });
+
+    it('keeps a v5 subdomain regex such as ([a-z0-9-]+\\.)*corp\\.com', async () => {
+      const pattern = '^([a-z0-9-]+\\.)*corp\\.com$';
+      seedV5([{ id: 'work', name: 'Work', order: 0, autoRules: [{ pattern, type: 'hostname' }] }]);
+
+      const result = await readStorage();
+
+      expect(result.sections[0].autoRules).toEqual([{ kind: 'regex', pattern }]);
+    });
+
+    it('offers onboarding to a v5 user who had deleted every section', async () => {
+      seedV5([]);
+
+      const result = await readStorage();
+
+      expect(result.onboardingDone).toBe(false);
+      expect(result.settings.theme).toBe('pine');
+    });
+
+    it('keeps v5 data when the first access is a write', async () => {
+      seedV5([{ id: 'work', name: 'Work', order: 0 }]);
+
+      await writeGroupOrder({ github: 1 });
+
+      expect(storage['schemaVersion']).toBe(6);
+      expect(storage['sections']).toEqual([{ id: 'work', name: 'Work', order: 0 }]);
+      expect((storage['settings'] as { theme: string }).theme).toBe('pine');
+      expect(storage['onboardingDone']).toBe(true);
+    });
   });
 
   it('resets to default storage when schemaVersion is outdated (v3)', async () => {
@@ -168,16 +262,16 @@ describe('readStorage', () => {
 
     const result = await readStorage();
 
-    expect(result.schemaVersion).toBe(5);
+    expect(result.schemaVersion).toBe(6);
     // Schema mismatch resets to DEFAULT_STORAGE; legacy data is not read
-    expect(result.sections.length).toBeGreaterThan(0);
+    expect(result.sections).toEqual([]);
     expect(result.sectionAssignments).toEqual([]);
     expect(result.recoverySnapshots).toEqual([]);
     expect(result.recoveryCandidate).toBeNull();
   });
 
   it('filters browser-internal tabs from recovery snapshots during normalization', async () => {
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     storage['recoverySnapshots'] = [{
       id: 'snap-current',
       capturedAt: '2026-05-05T00:00:00Z',
@@ -236,7 +330,7 @@ describe('readStorage', () => {
 
   it('normalizes section organizer state and rejects tabUrl assignments', async () => {
     const rejectedUrlAssignmentType = 'tab' + 'Url';
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     storage['sections'] = [
       { id: 'later', name: 'Later', order: 2 },
       { id: 'homepages', name: 'Homepages', order: 1 },
@@ -256,14 +350,14 @@ describe('readStorage', () => {
     expect(result.sections.map((g) => g.id)).toEqual(['homepages', 'later', 'untitled']);
     expect(result.sections.find((g) => g.id === 'untitled')?.name).toBe('Untitled');
     expect(result.sectionAssignments).toEqual([
-      { productKey: 'youtube', sectionId: 'later', order: 0 },
-      { productKey: 'github', sectionId: 'later', order: 1 },
+      { productKey: 'youtube', sectionId: 'later' },
+      { productKey: 'github', sectionId: 'later' },
     ]);
     expect(result.viewMode).toBe('table');
   });
 
   it('normalizes unsectioned product keys', async () => {
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     storage['unsectionedProductKeys'] = ['github', '', 'github', 123, ' google.com '];
 
     const result = await readStorage();
@@ -272,7 +366,7 @@ describe('readStorage', () => {
   });
 
   it('normalizes malformed sections and assignments to empty lists', async () => {
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     storage['sections'] = 'not-an-array';
     storage['sectionAssignments'] = 'not-an-array';
     storage['unsectionedProductKeys'] = 'not-an-array';
@@ -414,7 +508,7 @@ describe('writeGroupOrder', () => {
   });
 
   it('does not clobber unrelated settings when another write lands first', async () => {
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     storage['settings'] = DEFAULT_SETTINGS;
     storage['groupOrder'] = {};
 
@@ -428,7 +522,7 @@ describe('writeGroupOrder', () => {
       readCount += 1;
       if (readCount === 1) {
         const staleSnapshot = {
-          schemaVersion: 5,
+          schemaVersion: 6,
           settings: DEFAULT_SETTINGS,
           groupOrder: {},
         };
@@ -460,7 +554,7 @@ describe('writeGroupOrder', () => {
 
 describe('organizer storage mutations', () => {
   it('prunes stale order, assignments, and unsorted overrides', async () => {
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     storage['sections'] = [{ id: 'group-1', name: 'Group', order: 0 }];
     storage['groupOrder'] = { github: 0, stale: 1 };
     storage['sectionAssignments'] = [
@@ -474,12 +568,12 @@ describe('organizer storage mutations', () => {
     const result = await readStorage();
 
     expect(result.groupOrder).toEqual({ github: 0 });
-    expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1', order: 0 }]);
+    expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1' }]);
     expect(result.unsectionedProductKeys).toEqual(['github']);
   });
 
   it('leaves organizer storage untouched when no stale data exists', async () => {
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     storage['sections'] = [{ id: 'group-1', name: 'Group', order: 0 }];
     storage['groupOrder'] = { github: 0 };
     storage['sectionAssignments'] = [{ productKey: 'github', sectionId: 'group-1', order: 0 }];
@@ -489,30 +583,30 @@ describe('organizer storage mutations', () => {
     const result = await readStorage();
 
     expect(result.groupOrder).toEqual({ github: 0 });
-    expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1', order: 0 }]);
+    expect(result.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1' }]);
     expect(result.unsectionedProductKeys).toEqual(['github']);
   });
 
   it('assigns products by clearing No section overrides and moves unassigned products into No section overrides', async () => {
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     storage['sections'] = [{ id: 'group-1', name: 'Group', order: 0 }];
     storage['sectionAssignments'] = [{ productKey: 'github', sectionId: 'group-1', order: 0 }];
     storage['unsectionedProductKeys'] = ['vercel', 'github'];
 
     let next = await assignProductToSection('vercel', 'group-1');
     expect(next.sectionAssignments).toEqual([
-      { productKey: 'github', sectionId: 'group-1', order: 0 },
-      { productKey: 'vercel', sectionId: 'group-1', order: 1 },
+      { productKey: 'github', sectionId: 'group-1' },
+      { productKey: 'vercel', sectionId: 'group-1' },
     ]);
     expect(next.unsectionedProductKeys).toEqual(['github']);
 
     next = await unassignProductFromSections('vercel');
-    expect(next.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1', order: 0 }]);
+    expect(next.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'group-1' }]);
     expect(next.unsectionedProductKeys).toEqual(['github', 'vercel']);
   });
 
   it('does not duplicate an existing No section override when unassigning', async () => {
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     storage['unsectionedProductKeys'] = ['github'];
 
     const next = await unassignProductFromSections('github');
@@ -522,18 +616,16 @@ describe('organizer storage mutations', () => {
 });
 
 describe('reconcileOrganizerState', () => {
-  it('seeds default sections when sections has never been persisted', async () => {
+  it('seeds no sections when sections has never been persisted', async () => {
     const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
-    expect(state.sections.length).toBeGreaterThan(0);
-    // Check if the default Dev section is present
-    const devSection = state.sections.find(g => g.id === 'section-dev');
-    expect(devSection).toBeDefined();
-    expect(devSection?.name).toBe('Dev');
-    expect(devSection?.autoRules?.[0]?.pattern).toContain('github');
+
+    // Sections are the user's, created in onboarding — never seeded at install.
+    expect(state.sections).toEqual([]);
+    expect(state.onboardingDone).toBe(false);
   });
 
   it('preserves empty sections in current schema without reseeding', async () => {
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     storage['sections'] = [];
 
     const state = await reconcileOrganizerState(new Set(['github.com']), new Map());
@@ -545,7 +637,7 @@ describe('reconcileOrganizerState', () => {
 
   it('keeps existing sections if not empty', async () => {
     // Let's seed a custom group in storage first
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     const customGroup = { id: 'custom-id', name: 'My Section', order: 0 };
     storage['sections'] = [customGroup];
 
@@ -554,7 +646,7 @@ describe('reconcileOrganizerState', () => {
   });
 
   it('canonicalizes and prunes unsorted overrides during organizer reconcile', async () => {
-    storage['schemaVersion'] = 5;
+    storage['schemaVersion'] = 6;
     storage['sections'] = [{ id: 'g1', name: 'G1', order: 0 }];
     storage['unsectionedProductKeys'] = ['google.com', 'missing-product', 'github'];
 
@@ -566,5 +658,127 @@ describe('reconcileOrganizerState', () => {
 
     expect(state.unsectionedProductKeys).toEqual(['google', 'github']);
     expect(result.unsectionedProductKeys).toEqual(['google', 'github']);
+  });
+});
+
+describe('schema 6', () => {
+  it('resets to empty sections and onboardingDone=false on an unreadable older version', async () => {
+    storage['schemaVersion'] = 4;
+    storage['sections'] = [{ id: 'x', name: 'X', order: 0 }];
+
+    const result = await readStorage();
+
+    expect(result.schemaVersion).toBe(6);
+    expect(result.sections).toEqual([]);
+    expect(result.sectionAssignments).toEqual([]);
+    expect(result.onboardingDone).toBe(false);
+  });
+
+  it('drops autoRules that do not match the union type', async () => {
+    storage['schemaVersion'] = 6;
+    storage['onboardingDone'] = true;
+    storage['sections'] = [{
+      id: 'dev',
+      name: 'Dev',
+      order: 0,
+      autoRules: [
+        { kind: 'keyword', value: 'GitHub' },
+        { kind: 'regex', pattern: '[' },
+        { kind: 'regex', pattern: '' },
+        { kind: 'regex', pattern: '^(a+)+$' },
+        { kind: 'keyword', value: 'git hub' },
+        'nonsense',
+      ],
+    }];
+
+    const result = await readStorage();
+
+    expect(result.sections[0].autoRules).toEqual([{ kind: 'keyword', value: 'github' }]);
+  });
+
+  it('converts a legacy hostname rule to a regex rule instead of blanking it', async () => {
+    storage['schemaVersion'] = 6;
+    storage['onboardingDone'] = true;
+    storage['sections'] = [{
+      id: 'dev',
+      name: 'Dev',
+      order: 0,
+      autoRules: [
+        { pattern: 'github|jira|gitlab', type: 'hostname' },
+        { pattern: '[', type: 'hostname' },
+        { type: 'hostname' },
+      ],
+    }];
+
+    const result = await readStorage();
+
+    expect(result.sections[0].autoRules).toEqual([
+      { kind: 'regex', pattern: 'github|jira|gitlab' },
+    ]);
+  });
+
+  it('normalizes keyword case on read so imported backups cannot smuggle uppercase', async () => {
+    storage['schemaVersion'] = 6;
+    storage['onboardingDone'] = true;
+    storage['sections'] = [{ id: 'd', name: 'D', order: 0, autoRules: [{ kind: 'keyword', value: 'FIGMA' }] }];
+
+    const result = await readStorage();
+
+    expect(result.sections[0].autoRules).toEqual([{ kind: 'keyword', value: 'figma' }]);
+  });
+
+  it('keeps a compilable regex rule', async () => {
+    storage['schemaVersion'] = 6;
+    storage['onboardingDone'] = true;
+    storage['sections'] = [{ id: 'o', name: 'O', order: 0, autoRules: [{ kind: 'regex', pattern: '^aws\\.' }] }];
+
+    const result = await readStorage();
+
+    expect(result.sections[0].autoRules).toEqual([{ kind: 'regex', pattern: '^aws\\.' }]);
+  });
+
+  it('dedupes case-different keyword rules and duplicate regex rules from a backup import', async () => {
+    storage['schemaVersion'] = 6;
+    storage['onboardingDone'] = true;
+    storage['sections'] = [{
+      id: 'dev',
+      name: 'Dev',
+      order: 0,
+      autoRules: [
+        { kind: 'keyword', value: 'GitHub' },
+        { kind: 'keyword', value: 'github' },
+        { kind: 'regex', pattern: '^aws\\.' },
+        { kind: 'regex', pattern: '^aws\\.' },
+        { kind: 'keyword', value: 'gitlab' },
+      ],
+    }];
+
+    const result = await readStorage();
+
+    expect(result.sections[0].autoRules).toEqual([
+      { kind: 'keyword', value: 'github' },
+      { kind: 'regex', pattern: '^aws\\.' },
+      { kind: 'keyword', value: 'gitlab' },
+    ]);
+  });
+
+  it('keeps settings saved before productLabels existed and defaults the new field', async () => {
+    storage['schemaVersion'] = 6;
+    storage['onboardingDone'] = true;
+    storage['settings'] = { theme: 'sage' };
+
+    const result = await readStorage();
+
+    expect(result.settings.theme).toBe('sage');
+    expect(result.settings.productLabels).toEqual({});
+  });
+
+  it('drops malformed product label overrides', async () => {
+    storage['schemaVersion'] = 6;
+    storage['settings'] = { productLabels: { youtube: ' Videos ', bad: 1, blank: '  ' } };
+
+    const result = await readStorage();
+
+    expect(result.settings.productLabels).toEqual({ youtube: 'Videos' });
   });
 });

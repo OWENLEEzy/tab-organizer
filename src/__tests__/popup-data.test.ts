@@ -22,6 +22,7 @@ import type { StorageSchema } from '../types';
 
 const mockStorage: StorageSchema = {
   schemaVersion: 1,
+  onboardingDone: true,
   settings: {
     theme: 'clay',
     soundEnabled: true,
@@ -29,6 +30,7 @@ const mockStorage: StorageSchema = {
     maxChipsVisible: 8,
     staleThresholdDays: 7,
     customGroups: [],
+    productLabels: {},
     landingPagePatterns: [],
     groupSortBy: 'count',
     keyBindings: { switchSectionN: '', switchSectionAll: '', cyclePrev: '', cycleNext: '', focusSearch: '', clearFilter: '' },
@@ -80,7 +82,7 @@ describe('usePopupData', () => {
     // github can actually be auto-assigned → assignableCount=1.
     vi.mocked(readStorage).mockResolvedValue({
       ...mockStorage,
-      sections: [{ id: 'dev', name: 'Dev', order: 0, autoRules: [{ pattern: 'github', type: 'hostname' }] }],
+      sections: [{ id: 'dev', name: 'Dev', order: 0, autoRules: [{ kind: 'keyword', value: 'github' }] }],
     });
     vi.mocked(queryAllTabs).mockResolvedValue([
       mockTab(1, 'https://github.com/'),

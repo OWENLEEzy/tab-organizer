@@ -1,14 +1,16 @@
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
-import type { CustomGroup, AppSettings, Section } from '../../../types';
-import { ACCENT_OPTIONS, type AccentKey } from '../../../config/themes';
+import type { AppSettings, CustomGroup, Section, SectionAssignment, TabGroup } from '../../../types';
+import type { ProductLabels } from '../../../lib/product-labels';
+import type { AccentKey } from '../../../config/themes';
 import { useI18n } from '../../hooks/useI18n';
-import { SelectRow } from './SelectRow';
-import { ToggleRow } from './ToggleRow';
-import { CustomGroupsSection } from './CustomGroupsSection';
-import { SectionsSection } from './SectionsSection';
+import { ProductGroupRulesSection } from './ProductGroupRulesSection';
+import { HostnameGroupingRules } from './HostnameGroupingRules';
+import { SectionRulesWorkbench } from './SectionRulesWorkbench';
 import { KeyboardSection } from './KeyboardSection';
-
-// ─── Types ────────────────────────────────────────────────────────────
+import { AppearanceSection } from './AppearanceSection';
+import { BehaviorSection } from './BehaviorSection';
+import { BackupSection } from './BackupSection';
+import { SETTINGS_NAVIGATION, DEFAULT_SETTINGS_PAGE, type SettingsPageId } from './settings-navigation';
 
 interface SettingsPanelProps {
   open: boolean;
@@ -17,14 +19,16 @@ interface SettingsPanelProps {
   language: 'en' | 'zh' | 'system';
   soundEnabled: boolean;
   confettiEnabled: boolean;
-  customGroups: CustomGroup[];
+  productLabels: ProductLabels;
+  customGroups: readonly CustomGroup[];
+  onRemoveCustomGroup: (groupKey: string) => void;
   onSetTheme: (theme: AccentKey) => void;
   onSetLanguage: (language: 'en' | 'zh' | 'system') => void;
   onToggleSound: () => void;
   onToggleConfetti: () => void;
   onResetSortOrder: () => void;
-  onAddCustomGroup: (group: CustomGroup) => void;
-  onRemoveCustomGroup: (groupKey: string) => void;
+  onRenameProductGroup: (productKey: string, label: string) => void;
+  onRevertProductGroup: (productKey: string) => void;
   // Exposed settings
   maxChipsVisible: number;
   staleThresholdDays: number;
@@ -35,9 +39,15 @@ interface SettingsPanelProps {
   onImportSettings: (json: string) => Promise<void>;
   // Sections & Rules props
   sections?: Section[];
+  products?: TabGroup[];
+  hostnamesByProductKey?: ReadonlyMap<string, readonly string[]>;
+  assignments?: SectionAssignment[];
+  unsectionedProductKeys?: string[];
+  productCountBySectionId?: ReadonlyMap<string, number>;
   onUpdateSection?: (id: string, updates: Partial<Omit<Section, 'id'>>) => void;
   onDeleteSection?: (id: string) => void;
   onCreateSection?: (name: string) => void;
+  onAssignProducts?: (productKeys: readonly string[], sectionId: string) => void;
   // Keyboard Bindings props
   keyBindings?: AppSettings['keyBindings'];
   onUpdateKeyBinding?: (key: keyof AppSettings['keyBindings'], binding: string) => void;
@@ -49,19 +59,12 @@ interface SettingsPanelProps {
   onViewModeChange: (mode: 'cards' | 'table') => void;
 }
 
-type TabId = 'tab' | 'group' | 'section' | 'shortcuts' | 'system';
-
-interface TabItem {
-  id: TabId;
-  label: string;
-  icon: React.ReactNode;
-}
-
-// ─── Constants ───────────────────────────────────────────────────────
-
 const DEFAULT_SECTIONS: Section[] = [];
-
-// ─── Component ────────────────────────────────────────────────────────
+const DEFAULT_PRODUCTS: TabGroup[] = [];
+const DEFAULT_HOSTNAMES_BY_PRODUCT_KEY: ReadonlyMap<string, readonly string[]> = new Map();
+const DEFAULT_ASSIGNMENTS: SectionAssignment[] = [];
+const DEFAULT_UNSECTIONED_PRODUCT_KEYS: string[] = [];
+const DEFAULT_PRODUCT_COUNT_BY_SECTION_ID: ReadonlyMap<string, number> = new Map();
 
 export function SettingsPanel({
   open,
@@ -70,14 +73,16 @@ export function SettingsPanel({
   language,
   soundEnabled,
   confettiEnabled,
+  productLabels,
   customGroups,
+  onRemoveCustomGroup,
   onSetTheme,
   onSetLanguage,
   onToggleSound,
   onToggleConfetti,
   onResetSortOrder,
-  onAddCustomGroup,
-  onRemoveCustomGroup,
+  onRenameProductGroup,
+  onRevertProductGroup,
   maxChipsVisible,
   staleThresholdDays,
   onSetMaxChipsVisible,
@@ -85,9 +90,15 @@ export function SettingsPanel({
   onExportSettings,
   onImportSettings,
   sections = DEFAULT_SECTIONS,
+  products = DEFAULT_PRODUCTS,
+  hostnamesByProductKey = DEFAULT_HOSTNAMES_BY_PRODUCT_KEY,
+  assignments = DEFAULT_ASSIGNMENTS,
+  unsectionedProductKeys = DEFAULT_UNSECTIONED_PRODUCT_KEYS,
+  productCountBySectionId = DEFAULT_PRODUCT_COUNT_BY_SECTION_ID,
   onUpdateSection = () => {},
   onDeleteSection = () => {},
   onCreateSection = () => {},
+  onAssignProducts = () => {},
   keyBindings,
   onUpdateKeyBinding = () => {},
   onResetKeyBindings = () => {},
@@ -97,7 +108,7 @@ export function SettingsPanel({
 }: SettingsPanelProps): React.ReactElement | null {
   const panelRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>('tab');
+  const [activePage, setActivePage] = useState<SettingsPageId>(DEFAULT_SETTINGS_PAGE);
   const { t } = useI18n();
 
   const onCloseEffect = useEffectEvent(onClose);
@@ -109,7 +120,9 @@ export function SettingsPanel({
     function handleKeyDown(e: KeyboardEvent): void {
       if (e.key === 'Escape') {
         const target = e.target instanceof Element ? e.target : null;
-        if (target?.closest('[data-recording-shortcut="true"]')) return;
+        // Controls that consume Escape themselves (shortcut recording, inline
+        // rename) opt out so it cancels their edit instead of the whole panel.
+        if (target?.closest('[data-handles-escape="true"]')) return;
         onCloseEffect();
       }
     }
@@ -167,88 +180,12 @@ export function SettingsPanel({
     return null;
   }
 
-  const TAB_ITEMS: TabItem[] = [
-    {
-      id: 'tab',
-      label: t('settingsTabTab'),
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'group',
-      label: t('settingsTabGroup'),
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A9 9 0 0 1 11.25 3h1.5a9 9 0 0 1 9 9v.75m-19.5 0A2.25 2.25 0 0 0 4.5 15h15a2.25 2.25 0 0 0 2.25-2.25m-19.5 0v.25C2.25 17.5 5.5 21 9.75 21h4.5c4.25 0 7.5-3.5 7.5-8v-.25m-18 0h18" />
-        </svg>
-      ),
-    },
-    {
-      id: 'section',
-      label: t('settingsTabSection'),
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 6.878V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 18 6v.878m-12 0c.29.08.59.182.885.303l.244.1.243-.1a15.933 15.933 0 0 1 7.744-1.181M6 6.878c-.29.08-.59.182-.885.303l-.244.1-.243-.1A15.933 15.933 0 0 0 2.25 6v.878" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5V21M9.75 21h4.5M6 10.5h12v7.5A2.25 2.25 0 0 1 15.75 20.25H8.25A2.25 2.25 0 0 1 6 18v-7.5Z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'shortcuts',
-      label: t('settingsTabShortcuts'),
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5h15M4.5 13.5h15m-15-6h15m-15 12h15" />
-        </svg>
-      ),
-    },
-    {
-      id: 'system',
-      label: t('settingsTabSystem'),
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-        </svg>
-      ),
-    },
-  ];
-
-  const MAX_CHIPS_OPTIONS = [
-    { value: 4, label: t('settingsOptionChipsCount', { count: 4 }) },
-    { value: 6, label: t('settingsOptionChipsCount', { count: 6 }) },
-    { value: 8, label: t('settingsOptionChipsCountDefault', { count: 8 }) },
-    { value: 12, label: t('settingsOptionChipsCount', { count: 12 }) },
-    { value: 16, label: t('settingsOptionChipsCount', { count: 16 }) },
-    { value: 20, label: t('settingsOptionChipsCount', { count: 20 }) },
-    { value: 24, label: t('settingsOptionChipsCount', { count: 24 }) },
-  ];
-
-  const STALE_THRESHOLD_OPTIONS = [
-    { value: 1, label: t('settingsOptionDaysCount', { count: 1 }) },
-    { value: 2, label: t('settingsOptionDaysCount', { count: 2 }) },
-    { value: 3, label: t('settingsOptionDaysCountDefault', { count: 3 }) },
-    { value: 5, label: t('settingsOptionDaysCount', { count: 5 }) },
-    { value: 7, label: t('settingsOptionDaysCount', { count: 7 }) },
-    { value: 14, label: t('settingsOptionDaysCount', { count: 14 }) },
-    { value: 30, label: t('settingsOptionDaysCount', { count: 30 }) },
-  ];
-
-  const LANGUAGE_OPTIONS = [
-    { value: 'system', label: t('settingsLangSystem') },
-    { value: 'en', label: t('settingsLangEn') },
-    { value: 'zh', label: t('settingsLangZh') },
-  ];
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
         tabIndex={-1}
-        aria-label="Dismiss backdrop"
+        aria-label={t('settingsClose')}
         className="absolute inset-0 bg-black/35 transition-opacity"
         onClick={onClose}
       />
@@ -267,233 +204,124 @@ export function SettingsPanel({
           >
             {t('settingsTitle')}
           </h3>
-          {TAB_ITEMS.map((item) => {
-            const isActive = activeTab === item.id;
+          {SETTINGS_NAVIGATION.map((group) => {
+            const groupHeadingId = `settings-nav-group-${group.labelKey}`;
             return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full text-left font-body text-xs rounded-chip px-3 py-2 transition-all cursor-pointer flex items-center gap-2 min-h-[var(--spacing-button-height)] outline-none ${
-                  isActive
-                    ? 'bg-accent-blue/10 text-accent-blue dark:bg-accent-blue/15 dark:text-accent-blue font-semibold border-l border-accent-blue pl-[11px]'
-                    : 'text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark'
-                }`}
+              <div
+                key={group.labelKey}
+                role="group"
+                aria-labelledby={groupHeadingId}
+                className="flex flex-col gap-1"
               >
-                {item.icon}
-                <span>{item.label}</span>
-              </button>
+                <span
+                  id={groupHeadingId}
+                  className="font-body text-text-secondary px-3 pt-3 pb-1 text-3xs font-bold uppercase tracking-wider"
+                >
+                  {t(group.labelKey)}
+                </span>
+                {group.pages.map((page) => {
+                  const isActive = activePage === page.id;
+                  return (
+                    <button
+                      key={page.id}
+                      type="button"
+                      onClick={() => setActivePage(page.id)}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`w-full text-left font-body text-xs rounded-chip px-3 py-2 transition-all cursor-pointer flex items-center gap-2 min-h-[var(--spacing-button-height)] focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none ${
+                        isActive
+                          ? 'bg-accent-blue/10 text-accent-blue dark:bg-accent-blue/15 dark:text-accent-blue font-semibold border-l border-accent-blue pl-[11px]'
+                          : 'text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark'
+                      }`}
+                    >
+                      <span>{t(page.labelKey)}</span>
+                    </button>
+                  );
+                })}
+              </div>
             );
           })}
         </div>
-
         {/* Right Column - Active Content */}
         <div className="flex-1 flex flex-col overflow-hidden bg-card-light dark:bg-card-dark">
           {/* Header */}
           <div className="flex items-center justify-between p-6 pb-4 border-b border-border-color/20">
             <h4 className="font-heading text-text-primary-light dark:text-text-primary-dark text-sm font-semibold">
-              {TAB_ITEMS.find((tab) => tab.id === activeTab)?.label}
+              {t(SETTINGS_NAVIGATION.flatMap((g) => g.pages).find((p) => p.id === activePage)?.labelKey ?? 'settingsTitle')}
             </h4>
             <button
               type="button"
               onClick={onClose}
               className="rounded-chip text-text-secondary hover:bg-surface-light hover:text-text-primary-light dark:hover:bg-surface-dark dark:hover:text-text-primary-dark flex size-[var(--spacing-button-icon-sm)] cursor-pointer items-center justify-center transition-colors focus-visible:ring-accent-primary/40 focus-visible:ring-2 focus-visible:outline-none"
-              aria-label="Close settings"
+              aria-label={t('settingsClose')}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2.0}
-                stroke="currentColor"
-                className="size-4"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18 18 6M6 6l12 12"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.0} stroke="currentColor" className="size-4" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-
-          {/* Tab Viewport */}
+          {/* Page Viewport */}
           <div className="flex-1 overflow-y-auto p-6">
-            {activeTab === 'tab' && (
-              <div className="flex flex-col gap-6">
-                <SelectRow
-                  id="setting-stale-threshold"
-                  label={t('settingsStaleThreshold')}
-                  value={staleThresholdDays}
-                  options={STALE_THRESHOLD_OPTIONS}
-                  onChange={onSetStaleThresholdDays}
-                />
-
-                <ToggleRow
-                  id="setting-sound"
-                  label={t('settingsOptionsSound')}
-                  checked={soundEnabled}
-                  onChange={onToggleSound}
-                />
-
-                <ToggleRow
-                  id="setting-confetti"
-                  label={t('settingsOptionsConfetti')}
-                  checked={confettiEnabled}
-                  onChange={onToggleConfetti}
-                />
-              </div>
-            )}
-
-            {activeTab === 'group' && (
-              <div className="flex flex-col gap-6">
-                <SelectRow
-                  id="setting-max-chips"
-                  label={t('settingsMaxChips')}
-                  value={maxChipsVisible}
-                  options={MAX_CHIPS_OPTIONS}
-                  onChange={onSetMaxChipsVisible}
-                />
-
-                <hr className="border-border-color/20" />
-
-                <CustomGroupsSection
-                  groups={customGroups}
-                  onAdd={onAddCustomGroup}
-                  onRemove={onRemoveCustomGroup}
-                />
-
-                <hr className="border-border-color/20" />
-
-                <div className="flex items-center justify-between">
-                  <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm">
-                    {t('settingsSortOrderTitle')}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={onResetSortOrder}
-                    className="rounded-chip font-body text-accent-blue hover:bg-accent-blue/10 focus-visible:ring-accent-primary/40 min-h-[var(--spacing-button-height)] cursor-pointer px-3 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
-                  >
-                    {t('settingsSortOrderBtn')}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'section' && (
-              <SectionsSection
-                sections={sections}
-                onUpdateSection={onUpdateSection}
-                onDeleteSection={onDeleteSection}
-                onCreateSection={onCreateSection}
+            {activePage === 'appearance' && (
+              <AppearanceSection
+                theme={theme}
+                language={language}
+                viewMode={viewMode}
+                maxChipsVisible={maxChipsVisible}
+                onSetTheme={onSetTheme}
+                onSetLanguage={onSetLanguage}
+                onViewModeChange={onViewModeChange}
+                onSetMaxChipsVisible={onSetMaxChipsVisible}
               />
             )}
-
-            {activeTab === 'shortcuts' && keyBindings && (
+            {activePage === 'behavior' && (
+              <BehaviorSection
+                staleThresholdDays={staleThresholdDays}
+                onSetStaleThresholdDays={onSetStaleThresholdDays}
+                soundEnabled={soundEnabled}
+                onToggleSound={onToggleSound}
+                confettiEnabled={confettiEnabled}
+                onToggleConfetti={onToggleConfetti}
+                onResetSortOrder={onResetSortOrder}
+              />
+            )}
+            {activePage === 'shortcuts' && keyBindings && (
               <KeyboardSection
                 keyBindings={keyBindings}
                 onUpdateKeyBinding={onUpdateKeyBinding}
                 onResetKeyBindings={onResetKeyBindings}
               />
             )}
-
-            {activeTab === 'system' && (
+            {activePage === 'section-rules' && (
+              <SectionRulesWorkbench
+                sections={sections}
+                products={products}
+                hostnamesByProductKey={hostnamesByProductKey}
+                assignments={assignments}
+                unsectionedProductKeys={unsectionedProductKeys}
+                productCountBySectionId={productCountBySectionId}
+                onUpdateSection={onUpdateSection}
+                onCreateSection={onCreateSection}
+                onDeleteSection={onDeleteSection}
+                onAssignProducts={onAssignProducts}
+              />
+            )}
+            {activePage === 'product-rules' && (
               <div className="flex flex-col gap-6">
-                <SelectRow
-                  id="setting-view-mode"
-                  label={t('settingsViewMode')}
-                  value={viewMode}
-                  options={[
-                    { value: 'cards', label: t('settingsViewModeCards') },
-                    { value: 'table', label: t('settingsViewModeTable') },
-                  ]}
-                  onChange={(val) => onViewModeChange(val as 'cards' | 'table')}
+                <ProductGroupRulesSection
+                  products={products}
+                  productLabels={productLabels}
+                  onRename={onRenameProductGroup}
+                  onRevert={onRevertProductGroup}
                 />
-
-                <SelectRow
-                  id="setting-language"
-                  label={t('settingsLang')}
-                  value={language}
-                  options={LANGUAGE_OPTIONS}
-                  onChange={(val) => onSetLanguage(val as 'en' | 'zh' | 'system')}
-                />
-
-                <SelectRow
-                  id="setting-theme"
-                  label={t('settingsTheme')}
-                  value={theme}
-                  options={ACCENT_OPTIONS.map(({ key, labelKey }) => ({
-                    value: key,
-                    label: t(labelKey),
-                  }))}
-                  onChange={onSetTheme}
-                />
-
-                <hr className="border-border-color/20" />
-
-                <div className="flex flex-col gap-2">
-                  <span className="font-body text-text-primary-light dark:text-text-primary-dark text-sm font-medium">
-                    {t('settingsBackupTitle')}
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={onExportSettings}
-                      className="flex-1 rounded-chip font-body border border-border-color hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-[var(--spacing-button-height)] cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-3.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                      </svg>
-                      {t('settingsBackupExportBtn')}
-                    </button>
-                    <label
-                      className="flex-1 rounded-chip font-body border border-border-color hover:bg-surface-light dark:hover:bg-surface-dark text-text-primary-light dark:text-text-primary-dark min-h-[var(--spacing-button-height)] cursor-pointer text-xs transition-colors flex items-center justify-center gap-1.5 text-center"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-3.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-                      </svg>
-                      {t('settingsBackupImportBtn')}
-                      <input
-                        type="file"
-                        accept=".json"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          const reader = new FileReader();
-                          reader.onload = async (evt) => {
-                            const txt = evt.target?.result as string;
-                            if (txt) {
-                              await onImportSettings(txt);
-                            }
-                          };
-                          reader.readAsText(file);
-                          e.target.value = '';
-                        }}
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <hr className="border-border-color/20" />
-
-                <div className="rounded-md border border-border-color/50 bg-surface-light/40 p-3 dark:bg-surface-dark/40">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <span className="font-body text-text-primary-light dark:text-text-primary-dark block text-sm font-medium">
-                        {t('settingsVersionTitle')}
-                      </span>
-                      <p className="font-body text-text-secondary mt-1 text-xs leading-relaxed">
-                        {t('settingsVersionDesc')}
-                      </p>
-                    </div>
-                    <span className="font-body rounded-sm bg-bg-card px-2 py-1 text-xs font-semibold text-text-secondary">
-                      v{appVersion}
-                    </span>
-                  </div>
-                </div>
+                <HostnameGroupingRules groups={customGroups} onRemove={onRemoveCustomGroup} />
               </div>
+            )}
+            {activePage === 'backup' && (
+              <BackupSection
+                onExportSettings={onExportSettings}
+                onImportSettings={onImportSettings}
+                appVersion={appVersion}
+              />
             )}
           </div>
         </div>

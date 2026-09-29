@@ -44,7 +44,7 @@ describe('TabStore Recovery Actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     chromeStorage.data = {
-      schemaVersion: 5,
+      schemaVersion: 6,
       recoverySnapshots: [mockSnapshot],
       recoveryCandidate: null
     };

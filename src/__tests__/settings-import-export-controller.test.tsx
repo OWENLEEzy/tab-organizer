@@ -1,10 +1,35 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import type { Section } from '../types';
 import type { SettingsStore } from '../stores/settings-store';
-import type { TabStore } from '../stores/tab-store';
+import { useTabStore, type TabStore } from '../stores/tab-store';
 import { I18nProvider } from '../dashboard/providers/I18nProvider';
 import { useSettingsImportExport } from '../dashboard/controllers/useSettingsImportExport';
+
+const chromeStorageData: Record<string, unknown> = {};
+
+vi.stubGlobal('chrome', {
+  storage: {
+    local: {
+      get: vi.fn(async (keys: string[] | string) => {
+        const result: Record<string, unknown> = {};
+        for (const key of Array.isArray(keys) ? keys : [keys]) {
+          if (key in chromeStorageData) result[key] = chromeStorageData[key];
+        }
+        return result;
+      }),
+      set: vi.fn(async (items: Record<string, unknown>) => {
+        Object.assign(chromeStorageData, items);
+      }),
+      remove: vi.fn(async (keys: string | string[]) => {
+        for (const key of Array.isArray(keys) ? keys : [keys]) delete chromeStorageData[key];
+      }),
+    },
+  },
+  tabs: { query: vi.fn(async () => []) },
+  runtime: { getURL: vi.fn((path: string) => `chrome-extension://fake-id/${path}`) },
+});
 
 function wrapper({ children }: { children: ReactNode }) {
   return <I18nProvider>{children}</I18nProvider>;
@@ -20,6 +45,7 @@ function makeStores() {
       maxChipsVisible: 8,
       staleThresholdDays: 3,
       customGroups: [{ groupKey: 'old', groupLabel: 'Old', hostname: 'old.test' }],
+      productLabels: { youtube: 'Videos' },
       landingPagePatterns: [],
       keyBindings: {
         switchSectionN: 'Meta+{n}',
@@ -39,21 +65,29 @@ function makeStores() {
     setGroupSortBy: vi.fn(async () => {}),
     removeCustomGroup: vi.fn(async () => {}),
     addCustomGroup: vi.fn(async () => {}),
+    replaceProductLabels: vi.fn(async () => {}),
     updateKeyBinding: vi.fn(async () => {}),
     setLanguage: vi.fn(async () => {}),
   } as unknown as SettingsStore;
 
   const tabStore = {
     sections: [{ id: 'work', name: 'Work', order: 0 }],
-    sectionAssignments: [{ productKey: 'github', sectionId: 'work', order: 0 }],
+    sectionAssignments: [{ productKey: 'github', sectionId: 'work' }],
     unsectionedProductKeys: [],
     importBackup: vi.fn(async () => {}),
+    fetchTabs: vi.fn(async () => {}),
   } as unknown as TabStore;
 
   return { settingsStore, tabStore };
 }
 
 describe('useSettingsImportExport', () => {
+  beforeEach(() => {
+    for (const key of Object.keys(chromeStorageData)) delete chromeStorageData[key];
+    chromeStorageData.schemaVersion = 6;
+    useTabStore.setState(useTabStore.getInitialState(), true);
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -101,6 +135,7 @@ describe('useSettingsImportExport', () => {
         soundEnabled: false,
         maxChipsVisible: 12,
         customGroups: [{ groupKey: 'new', groupLabel: 'New', hostname: 'new.test' }],
+        productLabels: { github: ' Code ', bogus: 42 },
         language: 'zh',
       },
       sections: [{ id: 'later', name: 'Later', order: 0 }],
@@ -114,12 +149,68 @@ describe('useSettingsImportExport', () => {
     expect(settingsStore.setMaxChipsVisible).toHaveBeenCalledWith(12);
     expect(settingsStore.removeCustomGroup).toHaveBeenCalledWith('old');
     expect(settingsStore.addCustomGroup).toHaveBeenCalledWith({ groupKey: 'new', groupLabel: 'New', hostname: 'new.test' });
+    expect(settingsStore.replaceProductLabels).toHaveBeenCalledWith({ github: 'Code' });
     expect(tabStore.importBackup).toHaveBeenCalledWith(
       [{ id: 'later', name: 'Later', order: 0 }],
-      [{ productKey: 'github', sectionId: 'later', order: 0 }],
+      [{ productKey: 'github', sectionId: 'later' }],
       ['youtube'],
     );
     expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Settings imported'));
+  });
+
+  it('stores a legacy hostname auto-rule as a regex rule instead of blanking it', async () => {
+    // End-to-end on purpose: the controller hands rules over raw, and storage is
+    // the single gate that validates them. Only the stored result proves that.
+    const { settingsStore } = makeStores();
+    const showToast = vi.fn();
+    const { result } = renderHook(
+      () => useSettingsImportExport({
+        settingsStore,
+        tabStore: useTabStore.getState(),
+        showToast,
+      }),
+      { wrapper },
+    );
+
+    await result.current.handleImportConfig(JSON.stringify({
+      version: '1.0',
+      sections: [{
+        id: 'dev',
+        name: 'Dev',
+        order: 0,
+        autoRules: [
+          { pattern: 'github|gitlab', type: 'hostname' },
+          { kind: 'keyword', value: 'JIRA' },
+          { type: 'hostname' },
+        ],
+      }],
+    }));
+
+    await waitFor(() => expect(chromeStorageData.sections).toHaveLength(1));
+    expect((chromeStorageData.sections as Section[])[0].autoRules).toEqual([
+      { kind: 'regex', pattern: 'github|gitlab' },
+      { kind: 'keyword', value: 'jira' },
+    ]);
+    expect(useTabStore.getState().sections[0].autoRules).toEqual([
+      { kind: 'regex', pattern: 'github|gitlab' },
+      { kind: 'keyword', value: 'jira' },
+    ]);
+  });
+
+  it('regroups tabs after import so imported names show without a refresh', async () => {
+    const { settingsStore, tabStore } = makeStores();
+    const { result } = renderHook(
+      () => useSettingsImportExport({ settingsStore, tabStore, showToast: vi.fn() }),
+      { wrapper },
+    );
+
+    await result.current.handleImportConfig(JSON.stringify({
+      version: '1.0',
+      settings: { productLabels: { github: 'Code' } },
+    }));
+
+    expect(settingsStore.replaceProductLabels).toHaveBeenCalledWith({ github: 'Code' });
+    expect(tabStore.fetchTabs).toHaveBeenCalledTimes(1);
   });
 
   it('does not import legacy manual group keys (manualGroups, groupAssignments)', async () => {

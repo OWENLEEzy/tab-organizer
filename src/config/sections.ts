@@ -1,138 +1,147 @@
-import type { Section } from '../types';
+import type { Section, SectionAutoRule } from '../types';
 
-export const DEFAULT_SECTIONS: Section[] = [
+/**
+ * Onboarding candidates. These are NOT written to storage at install time —
+ * the user picks and edits them once in the onboarding card, and only what
+ * they confirm becomes a real Section. See design spec §3.1 and §3.9.
+ */
+export interface SectionTemplate {
+  id: string;
+  name: string;
+  emoji: string;
+  /** Already normalized: lowercase, no whitespace. */
+  keywords: string[];
+  /**
+   * Preset coverage that cannot be expressed as a plain keyword (contains a
+   * path segment, a character class, or a space). Never edited by the user —
+   * `keywords` is the only editable surface in the onboarding card.
+   */
+  extraRules?: SectionAutoRule[];
+}
+
+/**
+ * Order matters: the first matching section wins, so a template whose keywords
+ * are a narrower slice of a broader one's (DevOps's `aws.amazon` inside
+ * Shopping's `amazon`) must come first. Keywords are specific enough not to
+ * claim unrelated sites by label prefix (`delta.com`, not `delta`).
+ */
+export const SECTION_TEMPLATES: SectionTemplate[] = [
   {
     id: 'section-dev',
     name: 'Dev',
-    order: 0,
-    autoRules: [
-      { pattern: 'github|jira|gitlab|stackoverflow|localhost|bitbucket|sourceforge|gitea|launchpad', type: 'hostname' }
-    ]
+    emoji: '💻',
+    keywords: ['github', 'jira', 'gitlab', 'stackoverflow', 'localhost', 'bitbucket', 'sourceforge', 'gitea', 'launchpad'],
   },
   {
     id: 'section-work',
     name: 'Work',
-    order: 1,
-    autoRules: [
-      { pattern: 'google\\.com|slack|loom|zoom|airtable|confluence|asana|clickup|todoist|linear|trello|basecamp|monday|teamviewer|anydesk', type: 'hostname' }
-    ]
+    emoji: '💼',
+    keywords: ['docs.google', 'sheets.google', 'slides.google', 'forms.google', 'meet.google', 'calendar.google', 'mail.google', 'slack', 'loom', 'zoom.us', 'airtable', 'confluence', 'asana', 'clickup', 'todoist', 'linear.app', 'trello', 'basecamp', 'monday.com', 'teamviewer', 'anydesk'],
   },
   {
     id: 'section-media',
     name: 'Media',
-    order: 2,
-    autoRules: [
-      { pattern: 'youtube|twitter|x\\.com|reddit|instagram|tiktok|bilibili|twitch|steam|epicgames|roblox', type: 'hostname' }
-    ]
-  },
-  {
-    id: 'section-shopping',
-    name: 'Shopping',
-    order: 3,
-    autoRules: [
-      { pattern: 'amazon|taobao|jd\\.com|shopee|aliexpress|ebay|walmart|target|bestbuy|etsy', type: 'hostname' }
-    ]
-  },
-  {
-    id: 'section-academic',
-    name: 'Academic',
-    order: 4,
-    autoRules: [
-      { pattern: 'arxiv|scholar\\.google|pubmed|ieee|acm\\.org|jstor|nature|science\\.org|sciencedirect|springer|wiley|researchgate|semanticscholar|阑|center|plos|frontiersin|mdpi|hindawi|biorxiv|medrxiv', type: 'hostname' }
-    ]
-  },
-  {
-    id: 'section-social',
-    name: 'Social',
-    order: 5,
-    autoRules: [
-      { pattern: 'linkedin|discord|telegram|whatsapp|weixin\\.com|wechat|signal| IRC|reddit\\.com/message', type: 'hostname' }
-    ]
-  },
-  {
-    id: 'section-news',
-    name: 'News',
-    order: 6,
-    autoRules: [
-      { pattern: 'news\\.google|bbc|nytimes|theguardian|reuters|bloomberg|wsj|apnews|usatoday|washingtonpost|latimes|huffpost|axios|theintercept|propublica|fivethirtyeight', type: 'hostname' }
-    ]
-  },
-  {
-    id: 'section-finance',
-    name: 'Finance',
-    order: 7,
-    autoRules: [
-      { pattern: 'chase|wellsfargo|robinhood|coinbase|binance|tradingview|fidelity|vanguard|schwab|ameritrade|paypal|venmo|cashapp|stripe|bankofamerica|citibank|usbank', type: 'hostname' }
-    ]
-  },
-  {
-    id: 'section-cloud',
-    name: 'Cloud',
-    order: 8,
-    autoRules: [
-      { pattern: 'drive\\.google|dropbox|icloud|onedrive|box\\.com|mega|nzbd|mediafire', type: 'hostname' }
-    ]
-  },
-  {
-    id: 'section-ai',
-    name: 'AI',
-    order: 9,
-    autoRules: [
-      { pattern: 'openai|anthropic|chatgpt|claude|gemini|deepseek|perplexity|huggingface|replicate|ollama|groq|mistral|cohere|aws[ _]bedrock|azure ai', type: 'hostname' }
-    ]
+    emoji: '🎬',
+    keywords: ['youtube', 'twitter', 'x.com', 'reddit', 'instagram', 'tiktok', 'bilibili', 'twitch', 'steam', 'epicgames', 'roblox'],
   },
   {
     id: 'section-devops',
     name: 'DevOps',
-    order: 10,
-    autoRules: [
-      { pattern: 'aws\\.com|azure\\.com|gcp|googleapis|cloudflare|digitalocean|heroku|vercel|netlify|render| Railway|fly\\.io|supabase|firebase|datadog|sentry|grafana|prometheus|jenkins|travis|circleci|github\\.com/actions|gitlab\\.com/ci', type: 'hostname' }
-    ]
+    emoji: '⚙️',
+    keywords: ['aws.amazon', 'amazonaws', 'azure.com', 'cloud.google', 'googleapis', 'cloudflare', 'digitalocean', 'heroku', 'vercel', 'netlify', 'render.com', 'railway.app', 'fly.io', 'supabase', 'firebase', 'datadog', 'sentry.io', 'grafana', 'prometheus', 'jenkins', 'travis-ci', 'circleci'],
+  },
+  {
+    id: 'section-shopping',
+    name: 'Shopping',
+    emoji: '🛒',
+    keywords: ['amazon', 'taobao', 'jd.com', 'shopee', 'aliexpress', 'ebay', 'walmart', 'target.com', 'bestbuy', 'etsy'],
+  },
+  {
+    id: 'section-academic',
+    name: 'Academic',
+    emoji: '🎓',
+    keywords: ['arxiv', 'scholar.google', 'pubmed', 'ieee', 'acm.org', 'jstor', 'nature.com', 'science.org', 'sciencedirect', 'springer', 'wiley', 'researchgate', 'semanticscholar', 'plos', 'frontiersin', 'mdpi', 'hindawi', 'biorxiv', 'medrxiv'],
+  },
+  {
+    id: 'section-social',
+    name: 'Social',
+    emoji: '💬',
+    keywords: ['linkedin', 'discord', 'telegram', 'whatsapp', 'weixin.qq', 'wechat', 'signal.org', 'irc'],
+  },
+  {
+    id: 'section-news',
+    name: 'News',
+    emoji: '📰',
+    keywords: ['news.google', 'bbc', 'nytimes', 'theguardian', 'reuters', 'bloomberg', 'wsj', 'apnews', 'usatoday', 'washingtonpost', 'latimes', 'huffpost', 'axios', 'theintercept', 'propublica', 'fivethirtyeight'],
+  },
+  {
+    id: 'section-finance',
+    name: 'Finance',
+    emoji: '💰',
+    keywords: ['chase.com', 'wellsfargo', 'robinhood', 'coinbase', 'binance', 'tradingview', 'fidelity', 'vanguard', 'schwab', 'ameritrade', 'paypal', 'venmo', 'cashapp', 'stripe', 'bankofamerica', 'citibank', 'usbank'],
+  },
+  {
+    id: 'section-cloud',
+    name: 'Cloud',
+    emoji: '☁️',
+    keywords: ['drive.google', 'dropbox', 'icloud', 'onedrive', 'box.com', 'mega.nz', 'mega.io', 'nzbd', 'mediafire'],
+  },
+  {
+    id: 'section-ai',
+    name: 'AI',
+    emoji: '🤖',
+    keywords: ['openai', 'anthropic', 'chatgpt', 'claude.ai', 'gemini.google', 'deepseek', 'perplexity', 'huggingface', 'replicate.com', 'ollama', 'groq', 'mistral.ai', 'cohere.com'],
   },
   {
     id: 'section-design',
     name: 'Design',
-    order: 11,
-    autoRules: [
-      { pattern: 'figma|sketch|adobe|canva|framer|webflow|dribbble|behance|invision|marvel|principle|zeplin|abstract|plantuml|excalidraw|miro|figjam', type: 'hostname' }
-    ]
+    emoji: '🎨',
+    keywords: ['figma', 'sketch.com', 'adobe', 'canva', 'framer', 'webflow', 'dribbble', 'behance', 'invision', 'marvelapp', 'principleformac', 'zeplin', 'abstract.com', 'plantuml', 'excalidraw', 'miro', 'figjam'],
   },
   {
     id: 'section-productivity',
     name: 'Productivity',
-    order: 12,
-    autoRules: [
-      { pattern: 'obsidian|roam|logseq|notion|coda|evernote|microsoft[ _]onenote|apple[ _]notes|ticktick|any\\.do|habitica|anotepad|pomodorotracker|forest', type: 'hostname' }
-    ]
+    emoji: '✅',
+    keywords: ['obsidian', 'roamresearch', 'logseq', 'notion', 'coda.io', 'evernote', 'ticktick', 'any.do', 'habitica', 'anotepad', 'pomodorotracker', 'forestapp'],
   },
   {
     id: 'section-maps',
     name: 'Maps',
-    order: 13,
-    autoRules: [
-      { pattern: 'maps\\.google|google\\.com/maps|bing\\.com/maps|mapquest|wikimedia|openstreetmap|gismastery', type: 'hostname' }
-    ]
+    emoji: '🗺️',
+    keywords: ['maps.google', 'mapquest', 'wikimedia', 'openstreetmap', 'gismastery'],
   },
   {
     id: 'section-travel',
     name: 'Travel',
-    order: 14,
-    autoRules: [
-      { pattern: 'booking\\.com|airbnb|expedia|tripadvisor|kayak|hotels\\.com|hostelworld|couchsurfing|hostel|trivago|priceline|cheaptickets|flightcentre|airline\\.com|united|delta|american eagle|southwest|lufthansa|ba\\.com|france\\.com|ryanair|easyjet', type: 'hostname' }
-    ]
+    emoji: '✈️',
+    keywords: ['booking.com', 'airbnb', 'expedia', 'tripadvisor', 'kayak', 'hotels.com', 'hostelworld', 'couchsurfing', 'hostel', 'trivago', 'priceline', 'cheaptickets', 'flightcentre', 'airline.com', 'united.com', 'delta.com', 'southwest', 'lufthansa', 'ba.com', 'france.com', 'ryanair', 'easyjet'],
   },
   {
     id: 'section-music',
     name: 'Music',
-    order: 15,
-    autoRules: [
-      { pattern: 'spotify|soundcloud|bandcamp|apple\\.com/music|youtube\\.com/music|deezer|tidal|pandora|musify|qq\\.music', type: 'hostname' }
-    ]
-  }
+    emoji: '🎵',
+    keywords: ['spotify', 'soundcloud', 'bandcamp', 'deezer', 'tidal.com', 'pandora.com', 'musify', 'y.qq', 'music.qq'],
+  },
 ];
 
-const DEFAULT_SECTION_IDS = new Set(DEFAULT_SECTIONS.map((section) => section.id));
+/** The auto-rules a template implies: its editable keywords plus its fixed extra rules. */
+export function templateAutoRules(
+  template: SectionTemplate,
+  keywords: readonly string[] = template.keywords,
+): SectionAutoRule[] {
+  return [
+    ...keywords.map((value): SectionAutoRule => ({ kind: 'keyword', value })),
+    ...(template.extraRules ?? []),
+  ];
+}
 
-export function isDefaultSectionId(sectionId: string): boolean {
-  return DEFAULT_SECTION_IDS.has(sectionId);
+/** Build the Section objects a template set implies. */
+export function sectionsFromTemplates(templates: readonly SectionTemplate[]): Section[] {
+  return templates.map((template, index) => ({
+    id: template.id,
+    name: template.name,
+    order: index,
+    emoji: template.emoji,
+    autoRules: templateAutoRules(template),
+  }));
 }

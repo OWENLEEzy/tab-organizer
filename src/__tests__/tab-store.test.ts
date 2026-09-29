@@ -1,7 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTabStore } from '../stores/tab-store';
-import { DEFAULT_SECTIONS } from '../config/sections';
-import type { RecoverySnapshot } from '../types';
+import type { RecoverySnapshot, Section, SectionAssignment } from '../types';
+
+/**
+ * Sections are user-owned now, so tests state the ones they need. This one
+ * carries the rule that claims Google products for the auto-assign cases.
+ */
+const STORED_SECTIONS: Section[] = [
+  {
+    id: 'section-work',
+    name: 'Work',
+    order: 0,
+    autoRules: [{ kind: 'keyword', value: 'google.com' }],
+  },
+];
 
 const chromeTabs = {
   query: vi.fn(),
@@ -156,7 +168,7 @@ describe('useTabStore', () => {
     chromeTabs.onUpdated.removeListener.mockClear();
     chromeStorage.get.mockClear();
     chromeStorage.set.mockClear();
-    chromeStorage.data = { schemaVersion: 5, sections: DEFAULT_SECTIONS };
+    chromeStorage.data = { schemaVersion: 6, sections: STORED_SECTIONS };
     useTabStore.setState({
       tabs: [],
       products: [],
@@ -269,7 +281,7 @@ describe('useTabStore', () => {
       fetchTabs: useTabStore.getInitialState().fetchTabs,
     });
     chromeStorage.data = {
-      schemaVersion: 5,
+      schemaVersion: 6,
       deferred: [],
       workspaces: [],
       settings: {
@@ -303,7 +315,7 @@ describe('useTabStore', () => {
       'https://www.youtube.com/watch?v=2',
     ]);
     expect(state.sectionAssignments).toEqual([
-      { productKey: 'youtube', sectionId: 'later', order: 0 },
+      { productKey: 'youtube', sectionId: 'later' },
     ]);
     expect(state.viewMode).toBe('table');
     expect(chromeStorage.data['groupOrder']).toEqual({ youtube: 0 });
@@ -321,13 +333,37 @@ describe('useTabStore', () => {
     await useTabStore.getState().fetchTabs();
 
     expect(useTabStore.getState().sectionAssignments).toEqual([
-      { productKey: 'gmail', sectionId: 'section-work', order: 0 },
-      { productKey: 'google-docs', sectionId: 'section-work', order: 1 },
+      { productKey: 'gmail', sectionId: 'section-work' },
+      { productKey: 'google-docs', sectionId: 'section-work' },
     ]);
     expect(chromeStorage.data['sectionAssignments']).toEqual([
-      { productKey: 'gmail', sectionId: 'section-work', order: 0 },
-      { productKey: 'google-docs', sectionId: 'section-work', order: 1 },
+      { productKey: 'gmail', sectionId: 'section-work' },
+      { productKey: 'google-docs', sectionId: 'section-work' },
     ]);
+  });
+
+  it('publishes storage\'s assignments when another surface pins a product mid-fetch', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+    });
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(51, 'https://mail.google.com/mail/u/0/#inbox'),
+    ]);
+    // The first read (reconcile) sees nothing decided; by the auto-assign
+    // write, the popup has pinned gmail to No section.
+    const read = chromeStorage.get.getMockImplementation()!;
+    let reads = 0;
+    chromeStorage.get.mockImplementation((keys) => {
+      reads += 1;
+      if (reads === 2) chromeStorage.data['unsectionedProductKeys'] = ['gmail'];
+      return read(keys);
+    });
+
+    await useTabStore.getState().fetchTabs();
+    chromeStorage.get.mockImplementation(read);
+
+    expect(useTabStore.getState().sectionAssignments).toEqual([]);
+    expect(useTabStore.getState().unsectionedProductKeys).toEqual(['gmail']);
   });
 
   it('keeps a product in Unsorted after the user moves it out of an auto-matched space', async () => {
@@ -340,7 +376,7 @@ describe('useTabStore', () => {
 
     await useTabStore.getState().fetchTabs();
     expect(useTabStore.getState().sectionAssignments).toEqual([
-      { productKey: 'gmail', sectionId: 'section-work', order: 0 },
+      { productKey: 'gmail', sectionId: 'section-work' },
     ]);
 
     await useTabStore.getState().moveProductToUnsectioned('gmail');
@@ -379,10 +415,10 @@ describe('useTabStore', () => {
     await useTabStore.getState().moveProductGroupToSection('github', 'later');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([
-      { productKey: 'github', sectionId: 'later', order: 0 },
+      { productKey: 'github', sectionId: 'later' },
     ]);
     expect(chromeStorage.data['sectionAssignments']).toEqual([
-      { productKey: 'github', sectionId: 'later', order: 0 },
+      { productKey: 'github', sectionId: 'later' },
     ]);
     expect(chromeStorage.data['unsectionedProductKeys']).toEqual([]);
 
@@ -394,7 +430,7 @@ describe('useTabStore', () => {
     await useTabStore.getState().moveProductGroupToSection('github', 'later');
 
     expect(useTabStore.getState().sectionAssignments).toEqual([
-      { productKey: 'github', sectionId: 'later', order: 0 },
+      { productKey: 'github', sectionId: 'later' },
     ]);
     expect(chromeStorage.data['unsectionedProductKeys']).toEqual([]);
   });
@@ -407,7 +443,7 @@ describe('useTabStore', () => {
       unsectionedProductKeys: [],
     });
     chromeStorage.data = {
-      schemaVersion: 5,
+      schemaVersion: 6,
       sections: [{ id: 'later', name: 'Later', order: 0 }],
       sectionAssignments: [],
       unsectionedProductKeys: [],
@@ -425,6 +461,33 @@ describe('useTabStore', () => {
     expect((chromeStorage.data['sectionAssignments'] as { productKey: string }[])
       .map((assignment) => assignment.productKey)
       .sort()).toEqual(['github', 'vercel']);
+  });
+
+  it('assigns several product groups to a section in one batched write', async () => {
+    useTabStore.setState({
+      fetchTabs: vi.fn().mockResolvedValue(undefined),
+      sections: [{ id: 'later', name: 'Later', order: 0 }],
+      sectionAssignments: [],
+      unsectionedProductKeys: ['vercel'],
+    });
+    chromeStorage.data = {
+      schemaVersion: 6,
+      sections: [{ id: 'later', name: 'Later', order: 0 }],
+      sectionAssignments: [],
+      unsectionedProductKeys: ['vercel'],
+    };
+
+    await useTabStore.getState().assignProductsToSection(['github', 'vercel'], 'later');
+
+    expect(useTabStore.getState().sectionAssignments).toEqual([
+      { productKey: 'github', sectionId: 'later' },
+      { productKey: 'vercel', sectionId: 'later' },
+    ]);
+    expect(chromeStorage.data['sectionAssignments']).toEqual([
+      { productKey: 'github', sectionId: 'later' },
+      { productKey: 'vercel', sectionId: 'later' },
+    ]);
+    expect(chromeStorage.data['unsectionedProductKeys']).toEqual([]);
   });
 
   it('refreshes tabs even when a Chrome tab removal races with an already-closed tab', async () => {
@@ -585,7 +648,7 @@ describe('useTabStore', () => {
     useTabStore.setState({
       fetchTabs,
       sections: [],
-      sectionAssignments: [{ productKey: 'github', sectionId: 'group-1', order: 0 }],
+      sectionAssignments: [{ productKey: 'github', sectionId: 'group-1' }],
     });
 
     await useTabStore.getState().createSection('  ');
@@ -615,7 +678,7 @@ describe('useTabStore', () => {
         id: 'section-dev',
         name: 'Dev',
         order: 0,
-        autoRules: [{ pattern: 'linear', type: 'hostname' }],
+        autoRules: [{ kind: 'keyword', value: 'linear' }],
       },
     ];
     chromeTabs.query.mockResolvedValue([
@@ -624,7 +687,7 @@ describe('useTabStore', () => {
 
     await useTabStore.getState().fetchTabs();
     expect(useTabStore.getState().sectionAssignments).toEqual([
-      { productKey: 'linear.app', sectionId: 'section-dev', order: 0 },
+      { productKey: 'linear.app', sectionId: 'section-dev' },
     ]);
 
     await useTabStore.getState().deleteSection('section-dev');
@@ -642,13 +705,13 @@ describe('useTabStore', () => {
         id: 'section-dev',
         name: 'Dev',
         order: 0,
-        autoRules: [{ pattern: 'linear', type: 'hostname' }],
+        autoRules: [{ kind: 'keyword', value: 'linear' }],
       },
       {
         id: 'section-work',
         name: 'Work',
         order: 1,
-        autoRules: [{ pattern: 'linear', type: 'hostname' }],
+        autoRules: [{ kind: 'keyword', value: 'linear' }],
       },
     ];
     chromeTabs.query.mockResolvedValue([
@@ -657,7 +720,7 @@ describe('useTabStore', () => {
 
     await useTabStore.getState().fetchTabs();
     expect(useTabStore.getState().sectionAssignments).toEqual([
-      { productKey: 'linear.app', sectionId: 'section-dev', order: 0 },
+      { productKey: 'linear.app', sectionId: 'section-dev' },
     ]);
 
     await useTabStore.getState().deleteSection('section-dev');
@@ -684,6 +747,223 @@ describe('useTabStore', () => {
 
     expect(useTabStore.getState().sectionAssignments).toEqual([]);
     expect(useTabStore.getState().unsectionedProductKeys).toEqual(['gmail']);
+  });
+
+  it('completes onboarding by persisting the confirmed sections and the flag', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+      sections: [],
+      sectionAssignments: [],
+      onboardingDone: false,
+    });
+    chromeStorage.data = { schemaVersion: 6, sections: [] };
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(71, 'https://github.com/OWENLEEzy/tab-organizer'),
+    ]);
+
+    await useTabStore.getState().completeOnboarding(
+      [
+        { id: 'dev', name: 'Dev', order: 7, autoRules: [{ kind: 'keyword', value: 'github' }] },
+        { id: 'media', name: 'Media', order: 3 },
+      ],
+      [{ productKey: 'github', sectionId: 'dev' }],
+    );
+
+    expect(chromeStorage.data['onboardingDone']).toBe(true);
+    expect(chromeStorage.data['sections']).toEqual([
+      { id: 'dev', name: 'Dev', order: 0, emoji: undefined, autoRules: [{ kind: 'keyword', value: 'github' }] },
+      { id: 'media', name: 'Media', order: 1, emoji: undefined, autoRules: undefined },
+    ]);
+
+    const state = useTabStore.getState();
+    expect(state.onboardingDone).toBe(true);
+    expect(state.sections.map((section) => section.order)).toEqual([0, 1]);
+    expect(state.sectionAssignments).toEqual([{ productKey: 'github', sectionId: 'dev' }]);
+  });
+
+  it('does not flip onboardingDone in memory when persistence fails', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+      sections: [],
+      sectionAssignments: [],
+      onboardingDone: false,
+    });
+    chromeStorage.data = { schemaVersion: 6, sections: [] };
+    chromeStorage.set.mockRejectedValueOnce(new Error('disk full'));
+
+    await expect(
+      useTabStore.getState().completeOnboarding(
+        [{ id: 'dev', name: 'Dev', order: 0, autoRules: [{ kind: 'keyword', value: 'github' }] }],
+        [],
+      ),
+    ).rejects.toThrow('disk full');
+
+    const state = useTabStore.getState();
+    expect(state.onboardingDone).toBe(false);
+    expect(state.sections).toEqual([]);
+  });
+
+  it('saves onboarding sections and the done flag in one write, so a failure leaves neither', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+      sections: [],
+      sectionAssignments: [],
+      onboardingDone: false,
+    });
+    chromeStorage.data = { schemaVersion: 6, sections: [] };
+    chromeStorage.set.mockImplementationOnce((items: Record<string, unknown>) => (
+      items['onboardingDone'] === true
+        ? Promise.reject(new Error('disk full'))
+        : (Object.assign(chromeStorage.data, items), Promise.resolve())
+    ));
+
+    await expect(
+      useTabStore.getState().completeOnboarding(
+        [{ id: 'dev', name: 'Dev', order: 0 }],
+        [],
+      ),
+    ).rejects.toThrow('disk full');
+
+    expect(chromeStorage.data['sections']).toEqual([]);
+    expect(chromeStorage.data['onboardingDone']).not.toBe(true);
+  });
+
+  describe('organizer writes', () => {
+    // The refetch after a write prunes products that are not open, so these
+    // tests stub it to observe the write itself.
+    beforeEach(() => {
+      useTabStore.setState({ fetchTabs: vi.fn().mockResolvedValue(undefined) });
+    });
+
+    it('unpinning edits storage by delta, keeping a pin written elsewhere meanwhile', async () => {
+      chromeStorage.data = { schemaVersion: 6, sections: STORED_SECTIONS, unsectionedProductKeys: ['a', 'b'] };
+      useTabStore.setState({ unsectionedProductKeys: ['a'] });
+
+      await useTabStore.getState().unpinProduct('a');
+
+      expect(chromeStorage.data['unsectionedProductKeys']).toEqual(['b']);
+    });
+
+    it('moving a group to a section keeps an assignment written elsewhere meanwhile', async () => {
+      chromeStorage.data = {
+        schemaVersion: 6,
+        sections: STORED_SECTIONS,
+        sectionAssignments: [{ productKey: 'other', sectionId: 'section-work' }],
+      };
+      useTabStore.setState({ sectionAssignments: [] });
+
+      await useTabStore.getState().moveProductGroupToSection('github', 'section-work');
+
+      expect(chromeStorage.data['sectionAssignments']).toEqual([
+        { productKey: 'other', sectionId: 'section-work' },
+        { productKey: 'github', sectionId: 'section-work' },
+      ]);
+    });
+
+    it('moving a group to No section keeps an assignment written elsewhere meanwhile', async () => {
+      chromeStorage.data = {
+        schemaVersion: 6,
+        sections: STORED_SECTIONS,
+        sectionAssignments: [
+          { productKey: 'github', sectionId: 'section-work' },
+          { productKey: 'other', sectionId: 'section-work' },
+        ],
+      };
+      useTabStore.setState({ sectionAssignments: [{ productKey: 'github', sectionId: 'section-work' }] });
+
+      await useTabStore.getState().moveProductToUnsectioned('github');
+
+      expect(chromeStorage.data['sectionAssignments']).toEqual([
+        { productKey: 'other', sectionId: 'section-work' },
+      ]);
+      expect(chromeStorage.data['unsectionedProductKeys']).toEqual(['github']);
+    });
+
+    it('a failed batch assignment resyncs the optimistic state from storage and rejects', async () => {
+      useTabStore.setState({ fetchTabs: useTabStore.getInitialState().fetchTabs });
+      chromeTabs.query.mockResolvedValue([]);
+      chromeStorage.data = { schemaVersion: 6, sections: STORED_SECTIONS, sectionAssignments: [] };
+      useTabStore.setState({ sectionAssignments: [] });
+      chromeStorage.set.mockRejectedValueOnce(new Error('disk full'));
+
+      await expect(
+        useTabStore.getState().assignProductsToSection(['github'], 'section-work'),
+      ).rejects.toThrow('disk full');
+
+      expect(useTabStore.getState().sectionAssignments).toEqual([]);
+    });
+
+    it('deleting a section keeps an assignment to another section written elsewhere meanwhile', async () => {
+      const sections: Section[] = [
+        { id: 'a', name: 'A', order: 0 },
+        { id: 'b', name: 'B', order: 1 },
+      ];
+      chromeStorage.data = {
+        schemaVersion: 6,
+        sections,
+        sectionAssignments: [
+          { productKey: 'github', sectionId: 'a' },
+          { productKey: 'other', sectionId: 'b' },
+        ],
+      };
+      useTabStore.setState({ sections, sectionAssignments: [{ productKey: 'github', sectionId: 'a' }] });
+
+      await useTabStore.getState().deleteSection('a');
+
+      expect(chromeStorage.data['sections']).toEqual([{ id: 'b', name: 'B', order: 0 }]);
+      expect(chromeStorage.data['sectionAssignments']).toEqual([{ productKey: 'other', sectionId: 'b' }]);
+      expect(chromeStorage.data['unsectionedProductKeys']).toEqual(['github']);
+    });
+
+    it('editing a section keeps a section created elsewhere meanwhile', async () => {
+      const sections: Section[] = [{ id: 'a', name: 'A', order: 0 }];
+      chromeStorage.data = { schemaVersion: 6, sections: [...sections, { id: 'b', name: 'B', order: 1 }] };
+      useTabStore.setState({ sections });
+
+      await useTabStore.getState().updateSection('a', { name: 'Renamed' });
+
+      expect(chromeStorage.data['sections']).toEqual([
+        { id: 'a', name: 'Renamed', order: 0 },
+        { id: 'b', name: 'B', order: 1 },
+      ]);
+    });
+
+    it.each([
+      ['createSection', () => useTabStore.getState().createSection('New')],
+      ['updateSection', () => useTabStore.getState().updateSection('a', { name: 'X' })],
+      ['deleteSection', () => useTabStore.getState().deleteSection('a')],
+      ['setViewMode', () => useTabStore.getState().setViewMode('table')],
+    ])('a failed %s resyncs from storage and rejects', async (_name, run) => {
+      const fetchTabs = vi.fn().mockResolvedValue(undefined);
+      const sections: Section[] = [{ id: 'a', name: 'A', order: 0 }];
+      chromeStorage.data = { schemaVersion: 6, sections };
+      useTabStore.setState({ sections, fetchTabs });
+      chromeStorage.set.mockRejectedValueOnce(new Error('disk full'));
+
+      await expect(run()).rejects.toThrow('disk full');
+      expect(fetchTabs).toHaveBeenCalled();
+    });
+  });
+
+  it('sets in-memory state from the normalized import, not the raw legacy input', async () => {
+    // Stub fetchTabs so this test observes importBackup's own set() call, not
+    // the storage-reconciled state the following fetchTabs() would settle to.
+    useTabStore.setState({
+      fetchTabs: vi.fn().mockResolvedValue(undefined),
+    });
+    chromeStorage.data = { schemaVersion: 6 };
+
+    const legacyAssignment = { itemType: 'product', itemKey: 'github', sectionId: 'dev' } as unknown as SectionAssignment;
+
+    await useTabStore.getState().importBackup(
+      [{ id: 'dev', name: 'Dev', order: 0 }],
+      [legacyAssignment],
+      [],
+    );
+
+    const normalized = [{ productKey: 'github', sectionId: 'dev' }];
+    expect(useTabStore.getState().sectionAssignments).toEqual(normalized);
+    expect(chromeStorage.data['sectionAssignments']).toEqual(normalized);
   });
 
   it('tracks dashboard tab count before filtering real tabs', async () => {
