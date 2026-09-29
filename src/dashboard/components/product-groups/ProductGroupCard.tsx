@@ -259,7 +259,11 @@ function ProductGroupCardComponent({
           )}
           
           <div className="min-w-0 flex-1 flex items-center gap-2">
-            <h3 className="truncate font-mono text-sm font-medium uppercase tracking-wider text-text-primary">
+            <h3
+              tabIndex={-1}
+              data-product-card-heading={getProductKey(group)}
+              className="truncate font-mono text-sm font-medium uppercase tracking-wider text-text-primary focus-visible:outline-none"
+            >
               {displayName}
             </h3>
             <span className="font-mono text-3xs font-bold bg-border-color/20 text-text-secondary px-1.5 rounded-badge shrink-0" title={`${group.tabs.length} tabs`}>
@@ -285,6 +289,7 @@ function ProductGroupCardComponent({
                 groupName={displayName}
                 onUnpin={onUnpinProduct}
                 focusAfterUnpinSelector={`[data-move-menu-trigger="${CSS.escape(getProductKey(group))}"]`}
+                focusFallbackSelector={`[data-product-card-heading="${CSS.escape(getProductKey(group))}"]`}
                 className="flex h-7 px-2.5"
               />
             )}

@@ -342,6 +342,30 @@ describe('useTabStore', () => {
     ]);
   });
 
+  it('publishes storage\'s assignments when another surface pins a product mid-fetch', async () => {
+    useTabStore.setState({
+      fetchTabs: useTabStore.getInitialState().fetchTabs,
+    });
+    chromeTabs.query.mockResolvedValue([
+      makeChromeTab(51, 'https://mail.google.com/mail/u/0/#inbox'),
+    ]);
+    // The first read (reconcile) sees nothing decided; by the auto-assign
+    // write, the popup has pinned gmail to No section.
+    const read = chromeStorage.get.getMockImplementation()!;
+    let reads = 0;
+    chromeStorage.get.mockImplementation((keys) => {
+      reads += 1;
+      if (reads === 2) chromeStorage.data['unsectionedProductKeys'] = ['gmail'];
+      return read(keys);
+    });
+
+    await useTabStore.getState().fetchTabs();
+    chromeStorage.get.mockImplementation(read);
+
+    expect(useTabStore.getState().sectionAssignments).toEqual([]);
+    expect(useTabStore.getState().unsectionedProductKeys).toEqual(['gmail']);
+  });
+
   it('keeps a product in Unsorted after the user moves it out of an auto-matched space', async () => {
     useTabStore.setState({
       fetchTabs: useTabStore.getInitialState().fetchTabs,

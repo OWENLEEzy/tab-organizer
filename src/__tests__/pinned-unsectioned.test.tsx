@@ -215,6 +215,36 @@ describe('pinned-unsectioned badge', () => {
       expect(document.activeElement).toBe(screen.getByRole('button', { name: /Move GitHub to a section/ }));
     });
 
+    it('Cards view: with no sections to move to, focus lands on the card heading', () => {
+      vi.useFakeTimers();
+      const group = makeGroup();
+      const productKey = getProductKey(group);
+      const card = (pinned: ReadonlySet<string>) => (
+        <I18nProvider>
+          <ProductGroupCard
+            group={group}
+            onCloseProductGroup={() => {}}
+            onCloseDuplicates={() => {}}
+            onCloseTab={() => {}}
+            onFocusTab={() => {}}
+            sections={[]}
+            currentSectionId={null}
+            onMoveToSection={() => {}}
+            onMoveToNoSection={() => {}}
+            pinnedProductKeys={pinned}
+            onUnpinProduct={() => {}}
+          />
+        </I18nProvider>
+      );
+      const { rerender } = render(card(new Set([productKey])));
+      screen.getByRole('button', { name: 'Unpin GitHub' }).focus();
+
+      rerender(card(new Set()));
+      act(() => { vi.advanceTimersByTime(1000); });
+
+      expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'GitHub' }));
+    });
+
     it('Table view: focus moves to the row\'s section select', () => {
       vi.useFakeTimers();
       const group = makeGroup();

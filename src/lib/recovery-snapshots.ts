@@ -1,5 +1,6 @@
-import { productForHostname } from '../config/products';
-import type { RecoveryProductSummary, RecoverySnapshot, RecoveryTab, Tab } from '../types';
+import type { CustomGroup, RecoveryProductSummary, RecoverySnapshot, RecoveryTab, Tab } from '../types';
+import type { ProductLabels } from './product-labels';
+import { resolveProduct } from './resolve-product';
 import { getTabDomain, isRealTab } from './url-rules';
 
 const MAX_TABS_PER_SNAPSHOT = 80;
@@ -35,9 +36,16 @@ export function shouldReplaceRecoveryCandidate(
   return recoveryUrlSignature(current) !== recoveryUrlSignature(next);
 }
 
+/** The user's grouping settings, so History names products as the dashboard does. */
+export interface SnapshotGrouping {
+  customGroups?: CustomGroup[];
+  productLabels?: ProductLabels;
+}
+
 export function buildRecoverySnapshot(
   tabs: readonly Tab[],
   capturedAt: string = new Date().toISOString(),
+  grouping: SnapshotGrouping = {},
 ): RecoverySnapshot | null {
   const recoveryTabs: RecoveryTab[] = [];
 
@@ -46,7 +54,7 @@ export function buildRecoverySnapshot(
     const hostname = getTabDomain(tab.url);
     if (!hostname) continue;
 
-    const product = productForHostname(hostname);
+    const product = resolveProduct(hostname, grouping.customGroups, grouping.productLabels);
     recoveryTabs.push({
       url: tab.url,
       title: tab.title,

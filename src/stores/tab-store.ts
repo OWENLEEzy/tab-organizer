@@ -257,26 +257,24 @@ export const useTabStore = create<TabStore>((set) => ({
       const productGroups = groupTabsByProduct(mapped, groupOrder, customGroups, productLabels);
       const sections = orderedSections(organizerState.sections);
       let sectionAssignments = organizerState.sectionAssignments;
-      let hasNewAssignments = false;
+      let unsectionedProductKeys = organizerState.unsectionedProductKeys;
       const newAssignments = autoAssignProducts({
         products: productGroups,
         sections,
         assignments: sectionAssignments,
-        unsectionedProductKeys: organizerState.unsectionedProductKeys,
+        unsectionedProductKeys,
         hostnamesByProductKey,
       });
 
       if (newAssignments.length > 0) {
-        sectionAssignments = [...sectionAssignments, ...newAssignments];
-        hasNewAssignments = true;
-      }
-
-      if (hasNewAssignments) {
-        // Delta, not a snapshot: an assignment made since this fetch read
-        // storage must survive.
-        await applyAutoAssignments(newAssignments).catch(err => {
+        // Delta, not a snapshot: an assignment or pin made since this fetch
+        // read storage must survive, so publish what storage now holds.
+        try {
+          ({ sectionAssignments, unsectionedProductKeys } = await applyAutoAssignments(newAssignments));
+        } catch (err) {
           console.warn('[Tab Organizer] Failed to persist auto-assignments:', err);
-        });
+          sectionAssignments = [...sectionAssignments, ...newAssignments];
+        }
       }
 
       const products = productGroups;
@@ -287,7 +285,7 @@ export const useTabStore = create<TabStore>((set) => ({
         hostnamesByProductKey,
         sections,
         sectionAssignments,
-        unsectionedProductKeys: organizerState.unsectionedProductKeys,
+        unsectionedProductKeys,
         viewMode: organizerState.viewMode,
         onboardingDone: organizerState.onboardingDone,
         loading: false,

@@ -152,11 +152,20 @@ describe('readStorage', () => {
     storage['sectionAssignments'] = [{ productKey: 'moved', sectionId: 'a' }];
     storage['unsectionedProductKeys'] = ['pinned'];
 
-    await applyAutoAssignments([
+    const result = await applyAutoAssignments([
       { productKey: 'moved', sectionId: 'b' },
       { productKey: 'pinned', sectionId: 'b' },
       { productKey: 'fresh', sectionId: 'b' },
     ]);
+
+    // The caller publishes what storage holds, not its stale inference.
+    expect(result).toEqual({
+      sectionAssignments: [
+        { productKey: 'moved', sectionId: 'a' },
+        { productKey: 'fresh', sectionId: 'b' },
+      ],
+      unsectionedProductKeys: ['pinned'],
+    });
 
     expect(storage['sectionAssignments']).toEqual([
       { productKey: 'moved', sectionId: 'a' },

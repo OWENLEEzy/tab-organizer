@@ -40,6 +40,8 @@ function SettingsHarness({ initiallyOpen = false }: { initiallyOpen?: boolean })
         soundEnabled
         confettiEnabled
         productLabels={{}}
+        customGroups={[{ hostnameEndsWith: '.substack.com', groupKey: 'substack', groupLabel: "Author's Substack" }]}
+        onRemoveCustomGroup={() => {}}
         onSetTheme={() => {}}
         onSetLanguage={() => {}}
         onToggleSound={() => {}}
@@ -122,6 +124,8 @@ describe('SettingsPanel accessibility', () => {
         soundEnabled
         confettiEnabled
         productLabels={{}}
+        customGroups={[{ hostnameEndsWith: '.substack.com', groupKey: 'substack', groupLabel: "Author's Substack" }]}
+        onRemoveCustomGroup={() => {}}
         onSetTheme={() => {}}
         onSetLanguage={() => {}}
         onToggleSound={() => {}}

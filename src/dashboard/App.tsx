@@ -96,6 +96,16 @@ export function App(): React.ReactElement {
     await tabStore.fetchTabs();
   }, [settingsStore, tabStore, showSaveFailed]);
 
+  const handleRemoveCustomGroup = useCallback(async (groupKey: string) => {
+    try {
+      await settingsStore.removeCustomGroup(groupKey);
+    } catch {
+      showSaveFailed();
+      return;
+    }
+    await tabStore.fetchTabs();
+  }, [settingsStore, tabStore, showSaveFailed]);
+
   const handleOnboardingConfirm = useCallback(async (sections: Section[], assignments: SectionAssignment[]) => {
     try {
       await tabStore.completeOnboarding(sections, assignments);
@@ -441,6 +451,8 @@ export function App(): React.ReactElement {
             onResetSortOrder={handlers.handleResetSortOrder}
             onRenameProductGroup={handleRenameProductGroup}
             onRevertProductGroup={handleRevertProductGroup}
+            customGroups={settings.customGroups}
+            onRemoveCustomGroup={handleRemoveCustomGroup}
             maxChipsVisible={settings.maxChipsVisible}
             staleThresholdDays={settings.staleThresholdDays}
             onSetMaxChipsVisible={withSaveToast(settingsStore.setMaxChipsVisible)}

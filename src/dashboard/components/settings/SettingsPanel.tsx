@@ -1,9 +1,10 @@
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
-import type { AppSettings, Section, SectionAssignment, TabGroup } from '../../../types';
+import type { AppSettings, CustomGroup, Section, SectionAssignment, TabGroup } from '../../../types';
 import type { ProductLabels } from '../../../lib/product-labels';
 import type { AccentKey } from '../../../config/themes';
 import { useI18n } from '../../hooks/useI18n';
 import { ProductGroupRulesSection } from './ProductGroupRulesSection';
+import { HostnameGroupingRules } from './HostnameGroupingRules';
 import { SectionRulesWorkbench } from './SectionRulesWorkbench';
 import { KeyboardSection } from './KeyboardSection';
 import { AppearanceSection } from './AppearanceSection';
@@ -19,6 +20,8 @@ interface SettingsPanelProps {
   soundEnabled: boolean;
   confettiEnabled: boolean;
   productLabels: ProductLabels;
+  customGroups: readonly CustomGroup[];
+  onRemoveCustomGroup: (groupKey: string) => void;
   onSetTheme: (theme: AccentKey) => void;
   onSetLanguage: (language: 'en' | 'zh' | 'system') => void;
   onToggleSound: () => void;
@@ -71,6 +74,8 @@ export function SettingsPanel({
   soundEnabled,
   confettiEnabled,
   productLabels,
+  customGroups,
+  onRemoveCustomGroup,
   onSetTheme,
   onSetLanguage,
   onToggleSound,
@@ -301,12 +306,15 @@ export function SettingsPanel({
               />
             )}
             {activePage === 'product-rules' && (
-              <ProductGroupRulesSection
-                products={products}
-                productLabels={productLabels}
-                onRename={onRenameProductGroup}
-                onRevert={onRevertProductGroup}
-              />
+              <div className="flex flex-col gap-6">
+                <ProductGroupRulesSection
+                  products={products}
+                  productLabels={productLabels}
+                  onRename={onRenameProductGroup}
+                  onRevert={onRevertProductGroup}
+                />
+                <HostnameGroupingRules groups={customGroups} onRemove={onRemoveCustomGroup} />
+              </div>
             )}
             {activePage === 'backup' && (
               <BackupSection

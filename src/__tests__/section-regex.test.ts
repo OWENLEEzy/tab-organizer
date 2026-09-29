@@ -61,6 +61,30 @@ describe('isUsablePattern', () => {
   });
 });
 
+describe('isUsablePattern: sequences of variable quantifiers', () => {
+  it('rejects many ambiguous quantifiers in a row, which backtrack without any nested group', () => {
+    for (const pattern of [
+      `${'a?'.repeat(40)}${'a'.repeat(40)}`,
+      '.*.*.*.*x',
+      '[a-z]+[a-z]*[a-z]+[a-z]*\\.',
+      'a{1,9}b{1,9}c{1,9}d{1,9}',
+    ]) {
+      expect(isUsablePattern(pattern), pattern).toBe(false);
+    }
+  });
+
+  it('allows a few variable quantifiers and any number of fixed counts', () => {
+    for (const pattern of [
+      '^[a-z]+-[a-z]+\\.[a-z]+\\.corp$',
+      '^.*\\.corp\\.(com|net)$',
+      'a{3}b{2}c{4}d{5}e{6}',
+      'a+?b*?',
+    ]) {
+      expect(isUsablePattern(pattern), pattern).toBe(true);
+    }
+  });
+});
+
 describe('parseRegexLines', () => {
   it('returns one pattern per non-empty line', () => {
     expect(parseRegexLines('^docs\\.\n(wiki|kb)\\.')).toEqual(['^docs\\.', '(wiki|kb)\\.']);

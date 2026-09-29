@@ -46,6 +46,8 @@ export function A11yHarness(): React.ReactElement {
           soundEnabled
           confettiEnabled
           productLabels={{}}
+          customGroups={[{ hostnameEndsWith: '.substack.com', groupKey: 'substack', groupLabel: "Author's Substack" }]}
+          onRemoveCustomGroup={() => {}}
           onSetTheme={() => {}}
           onSetLanguage={() => {}}
           onToggleSound={() => {}}

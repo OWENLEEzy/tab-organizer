@@ -372,9 +372,11 @@ export async function applyAssignmentUpdates(updates: SectionAssignment[]): Prom
  * any product that meanwhile got an explicit assignment or a No section pin, so
  * a rule never overrides a user's choice (explicit > veto > rule).
  */
-export async function applyAutoAssignments(updates: SectionAssignment[]): Promise<void> {
-  if (updates.length === 0) return;
-  await updateStorage((storage) => {
+export async function applyAutoAssignments(updates: SectionAssignment[]): Promise<{
+  sectionAssignments: SectionAssignment[];
+  unsectionedProductKeys: string[];
+}> {
+  const next = await updateStorage((storage) => {
     const decided = new Set([
       ...storage.sectionAssignments.map((a) => a.productKey),
       ...storage.unsectionedProductKeys,
@@ -384,6 +386,7 @@ export async function applyAutoAssignments(updates: SectionAssignment[]): Promis
       ? storage
       : { ...storage, sectionAssignments: [...storage.sectionAssignments, ...fresh] };
   });
+  return { sectionAssignments: next.sectionAssignments, unsectionedProductKeys: next.unsectionedProductKeys };
 }
 
 /** Edit the section list against fresh storage, so a concurrent edit is not overwritten. */

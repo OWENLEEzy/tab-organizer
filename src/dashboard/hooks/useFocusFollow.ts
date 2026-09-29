@@ -26,17 +26,27 @@ function isFocusLost(): boolean {
 
 /**
  * When the element held focus as it unmounted — e.g. its card remounted under
- * another section — hand focus to its replacement, found by `selector`. Only
- * the element that actually had focus follows, so a mouse drag never moves
- * focus, and focus is never stolen back from wherever the user has gone since.
+ * another section — hand focus to its replacement, found by `selector`; an
+ * optional `fallbackSelector` is used when that replacement never renders.
+ * Only the element that actually had focus follows, so a mouse drag never
+ * moves focus, and focus is never stolen back from wherever the user has gone
+ * since.
  */
-export function useFocusFollow(ref: RefObject<HTMLElement | null>, selector: string): void {
+export function useFocusFollow(
+  ref: RefObject<HTMLElement | null>,
+  selector: string,
+  fallbackSelector?: string,
+): void {
   useLayoutEffect(() => {
     const element = ref.current;
     return () => {
       // Layout cleanup runs before React detaches the DOM, so focus is still here.
       if (!element || element !== document.activeElement) return;
-      focusWhenReady(() => (isFocusLost() ? document.querySelector<HTMLElement>(selector) : null));
+      focusWhenReady(() => {
+        if (!isFocusLost()) return null;
+        return document.querySelector<HTMLElement>(selector)
+          ?? (fallbackSelector ? document.querySelector<HTMLElement>(fallbackSelector) : null);
+      });
     };
-  }, [ref, selector]);
+  }, [ref, selector, fallbackSelector]);
 }

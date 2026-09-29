@@ -7,6 +7,15 @@
 /** Hostnames are short; a longer pattern is almost certainly a mistake. */
 export const MAX_PATTERN_LENGTH = 200;
 
+/**
+ * Each variable quantifier (`*`, `+`, `?`, `{m,n}`) can multiply the ways a
+ * hostname splits, even with no nested group: `a?` ×40 then `a` ×40 is
+ * exponential. Capping the count keeps any pattern polynomial; real hostnames
+ * are short, so a few quantifiers stay fast while `^[a-z]+-[a-z]+\.[a-z]+\.`
+ * remains expressible.
+ */
+const MAX_VARIABLE_QUANTIFIERS = 3;
+
 function isCompilablePattern(pattern: string): boolean {
   try {
     new RegExp(pattern, 'i');
@@ -43,17 +52,30 @@ function groupPrefixLength(pattern: string, open: number): number {
   return 0;
 }
 
+/** A `{m}` / `{m,}` / `{m,n}` quantifier starting at `open`, or null for a literal `{`. */
+function readBraceQuantifier(pattern: string, open: number): { length: number; isVariable: boolean } | null {
+  const match = /^\{(\d+)(,(\d*))?\}/.exec(pattern.slice(open));
+  if (!match) return null;
+  return { length: match[0].length, isVariable: Boolean(match[2]) && match[1] !== match[3] };
+}
+
 /**
- * Reject the classic catastrophic-backtracking shape: a repeated group whose
- * body itself repeats or branches, e.g. `(a+)+`, `(a|aa)*`, `(\w+\s?){2,}`.
- * User regexes run synchronously on every tab event, so one such pattern would
- * freeze the dashboard on every load. Deliberately conservative.
+ * Reject the catastrophic-backtracking shapes. User regexes run synchronously
+ * on every tab event, so one such pattern would freeze the dashboard on every
+ * load. Deliberately conservative:
+ * - a repeated group whose body itself repeats or branches, e.g. `(a+)+`,
+ *   `(a|aa)*`, `(\w+\s?){2,}`;
+ * - more than `MAX_VARIABLE_QUANTIFIERS` variable quantifiers overall.
  */
-function hasNestedRepetition(pattern: string): boolean {
+function canBacktrackBadly(pattern: string): boolean {
   const stack: GroupScan[] = [{ hasRepeat: false, hasAlternation: false, bodyStart: 0 }];
+  let variableQuantifiers = 0;
+  let isAfterQuantifier = false;
   for (let i = 0; i < pattern.length; i += 1) {
     const char = pattern[i];
     const current = stack[stack.length - 1];
+    const wasAfterQuantifier = isAfterQuantifier;
+    isAfterQuantifier = false;
     if (char === '\\') {
       i += 1;
     } else if (char === '[') {
@@ -78,23 +100,37 @@ function hasNestedRepetition(pattern: string): boolean {
       parent.hasAlternation ||= group.hasAlternation;
     } else if (char === '|') {
       current.hasAlternation = true;
-    } else if (char === '*' || char === '+' || char === '{') {
+    } else if (char === '*' || char === '+') {
       current.hasRepeat = true;
+      variableQuantifiers += 1;
+      isAfterQuantifier = true;
+    } else if (char === '{') {
+      current.hasRepeat = true;
+      const brace = readBraceQuantifier(pattern, i);
+      if (brace) {
+        if (brace.isVariable) variableQuantifiers += 1;
+        i += brace.length - 1;
+        isAfterQuantifier = true;
+      }
+    } else if (char === '?' && !wasAfterQuantifier) {
+      // `?` right after another quantifier only makes that one lazy.
+      variableQuantifiers += 1;
+      isAfterQuantifier = true;
     }
   }
-  return false;
+  return variableQuantifiers > MAX_VARIABLE_QUANTIFIERS;
 }
 
 /**
  * The single gate for a user regex: non-blank (a blank pattern matches every
- * hostname), bounded in length, compilable, and free of nested repetition.
+ * hostname), bounded in length, compilable, and cannot backtrack badly.
  */
 export function isUsablePattern(pattern: string): boolean {
   return (
     pattern.trim() !== '' &&
     pattern.length <= MAX_PATTERN_LENGTH &&
     isCompilablePattern(pattern) &&
-    !hasNestedRepetition(pattern)
+    !canBacktrackBadly(pattern)
   );
 }
 

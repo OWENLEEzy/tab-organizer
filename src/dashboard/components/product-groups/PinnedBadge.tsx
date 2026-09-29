@@ -10,6 +10,8 @@ interface PinnedBadgeProps {
    * group's own section control, so focus is not dropped on the page.
    */
   focusAfterUnpinSelector: string;
+  /** Used when `focusAfterUnpinSelector` never renders, e.g. no sections exist. */
+  focusFallbackSelector?: string;
   /** Layout differences between the Cards and Table views. */
   className: string;
 }
@@ -35,11 +37,12 @@ export function PinnedBadge({
   groupName,
   onUnpin,
   focusAfterUnpinSelector,
+  focusFallbackSelector,
   className,
 }: PinnedBadgeProps): React.ReactElement {
   const { t } = useI18n();
   const unpinRef = useRef<HTMLButtonElement>(null);
-  useFocusFollow(unpinRef, focusAfterUnpinSelector);
+  useFocusFollow(unpinRef, focusAfterUnpinSelector, focusFallbackSelector);
 
   return (
     <span
