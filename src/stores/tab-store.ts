@@ -25,7 +25,7 @@ import { legacyProductKeyForHostname } from '../config/products';
 import { resolveProduct } from '../lib/resolve-product';
 import { duplicateTabIdsToClose } from '../lib/duplicate-tabs';
 import { sortAndGroupTabs } from '../utils/sort-and-group-tabs';
-import { buildSectionByProductKey } from '../lib/section-grouping';
+import { buildSectionByProductKey, buildSectionRefs } from '../lib/section-grouping';
 import { getTabDomain, isRealTab } from '../lib/url-rules';
 import { isTabOrganizerPage } from '../utils/browser-url';
 import { chromeTabToAppTab } from '../utils/tab-mapping';
@@ -734,6 +734,11 @@ export const useTabStore = create<TabStore>((set) => ({
     if (currentWindow.id == null) return;
     const { sections, sectionAssignments } = useTabStore.getState();
     const sectionByProductKey = buildSectionByProductKey(sections, sectionAssignments);
-    await sortAndGroupTabs(products, { windowId: currentWindow.id, sectionByProductKey });
+    const result = await sortAndGroupTabs(products, {
+      windowId: currentWindow.id, sectionByProductKey, sectionRefs: buildSectionRefs(sections),
+    });
+    if (result.moveFailures > 0 || result.groupFailures > 0) {
+      throw new Error('Window organization did not complete');
+    }
   },
 }));

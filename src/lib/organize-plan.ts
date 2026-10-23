@@ -2,7 +2,7 @@ import type { TabGroup, Section, SectionAssignment } from '../types';
 import { autoAssignProducts } from './section-organizer';
 import { duplicateTabIdsToClose } from './duplicate-tabs';
 import { getProductKey } from './product-key';
-import { buildSectionByProductKey, type ProductSectionRef } from './section-grouping';
+import { buildSectionByProductKey, buildSectionRefs, type ProductSectionRef } from './section-grouping';
 
 export interface OrganizePlan {
   assignmentUpdates: SectionAssignment[];
@@ -11,6 +11,7 @@ export interface OrganizePlan {
   orderedGroups: TabGroup[];
   /** productKey -> section, for building native Chrome groups per section. */
   sectionByProductKey: Map<string, ProductSectionRef>;
+  sectionRefs: ProductSectionRef[];
 }
 
 interface ComputeInput {
@@ -43,7 +44,7 @@ export function computeOrganizePlan(input: ComputeInput): OrganizePlan {
   const orderedGroups = orderGroups(groups, sections, allAssignments, groupOrder);
   const sectionByProductKey = buildSectionByProductKey(sections, allAssignments);
 
-  return { assignmentUpdates, tabIdsToClose, orderedGroups, sectionByProductKey };
+  return { assignmentUpdates, tabIdsToClose, orderedGroups, sectionByProductKey, sectionRefs: buildSectionRefs(sections) };
 }
 
 function orderGroups(

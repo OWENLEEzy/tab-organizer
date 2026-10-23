@@ -17,10 +17,10 @@ export const locales = {
     sortButtonTooltip: 'Apply current sort to current Chrome window',
     sortButtonDisabledTooltip: 'Clear filters to sort window',
     confirmSortTitle: 'Sort current window',
-    confirmSortMessage: 'This will reorder tabs in the current Chrome window to match the dashboard sort order and gather each product into a native Chrome tab group. Pinned tabs will stay pinned. Other windows are unaffected.',
+    confirmSortMessage: 'This will sort tabs by section and merge matching Chrome tab groups in this window, keeping their pages open. Pinned tabs and other windows are unchanged.',
     confirmSortBtn: 'Sort tabs',
     toastSortComplete: 'Tabs sorted',
-    toastSortNoTabs: 'No tabs to sort in current window',
+    toastSortIncomplete: 'Some tabs could not be organized. Try again.',
 
     // Toolbar Popup
     popupLoading: 'Loading…',
@@ -161,6 +161,7 @@ export const locales = {
 
     // DnD Organizer
     organizerUnsectioned: 'No section',
+    organizerBtnManage: 'Manage',
     organizerBtnRename: 'Rename',
     organizerBtnDelete: 'Delete',
     organizerBtnCloseAll: 'Close all',
@@ -359,10 +360,10 @@ export const locales = {
     sortButtonTooltip: '将当前排序应用到当前 Chrome 窗口',
     sortButtonDisabledTooltip: '清除筛选后再整理',
     confirmSortTitle: '整理当前窗口',
-    confirmSortMessage: '将按当前仪表盘排序重排当前 Chrome 窗口的页面，并把每个产品归入原生 Chrome 标签组。已固定的页面保持不动，其他窗口不受影响。',
+    confirmSortMessage: '将按分区整理当前窗口，并合并对应的 Chrome 标签组，保留组内页面。已固定的页面和其他窗口不受影响。',
     confirmSortBtn: '整理页面',
     toastSortComplete: '整理完成',
-    toastSortNoTabs: '当前窗口无页面可整理',
+    toastSortIncomplete: '部分页面未能整理完成，请重试。',
 
     // Toolbar Popup
     popupLoading: '加载中…',
@@ -503,6 +504,7 @@ export const locales = {
 
     // DnD Organizer
     organizerUnsectioned: '未分配分区',
+    organizerBtnManage: '管理',
     organizerBtnRename: '重命名',
     organizerBtnDelete: '删除分区',
     organizerBtnCloseAll: '关闭全部',

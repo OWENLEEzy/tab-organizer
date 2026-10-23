@@ -50,17 +50,18 @@ export function SectionActionsDropdown({
   if (!section && tabCount === 0) return null;
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative flex items-center gap-1" ref={menuRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="rounded-chip text-text-secondary hover:bg-surface-light dark:hover:bg-surface-dark flex h-6 w-6 cursor-pointer items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none"
-        aria-label="Section options"
+        className="rounded-chip text-text-secondary hover:bg-surface-light dark:hover:bg-surface-dark flex min-h-[var(--spacing-button-height)] cursor-pointer items-center justify-center gap-1 px-2 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none"
+        aria-label={`${t('organizerBtnManage')} ${title}`}
         aria-expanded={isOpen}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4 shrink-0" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
         </svg>
+        <span>{t('organizerBtnManage')}</span>
       </button>
 
       {isOpen && (

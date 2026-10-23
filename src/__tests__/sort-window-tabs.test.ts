@@ -125,7 +125,7 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
     expect(movedIds).toEqual([1, 5, 4]);
   });
 
-  it('continues sorting when one tab move fails', async () => {
+  it('finishes remaining moves but reports an incomplete sort when one move fails', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
       { id: 3, url: 'https://example.com', pinned: false, index: 0 } as chrome.tabs.Tab,
@@ -140,7 +140,7 @@ describe('sortCurrentWindowTabsByDashboardOrder', () => {
       { id: '2', domain: 'example.com', productKey: 'example', friendlyName: 'Example', collapsed: false, order: 1, color: '', hasDuplicates: false, duplicateCount: 0, tabs: [] },
     ];
 
-    await expect(useTabStore.getState().sortCurrentWindowTabsByDashboardOrder(products)).resolves.toBeUndefined();
+    await expect(useTabStore.getState().sortCurrentWindowTabsByDashboardOrder(products)).rejects.toThrow('Window organization did not complete');
 
     expect(chrome.tabs.move).toHaveBeenCalledTimes(2);
     expect(warn).toHaveBeenCalledWith(

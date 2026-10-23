@@ -267,6 +267,20 @@ describe('dashboard section semantics', () => {
     expect(await screen.findByText(/Could not save that change/)).toBeInTheDocument();
   });
 
+  it('reports incomplete organization instead of a success toast', async () => {
+    const user = userEvent.setup();
+    chromeStorageData.onboardingDone = true;
+    (chrome.tabs.query as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeChromeTab(1, 'https://github.com/OWENLEEzy/tab-organizer', 'Repo'),
+    ]);
+    useTabStore.setState({ sortCurrentWindowTabsByDashboardOrder: vi.fn().mockRejectedValue(new Error('incomplete')) });
+    renderApp();
+    await user.click(await screen.findByRole('button', { name: 'Sort window' }));
+    await user.click(await screen.findByRole('button', { name: 'Sort tabs' }));
+    expect(await screen.findByText('Some tabs could not be organized. Try again.')).toBeInTheDocument();
+    expect(screen.queryByText('Tabs sorted')).not.toBeInTheDocument();
+  });
+
   it('tells the user when a settings change could not be saved', async () => {
     const user = userEvent.setup();
     chromeStorageData.onboardingDone = true;

@@ -11,6 +11,12 @@ export interface ProductSectionRef {
   emoji?: string;
 }
 
+export function buildSectionRefs(sections: readonly Section[]): ProductSectionRef[] {
+  return [...sections].sort((a, b) => a.order - b.order).map((section) => ({
+    sectionId: section.id, name: section.name, emoji: section.emoji,
+  }));
+}
+
 /**
  * Build the productKey -> section lookup used to create native Chrome groups.
  * Products with no assignment (or pointing at a deleted section) are absent,
