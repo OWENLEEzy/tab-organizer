@@ -468,22 +468,16 @@ body, html {
   min-width: auto;
 }
 
-.section-actions button,
 .view-toggle button,
 .product-table select {
   border-radius: var(--radius-chip);
   min-height: 36px;
 }
 
-.section-actions button,
 .view-toggle button {
   cursor: pointer;
-  padding: 6px 10px;
   color: var(--color-text-secondary);
   transition: background 150ms ease, color 150ms ease;
-}
-
-.view-toggle button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -492,7 +486,6 @@ body, html {
   padding: 0 calc(var(--spacing-button-height) * 0.3);
 }
 
-.section-actions button:hover,
 .view-toggle button:hover {
   background: var(--color-surface-light);
   color: var(--color-text-primary-light);
