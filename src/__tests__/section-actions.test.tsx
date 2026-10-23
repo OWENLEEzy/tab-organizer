@@ -6,7 +6,7 @@ import { SectionActionsDropdown } from '../dashboard/components/sections/Section
 afterEach(cleanup);
 
 describe('section actions', () => {
-  it('directly deletes the empty section by ID when another section has the same name', () => {
+  it('keeps only Manage visible and deletes the chosen empty section through its menu', () => {
     const onDeleteSection = vi.fn();
     const populated = { id: 'other-populated', name: 'Other', order: 0 };
     const empty = { id: 'other-empty', name: 'Other', order: 1 };
@@ -19,7 +19,10 @@ describe('section actions', () => {
         ))}
       </I18nProvider>,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Delete Other' }));
+    expect(screen.queryByRole('button', { name: /Delete/ })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button')).toHaveLength(2);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Manage Other' })[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(onDeleteSection).toHaveBeenCalledExactlyOnceWith(empty);
   });
 

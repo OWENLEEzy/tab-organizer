@@ -51,16 +51,6 @@ export function SectionActionsDropdown({
 
   return (
     <div className="relative flex items-center gap-1" ref={menuRef}>
-      {section && tabCount === 0 && onDeleteSection && (
-        <button
-          type="button"
-          onClick={() => onDeleteSection(section)}
-          aria-label={`${t('organizerBtnDelete')} ${title}`}
-          className="rounded-chip text-accent-red hover:bg-accent-red/10 min-h-[var(--spacing-button-height)] cursor-pointer px-2 text-xs focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:outline-none"
-        >
-          {t('organizerBtnDelete')}
-        </button>
-      )}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
