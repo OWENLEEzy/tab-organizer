@@ -34,16 +34,17 @@ function inSection(sectionId: string, name: string, productKeys: string[], emoji
 
 const chromeMock = {
   tabs: { query: vi.fn(), move: vi.fn(), group: vi.fn() },
-  tabGroups: { update: vi.fn() },
+  tabGroups: { query: vi.fn(), update: vi.fn() },
 };
 
 describe('sortAndGroupTabs', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     vi.stubGlobal('chrome', chromeMock);
     chromeMock.tabs.move.mockResolvedValue({});
     chromeMock.tabs.group.mockResolvedValue(7);
     chromeMock.tabGroups.update.mockResolvedValue({});
+    chromeMock.tabGroups.query.mockResolvedValue([]);
   });
 
   it('sorts real tabs into product order within their existing slots', async () => {
@@ -71,6 +72,79 @@ describe('sortAndGroupTabs', () => {
     expect(chromeMock.tabs.group).toHaveBeenCalledTimes(1);
     expect(chromeMock.tabs.group).toHaveBeenCalledWith({ tabIds: [1, 2] });
     expect(chromeMock.tabGroups.update).toHaveBeenCalledWith(7, expect.objectContaining({ title: 'Work' }));
+  });
+
+  it('reuses Work when its existing group contains unassigned Feishu and internal pages', async () => {
+    const tabs = [
+      { ...chromeTab(1, 'alpha.io', 0), groupId: 10 },
+      { ...chromeTab(2, 'alpha.io', 1), url: 'chrome://newtab/', groupId: 10 },
+      chromeTab(3, 'beta.dev', 2),
+      { ...chromeTab(4, 'feishu.cn', 3), groupId: 10 },
+    ];
+    const nativeGroups = new Map([[10, { id: 10, windowId: 1, title: '💼 Work' }]]);
+    chromeMock.tabs.query.mockResolvedValue(tabs);
+    chromeMock.tabGroups.query.mockImplementation(async () => [...nativeGroups.values()]);
+    chromeMock.tabs.group.mockImplementation(async ({ tabIds, groupId }) => {
+      const id = groupId ?? 20 + nativeGroups.size;
+      if (!nativeGroups.has(id)) nativeGroups.set(id, { id, windowId: 1, title: '' });
+      for (const tab of tabs) if (tabIds.includes(tab.id)) tab.groupId = id;
+      for (const key of nativeGroups.keys()) {
+        if (!tabs.some((tab) => tab.groupId === key)) nativeGroups.delete(key);
+      }
+      return id;
+    });
+    chromeMock.tabGroups.update.mockImplementation(async (id, updates) => {
+      Object.assign(nativeGroups.get(id)!, updates);
+    });
+    const products = [group('alpha.io', 'Alpha'), group('beta.dev', 'Beta')];
+    const options = { sectionByProductKey: inSection('work', 'Work', ['alpha.io', 'beta.dev'], '💼') };
+
+    await sortAndGroupTabs(products, options);
+    await sortAndGroupTabs(products, options);
+
+    expect([...nativeGroups.values()].filter((g) => g.title === '💼 Work')).toHaveLength(1);
+    expect(chromeMock.tabs.group).toHaveBeenCalledWith({ tabIds: [1, 3], groupId: 10 });
+    expect(tabs.map((t) => t.groupId)).toEqual([10, 10, 10, 10]);
+  });
+
+  it('only reuses a matching group in the target window', async () => {
+    chromeMock.tabs.query.mockResolvedValue([
+      chromeTab(1, 'alpha.io', 0, 1), chromeTab(2, 'alpha.io', 0, 2),
+    ]);
+    chromeMock.tabGroups.query.mockImplementation(async ({ windowId }) => [
+      { id: windowId * 10, windowId, title: 'Work' },
+    ]);
+    await sortAndGroupTabs([group('alpha.io', 'Alpha')], {
+      sectionByProductKey: inSection('work', 'Work', ['alpha.io']),
+    });
+    expect(chromeMock.tabs.group).toHaveBeenCalledWith({ tabIds: [1], groupId: 10 });
+    expect(chromeMock.tabs.group).toHaveBeenCalledWith({ tabIds: [2], groupId: 20 });
+  });
+
+  it('does not conflate different sections with the same name', async () => {
+    chromeMock.tabs.query.mockResolvedValue([
+      chromeTab(1, 'alpha.io', 0), chromeTab(2, 'beta.dev', 1),
+    ]);
+    chromeMock.tabGroups.query.mockResolvedValue([{ id: 10, windowId: 1, title: 'Work' }]);
+    chromeMock.tabs.group.mockResolvedValueOnce(10).mockResolvedValueOnce(11);
+    await sortAndGroupTabs([group('alpha.io', 'Alpha'), group('beta.dev', 'Beta')], {
+      sectionByProductKey: new Map([
+        ...inSection('work-a', 'Work', ['alpha.io']),
+        ...inSection('work-b', 'Work', ['beta.dev']),
+      ]),
+    });
+    expect(chromeMock.tabs.group).toHaveBeenNthCalledWith(1, { tabIds: [1], groupId: 10 });
+    expect(chromeMock.tabs.group).toHaveBeenNthCalledWith(2, { tabIds: [2] });
+  });
+
+  it('reports lookup failure without blindly creating another group', async () => {
+    chromeMock.tabs.query.mockResolvedValue([chromeTab(1, 'alpha.io', 0)]);
+    chromeMock.tabGroups.query.mockRejectedValue(new Error('window closed'));
+    const result = await sortAndGroupTabs([group('alpha.io', 'Alpha')], {
+      sectionByProductKey: inSection('work', 'Work', ['alpha.io']),
+    });
+    expect(result.groupFailures).toBe(1);
+    expect(chromeMock.tabs.group).not.toHaveBeenCalled();
   });
 
   it('prefixes the section emoji in the group title when present', async () => {

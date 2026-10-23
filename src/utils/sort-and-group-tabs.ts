@@ -102,14 +102,15 @@ export async function sortAndGroupTabs(
     }
   }
 
-  // 2. Create native Chrome groups — one per SECTION — from the now-adjacent tabs.
+  // 2. Reuse or create native Chrome groups, one per section in each window.
   // Pinned tabs cannot be grouped, so they are excluded. Products with no section
   // are left ungrouped. Skips silently if the API or section info is unavailable.
   if (!chrome.tabGroups || !sectionByProductKey || sectionByProductKey.size === 0) {
     return result;
   }
 
-  for (const windowTabs of byWindow.values()) {
+  for (const [currentWindowId, windowTabs] of byWindow) {
+    const claimedGroupIds = new Set<number>();
     const bySection = new Map<string, { ref: ProductSectionRef; tabIds: number[] }>();
     for (const t of windowTabs) {
       if (t.pinned) continue;
@@ -123,11 +124,27 @@ export async function sortAndGroupTabs(
     for (const { ref, tabIds } of bySection.values()) {
       if (tabIds.length === 0) continue;
       try {
+        const title = ref.emoji ? `${ref.emoji} ${ref.name}` : ref.name;
+        // Query after sorting: moving tabs may remove an emptied native group.
+        // Match titles in JS because the API's title filter treats '*' as a wildcard.
+        // Reuse the group even if it contains pages excluded from our product model;
+        // otherwise those pages keep the old Work group alive beside a new Work.
+        const existingGroups = await chrome.tabGroups.query({ windowId: currentWindowId });
+        const matchingGroups = existingGroups.filter((g) =>
+          g.title === title && !claimedGroupIds.has(g.id));
+        const memberGroupIds = new Set(windowTabs
+          .filter((t) => tabIds.includes(t.id as number))
+          .map((t) => t.groupId));
+        const existingGroup = matchingGroups.find((g) => memberGroupIds.has(g.id))
+          ?? matchingGroups[0];
         const groupId = await (chrome.tabs.group({
           tabIds: tabIds as [number, ...number[]],
+          ...(existingGroup ? { groupId: existingGroup.id } : {}),
         }) as Promise<number>);
+        // Different sections may share a display name, but never a native group.
+        claimedGroupIds.add(groupId);
         await (chrome.tabGroups.update(groupId, {
-          title: ref.emoji ? `${ref.emoji} ${ref.name}` : ref.name,
+          title,
           color: colorForKey(ref.sectionId),
           collapsed: false,
         }) as Promise<chrome.tabGroups.TabGroup>);
