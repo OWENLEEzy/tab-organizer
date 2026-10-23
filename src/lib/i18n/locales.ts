@@ -161,6 +161,7 @@ export const locales = {
 
     // DnD Organizer
     organizerUnsectioned: 'No section',
+    organizerBtnManage: 'Manage',
     organizerBtnRename: 'Rename',
     organizerBtnDelete: 'Delete',
     organizerBtnCloseAll: 'Close all',
@@ -503,6 +504,7 @@ export const locales = {
 
     // DnD Organizer
     organizerUnsectioned: '未分配分区',
+    organizerBtnManage: '管理',
     organizerBtnRename: '重命名',
     organizerBtnDelete: '删除分区',
     organizerBtnCloseAll: '关闭全部',
