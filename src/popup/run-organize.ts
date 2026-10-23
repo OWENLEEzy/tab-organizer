@@ -91,6 +91,7 @@ export async function runOrganize(): Promise<OrganizeOutcome> {
     const result = await sortAndGroupTabs(plan.orderedGroups, {
       closedTabIds: new Set(plan.tabIdsToClose),
       sectionByProductKey: plan.sectionByProductKey,
+      sectionRefs: plan.sectionRefs,
     });
     if (result.moveFailures > 0 || result.groupFailures > 0) ok = false;
   } catch (err: unknown) {

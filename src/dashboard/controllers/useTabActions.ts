@@ -447,7 +447,7 @@ export function useTabActions({
             showToast(t('toastSortComplete'));
           }).catch((err) => {
             console.error('[Tab Organizer] sortCurrentWindowTabsByDashboardOrder failed:', err);
-            showToast(t('toastSortNoTabs'));
+            showToast(t('toastSortIncomplete'));
           });
           dispatch({ type: 'CLOSE_CONFIRM_DIALOG' });
         },

@@ -48,8 +48,10 @@ manager, or task manager.
 - "Organize" (popup one-click) and "sort window" (dashboard) may physically
   reorder real Chrome tabs so same-product tabs sit together and may gather each
   section's product groups into a native `chrome.tabGroups` group (one group per
-  section, titled with the section name); product groups outside any section are
-  left ungrouped. Sorting happens
+  section, titled with the section name). Existing matching native groups are
+  adopted with all their unpinned pages, including unassigned and internal pages,
+  even when only one matching group remains. Other native groups retain their
+  members; previously ungrouped pages stay ungrouped unless explicitly assigned. Sorting happens
   before grouping; pinned tabs are never reordered and never grouped. The popup
   organize spans all windows; "sort window" is the current window only and stays
   behind its confirmation dialog. Both reuse one shared pipeline.
@@ -217,8 +219,17 @@ Source placement rules:
   which duplicate tabs to close, and the section-aware group order.
 - `src/lib/window-sort.ts` owns the pure, slot-based, pinned-aware tab-sort math.
 - `src/utils/sort-and-group-tabs.ts` is the shared Chrome-side pipeline that sorts tabs
-  then creates native tab groups. Both the popup organize and the dashboard "sort window"
-  call it; do not reimplement tab sorting elsewhere.
+  then applies and verifies native tab groups from a pre-mutation plan. Both the
+  popup organize and the dashboard "sort window" call it; do not reimplement tab
+  sorting elsewhere. Both callers must surface partial failures.
+- `src/lib/native-group-plan.ts` owns the pure window destination plan. Capture
+  complete membership before moving any tab; never infer intended members from
+  post-move group IDs. Matching native groups merge only when their section
+  identity is unambiguous. Preserve unrelated internal-page slots when possible;
+  when a contiguous native group must cross a slot, use the nearest group boundary.
+- Native-group regressions must use a stateful browser fixture: tab moves change
+  both indices and group membership. Verify exact members, nonmembers, and a
+  second organize run, not only API call arguments.
 - `src/lib/recovery-snapshots.ts` owns snapshot creation and replacement rules.
 - `src/dashboard/components/sections/DndSectionOrganizer.tsx` is the only dashboard component that may import `@dnd-kit`.
 - `src/lib/section-membership.ts` is the single source of the section-membership

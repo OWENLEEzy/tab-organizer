@@ -1,16 +1,4 @@
-/**
- * Shared "sort + native group" capability for Chrome tabs.
- *
- * Used by both the dashboard "sort window" action (single window) and the popup
- * "organize" action (all windows). It physically reorders real tabs so same-product
- * tabs sit together, then creates native Chrome tab groups — one per SECTION (区域).
- * Sorting happens BEFORE grouping so the two steps never fight over tab order.
- *
- * Native Chrome groups can't nest, so we group at the section level: a section's
- * products are contiguous after sorting, so one group spans them. Products with no
- * section stay ungrouped. Failures are counted and returned (never swallowed) so
- * callers can report honest results.
- */
+/** Plan complete window destinations before sorting, then apply and verify them. */
 
 import type { TabGroup, CustomGroup } from '../types';
 import type { ProductSectionRef } from '../lib/section-grouping';
@@ -19,6 +7,7 @@ import { getTabDomain, isRealTab } from '../lib/url-rules';
 import { resolveProduct } from '../lib/resolve-product';
 import { queryAllTabs, queryTabs, moveChromeTab } from './chrome-tabs';
 import { readStorage } from './storage';
+import { nativeSectionTitle, planNativeGroups } from '../lib/native-group-plan';
 
 const CHROME_COLORS = [
   'blue', 'red', 'yellow', 'green', 'pink', 'purple', 'cyan', 'orange', 'grey',
@@ -45,12 +34,13 @@ export interface SortAndGroupOptions {
    * are sorted only (no grouping).
    */
   sectionByProductKey?: Map<string, ProductSectionRef>;
+  sectionRefs?: readonly ProductSectionRef[];
 }
 
 export interface SortAndGroupResult {
   /** Number of individual tab-move calls that failed. */
   moveFailures: number;
-  /** Number of section-group operations that failed. */
+  /** Failed grouping operations or deviations from the planned membership. */
   groupFailures: number;
 }
 
@@ -62,114 +52,125 @@ export async function sortAndGroupTabs(
   products: TabGroup[],
   options: SortAndGroupOptions = {},
 ): Promise<SortAndGroupResult> {
-  const { windowId, closedTabIds = new Set<number>(), sectionByProductKey } = options;
+  const run = () => executeSortAndGroup(products, options);
+  // The popup and dashboard share an extension origin but separate JS contexts.
+  return globalThis.navigator?.locks
+    ? navigator.locks.request('tab-organizer-sort-and-group', run)
+    : run();
+}
+
+async function executeSortAndGroup(
+  products: TabGroup[],
+  options: SortAndGroupOptions,
+): Promise<SortAndGroupResult> {
+  const { windowId, closedTabIds = new Set<number>(), sectionByProductKey, sectionRefs } = options;
   const result: SortAndGroupResult = { moveFailures: 0, groupFailures: 0 };
-
-  const productOrder = products.map((p) => p.productKey ?? p.domain);
-
+  const productOrder = products.map((product) => product.productKey ?? product.domain);
   const allTabs = windowId == null ? await queryAllTabs() : await queryTabs({ windowId });
-
-  // Bucket real, non-closed tabs by window.
   const byWindow = new Map<number, chrome.tabs.Tab[]>();
   for (const tab of allTabs) {
-    if (tab.id == null || tab.id < 0) continue;
-    if (closedTabIds.has(tab.id)) continue;
-    if (!isRealTab(tab.url ?? '')) continue;
-    const list = byWindow.get(tab.windowId) ?? [];
-    list.push(tab);
-    byWindow.set(tab.windowId, list);
+    if (tab.id == null || tab.id < 0 || closedTabIds.has(tab.id)) continue;
+    const tabs = byWindow.get(tab.windowId) ?? [];
+    tabs.push(tab);
+    byWindow.set(tab.windowId, tabs);
   }
-  if (byWindow.size === 0) return result;
-
   const customGroups = (await readStorage()).settings.customGroups;
-
-  // 1. Sort each window in place (slot-based, pinned-aware).
-  for (const windowTabs of byWindow.values()) {
-    const sortable: SortableTab[] = windowTabs.map((t) => ({
-      id: t.id as number,
-      index: t.index,
-      pinned: t.pinned ?? false,
-      productKey: productKeyFor(t, customGroups),
-    }));
-    const moves = computeWindowSortMoves(sortable, productOrder);
-    for (const move of moves) {
-      try {
-        await moveChromeTab(move.id, move.index);
-      } catch (err) {
-        result.moveFailures++;
-        console.warn('[Tab Organizer] Failed to move tab', move.id, err);
+  for (const [currentWindowId, snapshotTabs] of byWindow) {
+    if (!chrome.tabGroups || !sectionByProductKey) {
+      const sortable: SortableTab[] = snapshotTabs.filter((tab) => isRealTab(tab.url ?? '')).map((tab) => ({
+        id: tab.id!, index: tab.index, pinned: tab.pinned, productKey: productKeyFor(tab, customGroups),
+      }));
+      for (const move of computeWindowSortMoves(sortable, productOrder)) {
+        try { await moveChromeTab(move.id, move.index); }
+        catch (error) { result.moveFailures++; console.warn('[Tab Organizer] Failed to move tab', move.id, error); }
       }
+      continue;
     }
-  }
-
-  // 2. Reuse or create native Chrome groups, one per section in each window.
-  // Pinned tabs cannot be grouped, so they are excluded. Products with no section
-  // are left ungrouped. Skips silently if the API or section info is unavailable.
-  if (!chrome.tabGroups || !sectionByProductKey || sectionByProductKey.size === 0) {
-    return result;
-  }
-
-  for (const [currentWindowId, windowTabs] of byWindow) {
-    const claimedGroupIds = new Set<number>();
-    const bySection = new Map<string, { ref: ProductSectionRef; tabIds: number[] }>();
-    for (const t of windowTabs) {
-      if (t.pinned) continue;
-      const ref = sectionByProductKey.get(productKeyFor(t, customGroups));
-      if (!ref) continue;
-      const entry = bySection.get(ref.sectionId) ?? { ref, tabIds: [] };
-      entry.tabIds.push(t.id as number);
-      bySection.set(ref.sectionId, entry);
-    }
-
-    for (const { ref, tabIds } of bySection.values()) {
-      if (tabIds.length === 0) continue;
-      try {
-        const title = ref.emoji ? `${ref.emoji} ${ref.name}` : ref.name;
-        // Query after sorting: moving tabs may remove an emptied native group.
-        // Match titles in JS because the API's title filter treats '*' as a wildcard.
-        // Reuse the group even if it contains pages excluded from our product model;
-        // otherwise those pages keep the old Work group alive beside a new Work.
-        const existingGroups = await chrome.tabGroups.query({ windowId: currentWindowId });
-        const matchingGroups = existingGroups.filter((g) =>
-          g.title === title && !claimedGroupIds.has(g.id));
-        const memberGroupIds = new Set(windowTabs
-          .filter((t) => tabIds.includes(t.id as number))
-          .map((t) => t.groupId));
-        const existingGroup = matchingGroups.find((g) => memberGroupIds.has(g.id))
-          ?? matchingGroups[0];
-        const hasAnotherSectionWithTitle = [...sectionByProductKey.values()].some((section) =>
-          section.sectionId !== ref.sectionId
-          && (section.emoji ? `${section.emoji} ${section.name}` : section.name) === title);
-        const mergedTabIds = new Set(tabIds);
-        if (matchingGroups.length > 1 && !hasAnotherSectionWithTitle) {
-          // Adopt every page from the duplicate native groups, including pages
-          // outside the product model. Moving them empties the redundant groups.
-          const matchingGroupIds = new Set(matchingGroups.map((group) => group.id));
-          const currentTabs = await queryTabs({ windowId: currentWindowId });
-          for (const tab of currentTabs) {
-            if (tab.id != null && tab.id >= 0 && !tab.pinned
-              && !closedTabIds.has(tab.id) && matchingGroupIds.has(tab.groupId)) {
-              mergedTabIds.add(tab.id);
-            }
-          }
-        }
-        const groupId = await (chrome.tabs.group({
-          tabIds: [...mergedTabIds] as [number, ...number[]],
-          ...(existingGroup ? { groupId: existingGroup.id } : {}),
-        }) as Promise<number>);
-        // Different sections may share a display name, but never a native group.
-        claimedGroupIds.add(groupId);
-        await (chrome.tabGroups.update(groupId, {
-          title,
-          color: colorForKey(ref.sectionId),
-          collapsed: false,
-        }) as Promise<chrome.tabGroups.TabGroup>);
-      } catch (err) {
+    try {
+      // Both membership and native-group metadata must be captured before any move.
+      const snapshotGroups = await chrome.tabGroups.query({ windowId: currentWindowId });
+      if (snapshotTabs.some((tab) => tab.groupId >= 0 && !snapshotGroups.some((group) => group.id === tab.groupId))) {
         result.groupFailures++;
-        console.warn('[Tab Organizer] Failed to group section', ref.sectionId, err);
+        continue;
       }
+      const plan = planNativeGroups(snapshotTabs.map((tab) => ({
+        id: tab.id!, index: tab.index, pinned: tab.pinned, groupId: tab.groupId,
+        productKey: isRealTab(tab.url ?? '') ? productKeyFor(tab, customGroups) : undefined,
+      })), snapshotGroups, sectionRefs ?? [...sectionByProductKey.values()], sectionByProductKey, productOrder);
+      if (plan.orderedTabIds.length === 0) continue;
+      const metadataByKey = new Map(plan.groups.map((group) => {
+        const original = snapshotGroups.find((candidate) => candidate.id === group.originalGroupIds[0]);
+        return [group.key, group.section ? {
+          title: nativeSectionTitle(group.section), color: colorForKey(group.section.sectionId), collapsed: false,
+        } : { title: original?.title, color: original?.color, collapsed: original?.collapsed }];
+      }));
+      let currentTabs = await queryTabs({ windowId: currentWindowId });
+      const validIds = (ids: readonly number[]): number[] => ids.filter((id) => {
+        const tab = currentTabs.find((candidate) => candidate.id === id);
+        if (!tab || tab.pinned) { result.groupFailures++; return false; }
+        return true;
+      });
+      // Fill target positions from left to right using current indices, not stale slots.
+      for (const [offset, id] of plan.orderedTabIds.entries()) {
+        if (validIds([id]).length === 0) continue;
+        const tab = currentTabs.find((candidate) => candidate.id === id)!;
+        const index = Math.min(currentTabs.filter((candidate) => candidate.pinned).length + offset, currentTabs.length - 1);
+        if (tab.index !== index) {
+          try { await moveChromeTab(id, index); }
+          catch { result.moveFailures++; }
+          currentTabs = await queryTabs({ windowId: currentWindowId });
+        }
+      }
+      // Moves may attach nonmembers to groups. Detach those according to the plan,
+      // including pages that were ungrouped before sorting.
+      const allowedGroups = new Map<number, readonly number[]>();
+      for (const group of plan.groups) {
+        for (const id of group.tabIds) allowedGroups.set(id, group.originalGroupIds);
+      }
+      currentTabs = await queryTabs({ windowId: currentWindowId });
+      const detachIds = validIds(plan.orderedTabIds).filter((id) => {
+        const tab = currentTabs.find((candidate) => candidate.id === id)!;
+        return tab.groupId >= 0 && !(allowedGroups.get(id) ?? []).includes(tab.groupId);
+      });
+      if (detachIds.length > 0) await chrome.tabs.ungroup(detachIds as [number, ...number[]]);
+      const resolvedGroups = new Map<string, number>();
+      for (const group of plan.groups) {
+        currentTabs = await queryTabs({ windowId: currentWindowId });
+        const ids = validIds(group.tabIds);
+        if (ids.length === 0) continue;
+        const liveGroups = await chrome.tabGroups.query({ windowId: currentWindowId });
+        const reusable = group.originalGroupIds.find((id) => liveGroups.some((candidate) => candidate.id === id));
+        try {
+          const id = await chrome.tabs.group({ tabIds: ids as [number, ...number[]], ...(reusable == null ? {} : { groupId: reusable }) });
+          resolvedGroups.set(group.key, id);
+          await chrome.tabGroups.update(id, metadataByKey.get(group.key)!);
+        } catch { result.groupFailures++; }
+      }
+      currentTabs = await queryTabs({ windowId: currentWindowId });
+      const liveGroups = await chrome.tabGroups.query({ windowId: currentWindowId });
+      for (const group of plan.groups) {
+        const target = resolvedGroups.get(group.key);
+        const expected = validIds(group.tabIds);
+        const actual = currentTabs.filter((tab) => tab.groupId === target).map((tab) => tab.id);
+        if (target == null || actual.length !== expected.length || expected.some((id) => !actual.includes(id))) result.groupFailures++;
+        const actualGroup = liveGroups.find((candidate) => candidate.id === target);
+        const metadata = metadataByKey.get(group.key)!;
+        if (!actualGroup || actualGroup.title !== metadata.title || actualGroup.color !== metadata.color
+          || actualGroup.collapsed !== metadata.collapsed) result.groupFailures++;
+        if (group.originalGroupIds.some((id) => id !== target && liveGroups.some((candidate) => candidate.id === id))) result.groupFailures++;
+      }
+      for (const id of validIds(plan.ungroupedTabIds)) {
+        if (currentTabs.find((tab) => tab.id === id)?.groupId !== -1) result.groupFailures++;
+      }
+      const plannedIds = new Set(plan.orderedTabIds);
+      const actualOrder = [...currentTabs].sort((a, b) => a.index - b.index)
+        .filter((tab) => !tab.pinned && plannedIds.has(tab.id!)).map((tab) => tab.id);
+      const expectedOrder = validIds(plan.orderedTabIds);
+      if (actualOrder.some((id, index) => id !== expectedOrder[index]) || actualOrder.length !== expectedOrder.length) result.moveFailures++;
+    } catch (error) {
+      result.groupFailures++;
+      console.warn('[Tab Organizer] Window organization did not complete', currentWindowId, error);
     }
   }
-
   return result;
 }
