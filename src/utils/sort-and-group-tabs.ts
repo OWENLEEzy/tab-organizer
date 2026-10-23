@@ -137,8 +137,24 @@ export async function sortAndGroupTabs(
           .map((t) => t.groupId));
         const existingGroup = matchingGroups.find((g) => memberGroupIds.has(g.id))
           ?? matchingGroups[0];
+        const hasAnotherSectionWithTitle = [...sectionByProductKey.values()].some((section) =>
+          section.sectionId !== ref.sectionId
+          && (section.emoji ? `${section.emoji} ${section.name}` : section.name) === title);
+        const mergedTabIds = new Set(tabIds);
+        if (matchingGroups.length > 1 && !hasAnotherSectionWithTitle) {
+          // Adopt every page from the duplicate native groups, including pages
+          // outside the product model. Moving them empties the redundant groups.
+          const matchingGroupIds = new Set(matchingGroups.map((group) => group.id));
+          const currentTabs = await queryTabs({ windowId: currentWindowId });
+          for (const tab of currentTabs) {
+            if (tab.id != null && tab.id >= 0 && !tab.pinned
+              && !closedTabIds.has(tab.id) && matchingGroupIds.has(tab.groupId)) {
+              mergedTabIds.add(tab.id);
+            }
+          }
+        }
         const groupId = await (chrome.tabs.group({
-          tabIds: tabIds as [number, ...number[]],
+          tabIds: [...mergedTabIds] as [number, ...number[]],
           ...(existingGroup ? { groupId: existingGroup.id } : {}),
         }) as Promise<number>);
         // Different sections may share a display name, but never a native group.

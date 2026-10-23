@@ -125,8 +125,11 @@ describe('sortAndGroupTabs', () => {
     chromeMock.tabs.query.mockResolvedValue([
       chromeTab(1, 'alpha.io', 0), chromeTab(2, 'beta.dev', 1),
     ]);
-    chromeMock.tabGroups.query.mockResolvedValue([{ id: 10, windowId: 1, title: 'Work' }]);
-    chromeMock.tabs.group.mockResolvedValueOnce(10).mockResolvedValueOnce(11);
+    chromeMock.tabGroups.query.mockResolvedValue([
+      { id: 10, windowId: 1, title: 'Work' },
+      { id: 20, windowId: 1, title: 'Work' },
+    ]);
+    chromeMock.tabs.group.mockResolvedValueOnce(10).mockResolvedValueOnce(20);
     await sortAndGroupTabs([group('alpha.io', 'Alpha'), group('beta.dev', 'Beta')], {
       sectionByProductKey: new Map([
         ...inSection('work-a', 'Work', ['alpha.io']),
@@ -134,12 +137,63 @@ describe('sortAndGroupTabs', () => {
       ]),
     });
     expect(chromeMock.tabs.group).toHaveBeenNthCalledWith(1, { tabIds: [1], groupId: 10 });
-    expect(chromeMock.tabs.group).toHaveBeenNthCalledWith(2, { tabIds: [2] });
+    expect(chromeMock.tabs.group).toHaveBeenNthCalledWith(2, { tabIds: [2], groupId: 20 });
   });
 
   it('reports lookup failure without blindly creating another group', async () => {
     chromeMock.tabs.query.mockResolvedValue([chromeTab(1, 'alpha.io', 0)]);
     chromeMock.tabGroups.query.mockRejectedValue(new Error('window closed'));
+    const result = await sortAndGroupTabs([group('alpha.io', 'Alpha')], {
+      sectionByProductKey: inSection('work', 'Work', ['alpha.io']),
+    });
+    expect(result.groupFailures).toBe(1);
+    expect(chromeMock.tabs.group).not.toHaveBeenCalled();
+  });
+
+  it('merges existing Work groups including Feishu and internal pages without closing tabs', async () => {
+    const tabs = [
+      { ...chromeTab(1, 'alpha.io', 0), groupId: 20 },
+      { ...chromeTab(2, 'feishu.cn', 1), groupId: 10 },
+      { ...chromeTab(3, 'alpha.io', 2), url: 'chrome://newtab/', groupId: 10 },
+      { ...chromeTab(4, 'other.io', 3), groupId: 30 },
+      { ...chromeTab(5, 'feishu.cn', 0, 2), groupId: 40 },
+      chromeTab(6, 'alpha.io', 0, 1, true),
+    ];
+    const nativeGroups = new Map([
+      [10, { id: 10, windowId: 1, title: 'Work' }],
+      [20, { id: 20, windowId: 1, title: 'Work' }],
+      [30, { id: 30, windowId: 1, title: 'Personal' }],
+      [40, { id: 40, windowId: 2, title: 'Work' }],
+    ]);
+    chromeMock.tabs.query.mockImplementation(async ({ windowId }) =>
+      tabs.filter((t) => windowId == null || t.windowId === windowId).map((t) => ({ ...t })));
+    chromeMock.tabGroups.query.mockImplementation(async ({ windowId }) =>
+      [...nativeGroups.values()].filter((g) => g.windowId === windowId));
+    chromeMock.tabs.group.mockImplementation(async ({ tabIds, groupId }) => {
+      for (const tab of tabs) if (tabIds.includes(tab.id)) tab.groupId = groupId;
+      for (const key of nativeGroups.keys()) {
+        if (!tabs.some((tab) => tab.groupId === key)) nativeGroups.delete(key);
+      }
+      return groupId;
+    });
+    const products = [group('alpha.io', 'Alpha'), group('feishu.cn', 'Feishu')];
+    const options = { windowId: 1, sectionByProductKey: inSection('work', 'Work', ['alpha.io']) };
+    for (let attempt = 0; attempt < 2; attempt++) {
+      expect(await sortAndGroupTabs(products, options)).toEqual({ moveFailures: 0, groupFailures: 0 });
+      expect([...nativeGroups.values()].filter((g) => g.windowId === 1 && g.title === 'Work'))
+        .toEqual([{ id: 20, windowId: 1, title: 'Work' }]);
+    }
+    expect(tabs.map((t) => t.groupId)).toEqual([20, 20, 20, 30, 40, -1]);
+    expect(tabs).toHaveLength(6);
+  });
+
+  it('reports a failed duplicate-group tab lookup without a partial merge', async () => {
+    chromeMock.tabs.query.mockResolvedValueOnce([chromeTab(1, 'alpha.io', 0)])
+      .mockRejectedValueOnce(new Error('window closed'));
+    chromeMock.tabGroups.query.mockResolvedValue([
+      { id: 10, windowId: 1, title: 'Work' },
+      { id: 20, windowId: 1, title: 'Work' },
+    ]);
     const result = await sortAndGroupTabs([group('alpha.io', 'Alpha')], {
       sectionByProductKey: inSection('work', 'Work', ['alpha.io']),
     });
