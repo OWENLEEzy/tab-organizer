@@ -9,6 +9,10 @@ export async function queryAllTabs(): Promise<chrome.tabs.Tab[]> {
   return chrome.tabs.query({});
 }
 
+export async function queryAllTabGroups(): Promise<chrome.tabGroups.TabGroup[]> {
+  return chrome.tabGroups.query({});
+}
+
 export async function queryTabs(
   queryInfo: chrome.tabs.QueryInfo,
 ): Promise<chrome.tabs.Tab[]> {

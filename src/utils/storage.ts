@@ -7,6 +7,7 @@ import type {
   RecoverySnapshot,
 } from '../types';
 import { recoveryUrlSignature, shouldReplaceRecoveryCandidate } from '../lib/recovery-snapshots';
+import type { StripPlacement } from '../lib/placement-from-strip';
 import { deleteSectionAndUnassignProducts } from '../lib/section-organizer';
 import {
   CURRENT_SCHEMA_VERSION,
@@ -387,6 +388,27 @@ export async function applyAutoAssignments(updates: SectionAssignment[]): Promis
       : { ...storage, sectionAssignments: [...storage.sectionAssignments, ...fresh] };
   });
   return { sectionAssignments: next.sectionAssignments, unsectionedProductKeys: next.unsectionedProductKeys };
+}
+
+export async function writeStripPlacements(
+  placements: ReadonlyMap<string, StripPlacement>,
+): Promise<void> {
+  if (placements.size === 0) return;
+  await updateStorage((storage) => {
+    const keys = new Set(placements.keys());
+    const sectionAssignments = storage.sectionAssignments.filter(
+      (assignment) => !keys.has(assignment.productKey),
+    );
+    const unsectionedProductKeys = storage.unsectionedProductKeys.filter((key) => !keys.has(key));
+    for (const [productKey, placement] of placements) {
+      if (placement.kind === 'section') {
+        sectionAssignments.push({ productKey, sectionId: placement.sectionId });
+      } else {
+        unsectionedProductKeys.push(productKey);
+      }
+    }
+    return { ...storage, sectionAssignments, unsectionedProductKeys };
+  });
 }
 
 /** Edit the section list against fresh storage, so a concurrent edit is not overwritten. */

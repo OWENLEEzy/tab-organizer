@@ -4,6 +4,7 @@ import { useTabStore } from '../../stores/tab-store';
 import { duplicateTabIdsToClose } from '../../lib/duplicate-tabs';
 import { isTabStale } from '../../lib/staleness';
 import { getProductKey } from '../../lib/product-key';
+import { refreshPlacementFromStrip } from '../../utils/refresh-placement';
 import { clearGroupOrder } from '../../utils/storage';
 import { playCloseEffects } from '../../lib/close-effects';
 import { getChipCloseDelay, userPrefersReducedMotion } from '../lib/motion';
@@ -360,6 +361,7 @@ export function useTabActions({
   }, [tabStore, showToast, t]);
 
   const handleRefresh = useCallback(async () => {
+    await refreshPlacementFromStrip();
     await tabStore.fetchTabs();
     showToast(t('toastRefreshed'));
   }, [tabStore, showToast, t]);
